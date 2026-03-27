@@ -1,0 +1,7 @@
+package com.skillsync.mentor.exception;
+
+public class UnauthorizedException extends RuntimeException {
+    public UnauthorizedException(String message) {
+        super(message);
+    }
+}

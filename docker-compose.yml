@@ -1,0 +1,477 @@
+version: '3.8'
+
+services:
+  # Zipkin Distributed Tracing
+  zipkin:
+    image: openzipkin/zipkin:latest
+    container_name: zipkin-server
+    ports:
+      - "9411:9411"
+    environment:
+      STORAGE_TYPE: mysql
+      MYSQL_HOST: zipkin-mysql
+      MYSQL_PORT: 3306
+      MYSQL_USER: zipkin
+      MYSQL_PASS: zipkin123
+      MYSQL_DB: zipkin
+    depends_on:
+      zipkin-mysql:
+        condition: service_healthy
+    networks:
+      - skillsync-network
+
+  # MySQL for Zipkin (persistent storage)
+  zipkin-mysql:
+    image: mysql:8.0
+    container_name: zipkin-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_DATABASE: zipkin
+      MYSQL_USER: zipkin
+      MYSQL_PASSWORD: zipkin123
+    ports:
+      - "3307:3306"
+    volumes:
+      - zipkin-mysql-data:/var/lib/mysql
+    networks:
+      - skillsync-network
+    command: --default-authentication-plugin=mysql_native_password
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # MySQL Database (shared by all microservices)
+  mysql:
+    image: mysql:8.0
+    container_name: skillsync-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: 1234
+      MYSQL_DATABASE: skill_auth
+      MYSQL_ROOT_HOST: '%'
+    ports:
+      - "3308:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    networks:
+      - skillsync-network
+    command: --default-authentication-plugin=mysql_native_password
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # RabbitMQ Management
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - skillsync-network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache
+  redis:
+    image: redis:latest
+    container_name: redis
+    ports:
+      - "6379:6379"
+    networks:
+      - skillsync-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Eureka Server
+  eureka-server:
+    image: maven:3.9-eclipse-temurin-17
+    container_name: eureka-server
+    working_dir: /app
+    volumes:
+      - ./eureka-server:/app
+      - maven-repo:/root/.m2
+    ports:
+      - "8761:8761"
+    environment:
+      JAVA_OPTS: "-Dspring.profiles.active=docker"
+      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: "http://zipkin:9411/api/v2/spans"
+      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: "1.0"
+    command: bash -c "mvn clean spring-boot:run"
+    depends_on:
+      zipkin:
+        condition: service_started
+    networks:
+      - skillsync-network
+
+  # API Gateway
+  api-gateway:
+    image: maven:3.9-eclipse-temurin-21
+    container_name: api-gateway
+    working_dir: /app
+    volumes:
+      - ./api-gateway:/app
+      - maven-repo:/root/.m2
+    ports:
+      - "9090:9090"
+    environment:
+      JAVA_OPTS: "-Dspring.profiles.active=docker"
+      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: "http://zipkin:9411/api/v2/spans"
+      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: "1.0"
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://eureka-server:8761/eureka/"
+    command: bash -c "mvn clean spring-boot:run"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      zipkin:
+        condition: service_started
+      eureka-server:
+        condition: service_started
+    networks:
+      - skillsync-network
+
+  # Auth Service
+  auth-service:
+    image: maven:3.9-eclipse-temurin-17
+    container_name: auth-service
+    working_dir: /app
+    volumes:
+      - ./auth-service:/app
+      - maven-repo:/root/.m2
+    ports:
+      - "8081:8081"
+    environment:
+      JAVA_OPTS: "-Dspring.profiles.active=docker"
+      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: "http://zipkin:9411/api/v2/spans"
+      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: "1.0"
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://eureka-server:8761/eureka/"
+    command: bash -c "mvn clean spring-boot:run"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      zipkin:
+        condition: service_started
+      eureka-server:
+        condition: service_started
+    networks:
+      - skillsync-network
+
+  # User Service
+  user-service:
+    image: maven:3.9-eclipse-temurin-17
+    container_name: user-service
+    working_dir: /app
+    volumes:
+      - ./user-service:/app
+      - maven-repo:/root/.m2
+    ports:
+      - "8082:8082"
+    environment:
+      JAVA_OPTS: "-Dspring.profiles.active=docker"
+      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: "http://zipkin:9411/api/v2/spans"
+      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: "1.0"
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://eureka-server:8761/eureka/"
+      SPRING_DATA_REDIS_HOST: "redis"
+      SPRING_DATA_REDIS_PORT: "6379"
+    command: bash -c "mvn clean spring-boot:run"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      zipkin:
+        condition: service_started
+      eureka-server:
+        condition: service_started
+    networks:
+      - skillsync-network
+
+  # Skill Service
+  skill-service:
+    image: maven:3.9-eclipse-temurin-17
+    container_name: skill-service
+    working_dir: /app
+    volumes:
+      - ./skill-service:/app
+      - maven-repo:/root/.m2
+    ports:
+      - "8083:8083"
+    environment:
+      JAVA_OPTS: "-Dspring.profiles.active=docker"
+      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: "http://zipkin:9411/api/v2/spans"
+      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: "1.0"
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://eureka-server:8761/eureka/"
+      SPRING_DATA_REDIS_HOST: "redis"
+      SPRING_DATA_REDIS_PORT: "6379"
+    command: bash -c "mvn clean spring-boot:run"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      zipkin:
+        condition: service_started
+      eureka-server:
+        condition: service_started
+    networks:
+      - skillsync-network
+
+  # Session Service
+  session-service:
+    image: maven:3.9-eclipse-temurin-17
+    container_name: session-service
+    working_dir: /app
+    volumes:
+      - ./session-service:/app
+      - maven-repo:/root/.m2
+    ports:
+      - "8084:8084"
+    environment:
+      JAVA_OPTS: "-Dspring.profiles.active=docker"
+      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: "http://zipkin:9411/api/v2/spans"
+      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: "1.0"
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://eureka-server:8761/eureka/"
+      SPRING_DATA_REDIS_HOST: "redis"
+      SPRING_DATA_REDIS_PORT: "6379"
+    command: bash -c "mvn clean spring-boot:run"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      zipkin:
+        condition: service_started
+      eureka-server:
+        condition: service_started
+    networks:
+      - skillsync-network
+
+  # Mentor Service
+  mentor-service:
+    image: maven:3.9-eclipse-temurin-17
+    container_name: mentor-service
+    working_dir: /app
+    volumes:
+      - ./mentor-service:/app
+      - maven-repo:/root/.m2
+    ports:
+      - "8085:8085"
+    environment:
+      JAVA_OPTS: "-Dspring.profiles.active=docker"
+      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: "http://zipkin:9411/api/v2/spans"
+      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: "1.0"
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://eureka-server:8761/eureka/"
+      SPRING_DATA_REDIS_HOST: "redis"
+      SPRING_DATA_REDIS_PORT: "6379"
+    command: bash -c "mvn clean spring-boot:run"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      zipkin:
+        condition: service_started
+      eureka-server:
+        condition: service_started
+    networks:
+      - skillsync-network
+
+  # Group Service
+  group-service:
+    image: maven:3.9-eclipse-temurin-17
+    container_name: group-service
+    working_dir: /app
+    volumes:
+      - ./group-service:/app
+      - maven-repo:/root/.m2
+    ports:
+      - "8086:8086"
+    environment:
+      JAVA_OPTS: "-Dspring.profiles.active=docker"
+      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: "http://zipkin:9411/api/v2/spans"
+      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: "1.0"
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://eureka-server:8761/eureka/"
+      SPRING_DATA_REDIS_HOST: "redis"
+      SPRING_DATA_REDIS_PORT: "6379"
+    command: bash -c "mvn clean spring-boot:run"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      zipkin:
+        condition: service_started
+      eureka-server:
+        condition: service_started
+    networks:
+      - skillsync-network
+
+  # Review Service
+  review-service:
+    image: maven:3.9-eclipse-temurin-17
+    container_name: review-service
+    working_dir: /app
+    volumes:
+      - ./review-service:/app
+      - maven-repo:/root/.m2
+    ports:
+      - "8087:8087"
+    environment:
+      JAVA_OPTS: "-Dspring.profiles.active=docker"
+      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: "http://zipkin:9411/api/v2/spans"
+      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: "1.0"
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://eureka-server:8761/eureka/"
+      SPRING_DATA_REDIS_HOST: "redis"
+      SPRING_DATA_REDIS_PORT: "6379"
+    command: bash -c "mvn clean spring-boot:run"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      zipkin:
+        condition: service_started
+      eureka-server:
+        condition: service_started
+    networks:
+      - skillsync-network
+
+  # Notification Service
+  notification-service:
+    image: maven:3.9-eclipse-temurin-17
+    container_name: notification-service
+    working_dir: /app
+    volumes:
+      - ./notification-service:/app
+      - maven-repo:/root/.m2
+    ports:
+      - "8088:8088"
+    environment:
+      JAVA_OPTS: "-Dspring.profiles.active=docker"
+      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: "http://zipkin:9411/api/v2/spans"
+      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: "1.0"
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://eureka-server:8761/eureka/"
+    command: bash -c "mvn clean spring-boot:run"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      zipkin:
+        condition: service_started
+      eureka-server:
+        condition: service_started
+    networks:
+      - skillsync-network
+
+  # Payment Gateway
+  payment-gateway:
+    image: maven:3.9-eclipse-temurin-17
+    container_name: payment-gateway
+    working_dir: /app
+    volumes:
+      - ./payment-gateway:/app
+      - maven-repo:/root/.m2
+    ports:
+      - "8089:8089"
+    environment:
+      JAVA_OPTS: "-Dspring.profiles.active=docker"
+      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: "http://zipkin:9411/api/v2/spans"
+      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: "1.0"
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://eureka-server:8761/eureka/"
+    command: bash -c "mvn clean spring-boot:run"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      zipkin:
+        condition: service_started
+      eureka-server:
+        condition: service_started
+    networks:
+      - skillsync-network
+
+  # Elasticsearch for ELK Stack
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    container_name: elasticsearch
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: "false"
+      ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+    networks:
+      - skillsync-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:9200/_cluster/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Logstash for ELK Stack
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.11.0
+    container_name: logstash
+    volumes:
+      - ./logstash.conf:/usr/share/logstash/pipeline/logstash.conf
+      - logstash-data:/usr/share/logstash/data
+    ports:
+      - "5000:5000"
+      - "9600:9600"
+    environment:
+      LS_JAVA_OPTS: "-Xmx256m -Xms256m"
+    command: logstash -f /usr/share/logstash/pipeline/logstash.conf
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    networks:
+      - skillsync-network
+
+  # Kibana for ELK Stack
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.11.0
+    container_name: kibana
+    ports:
+      - "5601:5601"
+    environment:
+      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    networks:
+      - skillsync-network
+
+networks:
+  skillsync-network:
+    driver: bridge
+
+volumes:
+  mysql-data:
+    driver: local
+  zipkin-mysql-data:
+    driver: local
+  maven-repo:
+    driver: local
+  elasticsearch-data:
+    driver: local
+  logstash-data:
+    driver: local
+

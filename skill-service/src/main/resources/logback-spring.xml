@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <springProfile name="default,docker">
+        <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+        
+        <property name="LOG_FILE" value="logs/skill-service.log"/>
+        <property name="LOGSTASH_HOST" value="logstash"/>
+        <property name="LOGSTASH_PORT" value="5000"/>
+
+        <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder>
+                <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+                <charset>utf8</charset>
+            </encoder>
+        </appender>
+
+        <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+            <file>${LOG_FILE}</file>
+            <encoder>
+                <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+                <charset>utf8</charset>
+            </encoder>
+            <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+                <fileNamePattern>logs/skill-service-%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+                <maxFileSize>10MB</maxFileSize>
+                <maxHistory>7</maxHistory>
+            </rollingPolicy>
+        </appender>
+
+        <appender name="LOGSTASH_TCP" class="net.logstash.logback.appender.LogstashTcpSocketAppender">
+            <destination>${LOGSTASH_HOST}:${LOGSTASH_PORT}</destination>
+            <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+                <customFields>{"environment":"docker","service":"skill-service"}</customFields>
+                <includeContext>true</includeContext>
+                <includeMdcData>true</includeMdcData>
+            </encoder>
+            <keepAliveDuration>5 minutes</keepAliveDuration>
+        </appender>
+
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
+            <appender-ref ref="FILE"/>
+            <appender-ref ref="LOGSTASH_TCP"/>
+        </root>
+
+        <logger name="com.skillsync" level="DEBUG"/>
+        <logger name="org.springframework" level="INFO"/>
+    </springProfile>
+</configuration>

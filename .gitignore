@@ -1,0 +1,84 @@
+# ==========================================
+# MAVEN
+# ==========================================
+target/
+*.jar
+*.war
+*.ear
+*.class
+*.iml
+.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+# ==========================================
+# SPRING BOOT
+# ==========================================
+*.log
+logs/
+*.log.*
+
+# ==========================================
+# IDE - IntelliJ IDEA
+# ==========================================
+.idea/
+*.iws
+*.ipr
+out/
+.idea_modules/
+
+# ==========================================
+# IDE - Eclipse / STS
+# ==========================================
+.settings/
+.classpath
+.project
+.factorypath
+bin/
+.metadata/
+*.launch
+
+# ==========================================
+# IDE - VS Code
+# ==========================================
+.vscode/
+
+# ==========================================
+# OS
+# ==========================================
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ==========================================
+# DOCKER
+# ==========================================
+docker-compose.override.yml
+
+# ==========================================
+# SENSITIVE / SECRETS
+# ==========================================
+application-prod.properties
+application-local.properties
+*.env
+.env
+secrets/
+
+# ==========================================
+# RAZORPAY TEST HTML (optional - remove if you want to commit)
+# ==========================================
+**/razorpay-test.html
+
+# ==========================================
+# MISC
+# ==========================================
+*.tmp
+*.bak
+*.swp
+*.orig
+output.txt
+build_error.log
+compile_error.log
+test_output.txt
+*.txt
+!README.txt
