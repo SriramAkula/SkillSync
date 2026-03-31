@@ -21,6 +21,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import com.skillsync.authservice.audit.AuditService;
 import com.skillsync.authservice.client.UserServiceClient;
 import com.skillsync.authservice.dto.request.LoginRequest;
 import com.skillsync.authservice.dto.request.RegisterRequest;
@@ -48,6 +49,12 @@ class AuthServiceTest {
     @Mock
     private AuthEventPublisher eventPublisher;
 
+    @Mock
+    private OtpService otpService;
+
+    @Mock
+    private AuditService auditService;
+
     @InjectMocks
     private AuthServiceImpl authService;
 
@@ -66,6 +73,7 @@ class AuthServiceTest {
     @Test
     void register_ShouldReturnAuthResponse_WhenSuccessful() {
         // Arrange
+        when(otpService.isEmailVerified(anyString())).thenReturn(true);
         when(userRepository.existsByEmail(anyString())).thenReturn(false);
         when(userRepository.existsByUsername(anyString())).thenReturn(false);
         when(passwordEncoder.encode(anyString())).thenReturn("encodedPassword");
@@ -87,6 +95,7 @@ class AuthServiceTest {
     @Test
     void register_ShouldThrowException_WhenEmailExists() {
         // Arrange
+        when(otpService.isEmailVerified(anyString())).thenReturn(true);
         when(userRepository.existsByEmail(anyString())).thenReturn(true);
 
         // Act & Assert
@@ -97,6 +106,7 @@ class AuthServiceTest {
     @Test
     void register_ShouldSucceed_EvenWhenFeignFails() {
         // Arrange
+        when(otpService.isEmailVerified(anyString())).thenReturn(true);
         when(userRepository.existsByEmail(anyString())).thenReturn(false);
         when(userRepository.existsByUsername(anyString())).thenReturn(false);
         when(passwordEncoder.encode(anyString())).thenReturn("encodedPassword");
@@ -116,6 +126,7 @@ class AuthServiceTest {
     @Test
     void login_ShouldReturnAuthResponse_WhenCredentialsAreValid() {
         // Arrange
+        user.setIsActive(true);
         when(userRepository.findByEmail(anyString())).thenReturn(Optional.of(user));
         when(passwordEncoder.matches(anyString(), anyString())).thenReturn(true);
         when(jwtUtil.generateToken(any(), anyString(), any())).thenReturn("mockToken");

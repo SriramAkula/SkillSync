@@ -30,7 +30,7 @@ public class PaymentProcessor {
 
     // ─────────────────────────────────────────────────────────────
     // Step 1: Create Razorpay Order
-    // Called when mentor accepts — returns order_id to frontend
+    // Called when mentor accepts - returns order_id to frontend
     // ─────────────────────────────────────────────────────────────
     public String createOrder(String idempotencyKey, BigDecimal amount) {
         try {
@@ -72,7 +72,7 @@ public class PaymentProcessor {
 
         } catch (RazorpayException e) {
             log.error("[RAZORPAY] Signature verification failed: {}", e.getMessage());
-            throw new RuntimeException("Payment signature verification failed — possible tampered request", e);
+            throw new RuntimeException("Payment signature verification failed - possible tampered request", e);
         }
     }
 
@@ -106,7 +106,7 @@ public class PaymentProcessor {
     // ─────────────────────────────────────────────────────────────
     public String refund(String paymentId, BigDecimal amount) {
         if (paymentId == null) {
-            throw new RuntimeException("Cannot refund — no Razorpay payment ID found");
+            throw new RuntimeException("Cannot refund - no Razorpay payment ID found");
         }
 
         try {

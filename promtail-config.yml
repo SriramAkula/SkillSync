@@ -1,0 +1,140 @@
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+
+scrape_configs:
+  - job_name: auth-service
+    static_configs:
+      - targets: [localhost]
+        labels:
+          job: skillsync
+          service: auth-service
+          __path__: /logs/auth-service/*.log
+    pipeline_stages:
+      - regex:
+          expression: '^(?P<timestamp>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}) \[(?P<thread>[^\]]+)\] (?P<level>\w+)\s+(?P<logger>\S+) - (?P<message>.*)'
+      - labels:
+          level:
+
+  - job_name: user-service
+    static_configs:
+      - targets: [localhost]
+        labels:
+          job: skillsync
+          service: user-service
+          __path__: /logs/user-service/*.log
+    pipeline_stages:
+      - regex:
+          expression: '^(?P<timestamp>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}) \[(?P<thread>[^\]]+)\] (?P<level>\w+)\s+(?P<logger>\S+) - (?P<message>.*)'
+      - labels:
+          level:
+
+  - job_name: skill-service
+    static_configs:
+      - targets: [localhost]
+        labels:
+          job: skillsync
+          service: skill-service
+          __path__: /logs/skill-service/*.log
+    pipeline_stages:
+      - regex:
+          expression: '^(?P<timestamp>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}) \[(?P<thread>[^\]]+)\] (?P<level>\w+)\s+(?P<logger>\S+) - (?P<message>.*)'
+      - labels:
+          level:
+
+  - job_name: session-service
+    static_configs:
+      - targets: [localhost]
+        labels:
+          job: skillsync
+          service: session-service
+          __path__: /logs/session-service/*.log
+    pipeline_stages:
+      - regex:
+          expression: '^(?P<timestamp>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}) \[(?P<thread>[^\]]+)\] (?P<level>\w+)\s+(?P<logger>\S+) - (?P<message>.*)'
+      - labels:
+          level:
+
+  - job_name: mentor-service
+    static_configs:
+      - targets: [localhost]
+        labels:
+          job: skillsync
+          service: mentor-service
+          __path__: /logs/mentor-service/*.log
+    pipeline_stages:
+      - regex:
+          expression: '^(?P<timestamp>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}) \[(?P<thread>[^\]]+)\] (?P<level>\w+)\s+(?P<logger>\S+) - (?P<message>.*)'
+      - labels:
+          level:
+
+  - job_name: group-service
+    static_configs:
+      - targets: [localhost]
+        labels:
+          job: skillsync
+          service: group-service
+          __path__: /logs/group-service/*.log
+    pipeline_stages:
+      - regex:
+          expression: '^(?P<timestamp>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}) \[(?P<thread>[^\]]+)\] (?P<level>\w+)\s+(?P<logger>\S+) - (?P<message>.*)'
+      - labels:
+          level:
+
+  - job_name: review-service
+    static_configs:
+      - targets: [localhost]
+        labels:
+          job: skillsync
+          service: review-service
+          __path__: /logs/review-service/*.log
+    pipeline_stages:
+      - regex:
+          expression: '^(?P<timestamp>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}) \[(?P<thread>[^\]]+)\] (?P<level>\w+)\s+(?P<logger>\S+) - (?P<message>.*)'
+      - labels:
+          level:
+
+  - job_name: notification-service
+    static_configs:
+      - targets: [localhost]
+        labels:
+          job: skillsync
+          service: notification-service
+          __path__: /logs/notification-service/*.log
+    pipeline_stages:
+      - regex:
+          expression: '^(?P<timestamp>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}) \[(?P<thread>[^\]]+)\] (?P<level>\w+)\s+(?P<logger>\S+) - (?P<message>.*)'
+      - labels:
+          level:
+
+  - job_name: payment-gateway
+    static_configs:
+      - targets: [localhost]
+        labels:
+          job: skillsync
+          service: payment-gateway
+          __path__: /logs/payment-gateway/*.log
+    pipeline_stages:
+      - regex:
+          expression: '^(?P<timestamp>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}) \[(?P<thread>[^\]]+)\] (?P<level>\w+)\s+(?P<logger>\S+) - (?P<message>.*)'
+      - labels:
+          level:
+
+  - job_name: api-gateway
+    static_configs:
+      - targets: [localhost]
+        labels:
+          job: skillsync
+          service: api-gateway
+          __path__: /logs/api-gateway/*.log
+    pipeline_stages:
+      - regex:
+          expression: '^(?P<timestamp>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3}) \[(?P<thread>[^\]]+)\] (?P<level>\w+)\s+(?P<logger>\S+) - (?P<message>.*)'
+      - labels:
+          level:

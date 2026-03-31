@@ -10,11 +10,13 @@ import lombok.NoArgsConstructor;
 /**
  * Mentor Profile Entity
  */
+import com.skillsync.mentor.audit.Auditable;
+
 @Entity
 @Table(name = "mentor_profiles", uniqueConstraints = {
 		@UniqueConstraint(columnNames = "userId")
 })
-public class MentorProfile {
+public class MentorProfile extends Auditable {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)

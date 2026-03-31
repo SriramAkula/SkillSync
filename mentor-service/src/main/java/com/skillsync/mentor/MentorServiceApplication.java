@@ -23,7 +23,7 @@ public class MentorServiceApplication {
 
 	public static void main(String[] args) {
 		SpringApplication.run(MentorServiceApplication.class, args);
-		System.out.println("✓ Mentor Service Started on port 8084");
+		System.out.println("[OK] Mentor Service Started on port 8084");
 	}
 }
 	

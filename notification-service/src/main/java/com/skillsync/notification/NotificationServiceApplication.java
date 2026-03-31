@@ -12,6 +12,6 @@ import org.springframework.cloud.openfeign.EnableFeignClients;
 public class NotificationServiceApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(NotificationServiceApplication.class, args);
-		System.out.println("✓ Notification Service Started on port 8088");
+		System.out.println("[OK] Notification Service Started on port 8088");
 	}
 }

@@ -10,6 +10,6 @@ import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 public class GroupServiceApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(GroupServiceApplication.class, args);
-		System.out.println("✓ Group Service Started on port 8086");
+		System.out.println("[OK] Group Service Started on port 8086");
 	}
 }

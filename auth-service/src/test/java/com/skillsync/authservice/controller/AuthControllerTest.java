@@ -45,6 +45,7 @@ class AuthControllerTest {
     @MockBean JwtUtil jwtUtil;
     @MockBean DataInitializer dataInitializer;
     @MockBean UserServiceClient userServiceClient;
+    @MockBean com.skillsync.authservice.service.OAuthService oAuthService;
 
     private final AuthResponse authResponse = new AuthResponse("jwt-token", List.of("ROLE_LEARNER"));
 

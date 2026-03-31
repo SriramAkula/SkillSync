@@ -1,5 +1,6 @@
 package com.skillsync.authservice.service;
 
+import com.skillsync.authservice.audit.AuditService;
 import com.skillsync.authservice.client.UserServiceClient;
 import com.skillsync.authservice.dto.request.LoginRequest;
 import com.skillsync.authservice.dto.request.RegisterRequest;
@@ -31,6 +32,8 @@ class AuthServiceImplTest {
     @Mock private JwtUtil jwtUtil;
     @Mock private UserServiceClient userServiceClient;
     @Mock private AuthEventPublisher eventPublisher;
+    @Mock private OtpService otpService;
+    @Mock private AuditService auditService;
 
     @InjectMocks private AuthServiceImpl authService;
 
@@ -48,6 +51,7 @@ class AuthServiceImplTest {
     @Test
     void register_shouldReturnToken_whenValidRequest() {
         RegisterRequest request = new RegisterRequest("test@example.com", "password123");
+        when(otpService.isEmailVerified("test@example.com")).thenReturn(true);
         when(userRepository.existsByEmail("test@example.com")).thenReturn(false);
         when(userRepository.existsByUsername("test.example.com")).thenReturn(false);
         when(passwordEncoder.encode("password123")).thenReturn("encodedPass");
@@ -63,8 +67,21 @@ class AuthServiceImplTest {
     }
 
     @Test
+    void register_shouldThrow_whenEmailNotVerified() {
+        RegisterRequest request = new RegisterRequest("test@example.com", "password123");
+        when(otpService.isEmailVerified("test@example.com")).thenReturn(false);
+
+        assertThatThrownBy(() -> authService.register(request))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("Email not verified");
+
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
     void register_shouldThrow_whenEmailAlreadyExists() {
         RegisterRequest request = new RegisterRequest("test@example.com", "password123");
+        when(otpService.isEmailVerified("test@example.com")).thenReturn(true);
         when(userRepository.existsByEmail("test@example.com")).thenReturn(true);
 
         assertThatThrownBy(() -> authService.register(request))
@@ -77,6 +94,7 @@ class AuthServiceImplTest {
     @Test
     void register_shouldThrow_whenUsernameAlreadyExists() {
         RegisterRequest request = new RegisterRequest("test@example.com", "password123");
+        when(otpService.isEmailVerified("test@example.com")).thenReturn(true);
         when(userRepository.existsByEmail("test@example.com")).thenReturn(false);
         when(userRepository.existsByUsername("test.example.com")).thenReturn(true);
 
@@ -90,6 +108,7 @@ class AuthServiceImplTest {
     @Test
     void register_shouldStillSucceed_whenEventPublishFails() {
         RegisterRequest request = new RegisterRequest("test@example.com", "password123");
+        when(otpService.isEmailVerified(anyString())).thenReturn(true);
         when(userRepository.existsByEmail(anyString())).thenReturn(false);
         when(userRepository.existsByUsername(anyString())).thenReturn(false);
         when(passwordEncoder.encode(anyString())).thenReturn("encodedPass");
@@ -105,6 +124,7 @@ class AuthServiceImplTest {
     @Test
     void register_shouldStillSucceed_whenFeignClientFails() {
         RegisterRequest request = new RegisterRequest("test@example.com", "password123");
+        when(otpService.isEmailVerified(anyString())).thenReturn(true);
         when(userRepository.existsByEmail(anyString())).thenReturn(false);
         when(userRepository.existsByUsername(anyString())).thenReturn(false);
         when(passwordEncoder.encode(anyString())).thenReturn("encodedPass");

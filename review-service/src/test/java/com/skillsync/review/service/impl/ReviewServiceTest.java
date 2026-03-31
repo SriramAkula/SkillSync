@@ -1,18 +1,10 @@
 package com.skillsync.review.service.impl;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyDouble;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
-import java.util.Arrays;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -30,22 +22,21 @@ import com.skillsync.review.dto.response.ReviewResponseDto;
 import com.skillsync.review.entity.Review;
 import com.skillsync.review.exception.ReviewNotFoundException;
 import com.skillsync.review.exception.UnauthorizedException;
+import com.skillsync.review.mapper.ReviewMapper;
 import com.skillsync.review.repository.ReviewRepository;
 
 @ExtendWith(MockitoExtension.class)
 class ReviewServiceTest {
 
-    @Mock
-    private ReviewRepository reviewRepository;
+    @Mock private ReviewRepository reviewRepository;
+    @Mock private MentorServiceClient mentorServiceClient;
+    @Mock private ReviewMapper reviewMapper;
 
-    @Mock
-    private MentorServiceClient mentorServiceClient;
-
-    @InjectMocks
-    private ReviewServiceImpl reviewService;
+    @InjectMocks private ReviewServiceImpl reviewService;
 
     private Review review;
     private SubmitReviewRequestDto submitRequest;
+    private ReviewResponseDto reviewResponse;
 
     @BeforeEach
     void setUp() {
@@ -60,100 +51,111 @@ class ReviewServiceTest {
         submitRequest.setMentorId(100L);
         submitRequest.setRating(5);
         submitRequest.setComment("Excellent!");
+
+        reviewResponse = ReviewResponseDto.builder()
+                .id(1L).mentorId(100L).learnerId(200L)
+                .rating(4).comment("Great mentor!").isAnonymous(false)
+                .createdAt(LocalDateTime.now()).updatedAt(LocalDateTime.now())
+                .build();
     }
 
     @Test
     void submitReview_ShouldSaveReviewAndUpdateRating() {
-        // Arrange
-        when(reviewRepository.save(any(Review.class))).thenReturn(review);
-        when(reviewRepository.getAverageRating(anyLong())).thenReturn(4.5);
+        when(reviewMapper.toEntity(200L, submitRequest)).thenReturn(review);
+        when(reviewRepository.save(review)).thenReturn(review);
+        when(reviewMapper.toDto(review)).thenReturn(reviewResponse);
+        when(reviewRepository.getAverageRating(100L)).thenReturn(4.5);
 
-        // Act
         ReviewResponseDto response = reviewService.submitReview(200L, submitRequest);
 
-        // Assert
         assertNotNull(response);
-        verify(reviewRepository, times(1)).save(any(Review.class));
-        verify(mentorServiceClient, times(1)).updateMentorRating(100L, 4.5);
+        verify(reviewRepository).save(review);
+        verify(mentorServiceClient).updateMentorRating(100L, 4.5);
     }
 
     @Test
     void submitReview_ShouldSucceed_EvenWhenFeignFails() {
-        // Arrange
-        when(reviewRepository.save(any(Review.class))).thenReturn(review);
-        when(reviewRepository.getAverageRating(anyLong())).thenReturn(4.5);
+        when(reviewMapper.toEntity(200L, submitRequest)).thenReturn(review);
+        when(reviewRepository.save(review)).thenReturn(review);
+        when(reviewMapper.toDto(review)).thenReturn(reviewResponse);
+        when(reviewRepository.getAverageRating(100L)).thenReturn(4.5);
         doThrow(new RuntimeException("Feign error")).when(mentorServiceClient).updateMentorRating(anyLong(), anyDouble());
 
-        // Act
         ReviewResponseDto response = reviewService.submitReview(200L, submitRequest);
 
-        // Assert
         assertNotNull(response);
-        verify(reviewRepository, times(1)).save(any(Review.class));
+        verify(reviewRepository).save(review);
     }
 
     @Test
     void getReview_ShouldReturnReview_WhenExists() {
-        // Arrange
-        when(reviewRepository.findById(anyLong())).thenReturn(Optional.of(review));
+        when(reviewRepository.findById(1L)).thenReturn(Optional.of(review));
+        when(reviewMapper.toDto(review)).thenReturn(reviewResponse);
 
-        // Act
         ReviewResponseDto response = reviewService.getReview(1L);
 
-        // Assert
         assertNotNull(response);
-        assertEquals(review.getComment(), response.getComment());
+        assertEquals("Great mentor!", response.getComment());
+    }
+
+    @Test
+    void getReview_ShouldThrow_WhenNotFound() {
+        when(reviewRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThrows(ReviewNotFoundException.class, () -> reviewService.getReview(99L));
     }
 
     @Test
     void getMentorRating_ShouldReturnCorrectStats() {
-        // Arrange
-        when(reviewRepository.getAverageRating(anyLong())).thenReturn(4.567);
-        when(reviewRepository.getTotalReviewCount(anyLong())).thenReturn(10);
+        MentorRatingDto ratingDto = MentorRatingDto.builder()
+                .mentorId(100L).averageRating(4.567).totalReviews(10).build();
+        when(reviewRepository.getAverageRating(100L)).thenReturn(4.567);
+        when(reviewRepository.getTotalReviewCount(100L)).thenReturn(10);
+        when(reviewMapper.toRatingDto(100L, 4.567, 10)).thenReturn(ratingDto);
 
-        // Act
         MentorRatingDto rating = reviewService.getMentorRating(100L);
 
-        // Assert
         assertEquals(4.567, rating.getAverageRating());
         assertEquals(10, rating.getTotalReviews());
     }
 
     @Test
     void updateReview_ShouldSuccess_WhenOwner() {
-        // Arrange
-        when(reviewRepository.findById(anyLong())).thenReturn(Optional.of(review));
-        when(reviewRepository.save(any(Review.class))).thenReturn(review);
-        when(reviewRepository.getAverageRating(anyLong())).thenReturn(5.0);
+        when(reviewRepository.findById(1L)).thenReturn(Optional.of(review));
+        when(reviewRepository.save(review)).thenReturn(review);
+        when(reviewMapper.toDto(review)).thenReturn(reviewResponse);
+        when(reviewRepository.getAverageRating(100L)).thenReturn(5.0);
 
-        // Act
         ReviewResponseDto response = reviewService.updateReview(1L, 200L, submitRequest);
 
-        // Assert
         assertNotNull(response);
-        verify(reviewRepository, times(1)).save(review);
+        verify(reviewMapper).updateEntity(review, submitRequest);
+        verify(reviewRepository).save(review);
     }
 
     @Test
     void updateReview_ShouldThrowUnauthorized_WhenNotOwner() {
-        // Arrange
-        when(reviewRepository.findById(anyLong())).thenReturn(Optional.of(review));
+        when(reviewRepository.findById(1L)).thenReturn(Optional.of(review));
 
-        // Act & Assert
         assertThrows(UnauthorizedException.class, () -> reviewService.updateReview(1L, 999L, submitRequest));
     }
 
     @Test
     void deleteReview_ShouldSuccess_WhenOwner() {
-        // Arrange
-        when(reviewRepository.findById(anyLong())).thenReturn(Optional.of(review));
-        when(reviewRepository.getAverageRating(anyLong())).thenReturn(4.0);
+        when(reviewRepository.findById(1L)).thenReturn(Optional.of(review));
+        when(reviewRepository.getAverageRating(100L)).thenReturn(4.0);
 
-        // Act
         reviewService.deleteReview(1L, 200L);
 
-        // Assert
-        verify(reviewRepository, times(1)).delete(review);
-        verify(mentorServiceClient, times(1)).updateMentorRating(100L, 4.0);
+        verify(reviewRepository).delete(review);
+        verify(mentorServiceClient).updateMentorRating(100L, 4.0);
+    }
+
+    @Test
+    void deleteReview_ShouldThrowUnauthorized_WhenNotOwner() {
+        when(reviewRepository.findById(1L)).thenReturn(Optional.of(review));
+
+        assertThrows(UnauthorizedException.class, () -> reviewService.deleteReview(1L, 999L));
+        verify(reviewRepository, never()).delete(any());
     }
 }

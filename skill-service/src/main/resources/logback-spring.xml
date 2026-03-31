@@ -4,8 +4,6 @@
         <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
         
         <property name="LOG_FILE" value="logs/skill-service.log"/>
-        <property name="LOGSTASH_HOST" value="logstash"/>
-        <property name="LOGSTASH_PORT" value="5000"/>
 
         <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
             <encoder>
@@ -27,20 +25,9 @@
             </rollingPolicy>
         </appender>
 
-        <appender name="LOGSTASH_TCP" class="net.logstash.logback.appender.LogstashTcpSocketAppender">
-            <destination>${LOGSTASH_HOST}:${LOGSTASH_PORT}</destination>
-            <encoder class="net.logstash.logback.encoder.LogstashEncoder">
-                <customFields>{"environment":"docker","service":"skill-service"}</customFields>
-                <includeContext>true</includeContext>
-                <includeMdcData>true</includeMdcData>
-            </encoder>
-            <keepAliveDuration>5 minutes</keepAliveDuration>
-        </appender>
-
         <root level="INFO">
             <appender-ref ref="CONSOLE"/>
             <appender-ref ref="FILE"/>
-            <appender-ref ref="LOGSTASH_TCP"/>
         </root>
 
         <logger name="com.skillsync" level="DEBUG"/>

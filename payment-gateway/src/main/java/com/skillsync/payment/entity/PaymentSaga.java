@@ -5,18 +5,20 @@ import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+import com.skillsync.payment.audit.Auditable;
+
 @Entity
 @Table(name = "payment_saga", indexes = {
         @Index(name = "idx_session_id", columnList = "session_id", unique = true),
         @Index(name = "idx_correlation_id", columnList = "correlation_id", unique = true)
 })
-public class PaymentSaga {
+public class PaymentSaga extends Auditable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // Idempotency key — one saga per session
+    // Idempotency key - one saga per session
     @Column(name = "session_id", nullable = false, unique = true)
     private Long sessionId;
 

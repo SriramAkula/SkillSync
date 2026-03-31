@@ -10,6 +10,6 @@ import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 public class SessionServiceApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(SessionServiceApplication.class, args);
-		System.out.println("✓ Session Service Started on port 8085");
+		System.out.println("[OK] Session Service Started on port 8085");
 	}
 }

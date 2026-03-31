@@ -5,11 +5,15 @@ import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.security.SecurityScheme;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.servers.Server;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class OpenApiConfig {
+
+    @Value("${api.gateway.url:http://localhost:9090/api}")
+    private String apiGatewayUrl;
 
     @Bean
     public OpenAPI customOpenAPI() {
@@ -18,7 +22,7 @@ public class OpenApiConfig {
                         .title("Group Service API")
                         .version("1.0.0")
                         .description("Learning groups and collaborative sessions management"))
-                .addServersItem(new Server().url("http://localhost:9090/api").description("API Gateway"))
+                .addServersItem(new Server().url(apiGatewayUrl).description("API Gateway"))
                 .addSecurityItem(new SecurityRequirement().addList("bearerAuth"))
                 .components(new io.swagger.v3.oas.models.Components()
                         .addSecuritySchemes("bearerAuth",

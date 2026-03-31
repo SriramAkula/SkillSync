@@ -17,6 +17,8 @@ import lombok.NoArgsConstructor;
 /**
  * Skill Entity
  */
+import com.skillsync.skill.audit.Auditable;
+
 @Entity
 @Table(name = "skills", uniqueConstraints = {
 	@jakarta.persistence.UniqueConstraint(columnNames = "skillName")
@@ -24,7 +26,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class Skill {
+public class Skill extends Auditable {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)

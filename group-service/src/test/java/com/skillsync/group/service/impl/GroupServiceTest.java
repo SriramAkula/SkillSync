@@ -1,15 +1,11 @@
 package com.skillsync.group.service.impl;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -27,6 +23,7 @@ import com.skillsync.group.entity.MemberRole;
 import com.skillsync.group.exception.AlreadyMemberException;
 import com.skillsync.group.exception.GroupFullException;
 import com.skillsync.group.exception.GroupNotFoundException;
+import com.skillsync.group.mapper.GroupMapper;
 import com.skillsync.group.repository.GroupMemberRepository;
 import com.skillsync.group.repository.GroupRepository;
 import com.skillsync.group.serviceImpl.GroupServiceImpl;
@@ -34,17 +31,15 @@ import com.skillsync.group.serviceImpl.GroupServiceImpl;
 @ExtendWith(MockitoExtension.class)
 class GroupServiceTest {
 
-    @Mock
-    private GroupRepository groupRepository;
+    @Mock private GroupRepository groupRepository;
+    @Mock private GroupMemberRepository groupMemberRepository;
+    @Mock private GroupMapper groupMapper;
 
-    @Mock
-    private GroupMemberRepository groupMemberRepository;
-
-    @InjectMocks
-    private GroupServiceImpl groupService;
+    @InjectMocks private GroupServiceImpl groupService;
 
     private Group group;
     private CreateGroupRequestDto createRequest;
+    private GroupResponseDto groupResponse;
 
     @BeforeEach
     void setUp() {
@@ -59,93 +54,102 @@ class GroupServiceTest {
         createRequest.setName("Java Group");
         createRequest.setMaxMembers(5);
         createRequest.setSkillId(10L);
+
+        groupResponse = GroupResponseDto.builder()
+                .id(1L).creatorId(100L).name("Java Group")
+                .skillId(10L).maxMembers(5).currentMembers(1)
+                .isActive(true).createdAt(LocalDateTime.now()).updatedAt(LocalDateTime.now())
+                .build();
     }
 
     @Test
     void createGroup_ShouldCreateGroupAndAddCreator() {
-        // Arrange
-        when(groupRepository.save(any(Group.class))).thenReturn(group);
+        when(groupMapper.toEntity(100L, createRequest)).thenReturn(group);
+        when(groupRepository.save(group)).thenReturn(group);
+        when(groupMapper.toMemberEntity(eq(1L), eq(100L), eq(MemberRole.CREATOR))).thenReturn(new GroupMember());
+        when(groupMapper.toDto(group, 1)).thenReturn(groupResponse);
 
-        // Act
         GroupResponseDto response = groupService.createGroup(100L, createRequest);
 
-        // Assert
         assertNotNull(response);
-        verify(groupRepository, times(1)).save(any(Group.class));
-        verify(groupMemberRepository, times(1)).save(any(GroupMember.class));
+        verify(groupRepository).save(group);
+        verify(groupMemberRepository).save(any(GroupMember.class));
     }
 
     @Test
     void joinGroup_ShouldSuccess_WhenNotFull() {
-        // Arrange
-        when(groupRepository.findById(anyLong())).thenReturn(Optional.of(group));
-        when(groupMemberRepository.findByGroupIdAndUserId(anyLong(), anyLong())).thenReturn(Optional.empty());
-        when(groupMemberRepository.countByGroupId(anyLong())).thenReturn(2);
+        GroupResponseDto joinedResponse = GroupResponseDto.builder()
+                .id(1L).creatorId(100L).name("Java Group").skillId(10L)
+                .maxMembers(5).currentMembers(3).isActive(true)
+                .createdAt(LocalDateTime.now()).updatedAt(LocalDateTime.now()).build();
+        when(groupRepository.findById(1L)).thenReturn(Optional.of(group));
+        when(groupMemberRepository.findByGroupIdAndUserId(1L, 101L)).thenReturn(Optional.empty());
+        when(groupMemberRepository.countByGroupId(1L)).thenReturn(2);
+        when(groupMapper.toMemberEntity(eq(1L), eq(101L), eq(MemberRole.MEMBER))).thenReturn(new GroupMember());
+        when(groupMapper.toDto(group, 3)).thenReturn(joinedResponse);
 
-        // Act
         GroupResponseDto response = groupService.joinGroup(1L, 101L);
 
-        // Assert
         assertNotNull(response);
         assertEquals(3, response.getCurrentMembers());
-        verify(groupMemberRepository, times(1)).save(any(GroupMember.class));
+        verify(groupMemberRepository).save(any(GroupMember.class));
     }
 
     @Test
     void joinGroup_ShouldThrowException_WhenFull() {
-        // Arrange
-        when(groupRepository.findById(anyLong())).thenReturn(Optional.of(group));
-        when(groupMemberRepository.findByGroupIdAndUserId(anyLong(), anyLong())).thenReturn(Optional.empty());
-        when(groupMemberRepository.countByGroupId(anyLong())).thenReturn(5);
+        when(groupRepository.findById(1L)).thenReturn(Optional.of(group));
+        when(groupMemberRepository.findByGroupIdAndUserId(1L, 101L)).thenReturn(Optional.empty());
+        when(groupMemberRepository.countByGroupId(1L)).thenReturn(5);
 
-        // Act & Assert
         assertThrows(GroupFullException.class, () -> groupService.joinGroup(1L, 101L));
     }
 
     @Test
     void joinGroup_ShouldThrowException_WhenAlreadyMember() {
-        // Arrange
-        when(groupRepository.findById(anyLong())).thenReturn(Optional.of(group));
-        when(groupMemberRepository.findByGroupIdAndUserId(anyLong(), anyLong())).thenReturn(Optional.of(new GroupMember()));
+        when(groupRepository.findById(1L)).thenReturn(Optional.of(group));
+        when(groupMemberRepository.findByGroupIdAndUserId(1L, 101L)).thenReturn(Optional.of(new GroupMember()));
 
-        // Act & Assert
         assertThrows(AlreadyMemberException.class, () -> groupService.joinGroup(1L, 101L));
     }
 
     @Test
     void leaveGroup_ShouldDeleteMember() {
-        // Arrange
         GroupMember member = new GroupMember();
-        when(groupRepository.findById(anyLong())).thenReturn(Optional.of(group));
-        when(groupMemberRepository.findByGroupIdAndUserId(anyLong(), anyLong())).thenReturn(Optional.of(member));
+        GroupResponseDto leaveResponse = GroupResponseDto.builder()
+                .id(1L).creatorId(100L).name("Java Group").skillId(10L)
+                .maxMembers(5).currentMembers(1).isActive(true)
+                .createdAt(LocalDateTime.now()).updatedAt(LocalDateTime.now()).build();
+        when(groupRepository.findById(1L)).thenReturn(Optional.of(group));
+        when(groupMemberRepository.findByGroupIdAndUserId(1L, 101L)).thenReturn(Optional.of(member));
+        when(groupMemberRepository.countByGroupId(1L)).thenReturn(1);
+        when(groupMapper.toDto(group, 1)).thenReturn(leaveResponse);
 
-        // Act
         groupService.leaveGroup(1L, 101L);
 
-        // Assert
-        verify(groupMemberRepository, times(1)).delete(member);
+        verify(groupMemberRepository).delete(member);
     }
 
     @Test
     void deleteGroup_ShouldDeactivateGroup() {
-        // Arrange
-        when(groupRepository.findById(anyLong())).thenReturn(Optional.of(group));
-        when(groupRepository.save(any(Group.class))).thenReturn(group);
+        GroupResponseDto deletedResponse = GroupResponseDto.builder()
+                .id(1L).creatorId(100L).name("Java Group").skillId(10L)
+                .maxMembers(5).currentMembers(0).isActive(false)
+                .createdAt(LocalDateTime.now()).updatedAt(LocalDateTime.now()).build();
+        when(groupRepository.findById(1L)).thenReturn(Optional.of(group));
+        when(groupRepository.save(group)).thenReturn(group);
+        when(groupMemberRepository.findByGroupId(1L)).thenReturn(List.of());
+        when(groupMapper.toDto(group, 0)).thenReturn(deletedResponse);
 
-        // Act
         groupService.deleteGroup(1L, 100L);
 
-        // Assert
-        verify(groupRepository, times(1)).save(group);
-        verify(groupMemberRepository, times(1)).deleteAll(any());
+        verify(groupRepository).save(group);
+        verify(groupMemberRepository).deleteAll(any());
     }
 
     @Test
     void deleteGroup_ShouldThrowException_WhenNotCreator() {
-        // Arrange
-        when(groupRepository.findById(anyLong())).thenReturn(Optional.of(group));
+        when(groupRepository.findById(1L)).thenReturn(Optional.of(group));
 
-        // Act & Assert
         assertThrows(GroupNotFoundException.class, () -> groupService.deleteGroup(1L, 999L));
         verify(groupRepository, never()).save(any());
     }

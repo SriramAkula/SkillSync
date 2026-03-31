@@ -24,7 +24,7 @@ public class SkillServiceApplication {
 
 	public static void main(String[] args) {
 		SpringApplication.run(SkillServiceApplication.class, args);
-		System.out.println("✓ Skill Service Started on port 8083");
+		System.out.println("[OK] Skill Service Started on port 8083");
 	}
 
 }

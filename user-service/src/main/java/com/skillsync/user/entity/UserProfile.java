@@ -18,6 +18,8 @@ import lombok.NoArgsConstructor;
  * UserProfile Entity - Extended user information
  * Created when user registers in Auth Service
  */
+import com.skillsync.user.audit.Auditable;
+
 @Entity
 @Table(name = "user_profiles", uniqueConstraints = {
 	@jakarta.persistence.UniqueConstraint(columnNames = "userId")
@@ -25,7 +27,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class UserProfile {
+public class UserProfile extends Auditable {
 	
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)

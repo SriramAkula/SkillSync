@@ -6,12 +6,14 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
+import com.skillsync.group.audit.Auditable;
+
 @Entity
 @Table(name = "groups")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class Group {
+public class Group extends Auditable {
     
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

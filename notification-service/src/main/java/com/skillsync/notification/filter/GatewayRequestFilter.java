@@ -27,8 +27,9 @@ public class GatewayRequestFilter extends OncePerRequestFilter {
             return;
         }
         
-        // Whitelist Swagger/OpenAPI documentation paths
-        if (requestPath.startsWith("/v3/api-docs") || 
+        // Whitelist Swagger/OpenAPI and actuator paths
+        if (requestPath.startsWith("/actuator") ||
+            requestPath.startsWith("/v3/api-docs") || 
             requestPath.startsWith("/swagger-ui") ||
             requestPath.startsWith("/swagger-resources")) {
             filterChain.doFilter(request, response);

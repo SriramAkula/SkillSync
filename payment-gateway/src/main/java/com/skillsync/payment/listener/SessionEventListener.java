@@ -26,7 +26,7 @@ public class SessionEventListener {
 
     /**
      * Triggered when mentor accepts a session.
-     * Advances saga from INITIATED → PAYMENT_PENDING → PAYMENT_PROCESSING → COMPLETED/FAILED
+     * Advances saga from INITIATED -> PAYMENT_PENDING -> PAYMENT_PROCESSING -> COMPLETED/FAILED
      */
     @RabbitListener(queues = RabbitMQConfig.PAYMENT_SESSION_ACCEPTED_QUEUE)
     public void onSessionAccepted(Map<String, Object> payload) {
@@ -35,7 +35,7 @@ public class SessionEventListener {
             Long mentorId  = toLong(payload.get("mentorId"));
             Long learnerId = toLong(payload.get("learnerId"));
 
-            log.info("[LISTENER] session.accepted received — sessionId={}, mentorId={}, learnerId={}",
+            log.info("[LISTENER] session.accepted received - sessionId={}, mentorId={}, learnerId={}",
                     sessionId, mentorId, learnerId);
 
             sagaOrchestrator.onSessionAccepted(sessionId, mentorId, learnerId);
@@ -56,7 +56,7 @@ public class SessionEventListener {
         try {
             Long sessionId = toLong(payload.get("sessionId"));
 
-            log.info("[LISTENER] session.cancelled received — sessionId={}", sessionId);
+            log.info("[LISTENER] session.cancelled received - sessionId={}", sessionId);
 
             sagaOrchestrator.initiateRefund(sessionId);
 

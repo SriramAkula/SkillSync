@@ -24,6 +24,9 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import com.skillsync.mentor.audit.AuditService;
+import com.skillsync.mentor.mapper.MentorMapper;
+
 @Service
 @CacheConfig(cacheNames = "mentor")
 public class MentorServiceImpl implements MentorService {
@@ -31,13 +34,19 @@ public class MentorServiceImpl implements MentorService {
     private static final Logger log = LoggerFactory.getLogger(MentorServiceImpl.class);
 
     private final MentorRepository mentorRepository;
-
     private final AuthServiceClient authServiceClient;
+    private final MentorMapper mentorMapper;
+    private final AuditService auditService;
 
     @Autowired
-    public MentorServiceImpl(MentorRepository mentorRepository, AuthServiceClient authServiceClient) {
+    public MentorServiceImpl(MentorRepository mentorRepository,
+                             AuthServiceClient authServiceClient,
+                             MentorMapper mentorMapper,
+                             AuditService auditService) {
         this.mentorRepository = mentorRepository;
         this.authServiceClient = authServiceClient;
+        this.mentorMapper = mentorMapper;
+        this.auditService = auditService;
     }
 
     @Override
@@ -50,60 +59,54 @@ public class MentorServiceImpl implements MentorService {
             throw new MentorAlreadyExistsException("User has already applied as a mentor");
         }
 
-        MentorProfile profile = new MentorProfile();
-        profile.setUserId(userId);
-        profile.setSpecialization(request.getSpecialization());
-        profile.setYearsOfExperience(request.getYearsOfExperience());
-        profile.setHourlyRate(request.getHourlyRate());
-        profile.setStatus(MentorStatus.PENDING);
-        profile.setIsApproved(false);
-        profile.setAvailabilityStatus(AvailabilityStatus.AVAILABLE);
-
+        MentorProfile profile = mentorMapper.toEntity(userId, request);
         MentorProfile saved = mentorRepository.save(profile);
+        auditService.log("MentorProfile", saved.getId(), "APPLY", userId.toString(),
+                "specialization=" + request.getSpecialization());
         log.info("Mentor application submitted for userId: {}", userId);
-        return mapToDto(saved);
+        return mentorMapper.toDto(saved);
     }
 
     @Override
     @Cacheable(key = "#mentorId")
     public MentorProfileResponseDto getMentorProfile(Long mentorId) {
-        log.info("Cache MISS — fetching mentorId={} from DB", mentorId);
+        log.info("Cache MISS - fetching mentorId={} from DB", mentorId);
         MentorProfile profile = mentorRepository.findById(mentorId)
                 .orElseThrow(() -> new MentorNotFoundException("Mentor not found with ID: " + mentorId));
-        return mapToDto(profile);
+        return mentorMapper.toDto(profile);
     }
 
     @Override
     @Cacheable(key = "'user_' + #userId")
     public MentorProfileResponseDto getMentorByUserId(Long userId) {
-        log.info("Cache MISS — fetching userId={} from DB", userId);
+        log.info("Cache MISS - fetching userId={} from DB", userId);
         MentorProfile profile = mentorRepository.findByUserId(userId)
                 .orElseThrow(() -> new MentorNotFoundException("Mentor profile not found for userId: " + userId));
-        return mapToDto(profile);
+        return mentorMapper.toDto(profile);
     }
 
     @Override
     @Cacheable(key = "'all_approved'")
     public List<MentorProfileResponseDto> getAllApprovedMentors() {
-        log.info("Cache MISS — fetching all approved mentors from DB");
+        log.info("Cache MISS - fetching all approved mentors from DB");
         return mentorRepository.findAllApprovedMentors()
-                .stream().map(this::mapToDto).collect(Collectors.toList());
+                .stream().map(mentorMapper::toDto).collect(Collectors.toList());
     }
 
     @Override
     @Cacheable(key = "'pending'")
     public List<MentorProfileResponseDto> getPendingApplications() {
-        log.info("Cache MISS — fetching pending applications from DB");
+        log.info("Cache MISS - fetching pending applications from DB");
         return mentorRepository.findPendingApplications()
-                .stream().map(this::mapToDto).collect(Collectors.toList());
+                .stream().map(mentorMapper::toDto).collect(Collectors.toList());
     }
 
     @Override
     @Cacheable(key = "'skill_' + #skill")
     public List<MentorProfileResponseDto> searchMentorsBySpecialization(String skill) {
-        log.info("Cache MISS — searching mentors by skill={} from DB", skill);
+        log.info("Cache MISS - searching mentors by skill={} from DB", skill);
         return mentorRepository.searchBySpecialization(skill)
-                .stream().map(this::mapToDto).collect(Collectors.toList());
+                .stream().map(mentorMapper::toDto).collect(Collectors.toList());
     }
 
     @Override
@@ -126,7 +129,9 @@ public class MentorServiceImpl implements MentorService {
             log.warn("Failed to update role via Feign for userId {}: {}", profile.getUserId(), e.getMessage());
         }
 
-        return mapToDto(mentorRepository.save(profile));
+        MentorProfileResponseDto result = mentorMapper.toDto(mentorRepository.save(profile));
+        auditService.log("MentorProfile", mentorId, "APPROVE", adminId.toString(), "approvedBy=" + adminId);
+        return result;
     }
 
     @Override
@@ -136,12 +141,12 @@ public class MentorServiceImpl implements MentorService {
         log.info("Admin {} rejecting mentor {}", adminId, mentorId);
         MentorProfile profile = mentorRepository.findById(mentorId)
                 .orElseThrow(() -> new MentorNotFoundException("Mentor not found with ID: " + mentorId));
-
         profile.setStatus(MentorStatus.REJECTED);
         profile.setIsApproved(false);
         profile.setApprovedBy(adminId);
-
-        return mapToDto(mentorRepository.save(profile));
+        MentorProfileResponseDto result = mentorMapper.toDto(mentorRepository.save(profile));
+        auditService.log("MentorProfile", mentorId, "REJECT", adminId.toString(), "rejectedBy=" + adminId);
+        return result;
     }
 
     @Override
@@ -151,9 +156,11 @@ public class MentorServiceImpl implements MentorService {
         log.info("Updating availability for userId: {}", userId);
         MentorProfile profile = mentorRepository.findByUserId(userId)
                 .orElseThrow(() -> new MentorNotFoundException("Mentor profile not found for userId: " + userId));
-
         profile.setAvailabilityStatus(AvailabilityStatus.valueOf(request.getAvailabilityStatus()));
-        return mapToDto(mentorRepository.save(profile));
+        MentorProfileResponseDto result = mentorMapper.toDto(mentorRepository.save(profile));
+        auditService.log("MentorProfile", profile.getId(), "UPDATE_AVAILABILITY", userId.toString(),
+                "status=" + request.getAvailabilityStatus());
+        return result;
     }
 
     @Override
@@ -163,11 +170,11 @@ public class MentorServiceImpl implements MentorService {
         log.info("Admin {} suspending mentor {}", adminId, mentorId);
         MentorProfile profile = mentorRepository.findById(mentorId)
                 .orElseThrow(() -> new MentorNotFoundException("Mentor not found with ID: " + mentorId));
-
         profile.setStatus(MentorStatus.SUSPENDED);
         profile.setIsApproved(false);
-
-        return mapToDto(mentorRepository.save(profile));
+        MentorProfileResponseDto result = mentorMapper.toDto(mentorRepository.save(profile));
+        auditService.log("MentorProfile", mentorId, "SUSPEND", adminId.toString(), "suspendedBy=" + adminId);
+        return result;
     }
 
     @Override
@@ -177,28 +184,7 @@ public class MentorServiceImpl implements MentorService {
         log.info("Updating rating for mentorId: {} to {}", mentorId, newRating);
         MentorProfile profile = mentorRepository.findById(mentorId)
                 .orElseThrow(() -> new MentorNotFoundException("Mentor not found with ID: " + mentorId));
-
         profile.setRating(newRating);
         mentorRepository.save(profile);
-    }
-
-    private MentorProfileResponseDto mapToDto(MentorProfile profile) {
-        return MentorProfileResponseDto.builder()
-                .id(profile.getId())
-                .userId(profile.getUserId())
-                .status(profile.getStatus() != null ? profile.getStatus().name() : null)
-                .isApproved(profile.getIsApproved())
-                .approvedBy(profile.getApprovedBy())
-                .approvalDate(profile.getApprovalDate())
-                .specialization(profile.getSpecialization())
-                .yearsOfExperience(profile.getYearsOfExperience())
-                .hourlyRate(profile.getHourlyRate())
-                .rating(profile.getRating())
-                .totalStudents(profile.getTotalStudents())
-                .availabilityStatus(profile.getAvailabilityStatus() != null
-                        ? profile.getAvailabilityStatus().name() : null)
-                .createdAt(profile.getCreatedAt())
-                .updatedAt(profile.getUpdatedAt())
-                .build();
     }
 }

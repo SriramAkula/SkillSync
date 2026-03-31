@@ -3,9 +3,11 @@ package com.skillsync.review.entity;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
+import com.skillsync.review.audit.Auditable;
+
 @Entity
 @Table(name = "reviews")
-public class Review {
+public class Review extends Auditable {
     
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

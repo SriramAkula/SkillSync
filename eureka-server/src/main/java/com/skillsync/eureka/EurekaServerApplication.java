@@ -16,7 +16,7 @@ public class EurekaServerApplication {
 
 	public static void main(String[] args) {
 		SpringApplication.run(EurekaServerApplication.class, args);
-		System.out.println("✓ Eureka Server Started on port 8761");
+		System.out.println("[OK] Eureka Server Started on port 8761");
 		System.out.println("  Dashboard: http://localhost:8761");
 	}
 

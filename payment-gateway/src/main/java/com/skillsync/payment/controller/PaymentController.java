@@ -25,7 +25,7 @@ public class PaymentController {
     }
 
     /**
-     * STEP 1 — Start saga when session is created.
+     * STEP 1 - Start saga when session is created.
      * Called by session-service or learner flow.
      */
     @PostMapping("/start-saga")
@@ -39,7 +39,7 @@ public class PaymentController {
     }
 
     /**
-     * STEP 2 — Mentor accepted (REST fallback).
+     * STEP 2 - Mentor accepted (REST fallback).
      * Normally triggered via session.accepted RabbitMQ event.
      * Creates Razorpay order and returns order_id for frontend checkout.
      */
@@ -55,9 +55,9 @@ public class PaymentController {
     }
 
     /**
-     * STEP 3 — Verify payment after Razorpay Checkout completes.
+     * STEP 3 - Verify payment after Razorpay Checkout completes.
      * Frontend sends razorpay_order_id, razorpay_payment_id, razorpay_signature.
-     * Backend verifies signature → confirms payment → marks session CONFIRMED.
+     * Backend verifies signature -> confirms payment -> marks session CONFIRMED.
      */
     @PostMapping("/verify")
     @Operation(summary = "Verify Razorpay payment",
@@ -70,7 +70,7 @@ public class PaymentController {
     }
 
     /**
-     * STEP 4 — Initiate refund on cancellation (REST fallback).
+     * STEP 4 - Initiate refund on cancellation (REST fallback).
      * Normally triggered via session.cancelled RabbitMQ event.
      */
     @PostMapping("/refund")

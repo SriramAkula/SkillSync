@@ -11,6 +11,6 @@ import org.springframework.cloud.openfeign.EnableFeignClients;
 public class PaymentGatewayApplication {
     public static void main(String[] args) {
         SpringApplication.run(PaymentGatewayApplication.class, args);
-        System.out.println("✓ Payment Gateway Started on port 8089");
+        System.out.println("[OK] Payment Gateway Started on port 8089");
     }
 }

@@ -35,21 +35,27 @@ public class RedisConfig implements CachingConfigurer {
     @Value("${spring.data.redis.port:6379}")
     private int redisPort;
 
+    @Value("${redis.command.timeout.seconds:2}")
+    private long commandTimeoutSeconds;
+
+    @Value("${redis.shutdown.timeout.millis:100}")
+    private long shutdownTimeoutMillis;
+
+    @Value("${redis.cache.ttl.minutes:60}")
+    private long cacheTtlMinutes;
+
     @Bean
     public RedisConnectionFactory redisConnectionFactory() {
         RedisStandaloneConfiguration serverConfig = new RedisStandaloneConfiguration(redisHost, redisPort);
         LettuceClientConfiguration clientConfig = LettuceClientConfiguration.builder()
-                .commandTimeout(Duration.ofSeconds(2))
-                .shutdownTimeout(Duration.ofMillis(100))
+                .commandTimeout(Duration.ofSeconds(commandTimeoutSeconds))
+                .shutdownTimeout(Duration.ofMillis(shutdownTimeoutMillis))
                 .build();
         LettuceConnectionFactory factory = new LettuceConnectionFactory(serverConfig, clientConfig);
         factory.setValidateConnection(false);
         return factory;
     }
 
-    /**
-     * String-String RedisTemplate used by OtpService to store OTPs.
-     */
     @Bean
     public RedisTemplate<String, String> redisTemplate(RedisConnectionFactory connectionFactory) {
         RedisTemplate<String, String> template = new RedisTemplate<>();
@@ -67,7 +73,7 @@ public class RedisConfig implements CachingConfigurer {
     @Override
     public CacheManager cacheManager() {
         RedisCacheConfiguration cacheConfig = RedisCacheConfiguration.defaultCacheConfig()
-                .entryTtl(Duration.ofMinutes(60))
+                .entryTtl(Duration.ofMinutes(cacheTtlMinutes))
                 .serializeKeysWith(RedisSerializationContext.SerializationPair
                         .fromSerializer(new StringRedisSerializer()))
                 .disableCachingNullValues();

@@ -51,7 +51,7 @@ public class EmailService {
     
     /**
      * Fetch email for a mentor by mentorId
-     * Workflow: mentorId → fetch mentor profile → extract userId → fetch user email
+     * Workflow: mentorId -> fetch mentor profile -> extract userId -> fetch user email
      */
     private String getEmailForMentor(Long mentorId) {
         try {

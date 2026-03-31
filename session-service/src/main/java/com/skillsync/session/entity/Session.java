@@ -6,12 +6,14 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
+import com.skillsync.session.audit.Auditable;
+
 @Entity
 @Table(name = "sessions", uniqueConstraints = {
     @UniqueConstraint(columnNames = {"mentor_id", "scheduled_at"}, 
                      name = "uk_mentor_scheduled_time")
 })
-public class Session {
+public class Session extends Auditable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

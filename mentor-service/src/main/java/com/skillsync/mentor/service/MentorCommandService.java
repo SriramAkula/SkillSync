@@ -9,6 +9,7 @@ import com.skillsync.mentor.entity.MentorProfile;
 import com.skillsync.mentor.entity.MentorStatus;
 import com.skillsync.mentor.exception.MentorAlreadyExistsException;
 import com.skillsync.mentor.exception.MentorNotFoundException;
+import com.skillsync.mentor.mapper.MentorMapper;
 import com.skillsync.mentor.repository.MentorRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,10 +20,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.concurrent.TimeUnit;
 
-/**
- * CQRS Command Service — handles all write operations for MentorProfile.
- * After every write, the corresponding Redis cache entry is updated or evicted.
- */
 @Service
 public class MentorCommandService {
 
@@ -33,13 +30,16 @@ public class MentorCommandService {
     private final MentorRepository mentorRepository;
     private final RedisTemplate<String, Object> redisTemplate;
     private final AuthServiceClient authServiceClient;
+    private final MentorMapper mentorMapper;
 
     public MentorCommandService(MentorRepository mentorRepository,
                                 RedisTemplate<String, Object> redisTemplate,
-                                AuthServiceClient authServiceClient) {
+                                AuthServiceClient authServiceClient,
+                                MentorMapper mentorMapper) {
         this.mentorRepository = mentorRepository;
         this.redisTemplate = redisTemplate;
         this.authServiceClient = authServiceClient;
+        this.mentorMapper = mentorMapper;
     }
 
     @Transactional
@@ -48,18 +48,8 @@ public class MentorCommandService {
         if (mentorRepository.existsByUserId(userId)) {
             throw new MentorAlreadyExistsException("User has already applied as a mentor");
         }
-
-        MentorProfile profile = new MentorProfile();
-        profile.setUserId(userId);
-        profile.setSpecialization(request.getSpecialization());
-        profile.setYearsOfExperience(request.getYearsOfExperience());
-        profile.setHourlyRate(request.getHourlyRate());
-        profile.setStatus(MentorStatus.PENDING);
-        profile.setIsApproved(false);
-        profile.setAvailabilityStatus(AvailabilityStatus.AVAILABLE);
-
-        MentorProfile saved = mentorRepository.save(profile);
-        MentorProfileResponseDto response = mapToDto(saved);
+        MentorProfile saved = mentorRepository.save(mentorMapper.toEntity(userId, request));
+        MentorProfileResponseDto response = mentorMapper.toDto(saved);
         updateCache(saved.getId(), response);
         log.info("Mentor application submitted for userId: {}, mentorId: {}", userId, saved.getId());
         return response;
@@ -69,19 +59,16 @@ public class MentorCommandService {
     public MentorProfileResponseDto approveMentor(Long mentorId, Long adminId) {
         log.info("Admin {} approving mentor {}", adminId, mentorId);
         MentorProfile profile = findOrThrow(mentorId);
-
         profile.setStatus(MentorStatus.APPROVED);
         profile.setIsApproved(true);
         profile.setApprovedBy(adminId);
         profile.setApprovalDate(LocalDateTime.now());
-
         try {
             authServiceClient.addUserRole(profile.getUserId(), "ROLE_MENTOR");
         } catch (Exception e) {
             log.warn("Failed to update role via Feign for userId {}: {}", profile.getUserId(), e.getMessage());
         }
-
-        MentorProfileResponseDto response = mapToDto(mentorRepository.save(profile));
+        MentorProfileResponseDto response = mentorMapper.toDto(mentorRepository.save(profile));
         updateCache(mentorId, response);
         return response;
     }
@@ -90,12 +77,10 @@ public class MentorCommandService {
     public MentorProfileResponseDto rejectMentor(Long mentorId, Long adminId) {
         log.info("Admin {} rejecting mentor {}", adminId, mentorId);
         MentorProfile profile = findOrThrow(mentorId);
-
         profile.setStatus(MentorStatus.REJECTED);
         profile.setIsApproved(false);
         profile.setApprovedBy(adminId);
-
-        MentorProfileResponseDto response = mapToDto(mentorRepository.save(profile));
+        MentorProfileResponseDto response = mentorMapper.toDto(mentorRepository.save(profile));
         updateCache(mentorId, response);
         return response;
     }
@@ -104,11 +89,9 @@ public class MentorCommandService {
     public MentorProfileResponseDto suspendMentor(Long mentorId, Long adminId) {
         log.info("Admin {} suspending mentor {}", adminId, mentorId);
         MentorProfile profile = findOrThrow(mentorId);
-
         profile.setStatus(MentorStatus.SUSPENDED);
         profile.setIsApproved(false);
-
-        MentorProfileResponseDto response = mapToDto(mentorRepository.save(profile));
+        MentorProfileResponseDto response = mentorMapper.toDto(mentorRepository.save(profile));
         updateCache(mentorId, response);
         return response;
     }
@@ -118,10 +101,8 @@ public class MentorCommandService {
         log.info("Updating availability for userId: {}", userId);
         MentorProfile profile = mentorRepository.findByUserId(userId)
                 .orElseThrow(() -> new MentorNotFoundException("Mentor profile not found for userId: " + userId));
-
         profile.setAvailabilityStatus(AvailabilityStatus.valueOf(request.getAvailabilityStatus()));
-
-        MentorProfileResponseDto response = mapToDto(mentorRepository.save(profile));
+        MentorProfileResponseDto response = mentorMapper.toDto(mentorRepository.save(profile));
         updateCache(profile.getId(), response);
         return response;
     }
@@ -131,12 +112,9 @@ public class MentorCommandService {
         log.info("Updating rating for mentorId: {} to {}", mentorId, newRating);
         MentorProfile profile = findOrThrow(mentorId);
         profile.setRating(newRating);
-
-        MentorProfileResponseDto response = mapToDto(mentorRepository.save(profile));
+        MentorProfileResponseDto response = mentorMapper.toDto(mentorRepository.save(profile));
         updateCache(mentorId, response);
     }
-
-    // --- Cache helpers ---
 
     private void updateCache(Long mentorId, MentorProfileResponseDto response) {
         try {
@@ -158,30 +136,8 @@ public class MentorCommandService {
         }
     }
 
-    // --- Helpers ---
-
     private MentorProfile findOrThrow(Long mentorId) {
         return mentorRepository.findById(mentorId)
                 .orElseThrow(() -> new MentorNotFoundException("Mentor not found with ID: " + mentorId));
-    }
-
-    private MentorProfileResponseDto mapToDto(MentorProfile profile) {
-        return MentorProfileResponseDto.builder()
-                .id(profile.getId())
-                .userId(profile.getUserId())
-                .status(profile.getStatus() != null ? profile.getStatus().name() : null)
-                .isApproved(profile.getIsApproved())
-                .approvedBy(profile.getApprovedBy())
-                .approvalDate(profile.getApprovalDate())
-                .specialization(profile.getSpecialization())
-                .yearsOfExperience(profile.getYearsOfExperience())
-                .hourlyRate(profile.getHourlyRate())
-                .rating(profile.getRating())
-                .totalStudents(profile.getTotalStudents())
-                .availabilityStatus(profile.getAvailabilityStatus() != null
-                        ? profile.getAvailabilityStatus().name() : null)
-                .createdAt(profile.getCreatedAt())
-                .updatedAt(profile.getUpdatedAt())
-                .build();
     }
 }

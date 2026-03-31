@@ -251,7 +251,7 @@ class MentorControllerTest {
                 .createdAt(LocalDateTime.now()).updatedAt(LocalDateTime.now()).build();
         when(mentorService.approveMentor(1L, 99L)).thenReturn(approved);
 
-        // MentorProfileResponseDto has manual getIsApproved() getter → Jackson serializes as "isApproved"
+        // MentorProfileResponseDto has manual getIsApproved() getter -> Jackson serializes as "isApproved"
         mockMvc.perform(put("/mentor/1/approve")
                         .header("X-User-Id", 99L)
                         .header("roles", "ROLE_ADMIN"))

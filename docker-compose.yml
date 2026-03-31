@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # Zipkin Distributed Tracing
   zipkin:
@@ -7,13 +5,15 @@ services:
     container_name: zipkin-server
     ports:
       - "9411:9411"
+    env_file:
+      - .env
     environment:
       STORAGE_TYPE: mysql
       MYSQL_HOST: zipkin-mysql
       MYSQL_PORT: 3306
-      MYSQL_USER: zipkin
-      MYSQL_PASS: zipkin123
-      MYSQL_DB: zipkin
+      MYSQL_USER: ${ZIPKIN_MYSQL_USER}
+      MYSQL_PASS: ${ZIPKIN_MYSQL_PASSWORD}
+      MYSQL_DB: ${ZIPKIN_MYSQL_DATABASE}
     depends_on:
       zipkin-mysql:
         condition: service_healthy
@@ -24,15 +24,18 @@ services:
   zipkin-mysql:
     image: mysql:8.0
     container_name: zipkin-mysql
+    env_file:
+      - .env
     environment:
-      MYSQL_ROOT_PASSWORD: root123
-      MYSQL_DATABASE: zipkin
-      MYSQL_USER: zipkin
-      MYSQL_PASSWORD: zipkin123
+      MYSQL_ROOT_PASSWORD: ${ZIPKIN_MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${ZIPKIN_MYSQL_DATABASE}
+      MYSQL_USER: ${ZIPKIN_MYSQL_USER}
+      MYSQL_PASSWORD: ${ZIPKIN_MYSQL_PASSWORD}
     ports:
       - "3307:3306"
     volumes:
       - zipkin-mysql-data:/var/lib/mysql
+      - ./zipkin-schema.sql:/docker-entrypoint-initdb.d/zipkin-schema.sql
     networks:
       - skillsync-network
     command: --default-authentication-plugin=mysql_native_password
@@ -46,10 +49,12 @@ services:
   mysql:
     image: mysql:8.0
     container_name: skillsync-mysql
+    env_file:
+      - .env
     environment:
-      MYSQL_ROOT_PASSWORD: 1234
-      MYSQL_DATABASE: skill_auth
-      MYSQL_ROOT_HOST: '%'
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_MAIN_DATABASE}
+      MYSQL_ROOT_HOST: ${MYSQL_ROOT_HOST}
     ports:
       - "3308:3306"
     volumes:
@@ -96,17 +101,20 @@ services:
   eureka-server:
     image: maven:3.9-eclipse-temurin-17
     container_name: eureka-server
+    restart: on-failure
     working_dir: /app
     volumes:
       - ./eureka-server:/app
       - maven-repo:/root/.m2
     ports:
       - "8761:8761"
+    env_file:
+      - .env
     environment:
-      JAVA_OPTS: "-Dspring.profiles.active=docker"
-      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: "http://zipkin:9411/api/v2/spans"
-      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: "1.0"
-    command: bash -c "mvn clean spring-boot:run"
+      JAVA_OPTS: "-Dspring.profiles.active=${SPRING_PROFILES_ACTIVE}"
+      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: ${ZIPKIN_ENDPOINT}
+      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: ${TRACING_SAMPLING_PROBABILITY}
+    command: bash -c "mvn spring-boot:run -Dspring-boot.run.jvmArguments='-Dspring.profiles.active=${SPRING_PROFILES_ACTIVE}'"
     depends_on:
       zipkin:
         condition: service_started
@@ -117,18 +125,21 @@ services:
   api-gateway:
     image: maven:3.9-eclipse-temurin-21
     container_name: api-gateway
+    restart: on-failure
     working_dir: /app
     volumes:
       - ./api-gateway:/app
       - maven-repo:/root/.m2
     ports:
       - "9090:9090"
+    env_file:
+      - .env
     environment:
-      JAVA_OPTS: "-Dspring.profiles.active=docker"
-      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: "http://zipkin:9411/api/v2/spans"
-      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: "1.0"
-      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://eureka-server:8761/eureka/"
-    command: bash -c "mvn clean spring-boot:run"
+      JAVA_OPTS: "-Dspring.profiles.active=${SPRING_PROFILES_ACTIVE}"
+      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: ${ZIPKIN_ENDPOINT}
+      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: ${TRACING_SAMPLING_PROBABILITY}
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_DEFAULT_ZONE}
+    command: bash -c "mvn spring-boot:run -Dspring-boot.run.jvmArguments='-Dspring.profiles.active=${SPRING_PROFILES_ACTIVE}'"
     depends_on:
       mysql:
         condition: service_healthy
@@ -143,18 +154,21 @@ services:
   auth-service:
     image: maven:3.9-eclipse-temurin-17
     container_name: auth-service
+    restart: on-failure
     working_dir: /app
     volumes:
       - ./auth-service:/app
       - maven-repo:/root/.m2
     ports:
       - "8081:8081"
+    env_file:
+      - .env
     environment:
-      JAVA_OPTS: "-Dspring.profiles.active=docker"
-      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: "http://zipkin:9411/api/v2/spans"
-      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: "1.0"
-      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://eureka-server:8761/eureka/"
-    command: bash -c "mvn clean spring-boot:run"
+      JAVA_OPTS: "-Dspring.profiles.active=${SPRING_PROFILES_ACTIVE}"
+      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: ${ZIPKIN_ENDPOINT}
+      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: ${TRACING_SAMPLING_PROBABILITY}
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_DEFAULT_ZONE}
+    command: bash -c "mvn spring-boot:run -Dspring-boot.run.jvmArguments='-Dspring.profiles.active=${SPRING_PROFILES_ACTIVE}'"
     depends_on:
       mysql:
         condition: service_healthy
@@ -171,20 +185,23 @@ services:
   user-service:
     image: maven:3.9-eclipse-temurin-17
     container_name: user-service
+    restart: on-failure
     working_dir: /app
     volumes:
       - ./user-service:/app
       - maven-repo:/root/.m2
     ports:
       - "8082:8082"
+    env_file:
+      - .env
     environment:
-      JAVA_OPTS: "-Dspring.profiles.active=docker"
-      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: "http://zipkin:9411/api/v2/spans"
-      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: "1.0"
-      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://eureka-server:8761/eureka/"
-      SPRING_DATA_REDIS_HOST: "redis"
-      SPRING_DATA_REDIS_PORT: "6379"
-    command: bash -c "mvn clean spring-boot:run"
+      JAVA_OPTS: "-Dspring.profiles.active=${SPRING_PROFILES_ACTIVE}"
+      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: ${ZIPKIN_ENDPOINT}
+      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: ${TRACING_SAMPLING_PROBABILITY}
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_DEFAULT_ZONE}
+      SPRING_DATA_REDIS_HOST: ${REDIS_HOST}
+      SPRING_DATA_REDIS_PORT: ${REDIS_PORT}
+    command: bash -c "mvn spring-boot:run -Dspring-boot.run.jvmArguments='-Dspring.profiles.active=${SPRING_PROFILES_ACTIVE}'"
     depends_on:
       mysql:
         condition: service_healthy
@@ -203,20 +220,23 @@ services:
   skill-service:
     image: maven:3.9-eclipse-temurin-17
     container_name: skill-service
+    restart: on-failure
     working_dir: /app
     volumes:
       - ./skill-service:/app
       - maven-repo:/root/.m2
     ports:
       - "8083:8083"
+    env_file:
+      - .env
     environment:
-      JAVA_OPTS: "-Dspring.profiles.active=docker"
-      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: "http://zipkin:9411/api/v2/spans"
-      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: "1.0"
-      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://eureka-server:8761/eureka/"
-      SPRING_DATA_REDIS_HOST: "redis"
-      SPRING_DATA_REDIS_PORT: "6379"
-    command: bash -c "mvn clean spring-boot:run"
+      JAVA_OPTS: "-Dspring.profiles.active=${SPRING_PROFILES_ACTIVE}"
+      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: ${ZIPKIN_ENDPOINT}
+      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: ${TRACING_SAMPLING_PROBABILITY}
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_DEFAULT_ZONE}
+      SPRING_DATA_REDIS_HOST: ${REDIS_HOST}
+      SPRING_DATA_REDIS_PORT: ${REDIS_PORT}
+    command: bash -c "mvn spring-boot:run -Dspring-boot.run.jvmArguments='-Dspring.profiles.active=${SPRING_PROFILES_ACTIVE}'"
     depends_on:
       mysql:
         condition: service_healthy
@@ -233,20 +253,23 @@ services:
   session-service:
     image: maven:3.9-eclipse-temurin-17
     container_name: session-service
+    restart: on-failure
     working_dir: /app
     volumes:
       - ./session-service:/app
       - maven-repo:/root/.m2
     ports:
       - "8084:8084"
+    env_file:
+      - .env
     environment:
-      JAVA_OPTS: "-Dspring.profiles.active=docker"
-      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: "http://zipkin:9411/api/v2/spans"
-      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: "1.0"
-      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://eureka-server:8761/eureka/"
-      SPRING_DATA_REDIS_HOST: "redis"
-      SPRING_DATA_REDIS_PORT: "6379"
-    command: bash -c "mvn clean spring-boot:run"
+      JAVA_OPTS: "-Dspring.profiles.active=${SPRING_PROFILES_ACTIVE}"
+      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: ${ZIPKIN_ENDPOINT}
+      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: ${TRACING_SAMPLING_PROBABILITY}
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_DEFAULT_ZONE}
+      SPRING_DATA_REDIS_HOST: ${REDIS_HOST}
+      SPRING_DATA_REDIS_PORT: ${REDIS_PORT}
+    command: bash -c "mvn spring-boot:run -Dspring-boot.run.jvmArguments='-Dspring.profiles.active=${SPRING_PROFILES_ACTIVE}'"
     depends_on:
       mysql:
         condition: service_healthy
@@ -263,20 +286,23 @@ services:
   mentor-service:
     image: maven:3.9-eclipse-temurin-17
     container_name: mentor-service
+    restart: on-failure
     working_dir: /app
     volumes:
       - ./mentor-service:/app
       - maven-repo:/root/.m2
     ports:
       - "8085:8085"
+    env_file:
+      - .env
     environment:
-      JAVA_OPTS: "-Dspring.profiles.active=docker"
-      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: "http://zipkin:9411/api/v2/spans"
-      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: "1.0"
-      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://eureka-server:8761/eureka/"
-      SPRING_DATA_REDIS_HOST: "redis"
-      SPRING_DATA_REDIS_PORT: "6379"
-    command: bash -c "mvn clean spring-boot:run"
+      JAVA_OPTS: "-Dspring.profiles.active=${SPRING_PROFILES_ACTIVE}"
+      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: ${ZIPKIN_ENDPOINT}
+      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: ${TRACING_SAMPLING_PROBABILITY}
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_DEFAULT_ZONE}
+      SPRING_DATA_REDIS_HOST: ${REDIS_HOST}
+      SPRING_DATA_REDIS_PORT: ${REDIS_PORT}
+    command: bash -c "mvn spring-boot:run -Dspring-boot.run.jvmArguments='-Dspring.profiles.active=${SPRING_PROFILES_ACTIVE}'"
     depends_on:
       mysql:
         condition: service_healthy
@@ -293,20 +319,23 @@ services:
   group-service:
     image: maven:3.9-eclipse-temurin-17
     container_name: group-service
+    restart: on-failure
     working_dir: /app
     volumes:
       - ./group-service:/app
       - maven-repo:/root/.m2
     ports:
       - "8086:8086"
+    env_file:
+      - .env
     environment:
-      JAVA_OPTS: "-Dspring.profiles.active=docker"
-      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: "http://zipkin:9411/api/v2/spans"
-      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: "1.0"
-      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://eureka-server:8761/eureka/"
-      SPRING_DATA_REDIS_HOST: "redis"
-      SPRING_DATA_REDIS_PORT: "6379"
-    command: bash -c "mvn clean spring-boot:run"
+      JAVA_OPTS: "-Dspring.profiles.active=${SPRING_PROFILES_ACTIVE}"
+      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: ${ZIPKIN_ENDPOINT}
+      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: ${TRACING_SAMPLING_PROBABILITY}
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_DEFAULT_ZONE}
+      SPRING_DATA_REDIS_HOST: ${REDIS_HOST}
+      SPRING_DATA_REDIS_PORT: ${REDIS_PORT}
+    command: bash -c "mvn spring-boot:run -Dspring-boot.run.jvmArguments='-Dspring.profiles.active=${SPRING_PROFILES_ACTIVE}'"
     depends_on:
       mysql:
         condition: service_healthy
@@ -323,20 +352,23 @@ services:
   review-service:
     image: maven:3.9-eclipse-temurin-17
     container_name: review-service
+    restart: on-failure
     working_dir: /app
     volumes:
       - ./review-service:/app
       - maven-repo:/root/.m2
     ports:
       - "8087:8087"
+    env_file:
+      - .env
     environment:
-      JAVA_OPTS: "-Dspring.profiles.active=docker"
-      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: "http://zipkin:9411/api/v2/spans"
-      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: "1.0"
-      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://eureka-server:8761/eureka/"
-      SPRING_DATA_REDIS_HOST: "redis"
-      SPRING_DATA_REDIS_PORT: "6379"
-    command: bash -c "mvn clean spring-boot:run"
+      JAVA_OPTS: "-Dspring.profiles.active=${SPRING_PROFILES_ACTIVE}"
+      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: ${ZIPKIN_ENDPOINT}
+      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: ${TRACING_SAMPLING_PROBABILITY}
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_DEFAULT_ZONE}
+      SPRING_DATA_REDIS_HOST: ${REDIS_HOST}
+      SPRING_DATA_REDIS_PORT: ${REDIS_PORT}
+    command: bash -c "mvn spring-boot:run -Dspring-boot.run.jvmArguments='-Dspring.profiles.active=${SPRING_PROFILES_ACTIVE}'"
     depends_on:
       mysql:
         condition: service_healthy
@@ -353,18 +385,21 @@ services:
   notification-service:
     image: maven:3.9-eclipse-temurin-17
     container_name: notification-service
+    restart: on-failure
     working_dir: /app
     volumes:
       - ./notification-service:/app
       - maven-repo:/root/.m2
     ports:
       - "8088:8088"
+    env_file:
+      - .env
     environment:
-      JAVA_OPTS: "-Dspring.profiles.active=docker"
-      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: "http://zipkin:9411/api/v2/spans"
-      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: "1.0"
-      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://eureka-server:8761/eureka/"
-    command: bash -c "mvn clean spring-boot:run"
+      JAVA_OPTS: "-Dspring.profiles.active=${SPRING_PROFILES_ACTIVE}"
+      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: ${ZIPKIN_ENDPOINT}
+      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: ${TRACING_SAMPLING_PROBABILITY}
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_DEFAULT_ZONE}
+    command: bash -c "mvn spring-boot:run -Dspring-boot.run.jvmArguments='-Dspring.profiles.active=${SPRING_PROFILES_ACTIVE}'"
     depends_on:
       mysql:
         condition: service_healthy
@@ -381,18 +416,21 @@ services:
   payment-gateway:
     image: maven:3.9-eclipse-temurin-17
     container_name: payment-gateway
+    restart: on-failure
     working_dir: /app
     volumes:
       - ./payment-gateway:/app
       - maven-repo:/root/.m2
     ports:
       - "8089:8089"
+    env_file:
+      - .env
     environment:
-      JAVA_OPTS: "-Dspring.profiles.active=docker"
-      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: "http://zipkin:9411/api/v2/spans"
-      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: "1.0"
-      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://eureka-server:8761/eureka/"
-    command: bash -c "mvn clean spring-boot:run"
+      JAVA_OPTS: "-Dspring.profiles.active=${SPRING_PROFILES_ACTIVE}"
+      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: ${ZIPKIN_ENDPOINT}
+      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: ${TRACING_SAMPLING_PROBABILITY}
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_DEFAULT_ZONE}
+    command: bash -c "mvn spring-boot:run -Dspring-boot.run.jvmArguments='-Dspring.profiles.active=${SPRING_PROFILES_ACTIVE}'"
     depends_on:
       mysql:
         condition: service_healthy
@@ -405,57 +443,113 @@ services:
     networks:
       - skillsync-network
 
-  # Elasticsearch for ELK Stack
-  elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
-    container_name: elasticsearch
-    environment:
-      discovery.type: single-node
-      xpack.security.enabled: "false"
-      ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+  # Loki - Log aggregation
+  loki:
+    image: grafana/loki:latest
+    container_name: loki
     ports:
-      - "9200:9200"
-      - "9300:9300"
+      - "3100:3100"
     volumes:
-      - elasticsearch-data:/usr/share/elasticsearch/data
+      - ./loki-config.yml:/etc/loki/loki-config.yml
+      - loki-data:/loki
+    command: -config.file=/etc/loki/loki-config.yml
+    networks:
+      - skillsync-network
+
+  # Promtail - Log collector
+  promtail:
+    image: grafana/promtail:latest
+    container_name: promtail
+    volumes:
+      - ./promtail-config.yml:/etc/promtail/promtail-config.yml
+      - ./auth-service/logs:/logs/auth-service
+      - ./user-service/logs:/logs/user-service
+      - ./skill-service/logs:/logs/skill-service
+      - ./session-service/logs:/logs/session-service
+      - ./mentor-service/logs:/logs/mentor-service
+      - ./group-service/logs:/logs/group-service
+      - ./review-service/logs:/logs/review-service
+      - ./notification-service/logs:/logs/notification-service
+      - ./payment-gateway/logs:/logs/payment-gateway
+      - ./api-gateway/logs:/logs/api-gateway
+    command: -config.file=/etc/promtail/promtail-config.yml
+    depends_on:
+      - loki
+    networks:
+      - skillsync-network
+
+  # SonarQube - Code Quality
+  sonarqube:
+    image: sonarqube:community
+    container_name: sonarqube
+    ports:
+      - "9000:9000"
+    env_file:
+      - .env
+    environment:
+      SONAR_JDBC_URL: jdbc:postgresql://sonar-db:5432/${SONAR_POSTGRES_DB}
+      SONAR_JDBC_USERNAME: ${SONAR_POSTGRES_USER}
+      SONAR_JDBC_PASSWORD: ${SONAR_POSTGRES_PASSWORD}
+    volumes:
+      - sonarqube-data:/opt/sonarqube/data
+      - sonarqube-logs:/opt/sonarqube/logs
+      - sonarqube-extensions:/opt/sonarqube/extensions
+    depends_on:
+      sonar-db:
+        condition: service_healthy
+    networks:
+      - skillsync-network
+
+  # PostgreSQL for SonarQube
+  sonar-db:
+    image: postgres:15
+    container_name: sonar-db
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: ${SONAR_POSTGRES_USER}
+      POSTGRES_PASSWORD: ${SONAR_POSTGRES_PASSWORD}
+      POSTGRES_DB: ${SONAR_POSTGRES_DB}
+    volumes:
+      - sonar-db-data:/var/lib/postgresql/data
     networks:
       - skillsync-network
     healthcheck:
-      test: ["CMD-SHELL", "curl -s http://localhost:9200/_cluster/health || exit 1"]
+      test: ["CMD-SHELL", "pg_isready -U ${SONAR_POSTGRES_USER}"]
       interval: 10s
       timeout: 5s
       retries: 5
 
-  # Logstash for ELK Stack
-  logstash:
-    image: docker.elastic.co/logstash/logstash:8.11.0
-    container_name: logstash
-    volumes:
-      - ./logstash.conf:/usr/share/logstash/pipeline/logstash.conf
-      - logstash-data:/usr/share/logstash/data
+  # Prometheus
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
     ports:
-      - "5000:5000"
-      - "9600:9600"
-    environment:
-      LS_JAVA_OPTS: "-Xmx256m -Xms256m"
-    command: logstash -f /usr/share/logstash/pipeline/logstash.conf
-    depends_on:
-      elasticsearch:
-        condition: service_healthy
+      - "9091:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
     networks:
       - skillsync-network
 
-  # Kibana for ELK Stack
-  kibana:
-    image: docker.elastic.co/kibana/kibana:8.11.0
-    container_name: kibana
+  # Grafana
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
     ports:
-      - "5601:5601"
+      - "3000:3000"
+    env_file:
+      - .env
     environment:
-      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD}
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
+      - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards
+      - ./grafana/dashboards:/etc/grafana/dashboards
     depends_on:
-      elasticsearch:
-        condition: service_healthy
+      - prometheus
     networks:
       - skillsync-network
 
@@ -470,8 +564,17 @@ volumes:
     driver: local
   maven-repo:
     driver: local
-  elasticsearch-data:
+  prometheus-data:
     driver: local
-  logstash-data:
+  grafana-data:
     driver: local
-
+  loki-data:
+    driver: local
+  sonarqube-data:
+    driver: local
+  sonarqube-logs:
+    driver: local
+  sonarqube-extensions:
+    driver: local
+  sonar-db-data:
+    driver: local

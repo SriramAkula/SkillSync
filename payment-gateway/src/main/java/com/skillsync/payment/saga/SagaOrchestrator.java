@@ -10,6 +10,8 @@ import com.skillsync.payment.entity.PaymentSaga;
 import com.skillsync.payment.enums.SagaStatus;
 import com.skillsync.payment.exception.DuplicateSagaException;
 import com.skillsync.payment.exception.SagaNotFoundException;
+import com.skillsync.payment.audit.AuditService;
+import com.skillsync.payment.mapper.PaymentSagaMapper;
 import com.skillsync.payment.repository.PaymentSagaRepository;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.retry.annotation.Retry;
@@ -32,45 +34,44 @@ public class SagaOrchestrator {
     private final MentorServiceClient mentorServiceClient;
     private final SessionServiceClient sessionServiceClient;
     private final PaymentProcessor paymentProcessor;
+    private final PaymentSagaMapper sagaMapper;
+    private final AuditService auditService;
 
     public SagaOrchestrator(PaymentSagaRepository sagaRepository,
                              MentorServiceClient mentorServiceClient,
                              SessionServiceClient sessionServiceClient,
-                             PaymentProcessor paymentProcessor) {
+                             PaymentProcessor paymentProcessor,
+                             PaymentSagaMapper sagaMapper,
+                             AuditService auditService) {
         this.sagaRepository = sagaRepository;
         this.mentorServiceClient = mentorServiceClient;
         this.sessionServiceClient = sessionServiceClient;
         this.paymentProcessor = paymentProcessor;
+        this.sagaMapper = sagaMapper;
+        this.auditService = auditService;
     }
 
     // ─────────────────────────────────────────────────────────────
-    // STEP 1: Start Saga — called when session is created
+    // STEP 1: Start Saga
     // ─────────────────────────────────────────────────────────────
     @Transactional
     public SagaResponse startSaga(StartSagaRequest request) {
-        // Idempotency — prevent duplicate sagas for same session
         if (sagaRepository.existsBySessionIdAndStatusIn(request.getSessionId(),
                 List.of(SagaStatus.INITIATED, SagaStatus.PAYMENT_PENDING,
                         SagaStatus.PAYMENT_PROCESSING, SagaStatus.COMPLETED))) {
             throw new DuplicateSagaException("Saga already exists for sessionId=" + request.getSessionId());
         }
-
-        PaymentSaga saga = new PaymentSaga();
-        saga.setSessionId(request.getSessionId());
-        saga.setLearnerId(request.getLearnerId());
-        saga.setMentorId(request.getMentorId());
-        saga.setDurationMinutes(request.getDurationMinutes());
-        saga.setCorrelationId(UUID.randomUUID().toString());
-        saga.setStatus(SagaStatus.INITIATED);
+        PaymentSaga saga = sagaMapper.toEntity(request);
         saga = sagaRepository.save(saga);
-
-        log.info("[SAGA][{}] Started — sessionId={}, mentorId={}, learnerId={}",
+        auditService.log("PaymentSaga", saga.getId(), "SAGA_STARTED",
+                saga.getLearnerId().toString(), "sessionId=" + saga.getSessionId());
+        log.info("[SAGA][{}] Started - sessionId={}, mentorId={}, learnerId={}",
                 saga.getCorrelationId(), saga.getSessionId(), saga.getMentorId(), saga.getLearnerId());
-        return toResponse(saga);
+        return sagaMapper.toDto(saga);
     }
 
     // ─────────────────────────────────────────────────────────────
-    // STEP 2: Mentor Accepted — create Razorpay order, return to frontend
+    // STEP 2: Mentor Accepted - create Razorpay order
     // ─────────────────────────────────────────────────────────────
     @Transactional
     public SagaResponse onSessionAccepted(Long sessionId, Long mentorId, Long learnerId) {
@@ -87,31 +88,26 @@ public class SagaOrchestrator {
                 });
 
         if (saga.getStatus() != SagaStatus.INITIATED) {
-            log.warn("[SAGA][{}] Ignoring session.accepted — current status={}",
+            log.warn("[SAGA][{}] Ignoring session.accepted - current status={}",
                     saga.getCorrelationId(), saga.getStatus());
-            return toResponse(saga);
+            return sagaMapper.toDto(saga);
         }
 
         try {
-            // Fetch mentor hourly rate
             BigDecimal hourlyRate = fetchMentorRate(saga.getMentorId());
             saga.setHourlyRate(hourlyRate);
-
-            // Calculate amount
             BigDecimal durationHours = BigDecimal.valueOf(saga.getDurationMinutes())
                     .divide(BigDecimal.valueOf(60), 4, RoundingMode.HALF_UP);
             BigDecimal amount = hourlyRate.multiply(durationHours).setScale(2, RoundingMode.HALF_UP);
             saga.setAmount(amount);
-
-            // Create Razorpay order — returns order_id for frontend checkout
             String razorpayOrderId = paymentProcessor.createOrder(saga.getCorrelationId(), amount);
-            saga.setPaymentReference(razorpayOrderId); // store order_id temporarily
+            saga.setPaymentReference(razorpayOrderId);
             saga.setStatus(SagaStatus.PAYMENT_PENDING);
             sagaRepository.save(saga);
-
+            auditService.log("PaymentSaga", saga.getId(), "ORDER_CREATED",
+                    saga.getLearnerId().toString(), "orderId=" + razorpayOrderId + ",amount=" + amount);
             log.info("[SAGA][{}] Razorpay order created. orderId={}, amount={}",
                     saga.getCorrelationId(), razorpayOrderId, amount);
-
         } catch (Exception e) {
             log.error("[SAGA][{}] Failed to create Razorpay order: {}", saga.getCorrelationId(), e.getMessage());
             saga.setStatus(SagaStatus.FAILED);
@@ -119,11 +115,11 @@ public class SagaOrchestrator {
             sagaRepository.save(saga);
         }
 
-        return toResponse(saga);
+        return sagaMapper.toDto(saga);
     }
 
     // ─────────────────────────────────────────────────────────────
-    // STEP 3: Verify Payment — called by frontend after Razorpay Checkout
+    // STEP 3: Verify Payment
     // ─────────────────────────────────────────────────────────────
     @Transactional
     public SagaResponse verifyAndCompletePayment(VerifyPaymentRequest request) {
@@ -131,43 +127,32 @@ public class SagaOrchestrator {
                 .orElseThrow(() -> new SagaNotFoundException("No saga for sessionId=" + request.getSessionId()));
 
         if (saga.getStatus() != SagaStatus.PAYMENT_PENDING) {
-            log.warn("[SAGA][{}] Verify called but status={}",
-                    saga.getCorrelationId(), saga.getStatus());
-            return toResponse(saga);
+            log.warn("[SAGA][{}] Verify called but status={}", saga.getCorrelationId(), saga.getStatus());
+            return sagaMapper.toDto(saga);
         }
 
         saga.setStatus(SagaStatus.PAYMENT_PROCESSING);
         sagaRepository.save(saga);
 
         try {
-            // 1. Verify Razorpay signature — prevents tampered requests
             paymentProcessor.verifySignature(
                     request.getRazorpayOrderId(),
                     request.getRazorpayPaymentId(),
-                    request.getRazorpaySignature()
-            );
-
-            // 2. Confirm payment is captured on Razorpay
+                    request.getRazorpaySignature());
             String confirmedPaymentId = paymentProcessor.fetchAndConfirmPayment(request.getRazorpayPaymentId());
-
-            // 3. Store final payment_id (replaces order_id)
             saga.setPaymentReference(confirmedPaymentId);
             saga.setStatus(SagaStatus.COMPLETED);
             sagaRepository.save(saga);
-
-            // 4. Update session to CONFIRMED
             updateSessionStatus(saga.getSessionId(), "CONFIRMED");
-
+            auditService.log("PaymentSaga", saga.getId(), "PAYMENT_COMPLETED",
+                    saga.getLearnerId().toString(), "paymentId=" + confirmedPaymentId);
             log.info("[SAGA][{}] Payment COMPLETED. paymentId={}, sessionId={}",
                     saga.getCorrelationId(), confirmedPaymentId, saga.getSessionId());
-
         } catch (Exception e) {
             log.error("[SAGA][{}] Payment verification FAILED: {}", saga.getCorrelationId(), e.getMessage());
             saga.setStatus(SagaStatus.FAILED);
             saga.setFailureReason(e.getMessage());
             sagaRepository.save(saga);
-
-            // Compensation — mark session as PAYMENT_FAILED
             try {
                 updateSessionStatus(saga.getSessionId(), "PAYMENT_FAILED");
             } catch (Exception ex) {
@@ -176,44 +161,40 @@ public class SagaOrchestrator {
             }
         }
 
-        return toResponse(saga);
+        return sagaMapper.toDto(saga);
     }
 
     // ─────────────────────────────────────────────────────────────
-    // STEP 4: Compensation — Refund via Razorpay on cancellation
+    // STEP 4: Refund
     // ─────────────────────────────────────────────────────────────
     @Transactional
     public SagaResponse initiateRefund(Long sessionId) {
         PaymentSaga saga = sagaRepository.findBySessionId(sessionId)
                 .orElseThrow(() -> new SagaNotFoundException("No saga for sessionId=" + sessionId));
 
-        // Only refund if payment was completed
         if (saga.getStatus() != SagaStatus.COMPLETED) {
-            log.warn("[SAGA][{}] Refund skipped — status={} (no payment made)",
+            log.warn("[SAGA][{}] Refund skipped - status={} (no payment made)",
                     saga.getCorrelationId(), saga.getStatus());
-            return toResponse(saga);
+            return sagaMapper.toDto(saga);
         }
 
-        // Idempotency — don't refund twice
         if (saga.getStatus() == SagaStatus.REFUNDED || saga.getStatus() == SagaStatus.REFUND_INITIATED) {
             log.warn("[SAGA][{}] Refund already processed", saga.getCorrelationId());
-            return toResponse(saga);
+            return sagaMapper.toDto(saga);
         }
 
         saga.setStatus(SagaStatus.REFUND_INITIATED);
         sagaRepository.save(saga);
 
         try {
-            // Call Razorpay refund API
             String refundId = paymentProcessor.refund(saga.getPaymentReference(), saga.getAmount());
             saga.setRefundReference(refundId);
             saga.setStatus(SagaStatus.REFUNDED);
             sagaRepository.save(saga);
-
             updateSessionStatus(sessionId, "REFUNDED");
-
+            auditService.log("PaymentSaga", saga.getId(), "REFUND_COMPLETED",
+                    saga.getLearnerId().toString(), "refundId=" + refundId);
             log.info("[SAGA][{}] Refund COMPLETED. refundId={}", saga.getCorrelationId(), refundId);
-
         } catch (Exception e) {
             log.error("[SAGA][{}] Refund FAILED: {}", saga.getCorrelationId(), e.getMessage());
             saga.setStatus(SagaStatus.COMPENSATION_FAILED);
@@ -221,11 +202,11 @@ public class SagaOrchestrator {
             sagaRepository.save(saga);
         }
 
-        return toResponse(saga);
+        return sagaMapper.toDto(saga);
     }
 
     // ─────────────────────────────────────────────────────────────
-    // Mentor Rejected — end saga, no payment
+    // Mentor Rejected
     // ─────────────────────────────────────────────────────────────
     @Transactional
     public void onSessionRejected(Long sessionId) {
@@ -233,7 +214,7 @@ public class SagaOrchestrator {
             if (saga.getStatus() == SagaStatus.INITIATED) {
                 saga.setStatus(SagaStatus.REJECTED);
                 sagaRepository.save(saga);
-                log.info("[SAGA][{}] Saga ended — mentor rejected sessionId={}",
+                log.info("[SAGA][{}] Saga ended - mentor rejected sessionId={}",
                         saga.getCorrelationId(), sessionId);
             }
         });
@@ -243,12 +224,12 @@ public class SagaOrchestrator {
     // Query
     // ─────────────────────────────────────────────────────────────
     public SagaResponse getSagaBySessionId(Long sessionId) {
-        return toResponse(sagaRepository.findBySessionId(sessionId)
+        return sagaMapper.toDto(sagaRepository.findBySessionId(sessionId)
                 .orElseThrow(() -> new SagaNotFoundException("No saga for sessionId=" + sessionId)));
     }
 
     // ─────────────────────────────────────────────────────────────
-    // Internal helpers with Circuit Breaker + Retry
+    // Internal helpers
     // ─────────────────────────────────────────────────────────────
     @CircuitBreaker(name = "mentor-service")
     @Retry(name = "mentor-service")
@@ -265,22 +246,5 @@ public class SagaOrchestrator {
     private void updateSessionStatus(Long sessionId, String status) {
         sessionServiceClient.updateSessionStatus(sessionId, status);
         log.info("[SAGA] Session {} status updated to {}", sessionId, status);
-    }
-
-    private SagaResponse toResponse(PaymentSaga saga) {
-        SagaResponse r = new SagaResponse();
-        r.setSagaId(saga.getId());
-        r.setSessionId(saga.getSessionId());
-        r.setCorrelationId(saga.getCorrelationId());
-        r.setLearnerId(saga.getLearnerId());
-        r.setMentorId(saga.getMentorId());
-        r.setAmount(saga.getAmount());
-        r.setStatus(saga.getStatus());
-        r.setPaymentReference(saga.getPaymentReference());
-        r.setRefundReference(saga.getRefundReference());
-        r.setFailureReason(saga.getFailureReason());
-        r.setCreatedAt(saga.getCreatedAt());
-        r.setUpdatedAt(saga.getUpdatedAt());
-        return r;
     }
 }

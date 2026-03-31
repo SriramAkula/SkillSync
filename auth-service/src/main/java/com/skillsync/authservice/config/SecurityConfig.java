@@ -47,9 +47,14 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(authz -> authz
                 // Public endpoints - use /auth paths (API Gateway strips /api prefix)
-                .requestMatchers("/auth/register", "/auth/login", "/auth/refresh", "/auth/send-otp", "/auth/verify-otp").permitAll()
+                .requestMatchers("/auth/register", "/auth/login", "/auth/refresh",
+                        "/auth/send-otp", "/auth/verify-otp",
+                        "/auth/forgot-password", "/auth/verify-forgot-password", "/auth/reset-password",
+                        "/auth/oauth/google").permitAll()
                 .requestMatchers("/internal/**").permitAll()
                 .requestMatchers("/auth/internal/**").permitAll()
+                // Actuator endpoints for Prometheus scraping
+                .requestMatchers("/actuator/**").permitAll()
                 // Swagger/OpenAPI endpoints
                 .requestMatchers("/v3/api-docs", "/v3/api-docs/**").permitAll()
                 .requestMatchers("/swagger-ui.html", "/swagger-ui/**").permitAll()

@@ -21,7 +21,7 @@ public class UserServiceApplication {
 
 	public static void main(String[] args) {
 		SpringApplication.run(UserServiceApplication.class, args);
-		System.out.println("✓ User Service Started on port 8082");
+		System.out.println("[OK] User Service Started on port 8082");
 	}
 
 }

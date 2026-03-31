@@ -3,10 +3,7 @@
     <!-- Import Spring Boot default configuration -->
     <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
     
-    <!-- Define properties -->
     <property name="LOG_FILE" value="logs/auth-service.log"/>
-    <property name="LOGSTASH_HOST" value="logstash"/>
-    <property name="LOGSTASH_PORT" value="5000"/>
 
     <!-- Console appender -->
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
@@ -30,22 +27,10 @@
         </rollingPolicy>
     </appender>
 
-    <!-- Logstash TCP appender for ELK Stack -->
-    <appender name="LOGSTASH_TCP" class="net.logstash.logback.appender.LogstashTcpSocketAppender">
-        <destination>${LOGSTASH_HOST}:${LOGSTASH_PORT}</destination>
-        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
-            <customFields>{"environment":"docker","service":"auth-service"}</customFields>
-            <includeContext>true</includeContext>
-            <includeMdcData>true</includeMdcData>
-        </encoder>
-        <keepAliveDuration>5 minutes</keepAliveDuration>
-    </appender>
-
     <!-- Root logger -->
     <root level="INFO">
         <appender-ref ref="CONSOLE"/>
         <appender-ref ref="FILE"/>
-        <appender-ref ref="LOGSTASH_TCP"/>
     </root>
 
     <!-- Application specific loggers -->

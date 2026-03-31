@@ -69,9 +69,9 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(RedisConnectionFailureException.class)
     public ResponseEntity<ApiResponse<?>> handleRedisConnectionFailure(RedisConnectionFailureException ex) {
-        // Redis is down — log and continue. The request should NOT fail because of cache unavailability.
+        // Redis is down - log and continue. The request should NOT fail because of cache unavailability.
         // This handler is a last-resort safety net; CacheErrorHandler in RedisConfig handles it first.
-        logger.warn("Redis unavailable — request will proceed without cache: {}", ex.getMessage());
+        logger.warn("Redis unavailable - request will proceed without cache: {}", ex.getMessage());
         return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
             .body(ApiResponse.builder()
                 .success(false)

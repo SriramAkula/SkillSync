@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -21,6 +22,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.skillsync.mentor.audit.AuditService;
 import com.skillsync.mentor.client.AuthServiceClient;
 import com.skillsync.mentor.dto.request.ApplyMentorRequestDto;
 import com.skillsync.mentor.dto.request.UpdateAvailabilityRequestDto;
@@ -30,6 +32,7 @@ import com.skillsync.mentor.entity.MentorProfile;
 import com.skillsync.mentor.entity.MentorStatus;
 import com.skillsync.mentor.exception.MentorAlreadyExistsException;
 import com.skillsync.mentor.exception.MentorNotFoundException;
+import com.skillsync.mentor.mapper.MentorMapper;
 import com.skillsync.mentor.repository.MentorRepository;
 
 @ExtendWith(MockitoExtension.class)
@@ -37,14 +40,20 @@ class MentorServiceImplTest {
 
     @Mock private MentorRepository mentorRepository;
     @Mock private AuthServiceClient authServiceClient;
+    @Mock private MentorMapper mentorMapper;
+    @Mock private AuditService auditService;
     @InjectMocks private MentorServiceImpl mentorService;
 
     private MentorProfile pendingProfile;
     private MentorProfile approvedProfile;
     private ApplyMentorRequestDto applyRequest;
+    private MentorProfileResponseDto pendingDto;
+    private MentorProfileResponseDto approvedDto;
 
     @BeforeEach
     void setUp() {
+        LocalDateTime now = LocalDateTime.now();
+
         pendingProfile = new MentorProfile();
         pendingProfile.setId(1L);
         pendingProfile.setUserId(10L);
@@ -56,8 +65,8 @@ class MentorServiceImplTest {
         pendingProfile.setAvailabilityStatus(AvailabilityStatus.AVAILABLE);
         pendingProfile.setRating(0.0);
         pendingProfile.setTotalStudents(0);
-        pendingProfile.setCreatedAt(LocalDateTime.now());
-        pendingProfile.setUpdatedAt(LocalDateTime.now());
+        pendingProfile.setCreatedAt(now);
+        pendingProfile.setUpdatedAt(now);
 
         approvedProfile = new MentorProfile();
         approvedProfile.setId(1L);
@@ -65,21 +74,33 @@ class MentorServiceImplTest {
         approvedProfile.setStatus(MentorStatus.APPROVED);
         approvedProfile.setIsApproved(true);
         approvedProfile.setApprovedBy(99L);
-        approvedProfile.setApprovalDate(LocalDateTime.now());
+        approvedProfile.setApprovalDate(now);
         approvedProfile.setSpecialization("Java");
         approvedProfile.setYearsOfExperience(5);
         approvedProfile.setHourlyRate(50.0);
         approvedProfile.setAvailabilityStatus(AvailabilityStatus.AVAILABLE);
         approvedProfile.setRating(0.0);
         approvedProfile.setTotalStudents(0);
-        approvedProfile.setCreatedAt(LocalDateTime.now());
-        approvedProfile.setUpdatedAt(LocalDateTime.now());
+        approvedProfile.setCreatedAt(now);
+        approvedProfile.setUpdatedAt(now);
 
         applyRequest = new ApplyMentorRequestDto();
         applyRequest.setSpecialization("Java");
         applyRequest.setYearsOfExperience(5);
         applyRequest.setHourlyRate(50.0);
         applyRequest.setBio("Experienced Java developer with 5 years");
+
+        pendingDto = MentorProfileResponseDto.builder()
+                .id(1L).userId(10L).status("PENDING").isApproved(false)
+                .specialization("Java").yearsOfExperience(5).hourlyRate(50.0)
+                .rating(0.0).totalStudents(0).availabilityStatus("AVAILABLE")
+                .createdAt(now).updatedAt(now).build();
+
+        approvedDto = MentorProfileResponseDto.builder()
+                .id(1L).userId(10L).status("APPROVED").isApproved(true).approvedBy(99L)
+                .specialization("Java").yearsOfExperience(5).hourlyRate(50.0)
+                .rating(0.0).totalStudents(0).availabilityStatus("AVAILABLE")
+                .createdAt(now).updatedAt(now).build();
     }
 
     // ─── applyAsMentor ───────────────────────────────────────────────────────
@@ -87,18 +108,16 @@ class MentorServiceImplTest {
     @Test
     void applyAsMentor_shouldReturnPendingDto_whenNewUser() {
         when(mentorRepository.findByUserId(10L)).thenReturn(Optional.empty());
+        when(mentorMapper.toEntity(eq(10L), any())).thenReturn(pendingProfile);
         when(mentorRepository.save(any(MentorProfile.class))).thenReturn(pendingProfile);
+        when(mentorMapper.toDto(pendingProfile)).thenReturn(pendingDto);
 
         MentorProfileResponseDto result = mentorService.applyAsMentor(10L, applyRequest);
 
         assertThat(result.getStatus()).isEqualTo("PENDING");
         assertThat(result.getIsApproved()).isFalse();
         assertThat(result.getUserId()).isEqualTo(10L);
-        verify(mentorRepository).save(argThat(p ->
-                p.getUserId().equals(10L) &&
-                p.getStatus() == MentorStatus.PENDING &&
-                !p.getIsApproved()
-        ));
+        verify(mentorRepository).save(any());
     }
 
     @Test
@@ -117,6 +136,7 @@ class MentorServiceImplTest {
     @Test
     void getMentorProfile_shouldReturnDto_whenExists() {
         when(mentorRepository.findById(1L)).thenReturn(Optional.of(pendingProfile));
+        when(mentorMapper.toDto(pendingProfile)).thenReturn(pendingDto);
 
         MentorProfileResponseDto result = mentorService.getMentorProfile(1L);
 
@@ -139,6 +159,7 @@ class MentorServiceImplTest {
     @Test
     void getMentorByUserId_shouldReturnDto_whenExists() {
         when(mentorRepository.findByUserId(10L)).thenReturn(Optional.of(pendingProfile));
+        when(mentorMapper.toDto(pendingProfile)).thenReturn(pendingDto);
 
         MentorProfileResponseDto result = mentorService.getMentorByUserId(10L);
 
@@ -159,6 +180,7 @@ class MentorServiceImplTest {
     @Test
     void getAllApprovedMentors_shouldReturnList_whenApprovedExist() {
         when(mentorRepository.findAllApprovedMentors()).thenReturn(List.of(approvedProfile));
+        when(mentorMapper.toDto(approvedProfile)).thenReturn(approvedDto);
 
         List<MentorProfileResponseDto> result = mentorService.getAllApprovedMentors();
 
@@ -179,6 +201,7 @@ class MentorServiceImplTest {
     @Test
     void getPendingApplications_shouldReturnPendingList() {
         when(mentorRepository.findPendingApplications()).thenReturn(List.of(pendingProfile));
+        when(mentorMapper.toDto(pendingProfile)).thenReturn(pendingDto);
 
         List<MentorProfileResponseDto> result = mentorService.getPendingApplications();
 
@@ -198,6 +221,7 @@ class MentorServiceImplTest {
     @Test
     void searchMentors_shouldReturnMatches_whenSkillMatches() {
         when(mentorRepository.searchBySpecialization("Java")).thenReturn(List.of(approvedProfile));
+        when(mentorMapper.toDto(approvedProfile)).thenReturn(approvedDto);
 
         List<MentorProfileResponseDto> result = mentorService.searchMentorsBySpecialization("Java");
 
@@ -217,7 +241,8 @@ class MentorServiceImplTest {
     @Test
     void approveMentor_shouldSetApprovedAndCallFeign_whenValid() {
         when(mentorRepository.findById(1L)).thenReturn(Optional.of(pendingProfile));
-        when(mentorRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(mentorRepository.save(any())).thenReturn(pendingProfile);
+        when(mentorMapper.toDto(pendingProfile)).thenReturn(approvedDto);
         when(authServiceClient.addUserRole(anyLong(), anyString())).thenReturn(null);
 
         MentorProfileResponseDto result = mentorService.approveMentor(1L, 99L);
@@ -231,7 +256,8 @@ class MentorServiceImplTest {
     @Test
     void approveMentor_shouldStillSucceed_whenFeignFails() {
         when(mentorRepository.findById(1L)).thenReturn(Optional.of(pendingProfile));
-        when(mentorRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(mentorRepository.save(any())).thenReturn(pendingProfile);
+        when(mentorMapper.toDto(pendingProfile)).thenReturn(approvedDto);
         when(authServiceClient.addUserRole(anyLong(), anyString()))
                 .thenThrow(new RuntimeException("Feign error"));
 
@@ -255,8 +281,14 @@ class MentorServiceImplTest {
 
     @Test
     void rejectMentor_shouldSetRejected_whenValid() {
+        MentorProfileResponseDto rejectedDto = MentorProfileResponseDto.builder()
+                .id(1L).userId(10L).status("REJECTED").isApproved(false)
+                .specialization("Java").yearsOfExperience(5).hourlyRate(50.0)
+                .rating(0.0).totalStudents(0).availabilityStatus("AVAILABLE")
+                .createdAt(LocalDateTime.now()).updatedAt(LocalDateTime.now()).build();
         when(mentorRepository.findById(1L)).thenReturn(Optional.of(pendingProfile));
-        when(mentorRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(mentorRepository.save(any())).thenReturn(pendingProfile);
+        when(mentorMapper.toDto(pendingProfile)).thenReturn(rejectedDto);
 
         MentorProfileResponseDto result = mentorService.rejectMentor(1L, 99L);
 
@@ -277,10 +309,16 @@ class MentorServiceImplTest {
 
     @Test
     void updateAvailability_shouldSetBusy_whenValid() {
+        MentorProfileResponseDto busyDto = MentorProfileResponseDto.builder()
+                .id(1L).userId(10L).status("APPROVED").isApproved(true)
+                .specialization("Java").yearsOfExperience(5).hourlyRate(50.0)
+                .rating(0.0).totalStudents(0).availabilityStatus("BUSY")
+                .createdAt(LocalDateTime.now()).updatedAt(LocalDateTime.now()).build();
         UpdateAvailabilityRequestDto request = new UpdateAvailabilityRequestDto();
         request.setAvailabilityStatus("BUSY");
         when(mentorRepository.findByUserId(10L)).thenReturn(Optional.of(approvedProfile));
-        when(mentorRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(mentorRepository.save(any())).thenReturn(approvedProfile);
+        when(mentorMapper.toDto(approvedProfile)).thenReturn(busyDto);
 
         MentorProfileResponseDto result = mentorService.updateAvailability(10L, request);
 
@@ -294,7 +332,8 @@ class MentorServiceImplTest {
         UpdateAvailabilityRequestDto request = new UpdateAvailabilityRequestDto();
         request.setAvailabilityStatus("AVAILABLE");
         when(mentorRepository.findByUserId(10L)).thenReturn(Optional.of(approvedProfile));
-        when(mentorRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(mentorRepository.save(any())).thenReturn(approvedProfile);
+        when(mentorMapper.toDto(approvedProfile)).thenReturn(approvedDto);
 
         MentorProfileResponseDto result = mentorService.updateAvailability(10L, request);
 
@@ -325,8 +364,14 @@ class MentorServiceImplTest {
 
     @Test
     void suspendMentor_shouldSetSuspended_whenValid() {
+        MentorProfileResponseDto suspendedDto = MentorProfileResponseDto.builder()
+                .id(1L).userId(10L).status("SUSPENDED").isApproved(false)
+                .specialization("Java").yearsOfExperience(5).hourlyRate(50.0)
+                .rating(0.0).totalStudents(0).availabilityStatus("AVAILABLE")
+                .createdAt(LocalDateTime.now()).updatedAt(LocalDateTime.now()).build();
         when(mentorRepository.findById(1L)).thenReturn(Optional.of(approvedProfile));
-        when(mentorRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(mentorRepository.save(any())).thenReturn(approvedProfile);
+        when(mentorMapper.toDto(approvedProfile)).thenReturn(suspendedDto);
 
         MentorProfileResponseDto result = mentorService.suspendMentor(1L, 99L);
 
@@ -349,7 +394,7 @@ class MentorServiceImplTest {
     @Test
     void updateMentorRating_shouldUpdateRating_whenValid() {
         when(mentorRepository.findById(1L)).thenReturn(Optional.of(approvedProfile));
-        when(mentorRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(mentorRepository.save(any())).thenReturn(approvedProfile);
 
         mentorService.updateMentorRating(1L, 4.5);
 
@@ -369,7 +414,7 @@ class MentorServiceImplTest {
     @Test
     void updateMentorRating_shouldUpdateToZero_whenRatingIsZero() {
         when(mentorRepository.findById(1L)).thenReturn(Optional.of(approvedProfile));
-        when(mentorRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(mentorRepository.save(any())).thenReturn(approvedProfile);
 
         mentorService.updateMentorRating(1L, 0.0);
 

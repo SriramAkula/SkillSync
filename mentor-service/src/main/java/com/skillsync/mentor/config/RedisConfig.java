@@ -28,7 +28,7 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
 import java.time.Duration;
 
 /**
- * Redis Configuration — resilient setup that gracefully degrades when Redis is unavailable.
+ * Redis Configuration - resilient setup that gracefully degrades when Redis is unavailable.
  * All cache errors are logged and swallowed; the application falls through to the DB.
  */
 @Configuration
@@ -121,22 +121,22 @@ public class RedisConfig implements CachingConfigurer {
         return new CacheErrorHandler() {
             @Override
             public void handleCacheGetError(RuntimeException e, Cache cache, Object key) {
-                logger.warn("Cache GET failed for key={} — falling back to DB. Reason: {}", key, e.getMessage());
+                logger.warn("Cache GET failed for key={} - falling back to DB. Reason: {}", key, e.getMessage());
             }
 
             @Override
             public void handleCachePutError(RuntimeException e, Cache cache, Object key, Object value) {
-                logger.warn("Cache PUT failed for key={} — continuing without caching. Reason: {}", key, e.getMessage());
+                logger.warn("Cache PUT failed for key={} - continuing without caching. Reason: {}", key, e.getMessage());
             }
 
             @Override
             public void handleCacheEvictError(RuntimeException e, Cache cache, Object key) {
-                logger.warn("Cache EVICT failed for key={} — continuing. Reason: {}", key, e.getMessage());
+                logger.warn("Cache EVICT failed for key={} - continuing. Reason: {}", key, e.getMessage());
             }
 
             @Override
             public void handleCacheClearError(RuntimeException e, Cache cache) {
-                logger.warn("Cache CLEAR failed — continuing. Reason: {}", e.getMessage());
+                logger.warn("Cache CLEAR failed - continuing. Reason: {}", e.getMessage());
             }
         };
     }

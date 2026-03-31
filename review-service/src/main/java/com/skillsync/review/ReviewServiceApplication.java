@@ -12,6 +12,6 @@ import org.springframework.cloud.openfeign.EnableFeignClients;
 public class ReviewServiceApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(ReviewServiceApplication.class, args);
-		System.out.println("✓ Review Service Started on port 8087");
+		System.out.println("[OK] Review Service Started on port 8087");
 	}
 }

@@ -4,25 +4,24 @@ import feign.RequestInterceptor;
 import feign.codec.ErrorDecoder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import feign.Response;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Configuration
 public class FeignConfig {
 
+    private static final String HEADER_GATEWAY_REQUEST = "X-Gateway-Request";
+    private static final String GATEWAY_REQUEST_VALUE  = "true";
+    private static final int    SERVER_ERROR_THRESHOLD = 500;
+
     @Bean
     public RequestInterceptor requestInterceptor() {
-        return requestTemplate -> {
-            // This ensures the internal call is trusted by the User Service
-            requestTemplate.header("X-Gateway-Request", "true");
-        };
+        return requestTemplate ->
+            requestTemplate.header(HEADER_GATEWAY_REQUEST, GATEWAY_REQUEST_VALUE);
     }
 
     @Bean
     public ErrorDecoder errorDecoder() {
         return (methodKey, response) -> {
-            // Log the error but don't fail startup
-            if (response.status() >= 500) {
+            if (response.status() >= SERVER_ERROR_THRESHOLD) {
                 return new RuntimeException("Service temporarily unavailable: " + response.status());
             }
             return new RuntimeException("Feign error: " + response.status());

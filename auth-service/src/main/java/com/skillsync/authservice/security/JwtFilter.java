@@ -19,77 +19,67 @@ import jakarta.servlet.http.HttpServletResponse;
 @Component
 public class JwtFilter extends OncePerRequestFilter {
 
-private final JwtUtil jwtUtil;
+    private static final String HEADER_AUTHORIZATION = "Authorization";
+    private static final String BEARER_PREFIX        = "Bearer ";
 
-public JwtFilter(JwtUtil jwtUtil) {
-    this.jwtUtil = jwtUtil;
-}
+    private final JwtUtil jwtUtil;
 
-@Override
-protected void doFilterInternal(HttpServletRequest request,
-                                HttpServletResponse response,
-                                FilterChain filterChain)
-        throws ServletException, IOException {
+    public JwtFilter(JwtUtil jwtUtil) {
+        this.jwtUtil = jwtUtil;
+    }
 
-    // ✅ Use full URI (important fix)
-    String path = request.getRequestURI();
+    @Override
+    protected void doFilterInternal(HttpServletRequest request,
+                                    HttpServletResponse response,
+                                    FilterChain filterChain)
+            throws ServletException, IOException {
 
-    // ✅ Public endpoints (Swagger + Auth)
-    if (isPublicEndpoint(path)) {
+        String path = request.getRequestURI();
+
+        if (isPublicEndpoint(path)) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        String authHeader = request.getHeader(HEADER_AUTHORIZATION);
+        String token = null;
+        String email = null;
+
+        if (authHeader != null && authHeader.startsWith(BEARER_PREFIX)) {
+            token = authHeader.substring(BEARER_PREFIX.length());
+            try {
+                email = jwtUtil.extractEmail(token);
+            } catch (Exception e) {
+                System.out.println("JWT Error: " + e.getMessage());
+            }
+        }
+
+        if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+            if (jwtUtil.isTokenValid(token)) {
+                List<String> roles = jwtUtil.extractRoles(token);
+                List<SimpleGrantedAuthority> authorities = roles.stream()
+                        .map(SimpleGrantedAuthority::new)
+                        .collect(Collectors.toList());
+
+                UsernamePasswordAuthenticationToken authentication =
+                        new UsernamePasswordAuthenticationToken(email, null, authorities);
+                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                SecurityContextHolder.getContext().setAuthentication(authentication);
+            }
+        }
+
         filterChain.doFilter(request, response);
-        return;
     }
 
-    String authHeader = request.getHeader("Authorization");
-    String token = null;
-    String email = null;
-
-    // ✅ Extract token
-    if (authHeader != null && authHeader.startsWith("Bearer ")) {
-        token = authHeader.substring(7);
-        try {
-            email = jwtUtil.extractEmail(token);
-        } catch (Exception e) {
-            System.out.println("JWT Error: " + e.getMessage());
-        }
+    private boolean isPublicEndpoint(String path) {
+        return path.equals("/auth/register")
+                || path.equals("/auth/login")
+                || path.equals("/auth/refresh")
+                || path.startsWith("/internal/")
+                || path.contains("/v3/api-docs")
+                || path.contains("/swagger-ui")
+                || path.contains("/swagger-resources")
+                || path.equals("/auth/swagger-ui.html")
+                || path.contains("/error");
     }
-
-    // ✅ Validate & set authentication
-    if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-
-        if (jwtUtil.isTokenValid(token)) {
-
-            List<String> roles = jwtUtil.extractRoles(token);
-
-            List<SimpleGrantedAuthority> authorities = roles.stream()
-                    .map(SimpleGrantedAuthority::new)
-                    .collect(Collectors.toList());
-
-            UsernamePasswordAuthenticationToken authentication =
-                    new UsernamePasswordAuthenticationToken(email, null, authorities);
-
-            authentication.setDetails(
-                    new WebAuthenticationDetailsSource().buildDetails(request)
-            );
-
-            SecurityContextHolder.getContext().setAuthentication(authentication);
-        }
-    }
-
-    filterChain.doFilter(request, response);
-}
-
-// Centralized whitelist logic
-private boolean isPublicEndpoint(String path) {
-    return path.equals("/auth/register") ||
-           path.equals("/auth/login") ||
-           path.equals("/auth/refresh") ||
-           path.startsWith("/internal/") ||
-           path.contains("/v3/api-docs") ||
-           path.contains("/swagger-ui") ||
-           path.contains("/swagger-resources") ||
-           path.equals("/auth/swagger-ui.html") ||
-           path.contains("/error");
-}
-
 }

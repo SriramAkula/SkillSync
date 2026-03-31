@@ -13,48 +13,57 @@ import jakarta.servlet.http.HttpServletResponse;
 @Component
 public class GatewayRequestFilter extends OncePerRequestFilter {
 
+    private static final String HEADER_GATEWAY_REQUEST  = "X-Gateway-Request";
+    private static final String HEADER_SERVICE_AUTH     = "X-Service-Auth";
+    private static final String HEADER_INTERNAL_SERVICE = "X-Internal-Service";
+    private static final String SERVICE_AUTH_VALUE      = "true";
+
+    private static final String INTERNAL_PATH_PREFIX      = "/internal/";
+    private static final String AUTH_INTERNAL_PATH_PREFIX = "/auth/internal/";
+    private static final String ACTUATOR_PATH_PREFIX       = "/actuator";
+    private static final String API_DOCS_PATH_PREFIX       = "/v3/api-docs";
+    private static final String SWAGGER_UI_PATH_PREFIX     = "/swagger-ui";
+    private static final String SWAGGER_RESOURCES_PREFIX   = "/swagger-resources";
+
+    private static final String ACCESS_DENIED_MESSAGE = "Access Denied: Use API Gateway";
+
     @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
                                     FilterChain filterChain)
             throws ServletException, IOException {
 
-        String gatewayHeader = request.getHeader("X-Gateway-Request");
-        String serviceAuth = request.getHeader("X-Service-Auth");
-        String internalService = request.getHeader("X-Internal-Service");
-        String requestPath = request.getRequestURI();
+        String gatewayHeader   = request.getHeader(HEADER_GATEWAY_REQUEST);
+        String serviceAuth     = request.getHeader(HEADER_SERVICE_AUTH);
+        String internalService = request.getHeader(HEADER_INTERNAL_SERVICE);
+        String requestPath     = request.getRequestURI();
 
-        // Allow internal service-to-service calls (from other microservices)
-        // Check if this is an internal endpoint with proper service-to-service headers
-        boolean isInternalPath = requestPath.startsWith("/internal/") || requestPath.startsWith("/auth/internal/");
-        boolean isInternalServiceCall = "true".equals(serviceAuth) && internalService != null;
+        boolean isInternalPath        = requestPath.startsWith(INTERNAL_PATH_PREFIX)
+                || requestPath.startsWith(AUTH_INTERNAL_PATH_PREFIX);
+        boolean isInternalServiceCall = SERVICE_AUTH_VALUE.equals(serviceAuth) && internalService != null;
 
         if (isInternalPath && isInternalServiceCall) {
-            // Allow internal service-to-service calls to bypass gateway header check
             filterChain.doFilter(request, response);
             return;
         }
 
-        // Allow Swagger/OpenAPI documentation endpoints without gateway header
-        boolean isSwaggerPath = requestPath.startsWith("/v3/api-docs") || 
-                               requestPath.startsWith("/swagger-ui") ||
-                               requestPath.startsWith("/swagger-resources");
+        boolean isSwaggerPath = requestPath.startsWith(ACTUATOR_PATH_PREFIX)
+                || requestPath.startsWith(API_DOCS_PATH_PREFIX)
+                || requestPath.startsWith(SWAGGER_UI_PATH_PREFIX)
+                || requestPath.startsWith(SWAGGER_RESOURCES_PREFIX);
+
         if (isSwaggerPath) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        // Regular requests must come through API Gateway with X-Gateway-Request header
         if (gatewayHeader == null) {
-        	// 1. Set the status
             response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-            // 2. Explicitly set content type
             response.setContentType("text/plain");
-            // 3. Write the message and flush it immediately
-            response.getWriter().write("Access Denied: Use API Gateway");
-            response.getWriter().flush(); 
+            response.getWriter().write(ACCESS_DENIED_MESSAGE);
+            response.getWriter().flush();
             response.getWriter().close();
-            return; // Stop the chain here
+            return;
         }
 
         filterChain.doFilter(request, response);
