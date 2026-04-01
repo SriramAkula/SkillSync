@@ -1,9 +1,5 @@
-# Production docker-compose — pulls images from Docker Hub
-# Usage: docker compose -f docker-compose.prod.yml up -d
-# Set DOCKER_USERNAME in your .env file or export it before running
-
 services:
-  # ─── Infrastructure ───────────────────────────────────────────────────────
+  # ─── Infrastructure (private-network only) ────────────────────────────────
 
   zipkin-mysql:
     image: mysql:8.0
@@ -14,13 +10,11 @@ services:
       MYSQL_DATABASE: ${ZIPKIN_MYSQL_DATABASE}
       MYSQL_USER: ${ZIPKIN_MYSQL_USER}
       MYSQL_PASSWORD: ${ZIPKIN_MYSQL_PASSWORD}
-    ports:
-      - "3307:3306"
     volumes:
       - zipkin-mysql-data:/var/lib/mysql
       - ./zipkin-schema.sql:/docker-entrypoint-initdb.d/zipkin-schema.sql
     networks:
-      - skillsync-network
+      - private-network
     command: --default-authentication-plugin=mysql_native_password
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
@@ -28,11 +22,324 @@ services:
       timeout: 5s
       retries: 5
 
+  mysql:
+    image: mysql:8.0
+    container_name: skillsync-mysql
+    env_file: .env
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_MAIN_DATABASE}
+      MYSQL_ROOT_HOST: ${MYSQL_ROOT_HOST}
+    volumes:
+      - mysql-data:/var/lib/mysql
+    networks:
+      - private-network
+    command: --default-authentication-plugin=mysql_native_password
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    networks:
+      - private-network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:latest
+    container_name: redis
+    networks:
+      - private-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─── Observability — Loki, Promtail, Prometheus (private-network only) ────
+
+  loki:
+    image: grafana/loki:latest
+    container_name: loki
+    volumes:
+      - ./loki-config.yml:/etc/loki/loki-config.yml
+      - loki-data:/loki
+    command: -config.file=/etc/loki/loki-config.yml
+    networks:
+      - private-network
+
+  promtail:
+    image: grafana/promtail:latest
+    container_name: promtail
+    volumes:
+      - ./promtail-config.yml:/etc/promtail/promtail-config.yml
+    command: -config.file=/etc/promtail/promtail-config.yml
+    depends_on:
+      - loki
+    networks:
+      - private-network
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    networks:
+      - private-network
+
+  # ─── Microservices (private-network only) ────────────────────────────────
+
+  auth-service:
+    image: ${DOCKER_USERNAME}/skillsync-auth-service:latest
+    container_name: auth-service
+    restart: on-failure
+    env_file: .env
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: ${ZIPKIN_ENDPOINT}
+      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: ${TRACING_SAMPLING_PROBABILITY}
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_DEFAULT_ZONE}
+    depends_on:
+      mysql:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+    networks:
+      - private-network
+
+  user-service:
+    image: ${DOCKER_USERNAME}/skillsync-user-service:latest
+    container_name: user-service
+    restart: on-failure
+    env_file: .env
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: ${ZIPKIN_ENDPOINT}
+      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: ${TRACING_SAMPLING_PROBABILITY}
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_DEFAULT_ZONE}
+      SPRING_DATA_REDIS_HOST: ${REDIS_HOST}
+      SPRING_DATA_REDIS_PORT: ${REDIS_PORT}
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+    networks:
+      - private-network
+
+  skill-service:
+    image: ${DOCKER_USERNAME}/skillsync-skill-service:latest
+    container_name: skill-service
+    restart: on-failure
+    env_file: .env
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: ${ZIPKIN_ENDPOINT}
+      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: ${TRACING_SAMPLING_PROBABILITY}
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_DEFAULT_ZONE}
+      SPRING_DATA_REDIS_HOST: ${REDIS_HOST}
+      SPRING_DATA_REDIS_PORT: ${REDIS_PORT}
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+    networks:
+      - private-network
+
+  session-service:
+    image: ${DOCKER_USERNAME}/skillsync-session-service:latest
+    container_name: session-service
+    restart: on-failure
+    env_file: .env
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: ${ZIPKIN_ENDPOINT}
+      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: ${TRACING_SAMPLING_PROBABILITY}
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_DEFAULT_ZONE}
+      SPRING_DATA_REDIS_HOST: ${REDIS_HOST}
+      SPRING_DATA_REDIS_PORT: ${REDIS_PORT}
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+    networks:
+      - private-network
+
+  mentor-service:
+    image: ${DOCKER_USERNAME}/skillsync-mentor-service:latest
+    container_name: mentor-service
+    restart: on-failure
+    env_file: .env
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: ${ZIPKIN_ENDPOINT}
+      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: ${TRACING_SAMPLING_PROBABILITY}
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_DEFAULT_ZONE}
+      SPRING_DATA_REDIS_HOST: ${REDIS_HOST}
+      SPRING_DATA_REDIS_PORT: ${REDIS_PORT}
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+    networks:
+      - private-network
+
+  group-service:
+    image: ${DOCKER_USERNAME}/skillsync-group-service:latest
+    container_name: group-service
+    restart: on-failure
+    env_file: .env
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: ${ZIPKIN_ENDPOINT}
+      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: ${TRACING_SAMPLING_PROBABILITY}
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_DEFAULT_ZONE}
+      SPRING_DATA_REDIS_HOST: ${REDIS_HOST}
+      SPRING_DATA_REDIS_PORT: ${REDIS_PORT}
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+    networks:
+      - private-network
+
+  review-service:
+    image: ${DOCKER_USERNAME}/skillsync-review-service:latest
+    container_name: review-service
+    restart: on-failure
+    env_file: .env
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: ${ZIPKIN_ENDPOINT}
+      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: ${TRACING_SAMPLING_PROBABILITY}
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_DEFAULT_ZONE}
+      SPRING_DATA_REDIS_HOST: ${REDIS_HOST}
+      SPRING_DATA_REDIS_PORT: ${REDIS_PORT}
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+    networks:
+      - private-network
+
+  notification-service:
+    image: ${DOCKER_USERNAME}/skillsync-notification-service:latest
+    container_name: notification-service
+    restart: on-failure
+    env_file: .env
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: ${ZIPKIN_ENDPOINT}
+      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: ${TRACING_SAMPLING_PROBABILITY}
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_DEFAULT_ZONE}
+    depends_on:
+      mysql:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+    networks:
+      - private-network
+
+  payment-gateway:
+    image: ${DOCKER_USERNAME}/skillsync-payment-gateway:latest
+    container_name: payment-gateway
+    restart: on-failure
+    env_file: .env
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: ${ZIPKIN_ENDPOINT}
+      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: ${TRACING_SAMPLING_PROBABILITY}
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_DEFAULT_ZONE}
+    depends_on:
+      mysql:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+    networks:
+      - private-network
+
+  # ─── Proxy-facing Services (both networks) ───────────────────────────────
+  # These sit on BOTH networks so that when Nginx Proxy Manager is added
+  # later (in its own compose), it can reach them via proxy-network,
+  # while they continue talking to DBs/queues via private-network.
+
+  eureka-server:
+    image: ${DOCKER_USERNAME}/skillsync-eureka-server:latest
+    container_name: eureka-server
+    restart: on-failure
+    env_file: .env
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: ${ZIPKIN_ENDPOINT}
+      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: ${TRACING_SAMPLING_PROBABILITY}
+    depends_on:
+      zipkin:
+        condition: service_started
+    networks:
+      - private-network
+      - proxy-network
+
+  api-gateway:
+    image: ${DOCKER_USERNAME}/skillsync-api-gateway:latest
+    container_name: api-gateway
+    restart: on-failure
+    env_file: .env
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: ${ZIPKIN_ENDPOINT}
+      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: ${TRACING_SAMPLING_PROBABILITY}
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_DEFAULT_ZONE}
+    depends_on:
+      eureka-server:
+        condition: service_started
+      zipkin:
+        condition: service_started
+    networks:
+      - private-network
+      - proxy-network
+
   zipkin:
     image: openzipkin/zipkin:latest
     container_name: zipkin-server
-    ports:
-      - "9411:9411"
     env_file: .env
     environment:
       STORAGE_TYPE: mysql
@@ -45,354 +352,12 @@ services:
       zipkin-mysql:
         condition: service_healthy
     networks:
-      - skillsync-network
-
-  mysql:
-    image: mysql:8.0
-    container_name: skillsync-mysql
-    env_file: .env
-    environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      MYSQL_DATABASE: ${MYSQL_MAIN_DATABASE}
-      MYSQL_ROOT_HOST: ${MYSQL_ROOT_HOST}
-    ports:
-      - "3308:3306"
-    volumes:
-      - mysql-data:/var/lib/mysql
-    networks:
-      - skillsync-network
-    command: --default-authentication-plugin=mysql_native_password
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  rabbitmq:
-    image: rabbitmq:3-management
-    container_name: rabbitmq
-    ports:
-      - "5672:5672"
-      - "15672:15672"
-    networks:
-      - skillsync-network
-    healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  redis:
-    image: redis:latest
-    container_name: redis
-    ports:
-      - "6379:6379"
-    networks:
-      - skillsync-network
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  # ─── Microservices ────────────────────────────────────────────────────────
-
-  eureka-server:
-    image: ${DOCKER_USERNAME}/skillsync-eureka-server:latest
-    container_name: eureka-server
-    restart: on-failure
-    ports:
-      - "8761:8761"
-    env_file: .env
-    environment:
-      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
-      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: ${ZIPKIN_ENDPOINT}
-      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: ${TRACING_SAMPLING_PROBABILITY}
-    depends_on:
-      zipkin:
-        condition: service_started
-    networks:
-      - skillsync-network
-
-  api-gateway:
-    image: ${DOCKER_USERNAME}/skillsync-api-gateway:latest
-    container_name: api-gateway
-    restart: on-failure
-    ports:
-      - "9090:9090"
-    env_file: .env
-    environment:
-      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
-      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: ${ZIPKIN_ENDPOINT}
-      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: ${TRACING_SAMPLING_PROBABILITY}
-      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_DEFAULT_ZONE}
-    depends_on:
-      eureka-server:
-        condition: service_started
-      zipkin:
-        condition: service_started
-    networks:
-      - skillsync-network
-
-  auth-service:
-    image: ${DOCKER_USERNAME}/skillsync-auth-service:latest
-    container_name: auth-service
-    restart: on-failure
-    ports:
-      - "8081:8081"
-    env_file: .env
-    environment:
-      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
-      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: ${ZIPKIN_ENDPOINT}
-      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: ${TRACING_SAMPLING_PROBABILITY}
-      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_DEFAULT_ZONE}
-    depends_on:
-      mysql:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
-      eureka-server:
-        condition: service_started
-    networks:
-      - skillsync-network
-
-  user-service:
-    image: ${DOCKER_USERNAME}/skillsync-user-service:latest
-    container_name: user-service
-    restart: on-failure
-    ports:
-      - "8082:8082"
-    env_file: .env
-    environment:
-      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
-      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: ${ZIPKIN_ENDPOINT}
-      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: ${TRACING_SAMPLING_PROBABILITY}
-      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_DEFAULT_ZONE}
-      SPRING_DATA_REDIS_HOST: ${REDIS_HOST}
-      SPRING_DATA_REDIS_PORT: ${REDIS_PORT}
-    depends_on:
-      mysql:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
-      eureka-server:
-        condition: service_started
-    networks:
-      - skillsync-network
-
-  skill-service:
-    image: ${DOCKER_USERNAME}/skillsync-skill-service:latest
-    container_name: skill-service
-    restart: on-failure
-    ports:
-      - "8083:8083"
-    env_file: .env
-    environment:
-      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
-      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: ${ZIPKIN_ENDPOINT}
-      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: ${TRACING_SAMPLING_PROBABILITY}
-      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_DEFAULT_ZONE}
-      SPRING_DATA_REDIS_HOST: ${REDIS_HOST}
-      SPRING_DATA_REDIS_PORT: ${REDIS_PORT}
-    depends_on:
-      mysql:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      eureka-server:
-        condition: service_started
-    networks:
-      - skillsync-network
-
-  session-service:
-    image: ${DOCKER_USERNAME}/skillsync-session-service:latest
-    container_name: session-service
-    restart: on-failure
-    ports:
-      - "8084:8084"
-    env_file: .env
-    environment:
-      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
-      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: ${ZIPKIN_ENDPOINT}
-      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: ${TRACING_SAMPLING_PROBABILITY}
-      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_DEFAULT_ZONE}
-      SPRING_DATA_REDIS_HOST: ${REDIS_HOST}
-      SPRING_DATA_REDIS_PORT: ${REDIS_PORT}
-    depends_on:
-      mysql:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
-      eureka-server:
-        condition: service_started
-    networks:
-      - skillsync-network
-
-  mentor-service:
-    image: ${DOCKER_USERNAME}/skillsync-mentor-service:latest
-    container_name: mentor-service
-    restart: on-failure
-    ports:
-      - "8085:8085"
-    env_file: .env
-    environment:
-      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
-      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: ${ZIPKIN_ENDPOINT}
-      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: ${TRACING_SAMPLING_PROBABILITY}
-      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_DEFAULT_ZONE}
-      SPRING_DATA_REDIS_HOST: ${REDIS_HOST}
-      SPRING_DATA_REDIS_PORT: ${REDIS_PORT}
-    depends_on:
-      mysql:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
-      eureka-server:
-        condition: service_started
-    networks:
-      - skillsync-network
-
-  group-service:
-    image: ${DOCKER_USERNAME}/skillsync-group-service:latest
-    container_name: group-service
-    restart: on-failure
-    ports:
-      - "8086:8086"
-    env_file: .env
-    environment:
-      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
-      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: ${ZIPKIN_ENDPOINT}
-      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: ${TRACING_SAMPLING_PROBABILITY}
-      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_DEFAULT_ZONE}
-      SPRING_DATA_REDIS_HOST: ${REDIS_HOST}
-      SPRING_DATA_REDIS_PORT: ${REDIS_PORT}
-    depends_on:
-      mysql:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      eureka-server:
-        condition: service_started
-    networks:
-      - skillsync-network
-
-  review-service:
-    image: ${DOCKER_USERNAME}/skillsync-review-service:latest
-    container_name: review-service
-    restart: on-failure
-    ports:
-      - "8087:8087"
-    env_file: .env
-    environment:
-      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
-      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: ${ZIPKIN_ENDPOINT}
-      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: ${TRACING_SAMPLING_PROBABILITY}
-      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_DEFAULT_ZONE}
-      SPRING_DATA_REDIS_HOST: ${REDIS_HOST}
-      SPRING_DATA_REDIS_PORT: ${REDIS_PORT}
-    depends_on:
-      mysql:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
-      eureka-server:
-        condition: service_started
-    networks:
-      - skillsync-network
-
-  notification-service:
-    image: ${DOCKER_USERNAME}/skillsync-notification-service:latest
-    container_name: notification-service
-    restart: on-failure
-    ports:
-      - "8088:8088"
-    env_file: .env
-    environment:
-      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
-      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: ${ZIPKIN_ENDPOINT}
-      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: ${TRACING_SAMPLING_PROBABILITY}
-      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_DEFAULT_ZONE}
-    depends_on:
-      mysql:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
-      eureka-server:
-        condition: service_started
-    networks:
-      - skillsync-network
-
-  payment-gateway:
-    image: ${DOCKER_USERNAME}/skillsync-payment-gateway:latest
-    container_name: payment-gateway
-    restart: on-failure
-    ports:
-      - "8089:8089"
-    env_file: .env
-    environment:
-      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
-      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: ${ZIPKIN_ENDPOINT}
-      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: ${TRACING_SAMPLING_PROBABILITY}
-      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_DEFAULT_ZONE}
-    depends_on:
-      mysql:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
-      eureka-server:
-        condition: service_started
-    networks:
-      - skillsync-network
-
-  # ─── Observability ────────────────────────────────────────────────────────
-
-  loki:
-    image: grafana/loki:latest
-    container_name: loki
-    ports:
-      - "3100:3100"
-    volumes:
-      - ./loki-config.yml:/etc/loki/loki-config.yml
-      - loki-data:/loki
-    command: -config.file=/etc/loki/loki-config.yml
-    networks:
-      - skillsync-network
-
-  promtail:
-    image: grafana/promtail:latest
-    container_name: promtail
-    volumes:
-      - ./promtail-config.yml:/etc/promtail/promtail-config.yml
-    command: -config.file=/etc/promtail/promtail-config.yml
-    depends_on:
-      - loki
-    networks:
-      - skillsync-network
-
-  prometheus:
-    image: prom/prometheus:latest
-    container_name: prometheus
-    ports:
-      - "9091:9090"
-    volumes:
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml
-      - prometheus-data:/prometheus
-    networks:
-      - skillsync-network
+      - private-network
+      - proxy-network
 
   grafana:
     image: grafana/grafana:latest
     container_name: grafana
-    ports:
-      - "3000:3000"
     env_file: .env
     environment:
       GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER}
@@ -405,11 +370,18 @@ services:
     depends_on:
       - prometheus
     networks:
-      - skillsync-network
+      - private-network   # reaches Prometheus and Loki
+      - proxy-network     # ready for Nginx Proxy Manager
 
 networks:
-  skillsync-network:
+  private-network:
     driver: bridge
+    internal: true        # blocks all external internet access
+    name: skillsync-private
+
+  proxy-network:
+    driver: bridge
+    name: skillsync-proxy # no "internal: true" — needs internet for Let's Encrypt later
 
 volumes:
   mysql-data:
