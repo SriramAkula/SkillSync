@@ -17,6 +17,12 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.skillsync.authservice.client.UserServiceClient;
+import com.skillsync.authservice.event.UserCreatedEvent;
+import com.skillsync.authservice.publisher.AuthEventPublisher;
+import java.util.HashMap;
+import java.util.Map;
+
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -34,17 +40,22 @@ public class OAuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final AuditService auditService;
+    private final UserServiceClient userServiceClient;
+    private final AuthEventPublisher eventPublisher;
 
     public OAuthService(UserRepository userRepository,
                         PasswordEncoder passwordEncoder,
                         JwtUtil jwtUtil,
-                        AuditService auditService) {
+                        AuditService auditService,
+                        UserServiceClient userServiceClient,
+                        AuthEventPublisher eventPublisher) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtUtil = jwtUtil;
         this.auditService = auditService;
+        this.userServiceClient = userServiceClient;
+        this.eventPublisher = eventPublisher;
     }
-
     @Transactional
     public AuthResponse loginWithGoogle(String idToken) {
         GoogleIdToken.Payload payload = verifyGoogleToken(idToken);
@@ -107,6 +118,29 @@ public class OAuthService {
         log.info("New OAuth user created: email={}, provider={}", email, provider);
         auditService.log("User", saved.getId(), "OAUTH_REGISTER",
                 saved.getId().toString(), "email=" + email + ",provider=" + provider);
+
+        try {
+            UserCreatedEvent event = new UserCreatedEvent(
+                saved.getId(), saved.getEmail(), null,
+                saved.getUsername(), saved.getRole(), System.currentTimeMillis()
+            );
+            eventPublisher.publishUserCreated(event);
+            log.info("UserCreatedEvent published for OAuth userId={}", saved.getId());
+        } catch (Exception e) {
+            log.warn("Failed to publish UserCreatedEvent for OAuth: {}", e.getMessage());
+        }
+
+        try {
+            Map<String, Object> userData = new HashMap<>();
+            userData.put("userId", saved.getId());
+            userData.put("email", saved.getEmail());
+            userData.put("username", saved.getUsername());
+            userServiceClient.createProfile(userData);
+            log.info("UserProfile created via Feign for OAuth userId={}", saved.getId());
+        } catch (Exception e) {
+            log.info("Feign sync failed for OAuth, relying on event-based sync: {}", e.getMessage());
+        }
+
         return saved;
     }
 
