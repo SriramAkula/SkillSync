@@ -134,15 +134,19 @@ public class MentorController {
     }
 
     @GetMapping("/search")
-    @Operation(summary = "Search mentors by skill", description = "Search and filter mentors by skill keyword")
+    @Operation(summary = "Search mentors with filters", description = "Search and filter mentors by skill, experience, rate, and rating")
     @ApiResponses(value = {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Mentors found successfully"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid search parameters")
     })
-    public ResponseEntity<ApiResponse<List<MentorProfileResponseDto>>> searchMentorsBySpecialization(
-            @RequestParam String skill) {
-        log.info("GET /search?skill={}", skill);
-        List<MentorProfileResponseDto> response = mentorService.searchMentorsBySpecialization(skill);
+    public ResponseEntity<ApiResponse<List<MentorProfileResponseDto>>> searchMentors(
+            @RequestParam(required = false) String skill,
+            @RequestParam(required = false) Integer minExperience,
+            @RequestParam(required = false) Integer maxExperience,
+            @RequestParam(required = false) Double maxRate,
+            @RequestParam(required = false) Double minRating) {
+        log.info("GET /search?skill={}&minExp={}&maxExp={}&maxRate={}&minRating={}", skill, minExperience, maxExperience, maxRate, minRating);
+        List<MentorProfileResponseDto> response = mentorService.searchMentorsWithFilters(skill, minExperience, maxExperience, maxRate, minRating);
         return ResponseEntity.ok(ApiResponse.<List<MentorProfileResponseDto>>builder()
                 .success(true)
                 .data(response)

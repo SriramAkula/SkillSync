@@ -7,15 +7,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MentorStore } from '../../../../core/auth/mentor.store';
 import { SkillStore } from '../../../../core/auth/skill.store';
 
-// Fallback categories shown while skills load from backend
-const FALLBACK_CATEGORIES = [
-  { category: 'Programming',      skills: ['Java', 'Python', 'JavaScript', 'TypeScript', 'C++', 'C#', 'Go', 'Rust', 'Kotlin', 'Swift'] },
-  { category: 'Web & Frontend',   skills: ['React', 'Angular', 'Vue.js', 'Next.js', 'HTML/CSS', 'Tailwind CSS', 'Node.js', 'Express.js'] },
-  { category: 'Data & AI',        skills: ['Machine Learning', 'Deep Learning', 'Data Science', 'TensorFlow', 'PyTorch', 'SQL', 'Power BI', 'Tableau'] },
-  { category: 'Cloud & DevOps',   skills: ['AWS', 'Azure', 'GCP', 'Docker', 'Kubernetes', 'CI/CD', 'Terraform', 'Linux'] },
-  { category: 'Mobile',           skills: ['Android', 'iOS', 'React Native', 'Flutter'] },
-  { category: 'Design & Product', skills: ['UI/UX Design', 'Figma', 'Product Management', 'Agile/Scrum'] },
-];
+// No fallback categories needed anymore - we use the skill-service database.
 
 @Component({
   selector: 'app-apply-mentor-page',
@@ -149,22 +141,32 @@ const FALLBACK_CATEGORIES = [
 
                   <!-- Skill categories -->
                   <div class="skill-categories">
-                    @for (cat of filteredCategories(); track cat.category) {
-                      <div class="skill-cat">
-                        <div class="cat-label">{{ cat.category }}</div>
-                        <div class="skill-chips">
-                          @for (skill of cat.skills; track skill) {
-                            <button type="button" class="skill-chip"
-                              [class.active]="isSelected(skill)"
-                              (click)="toggleSkill(skill)">
-                              @if (isSelected(skill)) {
-                                <span class="material-icons check">check</span>
-                              }
-                              {{ skill }}
-                            </button>
-                          }
-                        </div>
+                    @if (skillStore.loading()) {
+                      <div class="skills-loading-state">
+                        <mat-spinner diameter="24" />
+                        <span>Synchronizing skills...</span>
                       </div>
+                    } @else {
+                      @for (cat of filteredCategories(); track cat.category) {
+                        <div class="skill-cat">
+                          <div class="cat-label">{{ cat.category }}</div>
+                          <div class="skill-chips">
+                            @for (s of cat.skills; track s.id) {
+                              <button type="button" class="skill-chip"
+                                [class.active]="isSelected(s.name)"
+                                (click)="toggleSkill(s.name)">
+                                @if (isSelected(s.name)) {
+                                  <span class="material-icons check">check</span>
+                                }
+                                {{ s.name }}
+                              </button>
+                            }
+                          </div>
+                        </div>
+                      }
+                      @empty {
+                        <div class="empty-results">No matching skills found.</div>
+                      }
                     }
                   </div>
 
@@ -346,6 +348,9 @@ const FALLBACK_CATEGORIES = [
     .skill-chip.active { background: #eef2ff; border-color: #4f46e5; color: #4f46e5; font-weight: 600; }
     .skill-chip .check { font-size: 13px; }
 
+    .skills-loading-state { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 40px 0; color: #6b7280; font-size: 13px; }
+    .empty-results { padding: 40px 0; text-align: center; color: #9ca3af; font-size: 14px; grid-column: 1/-1; }
+
     .field-error { font-size: 12px; color: #ef4444; }
     .selection-count { font-size: 12px; color: #4f46e5; font-weight: 600; }
 
@@ -403,16 +408,17 @@ export class ApplyMentorPage implements OnInit {
     setTimeout(() => this.checkingProfile.set(false), 800);
   }
 
-  // Use backend skills grouped by category; fall back to hardcoded if backend has none
+  // Use backend skills grouped by category
   filteredCategories() {
-    const q = this.skillSearch.toLowerCase();
-    const source = this.skillStore.skills().length > 0
-      ? this.skillStore.groupedByCategory()
-      : FALLBACK_CATEGORIES;
+    const q = this.skillSearch.toLowerCase().trim();
+    const source = this.skillStore.groupedByCategory();
 
     if (!q) return source;
     return source
-      .map(cat => ({ ...cat, skills: cat.skills.filter((s: string) => s.toLowerCase().includes(q)) }))
+      .map(cat => ({ 
+        ...cat, 
+        skills: cat.skills.filter(s => s.name.toLowerCase().includes(q)) 
+      }))
       .filter(cat => cat.skills.length > 0);
   }
 

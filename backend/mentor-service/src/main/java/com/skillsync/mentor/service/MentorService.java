@@ -12,6 +12,7 @@ public interface MentorService {
     List<MentorProfileResponseDto> getAllApprovedMentors();
     List<MentorProfileResponseDto> getPendingApplications();
     List<MentorProfileResponseDto> searchMentorsBySpecialization(String skill);
+    List<MentorProfileResponseDto> searchMentorsWithFilters(String skill, Integer minExperience, Integer maxExperience, Double maxRate, Double minRating);
     MentorProfileResponseDto approveMentor(Long mentorId, Long adminId);
     MentorProfileResponseDto rejectMentor(Long mentorId, Long adminId);
     MentorProfileResponseDto updateAvailability(Long userId, UpdateAvailabilityRequestDto request);

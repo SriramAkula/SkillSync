@@ -16,8 +16,21 @@ export class MentorService {
     return this.http.get<ApiResponse<MentorProfileDto[]>>(`${this.base}/approved`);
   }
 
-  searchMentors(skill: string): Observable<ApiResponse<MentorProfileDto[]>> {
-    return this.http.get<ApiResponse<MentorProfileDto[]>>(`${this.base}/search`, { params: { skill } });
+  searchMentors(filters: {
+    skill?: string;
+    minExperience?: number;
+    maxExperience?: number;
+    maxRate?: number;
+    minRating?: number;
+  }): Observable<ApiResponse<MentorProfileDto[]>> {
+    let params: any = {};
+    if (filters.skill) params.skill = filters.skill;
+    if (filters.minExperience != null) params.minExperience = filters.minExperience;
+    if (filters.maxExperience != null) params.maxExperience = filters.maxExperience;
+    if (filters.maxRate != null) params.maxRate = filters.maxRate;
+    if (filters.minRating != null) params.minRating = filters.minRating;
+    
+    return this.http.get<ApiResponse<MentorProfileDto[]>>(`${this.base}/search`, { params });
   }
 
   getMentor(id: number): Observable<ApiResponse<MentorProfileDto>> {

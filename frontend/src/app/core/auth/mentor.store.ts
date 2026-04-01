@@ -50,11 +50,11 @@ export const MentorStore = signalStore(
       )
     ),
 
-    search: rxMethod<string>(
+    search: rxMethod<{ skill?: string; minExperience?: number; maxExperience?: number; maxRate?: number; minRating?: number }>(
       pipe(
         tap(() => patchState(store, { loading: true })),
-        switchMap(skill =>
-          svc.searchMentors(skill).pipe(
+        switchMap(params =>
+          svc.searchMentors(params).pipe(
             tapResponse({
               next: (res) => patchState(store, { searchResults: res.data, loading: false }),
               error: () => patchState(store, { loading: false })

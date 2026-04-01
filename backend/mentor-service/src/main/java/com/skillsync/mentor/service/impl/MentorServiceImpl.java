@@ -115,6 +115,13 @@ public class MentorServiceImpl implements MentorService {
     }
 
     @Override
+    public List<MentorProfileResponseDto> searchMentorsWithFilters(String skill, Integer minExperience, Integer maxExperience, Double maxRate, Double minRating) {
+        log.info("Searching mentors by skill={}, exp={}-{}, rate={}, rating={}", skill, minExperience, maxExperience, maxRate, minRating);
+        return mentorRepository.searchMentorsWithFilters(skill, minExperience, maxExperience, maxRate, minRating)
+                .stream().map(mentorMapper::toDto).collect(Collectors.toList());
+    }
+
+    @Override
     @Transactional
     @CacheEvict(allEntries = true)
     public MentorProfileResponseDto approveMentor(Long mentorId, Long adminId) {

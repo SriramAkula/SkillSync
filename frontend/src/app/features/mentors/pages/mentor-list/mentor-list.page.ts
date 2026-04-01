@@ -1,10 +1,11 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
-import { ReactiveFormsModule, FormControl } from '@angular/forms';
+import { ReactiveFormsModule, FormGroup, FormControl } from '@angular/forms';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { debounceTime, distinctUntilChanged } from 'rxjs';
 import { MentorStore } from '../../../../core/auth/mentor.store';
+import { SkillStore } from '../../../../core/auth/skill.store';
 import { MentorCardComponent } from '../../components/mentor-card/mentor-card.component';
 
 @Component({
@@ -19,15 +20,60 @@ import { MentorCardComponent } from '../../components/mentor-card/mentor-card.co
           <h1>Find Your Perfect Mentor</h1>
           <p>Connect with industry experts and accelerate your career</p>
         </div>
-        <div class="search-bar">
-          <span class="material-icons search-icon">search</span>
-          <input [formControl]="searchCtrl" placeholder="Search by skill — Java, React, AWS..." class="search-input" />
-          @if (searchCtrl.value) {
-            <button class="clear-btn" (click)="searchCtrl.setValue('')">
-              <span class="material-icons">close</span>
+        <form [formGroup]="filterForm">
+          <div class="search-bar">
+            <span class="material-icons search-icon">auto_stories</span>
+            <select formControlName="skill" class="search-input skill-select">
+              <option value="">All Skills / Specializations</option>
+              @for (cat of skillStore.groupedByCategory(); track cat.category) {
+                <optgroup [label]="cat.category">
+                  @for (s of cat.skills; track s.id) {
+                    <option [value]="s.name">{{ s.name }}</option>
+                  }
+                </optgroup>
+              }
+            </select>
+            @if (filterForm.value.skill) {
+              <button type="button" class="icon-btn clear-btn" (click)="filterForm.patchValue({ skill: '' })">
+                <span class="material-icons">close</span>
+              </button>
+            }
+            <div class="divider-v"></div>
+            <button type="button" class="icon-btn filter-toggle" [class.active]="isFilterOpen()" (click)="isFilterOpen.set(!isFilterOpen())" title="Advanced Filters">
+              <span class="material-icons">tune</span>
+              <span class="filter-lbl">Filters</span>
             </button>
+          </div>
+
+          @if (isFilterOpen()) {
+            <div class="advanced-filters">
+              <div class="filter-group">
+                <label>Experience (Years)</label>
+                <div class="range-inputs">
+                  <input type="number" formControlName="minExperience" placeholder="Min" min="0" />
+                  <span class="dash">-</span>
+                  <input type="number" formControlName="maxExperience" placeholder="Max" min="0" />
+                </div>
+              </div>
+              
+              <div class="filter-group">
+                <label>Max Hourly Rate ($)</label>
+                <input type="number" formControlName="maxRate" placeholder="Any" min="0" />
+              </div>
+
+              <div class="filter-group">
+                <label>Minimum Rating</label>
+                <select formControlName="minRating" class="rating-select">
+                  <option [ngValue]="null">Any</option>
+                  <option [ngValue]="4.5">4.5+ ⭐</option>
+                  <option [ngValue]="4.0">4.0+ ⭐</option>
+                  <option [ngValue]="3.0">3.0+ ⭐</option>
+                </select>
+              </div>
+            </div>
           }
-        </div>
+        </form>
+
         <div class="filter-chips">
           @for (f of filters; track f.value) {
             <button class="chip" [class.active]="availFilter() === f.value" (click)="availFilter.set(f.value)">
@@ -102,10 +148,26 @@ import { MentorCardComponent } from '../../components/mentor-card/mentor-card.co
     }
     .search-icon { color: #9ca3af; font-size: 22px; }
     .search-input { flex: 1; border: none; outline: none; font-size: 16px; color: #111827; background: transparent; }
+    .skill-select { cursor: pointer; appearance: none; -webkit-appearance: none; }
     .search-input::placeholder { color: #9ca3af; }
-    .clear-btn { background: none; border: none; cursor: pointer; color: #9ca3af; display: flex; align-items: center; padding: 4px; border-radius: 6px; }
-    .clear-btn:hover { background: #f3f4f6; color: #374151; }
+    
+    .icon-btn { background: none; border: none; cursor: pointer; color: #6b7280; display: flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 8px; transition: background 0.15s, color 0.15s; }
+    .icon-btn:hover { background: #f3f4f6; color: #111827; }
     .clear-btn .material-icons { font-size: 18px; }
+    
+    .filter-toggle.active { background: #eef2ff; color: #4f46e5; font-weight: 600; }
+    .filter-lbl { font-size: 14px; font-weight: 500; }
+    
+    .advanced-filters { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); backdrop-filter: blur(10px); padding: 20px; border-radius: 14px; margin-bottom: 20px; animation: slideDown 0.2s ease-out; }
+    @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+    .filter-group { display: flex; flex-direction: column; gap: 8px; }
+    .filter-group label { font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.9); }
+    .advanced-filters input, .advanced-filters select { height: 42px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.3); background: rgba(255,255,255,0.9); padding: 0 12px; font-size: 14px; color: #111827; outline: none; transition: border-color 0.15s; }
+    .advanced-filters input:focus, .advanced-filters select:focus { border-color: #4f46e5; }
+    .range-inputs { display: flex; align-items: center; gap: 10px; }
+    .range-inputs input { width: 100%; }
+    .dash { color: white; font-weight: 600; }
+    .rating-select { cursor: pointer; appearance: none; }
 
     .filter-chips { display: flex; gap: 8px; flex-wrap: wrap; }
     .chip {
@@ -152,9 +214,18 @@ import { MentorCardComponent } from '../../components/mentor-card/mentor-card.co
 })
 export class MentorListPage implements OnInit {
   readonly mentorStore = inject(MentorStore);
+  readonly skillStore = inject(SkillStore);
   private readonly router = inject(Router);
 
-  readonly searchCtrl = new FormControl('');
+  readonly isFilterOpen = signal(false);
+  readonly filterForm = new FormGroup({
+    skill: new FormControl(''),
+    minExperience: new FormControl<number | null>(null),
+    maxExperience: new FormControl<number | null>(null),
+    maxRate: new FormControl<number | null>(null),
+    minRating: new FormControl<number | null>(null)
+  });
+
   readonly availFilter = signal('');
   readonly filters = [
     { label: 'All', value: '' },
@@ -164,19 +235,35 @@ export class MentorListPage implements OnInit {
 
   ngOnInit(): void {
     this.mentorStore.loadApproved(undefined);
-    this.searchCtrl.valueChanges.pipe(debounceTime(400), distinctUntilChanged()).subscribe(val => {
-      if (val && val.length >= 2) this.mentorStore.search(val);
-      else this.mentorStore.loadApproved(undefined);
+    if (this.skillStore.skills().length === 0) {
+      this.skillStore.loadAll(undefined);
+    }
+    this.filterForm.valueChanges.pipe(debounceTime(400)).subscribe(vals => {
+      const hasFilter = (vals.skill && vals.skill.length >= 2) || 
+                        vals.minExperience != null || 
+                        vals.maxExperience != null || 
+                        vals.maxRate != null || 
+                        vals.minRating != null;
+      if (hasFilter) {
+        this.mentorStore.search(vals as any);
+      } else {
+        this.mentorStore.loadApproved(undefined);
+      }
     });
   }
 
   filteredMentors() {
     const avail = this.availFilter();
-    const list = this.searchCtrl.value?.length ? this.mentorStore.searchResults() : this.mentorStore.approved();
+    
+    // Check if any filter in form has a value
+    const v = this.filterForm.value;
+    const hasSearchActive = (v.skill && v.skill.length >= 2) || v.minExperience != null || v.maxExperience != null || v.maxRate != null || v.minRating != null;
+    
+    const list = hasSearchActive ? this.mentorStore.searchResults() : this.mentorStore.approved();
     return avail ? list.filter(m => m.availabilityStatus === avail) : list;
   }
 
-  reset(): void { this.searchCtrl.setValue(''); this.availFilter.set(''); }
+  reset(): void { this.filterForm.reset(); this.availFilter.set(''); }
   goToDetail(id: number): void { this.router.navigate(['/mentors', id]); }
   goToBook(id: number): void { this.router.navigate(['/sessions/request'], { queryParams: { mentorId: id } }); }
 }

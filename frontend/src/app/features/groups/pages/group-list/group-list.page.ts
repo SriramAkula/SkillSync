@@ -8,6 +8,7 @@ import { GroupService } from '../../../../core/services/group.service';
 import { AuthStore } from '../../../../core/auth/auth.store';
 import { SkillStore } from '../../../../core/auth/skill.store';
 import { GroupDto } from '../../../../shared/models';
+import { forkJoin } from 'rxjs';
 
 @Component({
   selector: 'app-group-list-page',
@@ -34,16 +35,30 @@ import { GroupDto } from '../../../../shared/models';
           @if (skillStore.loading()) {
             <span class="loading-text">Loading skills...</span>
           } @else if (skillStore.skills().length > 0) {
-            <select [(ngModel)]="selectedSkillId" class="skill-select">
-              <option [ngValue]="null" disabled>Select a skill to find groups...</option>
-              @for (s of skillStore.skills(); track s.id) {
-                <option [ngValue]="s.id">{{ s.skillName }}{{ s.category ? ' · ' + s.category : '' }}</option>
+            <div class="multi-select-wrap">
+              <div class="multi-select-trigger" (click)="isDropdownOpen.set(!isDropdownOpen())">
+                <span [class.placeholder]="selectedSkillIds.length === 0">
+                  {{ selectedSkillIds.length === 0 ? 'Select skills to find groups...' : selectedSkillIds.length + ' skills selected' }}
+                </span>
+                <span class="material-icons">expand_more</span>
+              </div>
+              @if (isDropdownOpen()) {
+                <div class="multi-select-menu">
+                  @for (s of skillStore.skills(); track s.id) {
+                    <label class="multi-select-option">
+                      <input type="checkbox" 
+                             [checked]="selectedSkillIds.includes(s.id)" 
+                             (change)="toggleSkill(s.id)" />
+                      <span>{{ s.skillName }}{{ s.category ? ' · ' + s.category : '' }}</span>
+                    </label>
+                  }
+                </div>
               }
-            </select>
+            </div>
           } @else {
-            <input type="number" [(ngModel)]="selectedSkillId" placeholder="Enter Skill ID..." class="search-input" />
+            <input type="number" (change)="toggleSkill(+$any($event.target).value)" placeholder="Enter Skill ID..." class="search-input" />
           }
-          <button class="btn-search" (click)="loadGroups()" [disabled]="!selectedSkillId || loading()">
+          <button class="btn-search" (click)="loadGroups()" [disabled]="selectedSkillIds.length === 0 || loading()">
             @if (loading()) { <mat-spinner diameter="18" /> } @else { Find Groups }
           </button>
         </div>
@@ -165,19 +180,22 @@ import { GroupDto } from '../../../../shared/models';
                   <div class="select-wrapper">
                     <span class="material-icons select-icon">auto_stories</span>
                     <select [(ngModel)]="newGroup.skillId" class="skill-select-modal">
-                      <option [ngValue]="null" disabled>Select a skill...</option>
-                      @for (s of skillStore.skills(); track s.id) {
-                        <option [ngValue]="s.id">{{ s.skillName }}{{ s.category ? ' · ' + s.category : '' }}</option>
+                      <option [ngValue]="null" disabled>Select a target skill...</option>
+                      @for (cat of skillStore.groupedByCategory(); track cat.category) {
+                        <optgroup [label]="cat.category">
+                          @for (s of cat.skills; track s.id) {
+                            <option [ngValue]="s.id">{{ s.name }}</option>
+                          }
+                        </optgroup>
                       }
                     </select>
                     <span class="material-icons select-arrow">expand_more</span>
                   </div>
                 } @else {
-                  <div class="input-wrapper">
-                    <span class="material-icons input-icon">auto_stories</span>
-                    <input type="number" [(ngModel)]="newGroup.skillId" placeholder="Enter Skill ID manually" min="1" />
+                  <div class="empty-selection-state">
+                    <span class="material-icons">warning_amber</span>
+                    <p>No skills available. Please contact an admin.</p>
                   </div>
-                  <span class="hint-text"><span class="material-icons">info</span>No skills found. Enter ID manually.</span>
                 }
               </div>
 
@@ -201,7 +219,7 @@ import { GroupDto } from '../../../../shared/models';
             <div class="modal-actions">
               <button class="btn-modal-cancel" (click)="showCreate.set(false)">Cancel</button>
               <button class="btn-modal-create" (click)="createGroup()"
-                      [disabled]="!newGroup.name?.trim() || !newGroup.skillId || !newGroup.maxMembers || creating()">
+                      [disabled]="!newGroup.name.trim() || !newGroup.skillId || !newGroup.maxMembers || creating()">
                 @if (creating()) {
                   <mat-spinner diameter="18" /><span>Creating...</span>
                 } @else {
@@ -224,9 +242,19 @@ import { GroupDto } from '../../../../shared/models';
     .btn-create .material-icons { font-size: 18px; }
 
     .search-section { display: flex; flex-direction: column; gap: 12px; margin-bottom: 28px; }
-    .search-bar { display: flex; align-items: center; gap: 12px; background: white; border-radius: 14px; border: 1px solid #e5e7eb; padding: 8px 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+    .search-bar { display: flex; align-items: center; gap: 12px; background: white; border-radius: 14px; border: 1px solid #e5e7eb; padding: 8px 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); position: relative; }
     .search-bar .material-icons { color: #9ca3af; font-size: 20px; flex-shrink: 0; }
-    .skill-select { flex: 1; border: none; outline: none; font-size: 15px; color: #111827; background: transparent; cursor: pointer; appearance: none; }
+    
+    .multi-select-wrap { flex: 1; position: relative; }
+    .multi-select-trigger { display: flex; align-items: center; justify-content: space-between; cursor: pointer; padding: 6px 0; }
+    .multi-select-trigger span { font-size: 15px; color: #111827; }
+    .multi-select-trigger .placeholder { color: #9ca3af; }
+    .multi-select-menu { position: absolute; top: calc(100% + 14px); left: -44px; right: -120px; background: white; border-radius: 12px; border: 1px solid #e5e7eb; box-shadow: 0 10px 30px rgba(0,0,0,0.1); max-height: 280px; overflow-y: auto; z-index: 100; padding: 8px; }
+    .multi-select-option { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 8px; cursor: pointer; transition: background 0.15s; }
+    .multi-select-option:hover { background: #f3f4f6; }
+    .multi-select-option input[type="checkbox"] { width: 16px; height: 16px; accent-color: #4f46e5; cursor: pointer; }
+    .multi-select-option span { font-size: 14px; color: #374151; }
+
     .loading-text { flex: 1; font-size: 14px; color: #9ca3af; font-style: italic; }
     .search-input { flex: 1; border: none; outline: none; font-size: 15px; color: #111827; background: transparent; }
     .search-input::placeholder { color: #9ca3af; }
@@ -330,11 +358,20 @@ export class GroupListPage implements OnInit {
   readonly showCreate = signal(false);
   readonly selectedCat = signal('');
   readonly creating = signal(false);
+  readonly isDropdownOpen = signal(false);
 
-  selectedSkillId: number | null = null;
+  selectedSkillIds: number[] = [];
   newGroup = { name: '', skillId: null as number | null, maxMembers: null as number | null, description: '' };
 
   ngOnInit(): void { this.skillStore.loadAll(undefined); }
+
+  toggleSkill(skillId: number): void {
+    if (this.selectedSkillIds.includes(skillId)) {
+      this.selectedSkillIds = this.selectedSkillIds.filter(id => id !== skillId);
+    } else {
+      this.selectedSkillIds = [...this.selectedSkillIds, skillId];
+    }
+  }
 
   // ── Safe member count (handles both currentMembers and memberCount) ──
   members(g: GroupDto): number {
@@ -365,22 +402,42 @@ export class GroupListPage implements OnInit {
   }
 
   loadGroups(): void {
-    if (!this.selectedSkillId) return;
+    if (this.selectedSkillIds.length === 0) return;
     this.loading.set(true);
     this.searched.set(true);
-    this.groupService.getGroupsBySkill(this.selectedSkillId).subscribe({
-      next: (r) => { this.groups.set(r.data ?? []); this.loading.set(false); },
+    this.isDropdownOpen.set(false); // Close dropdown on search
+    
+    // Concurrently fetch groups for all selected skills
+    const requests = this.selectedSkillIds.map(id => this.groupService.getGroupsBySkill(id));
+    
+    if (requests.length === 0) {
+      this.groups.set([]);
+      this.loading.set(false);
+      return;
+    }
+
+    forkJoin(requests).subscribe({
+      next: (responses) => {
+        // Flatten arrays and remove duplicate groups by their ID
+        const allGroups = responses.flatMap(r => r.data ?? []);
+        const uniqueGroups = Array.from(new Map(allGroups.map(g => [g.id, g])).values());
+        this.groups.set(uniqueGroups);
+        this.loading.set(false);
+      },
       error: () => { this.groups.set([]); this.loading.set(false); }
     });
   }
 
   filterByCategory(cat: string): void {
     this.selectedCat.set(cat);
-    const skill = this.skillStore.skills().find(s => s.category === cat);
-    if (skill) { this.selectedSkillId = skill.id; this.loadGroups(); }
+    const skills = this.skillStore.skills().filter(s => s.category === cat);
+    if (skills.length > 0) { 
+      this.selectedSkillIds = skills.map(s => s.id); 
+      this.loadGroups(); 
+    }
   }
 
-  clearCat(): void { this.selectedCat.set(''); this.selectedSkillId = null; this.groups.set([]); this.searched.set(false); }
+  clearCat(): void { this.selectedCat.set(''); this.selectedSkillIds = []; this.groups.set([]); this.searched.set(false); }
 
   openCreate(): void {
     this.newGroup = { name: '', skillId: null, maxMembers: null, description: '' };
@@ -404,7 +461,7 @@ export class GroupListPage implements OnInit {
 
   createGroup(): void {
     const { name, skillId, maxMembers, description } = this.newGroup;
-    if (!name?.trim() || !skillId || !maxMembers) return;
+    if (!name.trim() || !skillId || !maxMembers) return;
     this.creating.set(true);
     this.groupService.createGroup({ name: name.trim(), skillId: Number(skillId), maxMembers: Number(maxMembers), description }).subscribe({
       next: (r) => {

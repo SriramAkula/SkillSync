@@ -121,7 +121,15 @@ export const AuthStore = signalStore(
                 });
                 router.navigate(['/mentors']);
               },
-              error: (err: any) => patchState(store, { loading: false, error: err.error?.message ?? 'Invalid credentials' })
+              error: (err: any) => {
+                const msg = err.error?.message ?? 'Invalid credentials';
+                if (msg.toLowerCase().includes('user not found')) {
+                  router.navigate(['/auth/register'], { queryParams: { email: req.email } });
+                  patchState(store, { loading: false, error: 'User not found. Please register to continue.' });
+                } else {
+                  patchState(store, { loading: false, error: msg });
+                }
+              }
             })
           )
         )

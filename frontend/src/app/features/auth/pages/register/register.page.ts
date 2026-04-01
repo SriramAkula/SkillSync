@@ -1,7 +1,7 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { RouterLink, ActivatedRoute } from '@angular/router';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { AuthStore } from '../../../../core/auth/auth.store';
 import { OtpInputComponent } from '../../components/otp-input/otp-input.component';
@@ -188,7 +188,7 @@ type Step = 'email' | 'otp' | 'details';
     }
   `]
 })
-export class RegisterPage {
+export class RegisterPage implements OnInit {
   readonly authStore = inject(AuthStore);
   readonly step = signal<Step>('email');
   readonly showPwd = signal(false);
@@ -196,6 +196,7 @@ export class RegisterPage {
   readonly userFocused = signal(false);
   readonly pwdFocused = signal(false);
   private readonly fb = inject(FormBuilder);
+  private readonly route = inject(ActivatedRoute);
 
   readonly steps = [
     { num: 1, label: 'Verify your email' },
@@ -212,6 +213,14 @@ export class RegisterPage {
   readonly stepIndex = () => ({ email: 1, otp: 2, details: 3 }[this.step()]);
   readonly stepTitle = () => ({ email: 'Create your account', otp: 'Verify your email', details: 'Almost there!' }[this.step()]);
   readonly stepSubtitle = () => ({ email: 'Enter your email to get started', otp: 'Check your inbox for the code', details: 'Choose a username and password' }[this.step()]);
+
+  ngOnInit(): void {
+    const emailParam = this.route.snapshot.queryParamMap.get('email');
+    if (emailParam) {
+      this.emailForm.patchValue({ email: emailParam });
+      // Clear the query params after reading them to keep the URL clean
+    }
+  }
 
   sendOtp(): void {
     if (this.emailForm.invalid) return;

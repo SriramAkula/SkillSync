@@ -10,16 +10,16 @@ import { SidebarComponent } from '../sidebar/sidebar.component';
   imports: [RouterOutlet, CommonModule, NavbarComponent, SidebarComponent],
   template: `
     <div class="shell">
-      <app-navbar (menuToggle)="sidebarOpen.set(!sidebarOpen())" />
+      <app-navbar (menuToggle)="toggleSidebar()" />
 
       <div class="body">
         <!-- Sidebar -->
-        <aside class="sidebar-wrap" [class.open]="sidebarOpen()">
-          <app-sidebar (navClick)="sidebarOpen.set(false)" />
+        <aside class="sidebar-wrap" [class.open]="sidebarOpen()" [class.closed]="!sidebarOpen()">
+          <app-sidebar (navClick)="closeOnMobile()" />
         </aside>
 
         <!-- Mobile overlay -->
-        @if (sidebarOpen()) {
+        @if (sidebarOpen() && isMobile()) {
           <div class="overlay" (click)="sidebarOpen.set(false)"></div>
         }
 
@@ -35,13 +35,17 @@ import { SidebarComponent } from '../sidebar/sidebar.component';
 
     .body { display: flex; flex: 1; overflow: hidden; }
 
-    /* Sidebar — always visible on desktop */
+    /* Sidebar — desktop */
     .sidebar-wrap {
       width: 240px; flex-shrink: 0;
       background: white; border-right: 1px solid #e5e7eb;
       overflow-y: auto; z-index: 50;
-      transition: transform 0.25s ease;
+      transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      margin-left: 0;
     }
+    
+    /* Desktop Closed state */
+    .sidebar-wrap.closed { margin-left: -240px; }
 
     /* Main content */
     .main-content {
@@ -61,10 +65,11 @@ import { SidebarComponent } from '../sidebar/sidebar.component';
     @media (max-width: 768px) {
       .sidebar-wrap {
         position: fixed; top: 64px; left: 0; bottom: 0;
-        transform: translateX(-100%);
+        margin-left: -240px; /* Hidden by default on mobile */
         box-shadow: 4px 0 20px rgba(0,0,0,0.1);
       }
-      .sidebar-wrap.open { transform: translateX(0); }
+      /* Mobile Open state */
+      .sidebar-wrap.open { margin-left: 0; }
       .overlay { display: block; top: 64px; }
       .main-content { padding: 16px; }
     }
@@ -75,5 +80,28 @@ import { SidebarComponent } from '../sidebar/sidebar.component';
   `]
 })
 export class ShellComponent {
-  readonly sidebarOpen = signal(false);
+  readonly isMobile = signal(window.innerWidth <= 768);
+  // On desktop, it's open by default. On mobile, it's closed by default.
+  readonly sidebarOpen = signal(!this.isMobile());
+
+  constructor() {
+    window.addEventListener('resize', () => {
+      const mobile = window.innerWidth <= 768;
+      if (mobile !== this.isMobile()) {
+        this.isMobile.set(mobile);
+        this.sidebarOpen.set(!mobile);
+      }
+    });
+  }
+
+  toggleSidebar(): void {
+    this.sidebarOpen.set(!this.sidebarOpen());
+  }
+
+  closeOnMobile(): void {
+    if (this.isMobile()) {
+      this.sidebarOpen.set(false);
+    }
+  }
 }
+

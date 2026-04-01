@@ -6,6 +6,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { SessionStore } from '../../../../core/auth/session.store';
 import { MentorStore } from '../../../../core/auth/mentor.store';
+import { SkillStore } from '../../../../core/auth/skill.store';
 
 @Component({
   selector: 'app-request-session-page',
@@ -75,8 +76,16 @@ import { MentorStore } from '../../../../core/auth/mentor.store';
                 <div class="input-wrapper" [class.focused]="focused() === 'skill'"
                      [class.error]="form.get('skillId')?.invalid && form.get('skillId')?.touched">
                   <span class="material-icons input-icon">auto_stories</span>
-                  <input type="number" formControlName="skillId" placeholder="Enter skill ID"
-                    (focus)="focused.set('skill')" (blur)="focused.set('')" />
+                  <select formControlName="skillId" class="skill-select">
+                    <option [ngValue]="null" disabled>Select a skill to focus on...</option>
+                    @for (cat of skillStore.groupedByCategory(); track cat.category) {
+                      <optgroup [label]="cat.category">
+                        @for (s of cat.skills; track s.id) {
+                          <option [ngValue]="s.id">{{ s.name }}</option>
+                        }
+                      </optgroup>
+                    }
+                  </select>
                 </div>
                 @if (form.get('skillId')?.invalid && form.get('skillId')?.touched) {
                   <span class="field-error">Valid skill ID is required</span>
@@ -237,12 +246,13 @@ import { MentorStore } from '../../../../core/auth/mentor.store';
     .input-icon { font-size: 18px; color: #9ca3af; margin-right: 10px; flex-shrink: 0; }
     .input-wrapper.focused .input-icon { color: #4f46e5; }
 
-    .input-wrapper input {
+    .input-wrapper input, .skill-select {
       flex: 1; border: none; outline: none;
       font-size: 15px; color: #111827;
       background: transparent; font-family: inherit;
       min-width: 0;
     }
+    .skill-select { cursor: pointer; appearance: none; }
     .input-wrapper input::placeholder { color: #9ca3af; }
 
     /* Native date/time inputs */
@@ -341,6 +351,7 @@ import { MentorStore } from '../../../../core/auth/mentor.store';
 export class RequestSessionPage implements OnInit {
   readonly sessionStore = inject(SessionStore);
   readonly mentorStore = inject(MentorStore);
+  readonly skillStore = inject(SkillStore);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly snack = inject(MatSnackBar);
@@ -368,6 +379,9 @@ export class RequestSessionPage implements OnInit {
   ngOnInit(): void {
     const mentorId = Number(this.route.snapshot.queryParamMap.get('mentorId'));
     if (mentorId) this.mentorStore.loadById(mentorId);
+    if (this.skillStore.skills().length === 0) {
+      this.skillStore.loadAll(undefined);
+    }
   }
 
   estimatedCost(hourlyRate: number): number {

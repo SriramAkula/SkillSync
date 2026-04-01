@@ -28,4 +28,18 @@ public interface MentorRepository extends JpaRepository<MentorProfile, Long> {
 
     @Query("SELECT m FROM MentorProfile m WHERE LOWER(m.specialization) LIKE LOWER(CONCAT('%', :skill, '%')) AND m.isApproved = true")
     List<MentorProfile> searchBySpecialization(String skill);
+
+    @Query("SELECT m FROM MentorProfile m WHERE m.isApproved = true " +
+           "AND (:skill IS NULL OR :skill = '' OR LOWER(m.specialization) LIKE LOWER(CONCAT('%', :skill, '%'))) " +
+           "AND (:minExperience IS NULL OR m.yearsOfExperience >= :minExperience) " +
+           "AND (:maxExperience IS NULL OR m.yearsOfExperience <= :maxExperience) " +
+           "AND (:maxRate IS NULL OR m.hourlyRate <= :maxRate) " +
+           "AND (:minRating IS NULL OR m.rating >= :minRating) " +
+           "ORDER BY m.rating DESC")
+    List<MentorProfile> searchMentorsWithFilters(
+            @org.springframework.data.repository.query.Param("skill") String skill,
+            @org.springframework.data.repository.query.Param("minExperience") Integer minExperience,
+            @org.springframework.data.repository.query.Param("maxExperience") Integer maxExperience,
+            @org.springframework.data.repository.query.Param("maxRate") Double maxRate,
+            @org.springframework.data.repository.query.Param("minRating") Double minRating);
 }
