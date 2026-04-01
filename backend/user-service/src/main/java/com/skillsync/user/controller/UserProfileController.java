@@ -54,14 +54,25 @@ public class UserProfileController {
 	@SecurityRequirement(name = "bearerAuth")
 	public ResponseEntity<ApiResponse<UserProfileResponseDto>> getProfile(
 			@Parameter(hidden = true) @RequestHeader("X-User-Id") Long userId,
+			@Parameter(hidden = true) @RequestHeader(value = "loggedInUser", required = false) String email,
 			@Parameter(hidden = true) @RequestHeader(value = "roles", required = false) String roles) {
 
 		if (roles == null || roles.isEmpty()) {
 			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Authenticated access required");
 		}
-		log.info("Fetching profile for userId: {}", userId);
+		log.info("Fetching profile for userId: {} (fallback email: {})", userId, email);
 
-		UserProfileResponseDto response = userProfileService.getProfileByUserId(userId);
+		UserProfileResponseDto response;
+		try {
+			response = userProfileService.getProfileByUserId(userId);
+		} catch (Exception e) {
+			if (email != null && !email.trim().isEmpty()) {
+				log.info("Profile not found by userId, attempting fallback with email: {}", email);
+				response = userProfileService.getProfileByEmail(email);
+			} else {
+				throw e;
+			}
+		}
 
 		return ResponseEntity
 				.ok(new ApiResponse<>(
@@ -107,15 +118,29 @@ public class UserProfileController {
 	@SecurityRequirement(name = "bearerAuth")
 	public ResponseEntity<ApiResponse<UserProfileResponseDto>> updateProfile(
 			@Parameter(hidden = true) @RequestHeader("X-User-Id") Long userId,
+			@Parameter(hidden = true) @RequestHeader(value = "loggedInUser", required = false) String email,
 			@Parameter(hidden = true) @RequestHeader(value = "roles", required = false) String roles,
 			@Valid @RequestBody UpdateProfileRequestDto requestDto) {
 
 		if (roles == null || roles.isEmpty()) {
 			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Authenticated access required");
 		}
-		log.info("Updating profile for userId: {}", userId);
+		log.info("Updating profile for userId: {} (fallback email: {})", userId, email);
 
-		UserProfileResponseDto response = userProfileService.updateProfile(userId, requestDto);
+		UserProfileResponseDto response;
+		try {
+			response = userProfileService.updateProfile(userId, requestDto);
+		} catch (Exception e) {
+			if (email != null && !email.trim().isEmpty()) {
+				log.info("Profile update failed by userId, attempting fallback with email: {}", email);
+				// We need an updateByEmail method or just find the ID then update
+				// Better to just fetch by email, get the UserID from that profile, and retry update.
+				UserProfileResponseDto profileByEmail = userProfileService.getProfileByEmail(email);
+				response = userProfileService.updateProfile(profileByEmail.getUserId(), requestDto);
+			} else {
+				throw e;
+			}
+		}
 
 		return ResponseEntity
 				.ok(new ApiResponse<>(
