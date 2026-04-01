@@ -25,6 +25,11 @@ public interface UserProfileService {
 	UserProfileResponseDto getProfileByEmail(String email);
 
 	/**
+	 * Update user profile by email
+	 */
+	UserProfileResponseDto updateProfileByEmail(String email, UpdateProfileRequestDto requestDto);
+
+	/**
 	 * Create user profile from internal endpoint (Auth Service)
 	 */
 	void createProfile(Long userId, String email, String username);

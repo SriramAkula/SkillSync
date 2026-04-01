@@ -59,6 +59,25 @@ public class UserProfileServiceImpl implements UserProfileService {
 
 	@Override
 	@Transactional
+	@Caching(evict = {
+		@CacheEvict(key = "'userId_' + #result.userId", condition = "#result != null"),
+		@CacheEvict(key = "'email_' + #email")
+	}, put = {
+		@CachePut(key = "'email_' + #email")
+	})
+	public UserProfileResponseDto updateProfileByEmail(String email, UpdateProfileRequestDto requestDto) {
+		log.info("Updating profile for email: {}", email);
+		UserProfile profile = userProfileRepository.findByEmail(email)
+			.orElseThrow(() -> new UserProfileNotFoundException(
+				"User profile not found for email: " + email));
+		userProfileMapper.updateEntity(profile, requestDto);
+		UserProfile updated = userProfileRepository.save(profile);
+		log.info("Profile updated successfully for email: {}", email);
+		return userProfileMapper.toDto(updated);
+	}
+
+	@Override
+	@Transactional
 	public void createProfile(Long userId, String email, String username) {
 		log.info("Creating profile for userId: {}, email: {}, username: {}", userId, email, username);
 		UserProfile profile = userProfileMapper.toEntity(userId, email, username);

@@ -120,59 +120,36 @@ public class UserProfileController {
 	 * Update user's profile
 	 */
 	@PutMapping("/profile")
-	@Operation(summary = "Update user profile", description = "Update the profile of the authenticated user")
-	@ApiResponses(value = {
-			@io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Profile updated successfully"),
-			@io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid request body"),
-			@io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Unauthorized - JWT token missing or invalid"),
-			@io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "User profile not found")
+	@Operation(summary = "Update user profile", security = {
+			@SecurityRequirement(name = "bearerAuth")
 	})
 	@SecurityRequirement(name = "bearerAuth")
 	public ResponseEntity<ApiResponse<UserProfileResponseDto>> updateProfile(
-			@Parameter(hidden = true) @RequestHeader("X-User-Id") Long headerUserId,
+			@Parameter(hidden = true) @RequestHeader(value = "X-User-Id", required = false) Long headerUserId,
 			@Parameter(hidden = true) @RequestHeader(value = "loggedInUser", required = false) String headerEmail,
 			@Parameter(hidden = true) @RequestHeader(value = "roles", required = false) String roles,
 			@Valid @RequestBody UpdateProfileRequestDto requestDto,
 			HttpServletRequest request) {
 
-		// 1. Robust identification from JWT
-		Long userId = securityUtil.extractUserId(request);
+		// 1. Robust identification from JWT (strictly by email as requested)
 		String email = securityUtil.extractEmail(request);
 		
-		// Fallback to headers (only if secure/internal)
-		if (userId == null) userId = headerUserId;
-		if (email == null) email = headerEmail;
-
-		if (userId == null && (email == null || email.isEmpty())) {
-			throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unidentified user");
+		// Fallback to headers (populated by API gateway)
+		if (email == null || email.trim().isEmpty()) {
+			email = headerEmail;
 		}
 
-		log.info("Updating profile for userId: {} (email: {})", userId, email);
-
-		UserProfileResponseDto response;
-		try {
-			if (userId != null) {
-				response = userProfileService.updateProfile(userId, requestDto);
-			} else {
-				// We have email but no ID (possibly older OAuth token format)
-				UserProfileResponseDto existing = userProfileService.getProfileByEmail(email);
-				response = userProfileService.updateProfile(existing.getUserId(), requestDto);
-			}
-		} catch (Exception e) {
-			if (email != null && !email.trim().isEmpty()) {
-				log.info("Profile update retry by email: {}", email);
-				UserProfileResponseDto profileByEmail = userProfileService.getProfileByEmail(email);
-				response = userProfileService.updateProfile(profileByEmail.getUserId(), requestDto);
-			} else {
-				throw e;
-			}
+		if (email == null || email.trim().isEmpty()) {
+			throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unidentified user: No valid email in security context.");
 		}
 
-		return ResponseEntity
-				.ok(new ApiResponse<>(
-						"Profile updated successfully",
-						response));
+		log.info("Updating profile strictly by email: {}", email);
+
+		UserProfileResponseDto response = userProfileService.updateProfileByEmail(email, requestDto);
+
+		return ResponseEntity.ok(new ApiResponse<>("Profile updated successfully", response));
 	}
+
 
 	/**
 	 * POST /user/internal/users
