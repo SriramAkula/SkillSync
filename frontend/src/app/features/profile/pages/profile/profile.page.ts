@@ -1,9 +1,8 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormBuilder } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Component, inject, OnInit, OnDestroy, signal } from '@angular/core';
+import { CommonModule, DatePipe } from '@angular/common';
+import { Router, RouterLink, NavigationEnd } from '@angular/router';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { Subscription, filter } from 'rxjs';
 import { UserService } from '../../../../core/services/user.service';
 import { AuthStore } from '../../../../core/auth/auth.store';
 import { UserProfileDto } from '../../../../shared/models';
@@ -11,385 +10,442 @@ import { UserProfileDto } from '../../../../shared/models';
 @Component({
   selector: 'app-profile-page',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink, MatProgressSpinnerModule, MatSnackBarModule],
+  imports: [CommonModule, DatePipe, MatProgressSpinnerModule, RouterLink],
   template: `
     <div class="page">
 
-      <!-- Header -->
+      <!-- ── Page Header ── -->
       <div class="page-header">
-        <div>
+        <div class="header-text">
           <h1>My Profile</h1>
-          <p>Manage your personal information</p>
+          <p>View your personal information</p>
         </div>
-        <button class="btn-logout" (click)="logout()">
-          <span class="material-icons">logout</span>
-          Sign Out
-        </button>
+        <div class="header-actions">
+          <button class="btn-danger" (click)="logout()">
+            <span class="material-icons">logout</span>
+            Sign Out
+          </button>
+        </div>
       </div>
 
+      <!-- ── Loading ── -->
       @if (loading()) {
-        <div class="loading-center"><mat-spinner diameter="48" /></div>
+        <div class="loading-center">
+          <mat-spinner diameter="48" />
+          <p class="loading-text">Loading profile...</p>
+        </div>
       }
 
-      @if (profile()) {
+      <!-- ── Profile Content (View Only — NO inputs) ── -->
+      @if (!loading()) {
         <div class="layout">
 
-          <!-- ── Left Column ── -->
+          <!-- Left: Avatar Card -->
           <div class="left-col">
 
-            <!-- Avatar Card (no logout here) -->
             <div class="avatar-card">
-              <div class="avatar-xl">{{ initials() }}</div>
-              <h2>{{ profile()!.username }}</h2>
-              <p class="email">{{ profile()!.email }}</p>
-              @if (profile()!.createdAt) {
-                <div class="joined-badge">
+              <div class="avatar-circle">{{ initials() }}</div>
+              <h2 class="avatar-name">{{ displayName() }}</h2>
+              <p class="avatar-username">&#64;{{ displayUsername() }}</p>
+              <p class="avatar-email">{{ displayEmail() }}</p>
+
+              @if (profile()?.createdAt) {
+                <div class="joined-pill">
                   <span class="material-icons">calendar_today</span>
                   Joined {{ profile()!.createdAt | date:'mediumDate' }}
                 </div>
               }
+
               <div class="roles-row">
                 @if (authStore.isAdmin()) {
-                  <span class="role-badge admin">
+                  <span class="role-pill admin">
                     <span class="material-icons">admin_panel_settings</span> Admin
                   </span>
                 }
                 @if (authStore.isMentor()) {
-                  <span class="role-badge mentor">
+                  <span class="role-pill mentor">
                     <span class="material-icons">school</span> Mentor
                   </span>
                 }
                 @if (authStore.isLearner()) {
-                  <span class="role-badge learner">
+                  <span class="role-pill learner">
                     <span class="material-icons">person</span> Learner
                   </span>
                 }
               </div>
             </div>
 
-            <!-- ── Become a Mentor CTA (learners who aren't mentors yet) ── -->
-            @if (authStore.isLearner() && !authStore.isMentor()) {
-              <div class="mentor-cta">
-                <div class="cta-icon">
-                  <span class="material-icons">school</span>
-                </div>
-                <div class="cta-body">
-                  <strong>Become a Mentor</strong>
-                  <p>Share your skills and earn by teaching others on SkillSync.</p>
-                </div>
-                <a routerLink="/mentors/apply" class="cta-btn">Apply Now</a>
-              </div>
-            }
 
-            <!-- ── Quick Links ── -->
-            <div class="quick-links">
+            <!-- Quick Links -->
+            <nav class="quick-links">
               <a routerLink="/sessions" class="quick-link">
                 <span class="material-icons">event</span>
                 <span>My Sessions</span>
-                <span class="material-icons arrow">chevron_right</span>
+                <span class="material-icons ml-auto">chevron_right</span>
               </a>
               <a routerLink="/notifications" class="quick-link">
                 <span class="material-icons">notifications</span>
                 <span>Notifications</span>
-                @if (unreadCount() > 0) {
-                  <span class="unread-dot">{{ unreadCount() }}</span>
-                }
-                <span class="material-icons arrow">chevron_right</span>
+                <span class="material-icons ml-auto">chevron_right</span>
               </a>
               @if (authStore.isMentor()) {
                 <a routerLink="/mentor-dashboard" class="quick-link">
                   <span class="material-icons">dashboard</span>
                   <span>Mentor Dashboard</span>
-                  <span class="material-icons arrow">chevron_right</span>
+                  <span class="material-icons ml-auto">chevron_right</span>
                 </a>
               }
               @if (authStore.isAdmin()) {
                 <a routerLink="/admin" class="quick-link">
                   <span class="material-icons">admin_panel_settings</span>
                   <span>Admin Panel</span>
-                  <span class="material-icons arrow">chevron_right</span>
+                  <span class="material-icons ml-auto">chevron_right</span>
                 </a>
               }
-            </div>
+            </nav>
 
           </div>
 
-          <!-- ── Right Column ── -->
+          <!-- Right: Profile Details (READ-ONLY — zero inputs) -->
           <div class="right-col">
+            <div class="details-card">
 
-            <!-- Edit Form -->
-            <div class="edit-card">
-              <h3>Edit Profile</h3>
-              <form [formGroup]="form" (ngSubmit)="save()" class="form">
+              <div class="details-header">
+                <h3>Profile Details</h3>
+                <button class="btn-edit-sm" (click)="goEdit()">
+                  <span class="material-icons">edit</span> Edit
+                </button>
+              </div>
 
-                <div class="input-group">
-                  <label class="input-label">Username</label>
-                  <div class="input-wrapper">
-                    <span class="material-icons input-icon">person</span>
-                    <input type="text" formControlName="username" placeholder="Your username" />
-                  </div>
+              <!-- Name -->
+              <div class="detail-row">
+                <div class="detail-label">
+                  <span class="material-icons">person</span>
+                  Full Name
                 </div>
-
-                <div class="two-col">
-                  <div class="input-group">
-                    <label class="input-label">First Name</label>
-                    <div class="input-wrapper">
-                      <input type="text" formControlName="firstName" placeholder="First name" />
-                    </div>
-                  </div>
-                  <div class="input-group">
-                    <label class="input-label">Last Name</label>
-                    <div class="input-wrapper">
-                      <input type="text" formControlName="lastName" placeholder="Last name" />
-                    </div>
-                  </div>
-                </div>
-
-                <div class="input-group">
-                  <label class="input-label">Bio</label>
-                  <div class="input-wrapper textarea-wrapper">
-                    <textarea formControlName="bio" placeholder="Tell us about yourself..." rows="4"></textarea>
-                  </div>
-                </div>
-
-                <div class="form-actions">
-                  <button type="submit" class="btn-save" [disabled]="saving()">
-                    @if (saving()) {
-                      <mat-spinner diameter="18" />
-                      <span>Saving...</span>
-                    } @else {
-                      <span class="material-icons">save</span>
-                      <span>Update Profile</span>
-                    }
-                  </button>
-                </div>
-
-              </form>
-            </div>
-
-            <!-- Sign Out Card -->
-            <div class="signout-card">
-              <div class="signout-info">
-                <span class="material-icons signout-icon">logout</span>
-                <div>
-                  <strong>Sign out</strong>
-                  <p>You'll be redirected to the login page.</p>
+                <div class="detail-value" [class.is-placeholder]="!profile()?.name?.trim()">
+                  {{ profile()?.name?.trim() || 'Name' }}
                 </div>
               </div>
-              <button class="btn-signout" (click)="logout()">Sign Out</button>
-            </div>
 
+              <!-- Email -->
+              <div class="detail-row">
+                <div class="detail-label">
+                  <span class="material-icons">email</span>
+                  Email
+                </div>
+                <div class="detail-value" [class.is-placeholder]="!displayEmail()">
+                  {{ displayEmail() || 'Email' }}
+                </div>
+              </div>
+
+              <!-- Username -->
+              <div class="detail-row">
+                <div class="detail-label">
+                  <span class="material-icons">alternate_email</span>
+                  Username
+                </div>
+                <div class="detail-value" [class.is-placeholder]="!displayUsername()">
+                  {{ displayUsername() || 'Username' }}
+                </div>
+              </div>
+
+              <!-- Phone -->
+              <div class="detail-row">
+                <div class="detail-label">
+                  <span class="material-icons">phone</span>
+                  Phone
+                </div>
+                <div class="detail-value" [class.is-placeholder]="!profile()?.phoneNumber?.trim()">
+                  {{ profile()?.phoneNumber?.trim() || 'Add phone number' }}
+                </div>
+              </div>
+
+              <!-- Bio -->
+              <div class="detail-row bio-row">
+                <div class="detail-label">
+                  <span class="material-icons">info_outline</span>
+                  Bio
+                </div>
+                <div class="detail-value bio-value" [class.is-placeholder]="!profile()?.bio?.trim()">
+                  {{ profile()?.bio?.trim() || 'Add bio' }}
+                </div>
+              </div>
+
+              <!-- Skills -->
+              <div class="detail-row skills-row">
+                <div class="detail-label">
+                  <span class="material-icons">auto_stories</span>
+                  Skills
+                </div>
+                <div class="detail-value">
+                  @if (skillList().length > 0) {
+                    <div class="skill-chips">
+                      @for (skill of skillList(); track skill) {
+                        <span class="skill-chip">{{ skill }}</span>
+                      }
+                    </div>
+                  } @else {
+                    <span class="is-placeholder">Select Skills</span>
+                  }
+                </div>
+              </div>
+
+            </div>
           </div>
+
         </div>
       }
+
     </div>
   `,
   styles: [`
-    .page { max-width: 960px; margin: 0 auto; }
+    /* ── Page ── */
+    .page { max-width: 980px; margin: 0 auto; padding-bottom: 40px; }
 
+    /* ── Header ── */
     .page-header {
-      display: flex; justify-content: space-between; align-items: center;
-      margin-bottom: 28px; flex-wrap: wrap; gap: 12px;
+      display: flex; justify-content: space-between; align-items: flex-start;
+      margin-bottom: 32px; flex-wrap: wrap; gap: 16px;
     }
-    .page-header h1 { font-size: 28px; font-weight: 800; color: #111827; margin: 0 0 4px; }
-    .page-header p { color: #6b7280; font-size: 14px; margin: 0; }
-
-    .btn-logout {
-      display: flex; align-items: center; gap: 6px;
-      height: 40px; padding: 0 16px; border-radius: 10px;
-      background: #fee2e2; color: #dc2626; border: none;
-      font-size: 13px; font-weight: 600; cursor: pointer; transition: background 0.15s;
+    .header-text h1 {
+      font-size: 28px; font-weight: 800; color: #111827; margin: 0 0 4px;
+      letter-spacing: -0.5px;
     }
-    .btn-logout:hover { background: #fecaca; }
-    .btn-logout .material-icons { font-size: 17px; }
+    .header-text p { font-size: 14px; color: #6b7280; margin: 0; }
+    .header-actions { display: flex; gap: 10px; flex-wrap: wrap; }
 
-    .loading-center { display: flex; justify-content: center; padding: 80px; }
+    .btn-primary {
+      display: inline-flex; align-items: center; gap: 7px;
+      height: 42px; padding: 0 20px; border-radius: 10px;
+      background: #4f46e5; color: #fff; border: none;
+      font-size: 14px; font-weight: 600; cursor: pointer;
+      transition: background .15s, transform .1s;
+    }
+    .btn-primary:hover { background: #4338ca; transform: translateY(-1px); }
+    .btn-primary .material-icons { font-size: 18px; }
 
-    /* Layout */
-    .layout { display: grid; grid-template-columns: 280px 1fr; gap: 24px; align-items: start; }
-    @media (max-width: 768px) { .layout { grid-template-columns: 1fr; } }
+    .btn-danger {
+      display: inline-flex; align-items: center; gap: 7px;
+      height: 42px; padding: 0 18px; border-radius: 10px;
+      background: #fef2f2; color: #dc2626; border: 1px solid #fecaca;
+      font-size: 14px; font-weight: 600; cursor: pointer;
+      transition: background .15s;
+    }
+    .btn-danger:hover { background: #fee2e2; }
+    .btn-danger .material-icons { font-size: 18px; }
 
-    /* Left col */
+    /* ── Loading ── */
+    .loading-center {
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; padding: 80px; gap: 16px;
+    }
+    .loading-text { font-size: 14px; color: #6b7280; margin: 0; }
+
+    /* ── Layout ── */
+    .layout { display: grid; grid-template-columns: 290px 1fr; gap: 24px; align-items: start; }
+    @media (max-width: 780px) { .layout { grid-template-columns: 1fr; } }
+
+    /* ── Left Column ── */
     .left-col { display: flex; flex-direction: column; gap: 16px; }
 
     /* Avatar Card */
     .avatar-card {
-      background: white; border-radius: 20px; border: 1px solid #e5e7eb;
-      padding: 28px; display: flex; flex-direction: column;
-      align-items: center; gap: 10px; text-align: center;
+      background: #fff; border-radius: 20px; border: 1px solid #e5e7eb;
+      padding: 32px 24px; display: flex; flex-direction: column;
+      align-items: center; gap: 8px; text-align: center;
+      box-shadow: 0 1px 3px rgba(0,0,0,.06);
     }
-    .avatar-xl {
-      width: 88px; height: 88px; border-radius: 24px;
-      background: linear-gradient(135deg, #4f46e5, #7c3aed);
-      color: white; font-size: 34px; font-weight: 800;
+    .avatar-circle {
+      width: 90px; height: 90px; border-radius: 50%;
+      background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+      color: #fff; font-size: 36px; font-weight: 800;
       display: flex; align-items: center; justify-content: center;
+      margin-bottom: 4px; box-shadow: 0 4px 14px rgba(79,70,229,.35);
     }
-    .avatar-card h2 { font-size: 17px; font-weight: 700; color: #111827; margin: 0; }
-    .email { font-size: 12px; color: #6b7280; margin: 0; word-break: break-all; }
-    .joined-badge {
-      display: flex; align-items: center; gap: 5px;
-      background: #f3f4f6; padding: 5px 10px; border-radius: 20px;
-      font-size: 11px; color: #6b7280;
-    }
-    .joined-badge .material-icons { font-size: 13px; }
+    .avatar-name { font-size: 18px; font-weight: 700; color: #111827; margin: 0; }
+    .avatar-username { font-size: 13px; color: #4f46e5; font-weight: 600; margin: 0; }
+    .avatar-email { font-size: 12px; color: #6b7280; margin: 0; word-break: break-all; }
 
-    .roles-row { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
-    .role-badge {
-      display: flex; align-items: center; gap: 4px;
-      padding: 4px 10px; border-radius: 20px;
-      font-size: 11px; font-weight: 700;
+    .joined-pill {
+      display: inline-flex; align-items: center; gap: 5px;
+      background: #f3f4f6; padding: 5px 12px; border-radius: 20px;
+      font-size: 11px; color: #6b7280; margin-top: 4px;
     }
-    .role-badge .material-icons { font-size: 13px; }
-    .role-badge.admin  { background: #fef3c7; color: #d97706; }
-    .role-badge.mentor { background: #e0e7ff; color: #4f46e5; }
-    .role-badge.learner{ background: #dcfce7; color: #16a34a; }
+    .joined-pill .material-icons { font-size: 13px; }
 
-    /* Mentor CTA */
-    .mentor-cta {
+    .roles-row { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-top: 4px; }
+    .role-pill {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 700;
+    }
+    .role-pill .material-icons { font-size: 13px; }
+    .role-pill.admin   { background: #fef3c7; color: #d97706; }
+    .role-pill.mentor  { background: #e0e7ff; color: #4f46e5; }
+    .role-pill.learner { background: #dcfce7; color: #16a34a; }
+
+    /* CTA Card */
+    .cta-card {
       background: linear-gradient(135deg, #4f46e5, #7c3aed);
-      border-radius: 16px; padding: 18px;
-      display: flex; flex-direction: column; gap: 10px; color: white;
+      border-radius: 16px; padding: 20px;
+      display: flex; flex-direction: column; gap: 10px; color: #fff;
+      box-shadow: 0 4px 14px rgba(79,70,229,.3);
     }
-    .cta-icon { width: 40px; height: 40px; border-radius: 12px; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; }
-    .cta-icon .material-icons { font-size: 22px; }
-    .cta-body strong { display: block; font-size: 14px; font-weight: 700; margin-bottom: 3px; }
-    .cta-body p { font-size: 12px; opacity: 0.85; margin: 0; line-height: 1.4; }
+    .cta-icon { font-size: 28px; }
+    .cta-card strong { font-size: 14px; font-weight: 700; }
+    .cta-card p { font-size: 12px; opacity: .85; margin: 0; line-height: 1.5; }
     .cta-btn {
       display: block; text-align: center; text-decoration: none;
-      background: white; color: #4f46e5;
+      background: #fff; color: #4f46e5;
       height: 38px; line-height: 38px; border-radius: 10px;
-      font-size: 13px; font-weight: 700; transition: opacity 0.15s;
+      font-size: 13px; font-weight: 700; transition: opacity .15s;
     }
-    .cta-btn:hover { opacity: 0.9; }
+    .cta-btn:hover { opacity: .9; }
 
     /* Quick Links */
     .quick-links {
-      background: white; border-radius: 16px; border: 1px solid #e5e7eb;
-      overflow: hidden;
+      background: #fff; border-radius: 16px; border: 1px solid #e5e7eb;
+      overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,.06);
     }
     .quick-link {
       display: flex; align-items: center; gap: 12px;
-      padding: 13px 16px; text-decoration: none; color: #374151;
+      padding: 14px 16px; text-decoration: none; color: #374151;
       font-size: 14px; font-weight: 500;
-      border-bottom: 1px solid #f3f4f6;
-      transition: background 0.15s;
+      border-bottom: 1px solid #f3f4f6; transition: background .15s;
     }
     .quick-link:last-child { border-bottom: none; }
     .quick-link:hover { background: #f9fafb; }
     .quick-link .material-icons { font-size: 20px; color: #9ca3af; }
-    .quick-link .arrow { margin-left: auto; font-size: 18px; color: #d1d5db; }
-    .unread-dot {
-      margin-left: auto; background: #ef4444; color: white;
-      font-size: 10px; font-weight: 700; min-width: 18px; height: 18px;
-      border-radius: 9px; padding: 0 4px;
-      display: flex; align-items: center; justify-content: center;
-    }
+    .ml-auto { margin-left: auto; color: #d1d5db !important; font-size: 18px !important; }
 
-    /* Right col */
+    /* ── Right Column ── */
     .right-col { display: flex; flex-direction: column; gap: 20px; }
 
-    /* Edit Card */
-    .edit-card { background: white; border-radius: 20px; border: 1px solid #e5e7eb; padding: 28px; }
-    .edit-card h3 { font-size: 18px; font-weight: 700; color: #111827; margin: 0 0 22px; }
-    .form { display: flex; flex-direction: column; gap: 16px; }
-    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-    @media (max-width: 500px) { .two-col { grid-template-columns: 1fr; } }
+    .details-card {
+      background: #fff; border-radius: 20px; border: 1px solid #e5e7eb;
+      padding: 28px; box-shadow: 0 1px 3px rgba(0,0,0,.06);
+    }
+    .details-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid #f3f4f6;
+    }
+    .details-header h3 { font-size: 18px; font-weight: 700; color: #111827; margin: 0; }
 
-    .input-group { display: flex; flex-direction: column; gap: 5px; }
-    .input-label { font-size: 13px; font-weight: 600; color: #374151; }
-    .input-wrapper {
-      display: flex; align-items: center; background: #f9fafb;
-      border: 1.5px solid #e5e7eb; border-radius: 12px;
-      padding: 0 14px; height: 48px; transition: border-color 0.2s, box-shadow 0.2s;
+    .btn-edit-sm {
+      display: inline-flex; align-items: center; gap: 5px;
+      height: 34px; padding: 0 14px; border-radius: 8px;
+      background: #ede9fe; color: #4f46e5; border: none;
+      font-size: 13px; font-weight: 600; cursor: pointer; transition: background .15s;
     }
-    .input-wrapper:focus-within { border-color: #4f46e5; box-shadow: 0 0 0 3px rgba(79,70,229,0.1); background: white; }
-    .textarea-wrapper { height: auto; padding: 12px 14px; align-items: flex-start; }
-    .input-icon { font-size: 18px; color: #9ca3af; margin-right: 10px; }
-    .input-wrapper input, .input-wrapper textarea {
-      flex: 1; border: none; outline: none; font-size: 14px;
-      color: #111827; background: transparent; font-family: inherit; resize: none;
-    }
-    .input-wrapper input::placeholder, .input-wrapper textarea::placeholder { color: #9ca3af; }
+    .btn-edit-sm:hover { background: #ddd6fe; }
+    .btn-edit-sm .material-icons { font-size: 16px; }
 
-    .form-actions { display: flex; justify-content: flex-end; }
-    .btn-save {
-      display: flex; align-items: center; gap: 8px;
-      height: 44px; padding: 0 24px; border-radius: 12px;
-      background: linear-gradient(135deg, #4f46e5, #7c3aed);
-      color: white; border: none; font-size: 14px; font-weight: 600;
-      cursor: pointer; box-shadow: 0 4px 12px rgba(79,70,229,0.3); transition: opacity 0.2s;
+    /* Detail Rows — READ ONLY, no inputs ever */
+    .detail-row {
+      display: flex; align-items: flex-start; gap: 16px;
+      padding: 14px 0; border-bottom: 1px solid #f9fafb;
     }
-    .btn-save:hover:not(:disabled) { opacity: 0.9; }
-    .btn-save:disabled { opacity: 0.6; cursor: not-allowed; }
-    .btn-save .material-icons { font-size: 18px; }
+    .detail-row:last-child { border-bottom: none; padding-bottom: 0; }
 
-    /* Sign Out Card */
-    .signout-card {
-      background: white; border-radius: 16px; border: 1px solid #e5e7eb;
-      padding: 18px 20px; display: flex; align-items: center;
-      justify-content: space-between; gap: 16px; flex-wrap: wrap;
+    .detail-label {
+      display: flex; align-items: center; gap: 7px;
+      min-width: 140px; font-size: 13px; font-weight: 600; color: #6b7280;
+      flex-shrink: 0; padding-top: 1px;
     }
-    .signout-info { display: flex; align-items: center; gap: 12px; }
-    .signout-icon { font-size: 22px; color: #9ca3af; }
-    .signout-info strong { display: block; font-size: 14px; color: #111827; margin-bottom: 2px; }
-    .signout-info p { font-size: 12px; color: #6b7280; margin: 0; }
-    .btn-signout {
-      height: 38px; padding: 0 18px; border-radius: 10px;
-      background: #fee2e2; color: #dc2626; border: none;
-      font-size: 13px; font-weight: 600; cursor: pointer;
-      white-space: nowrap; transition: background 0.15s;
-    }
-    .btn-signout:hover { background: #fecaca; }
+    .detail-label .material-icons { font-size: 17px; color: #9ca3af; }
 
-    @media (max-width: 480px) {
-      .page-header { flex-direction: column; align-items: flex-start; }
-      .btn-logout { width: 100%; justify-content: center; }
+    .detail-value {
+      font-size: 14px; color: #111827; flex: 1;
+      line-height: 1.6; word-break: break-word;
+    }
+    .detail-value.is-placeholder { color: #9ca3af; font-style: italic; }
+
+    .bio-row { align-items: flex-start; }
+    .bio-value { white-space: pre-wrap; }
+
+    .skills-row { align-items: flex-start; }
+    .skill-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+    .skill-chip {
+      background: #ede9fe; color: #4f46e5;
+      padding: 5px 14px; border-radius: 20px;
+      font-size: 12px; font-weight: 600; letter-spacing: .2px;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 500px) {
+      .page-header { flex-direction: column; }
+      .header-actions { width: 100%; }
+      .btn-primary, .btn-danger { flex: 1; justify-content: center; }
+      .detail-row { flex-direction: column; gap: 4px; }
+      .detail-label { min-width: unset; }
     }
   `]
 })
-export class ProfilePage implements OnInit {
+export class ProfilePage implements OnInit, OnDestroy {
   private readonly userService = inject(UserService);
-  private readonly snack = inject(MatSnackBar);
-  private readonly fb = inject(FormBuilder);
-  readonly authStore = inject(AuthStore);
+  private readonly router      = inject(Router);
+  readonly authStore            = inject(AuthStore);
 
   readonly profile = signal<UserProfileDto | null>(null);
   readonly loading = signal(true);
-  readonly saving = signal(false);
-  readonly unreadCount = signal(0);
 
-  readonly form = this.fb.group({
-    username: [''], firstName: [''], lastName: [''], bio: ['']
-  });
+  private navSub!: Subscription;
 
   ngOnInit(): void {
+    // Re-fetch every time the user enters the profile page
+    // This handles initial load, forward navigation, and back navigation from Edit Profile
+    this.navSub = this.router.events
+      .pipe(
+        filter((e): e is NavigationEnd => e instanceof NavigationEnd),
+        // Trigger on /profile or /profile with query params
+        filter(e => e.urlAfterRedirects.split('?')[0] === '/profile')
+      )
+      .subscribe(() => this.fetchProfile());
+
+    // Trigger initial fetch if we're already on the profile page upon component creation
+    if (this.router.url.split('?')[0] === '/profile') {
+      this.fetchProfile();
+    }
+  }
+
+  ngOnDestroy(): void {
+    this.navSub?.unsubscribe();
+  }
+
+  /** Always hits the API — no local cache, no stale state */
+  private fetchProfile(): void {
+    this.loading.set(true);
+    this.profile.set(null);
     this.userService.getMyProfile().subscribe({
-      next: (res) => {
-        this.profile.set(res.data);
-        this.form.patchValue(res.data);
-        this.loading.set(false);
-      },
-      error: () => this.loading.set(false)
+      next:  res => { this.profile.set(res.data); this.loading.set(false); },
+      error: ()  => this.loading.set(false)
     });
   }
 
-  save(): void {
-    this.saving.set(true);
-    this.userService.updateProfile(this.form.getRawValue() as any).subscribe({
-      next: (res) => {
-        this.profile.set(res.data);
-        this.saving.set(false);
-        this.snack.open('Profile updated successfully!', 'OK', { duration: 3000 });
-      },
-      error: () => this.saving.set(false)
-    });
+  // ── Display helpers — never return blank ──────────────────────────────────
+
+  displayName(): string {
+    return this.profile()?.name?.trim() || this.authStore.username() || 'Name';
   }
 
-  logout(): void { this.authStore.logout(); }
+  displayUsername(): string {
+    return this.profile()?.username || this.authStore.username() || 'user';
+  }
+
+  displayEmail(): string {
+    return this.profile()?.email?.trim() || this.authStore.email() || 'Email';
+  }
 
   initials(): string {
-    const p = this.profile();
-    if (!p) return '?';
-    return (p.firstName?.[0] ?? p.username[0]).toUpperCase();
+    const src = this.profile()?.name?.trim() || this.authStore.username() || '?';
+    return src[0].toUpperCase();
   }
+
+  skillList(): string[] {
+    const raw = this.profile()?.skills;
+    return raw ? raw.split(',').map(s => s.trim()).filter(Boolean) : [];
+  }
+
+  goEdit(): void  { this.router.navigate(['/profile/edit']); }
+  logout(): void  { this.authStore.logout(); }
 }

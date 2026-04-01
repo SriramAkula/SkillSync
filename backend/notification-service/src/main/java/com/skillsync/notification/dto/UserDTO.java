@@ -8,15 +8,17 @@ public class UserDTO {
     private String email;
     private String firstName;
     private String lastName;
+    private String username;
 
     public UserDTO() {
     }
 
-    public UserDTO(Long id, String email, String firstName, String lastName) {
+    public UserDTO(Long id, String email, String firstName, String lastName, String username) {
         this.id = id;
         this.email = email;
         this.firstName = firstName;
         this.lastName = lastName;
+        this.username = username;
     }
 
     public Long getId() {
@@ -49,5 +51,13 @@ public class UserDTO {
 
     public void setLastName(String lastName) {
         this.lastName = lastName;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
     }
 }

@@ -82,9 +82,13 @@ public class AuthServiceImpl implements AuthService {
             throw new RuntimeException("Email already exists");
         }
 
-        String generatedUsername = request.email().replace("@", ".").toLowerCase();
+        String generatedUsername = request.email().split("@")[0].toLowerCase();
         if (userRepository.existsByUsername(generatedUsername)) {
-            throw new RuntimeException("Username derived from email already exists");
+            // Fallback to dot replacement if common username exists, or handle collision
+            generatedUsername = request.email().replace("@", ".").toLowerCase();
+            if (userRepository.existsByUsername(generatedUsername)) {
+                throw new RuntimeException("Username derived from email already exists");
+            }
         }
 
         User user = new User(

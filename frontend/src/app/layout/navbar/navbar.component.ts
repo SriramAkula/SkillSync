@@ -26,14 +26,23 @@ import { NotificationStore } from '../../core/auth/notification.store';
       <div class="nav-actions">
 
         <!-- Notification Bell -->
-        <a routerLink="/notifications" class="icon-btn" aria-label="Notifications">
-          <span class="material-icons">notifications</span>
-          @if (notifStore.unreadCount() > 0) {
-            <span class="notif-badge">
-              {{ notifStore.unreadCount() > 9 ? '9+' : notifStore.unreadCount() }}
-            </span>
+        <div class="nav-actions-wrap">
+          @if (authStore.canApplyToBeMentor()) {
+            <a routerLink="/mentors/apply" class="btn-mentor">
+              <span class="material-icons">school</span>
+              <span class="btn-text">Become a Mentor</span>
+            </a>
           }
-        </a>
+
+          <a routerLink="/notifications" class="icon-btn" aria-label="Notifications">
+            <span class="material-icons">notifications</span>
+            @if (notifStore.unreadCount() > 0) {
+              <span class="notif-badge">
+                {{ notifStore.unreadCount() > 9 ? '9+' : notifStore.unreadCount() }}
+              </span>
+            }
+          </a>
+        </div>
 
         <!-- Avatar + Custom Dropdown -->
         <div class="avatar-wrap">
@@ -67,12 +76,6 @@ import { NotificationStore } from '../../core/auth/notification.store';
                 }
               </a>
 
-              @if (authStore.isLearner() && !authStore.isMentor()) {
-                <a routerLink="/mentors/apply" class="dropdown-item" (click)="close()">
-                  <span class="material-icons">school</span>
-                  Become a Mentor
-                </a>
-              }
 
               @if (authStore.isMentor()) {
                 <a routerLink="/mentor-dashboard" class="dropdown-item" (click)="close()">
@@ -144,6 +147,24 @@ import { NotificationStore } from '../../core/auth/notification.store';
     }
     .icon-btn:hover { background: #f3f4f6; color: #4f46e5; }
     .icon-btn .material-icons { font-size: 22px; }
+
+    .nav-actions-wrap { display: flex; align-items: center; gap: 8px; }
+
+    .btn-mentor {
+      display: flex; align-items: center; gap: 8px;
+      height: 40px; padding: 0 16px; border-radius: 10px;
+      background: #eef2ff; color: #4f46e5;
+      text-decoration: none; font-size: 13px; font-weight: 700;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      border: 1px solid #e0e7ff;
+    }
+    .btn-mentor:hover {
+      background: #4f46e5; color: white;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(79,70,229,0.2);
+    }
+    .btn-mentor .material-icons { font-size: 18px; }
+    @media (max-width: 640px) { .btn-mentor .btn-text { display: none; } .btn-mentor { padding: 0 10px; } }
 
     .notif-badge {
       position: absolute; top: 3px; right: 3px;

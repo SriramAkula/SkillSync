@@ -8,11 +8,12 @@ import org.springframework.stereotype.Component;
 @Component
 public class UserProfileMapper {
 
-    // userId + email -> new UserProfile entity (on registration)
-    public UserProfile toEntity(Long userId, String email) {
+    // userId + email + username -> new UserProfile entity (on registration)
+    public UserProfile toEntity(Long userId, String email, String username) {
         UserProfile profile = new UserProfile();
         profile.setUserId(userId);
         profile.setEmail(email);
+        profile.setUsername(username != null ? username : email.split("@")[0]);
         profile.setProfileComplete(false);
         profile.setRating(0.0);
         profile.setTotalReviews(0);
@@ -21,6 +22,9 @@ public class UserProfileMapper {
 
     // Apply UpdateProfileRequestDto fields onto existing entity
     public void updateEntity(UserProfile profile, UpdateProfileRequestDto request) {
+        if (request.getUsername() != null) {
+            profile.setUsername(request.getUsername());
+        }
         profile.setName(request.getName());
         profile.setBio(request.getBio());
         profile.setPhoneNumber(request.getPhoneNumber());
@@ -38,6 +42,7 @@ public class UserProfileMapper {
         dto.setId(profile.getId());
         dto.setUserId(profile.getUserId());
         dto.setEmail(profile.getEmail());
+        dto.setUsername(profile.getUsername());
         dto.setName(profile.getName());
         dto.setBio(profile.getBio());
         dto.setPhoneNumber(profile.getPhoneNumber());

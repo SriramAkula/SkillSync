@@ -16,6 +16,7 @@ public class UserProfileResponseDto {
 
 	private Long id;
 	private Long userId;
+	private String username;
 	private String email;
 	private String name;
 	private String bio;

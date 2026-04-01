@@ -25,6 +25,7 @@ import com.skillsync.user.audit.Auditable;
 	@jakarta.persistence.UniqueConstraint(columnNames = "userId")
 })
 @Data
+@lombok.EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
 @AllArgsConstructor
 public class UserProfile extends Auditable {
@@ -35,6 +36,9 @@ public class UserProfile extends Auditable {
 
 	@Column(nullable = false, unique = true)
 	private Long userId;
+
+	@Column(unique = true)
+	private String username;
 
 	@Column(nullable = false, unique = true)
 	private String email;

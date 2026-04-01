@@ -43,6 +43,7 @@ export const AuthStore = signalStore(
     isAdmin: computed(() => store.roles().includes('ROLE_ADMIN')),
     isMentor: computed(() => store.roles().includes('ROLE_MENTOR')),
     isLearner: computed(() => store.roles().includes('ROLE_LEARNER')),
+    canApplyToBeMentor: computed(() => store.roles().includes('ROLE_LEARNER') && !store.roles().includes('ROLE_MENTOR')),
     hasRole: computed(() => (role: string) => store.roles().includes(role))
   })),
 
@@ -178,6 +179,15 @@ export const AuthStore = signalStore(
       clearAuth();
       patchState(store, { ...initialState, token: null, userId: null, roles: [], email: null, username: null });
       router.navigate(['/auth/login']);
+    },
+
+    addRole(role: string): void {
+      if (!store.roles().includes(role)) {
+        const newRoles = [...store.roles(), role];
+        patchState(store, { roles: newRoles });
+        // Update localStorage to keep state across manual reloads
+        localStorage.setItem('roles', JSON.stringify(newRoles));
+      }
     },
 
     clearError(): void {

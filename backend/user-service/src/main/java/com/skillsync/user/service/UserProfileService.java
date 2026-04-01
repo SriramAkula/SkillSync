@@ -27,5 +27,5 @@ public interface UserProfileService {
 	/**
 	 * Create user profile from internal endpoint (Auth Service)
 	 */
-	void createProfile(Long userId, String email);
+	void createProfile(Long userId, String email, String username);
 }

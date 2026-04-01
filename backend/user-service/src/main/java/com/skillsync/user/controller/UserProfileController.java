@@ -173,13 +173,14 @@ public class UserProfileController {
 
 			Long userId = ((Number) userIdObj).longValue();
 			String email = (String) userData.get("email");
+			String username = (String) userData.get("username");
 
 			if (userId == null || email == null) {
 				log.error("Missing required fields: userId={}, email={}", userId, email);
 				return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
 			}
 
-			log.info("Creating user profile for userId: {} with email: {}", userId, email);
+			log.info("Creating user profile for userId: {} with email: {}, username: {}", userId, email, username);
 
 			// Check if profile already exists
 			try {
@@ -192,7 +193,7 @@ public class UserProfileController {
 			}
 
 			// Create new UserProfile via service
-			userProfileService.createProfile(userId, email);
+			userProfileService.createProfile(userId, email, username);
 			log.info("UserProfile created successfully for userId: {}", userId);
 
 			return ResponseEntity.status(HttpStatus.CREATED).build();

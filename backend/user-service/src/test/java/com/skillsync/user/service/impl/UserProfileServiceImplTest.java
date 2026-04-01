@@ -5,6 +5,7 @@ import com.skillsync.user.dto.response.UserProfileResponseDto;
 import com.skillsync.user.entity.UserProfile;
 import com.skillsync.user.exception.UserProfileNotFoundException;
 import com.skillsync.user.repository.UserProfileRepository;
+import com.skillsync.user.mapper.UserProfileMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -23,6 +24,7 @@ import static org.mockito.Mockito.*;
 class UserProfileServiceImplTest {
 
     @Mock private UserProfileRepository userProfileRepository;
+    @Mock private UserProfileMapper userProfileMapper;
     @InjectMocks private UserProfileServiceImpl userProfileService;
 
     private UserProfile profile;
@@ -48,7 +50,13 @@ class UserProfileServiceImplTest {
 
     @Test
     void getProfileByUserId_shouldReturnDto_whenProfileExists() {
+        UserProfileResponseDto dto = new UserProfileResponseDto();
+        dto.setUserId(10L);
+        dto.setEmail("user@example.com");
+        dto.setName("John Doe");
+
         when(userProfileRepository.findByUserId(10L)).thenReturn(Optional.of(profile));
+        when(userProfileMapper.toDto(profile)).thenReturn(dto);
 
         UserProfileResponseDto result = userProfileService.getProfileByUserId(10L);
 
@@ -70,9 +78,12 @@ class UserProfileServiceImplTest {
 
     @Test
     void updateProfile_shouldReturnUpdatedDto_whenProfileExists() {
-        UpdateProfileRequestDto request = new UpdateProfileRequestDto("Jane Doe", "New bio", "9876543210", "Python,Django");
+        UpdateProfileRequestDto request = new UpdateProfileRequestDto("jdoe", "Jane Doe", "New bio", "9876543210", "Python,Django");
+        UserProfileResponseDto dto = new UserProfileResponseDto();
+        
         when(userProfileRepository.findByUserId(10L)).thenReturn(Optional.of(profile));
         when(userProfileRepository.save(any(UserProfile.class))).thenReturn(profile);
+        when(userProfileMapper.toDto(profile)).thenReturn(dto);
 
         UserProfileResponseDto result = userProfileService.updateProfile(10L, request);
 
@@ -82,9 +93,13 @@ class UserProfileServiceImplTest {
 
     @Test
     void updateProfile_shouldSetProfileComplete_whenNameAndSkillsPresent() {
-        UpdateProfileRequestDto request = new UpdateProfileRequestDto("Jane", "bio", "123", "Java");
+        UpdateProfileRequestDto request = new UpdateProfileRequestDto("jane", "Jane", "bio", "1234567890", "Java");
+        UserProfileResponseDto dto = new UserProfileResponseDto();
+        dto.setIsProfileComplete(true);
+
         when(userProfileRepository.findByUserId(10L)).thenReturn(Optional.of(profile));
         when(userProfileRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(userProfileMapper.toDto(any())).thenReturn(dto);
 
         UserProfileResponseDto result = userProfileService.updateProfile(10L, request);
 
@@ -93,9 +108,13 @@ class UserProfileServiceImplTest {
 
     @Test
     void updateProfile_shouldSetProfileIncomplete_whenSkillsNull() {
-        UpdateProfileRequestDto request = new UpdateProfileRequestDto("Jane", "bio", "123", null);
+        UpdateProfileRequestDto request = new UpdateProfileRequestDto("jane", "Jane", "bio", "1234567890", null);
+        UserProfileResponseDto dto = new UserProfileResponseDto();
+        dto.setIsProfileComplete(false);
+
         when(userProfileRepository.findByUserId(10L)).thenReturn(Optional.of(profile));
         when(userProfileRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(userProfileMapper.toDto(any())).thenReturn(dto);
 
         UserProfileResponseDto result = userProfileService.updateProfile(10L, request);
 
@@ -104,9 +123,13 @@ class UserProfileServiceImplTest {
 
     @Test
     void updateProfile_shouldSetProfileIncomplete_whenSkillsEmpty() {
-        UpdateProfileRequestDto request = new UpdateProfileRequestDto("Jane", "bio", "123", "");
+        UpdateProfileRequestDto request = new UpdateProfileRequestDto("jane", "Jane", "bio", "1234567890", "");
+        UserProfileResponseDto dto = new UserProfileResponseDto();
+        dto.setIsProfileComplete(false);
+
         when(userProfileRepository.findByUserId(10L)).thenReturn(Optional.of(profile));
         when(userProfileRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(userProfileMapper.toDto(any())).thenReturn(dto);
 
         UserProfileResponseDto result = userProfileService.updateProfile(10L, request);
 
@@ -115,7 +138,7 @@ class UserProfileServiceImplTest {
 
     @Test
     void updateProfile_shouldThrow_whenProfileNotFound() {
-        UpdateProfileRequestDto request = new UpdateProfileRequestDto("Jane", "bio", "123", "Java");
+        UpdateProfileRequestDto request = new UpdateProfileRequestDto("jane", "Jane", "bio", "1234567890", "Java");
         when(userProfileRepository.findByUserId(99L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> userProfileService.updateProfile(99L, request))
@@ -128,7 +151,7 @@ class UserProfileServiceImplTest {
     void createProfile_shouldSaveNewProfile() {
         when(userProfileRepository.save(any(UserProfile.class))).thenReturn(profile);
 
-        userProfileService.createProfile(10L, "user@example.com");
+        userProfileService.createProfile(10L, "user@example.com", "user");
 
         verify(userProfileRepository).save(argThat(p ->
                 p.getUserId().equals(10L) &&
@@ -141,7 +164,7 @@ class UserProfileServiceImplTest {
     void createProfile_shouldSetDefaultValues() {
         when(userProfileRepository.save(any(UserProfile.class))).thenAnswer(inv -> inv.getArgument(0));
 
-        userProfileService.createProfile(5L, "new@example.com");
+        userProfileService.createProfile(5L, "new@example.com", "new");
 
         verify(userProfileRepository).save(argThat(p ->
                 p.getRating().equals(0.0) &&
@@ -154,7 +177,11 @@ class UserProfileServiceImplTest {
 
     @Test
     void getProfileByEmail_shouldReturnDto_whenProfileExists() {
+        UserProfileResponseDto dto = new UserProfileResponseDto();
+        dto.setEmail("user@example.com");
+
         when(userProfileRepository.findByEmail("user@example.com")).thenReturn(Optional.of(profile));
+        when(userProfileMapper.toDto(profile)).thenReturn(dto);
 
         UserProfileResponseDto result = userProfileService.getProfileByEmail("user@example.com");
 

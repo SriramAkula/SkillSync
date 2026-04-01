@@ -38,17 +38,20 @@ export interface UserProfileDto {
   username: string;
   firstName?: string;
   lastName?: string;
+  name?: string;
   bio?: string;
+  phoneNumber?: string;
   avatarUrl?: string;
+  skills?: string;
   createdAt?: string;
 }
 
 export interface UpdateProfileRequest {
   username?: string;
-  firstName?: string;
-  lastName?: string;
+  name?: string;
   bio?: string;
-  avatarUrl?: string;
+  phoneNumber?: string;
+  skills?: string;
 }
 
 // ─── Mentor ────────────────────────────────────────────────────────────────

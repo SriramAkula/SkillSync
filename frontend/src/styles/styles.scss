@@ -1,4 +1,3 @@
-@use '@angular/material' as mat;
 
 html {
   color-scheme: light;
@@ -39,3 +38,13 @@ html, body {
 .full-width { width: 100%; }
 .text-center { text-align: center; }
 .flex-center { display: flex; align-items: center; justify-content: center; }
+
+// ── Snackbar: success ─────────────────────────────────────────────────────────
+.snack-success .mdc-snackbar__surface {
+  background: #16a34a !important;
+  color: #fff !important;
+  border-radius: 12px !important;
+  font-weight: 600 !important;
+  box-shadow: 0 4px 16px rgba(22,163,74,.35) !important;
+}
+.snack-success .mat-mdc-snack-bar-action { color: rgba(255,255,255,.85) !important; }

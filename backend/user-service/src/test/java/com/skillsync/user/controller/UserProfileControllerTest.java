@@ -127,7 +127,7 @@ class UserProfileControllerTest {
 
     @Test
     void updateProfile_shouldReturn200_whenValidRequest() throws Exception {
-        UpdateProfileRequestDto request = new UpdateProfileRequestDto("Jane Doe", "bio", "123", "Java");
+        UpdateProfileRequestDto request = new UpdateProfileRequestDto("jdoe", "Jane Doe", "bio", "1234567890", "Java");
         when(userProfileService.updateProfile(eq(10L), any())).thenReturn(responseDto);
 
         mockMvc.perform(put("/user/profile")
@@ -142,7 +142,7 @@ class UserProfileControllerTest {
 
     @Test
     void updateProfile_shouldReturn403_whenRolesMissing() throws Exception {
-        UpdateProfileRequestDto request = new UpdateProfileRequestDto("Jane", "bio", "123", "Java");
+        UpdateProfileRequestDto request = new UpdateProfileRequestDto("jane", "Jane", "bio", "1234567890", "Java");
 
         mockMvc.perform(put("/user/profile")
                         .header("X-User-Id", 10L)
@@ -156,7 +156,7 @@ class UserProfileControllerTest {
 
     @Test
     void updateProfile_shouldReturn403_whenRolesEmpty() throws Exception {
-        UpdateProfileRequestDto request = new UpdateProfileRequestDto("Jane", "bio", "123", "Java");
+        UpdateProfileRequestDto request = new UpdateProfileRequestDto("jane", "Jane", "bio", "1234567890", "Java");
 
         mockMvc.perform(put("/user/profile")
                         .header("X-User-Id", 10L)
@@ -169,7 +169,7 @@ class UserProfileControllerTest {
 
     @Test
     void updateProfile_shouldReturn400_whenNameBlank() throws Exception {
-        UpdateProfileRequestDto request = new UpdateProfileRequestDto("", "bio", "123", "Java");
+        UpdateProfileRequestDto request = new UpdateProfileRequestDto("jane", "", "bio", "1234567890", "Java");
 
         mockMvc.perform(put("/user/profile")
                         .header("X-User-Id", 10L)
@@ -182,7 +182,7 @@ class UserProfileControllerTest {
 
     @Test
     void updateProfile_shouldReturn404_whenProfileNotFound() throws Exception {
-        UpdateProfileRequestDto request = new UpdateProfileRequestDto("Jane", "bio", "123", "Java");
+        UpdateProfileRequestDto request = new UpdateProfileRequestDto("jane", "Jane", "bio", "1234567890", "Java");
         when(userProfileService.updateProfile(eq(10L), any()))
                 .thenThrow(new UserProfileNotFoundException("Not found"));
 
@@ -202,6 +202,7 @@ class UserProfileControllerTest {
         Map<String, Object> userData = new HashMap<>();
         userData.put("userId", 10);
         userData.put("email", "user@example.com");
+        userData.put("username", "user");
         when(userProfileService.getProfileByUserId(10L))
                 .thenThrow(new UserProfileNotFoundException("Not found"));
 
@@ -211,7 +212,7 @@ class UserProfileControllerTest {
                         .content(objectMapper.writeValueAsString(userData)))
                 .andExpect(status().isCreated());
 
-        verify(userProfileService).createProfile(10L, "user@example.com");
+        verify(userProfileService).createProfile(10L, "user@example.com", "user");
     }
 
     @Test
@@ -227,7 +228,7 @@ class UserProfileControllerTest {
                         .content(objectMapper.writeValueAsString(userData)))
                 .andExpect(status().isOk());
 
-        verify(userProfileService, never()).createProfile(anyLong(), anyString());
+        verify(userProfileService, never()).createProfile(anyLong(), anyString(), anyString());
     }
 
     @Test
@@ -268,10 +269,11 @@ class UserProfileControllerTest {
         Map<String, Object> userData = new HashMap<>();
         userData.put("userId", 10);
         userData.put("email", "user@example.com");
+        userData.put("username", "user");
         when(userProfileService.getProfileByUserId(10L))
                 .thenThrow(new UserProfileNotFoundException("Not found"));
         doThrow(new RuntimeException("DB error"))
-                .when(userProfileService).createProfile(10L, "user@example.com");
+                .when(userProfileService).createProfile(10L, "user@example.com", "user");
 
         mockMvc.perform(post("/user/internal/users")
                         .header("X-Gateway-Request", "true")

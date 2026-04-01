@@ -15,7 +15,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheConfig;
 import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 
 @Service
 @RequiredArgsConstructor
@@ -38,7 +40,12 @@ public class UserProfileServiceImpl implements UserProfileService {
 
 	@Override
 	@Transactional
-	@CacheEvict(allEntries = true)
+	@Caching(evict = {
+		@CacheEvict(key = "'userId_' + #userId"),
+		@CacheEvict(key = "'email_' + #result.email", condition = "#result != null")
+	}, put = {
+		@CachePut(key = "'userId_' + #userId")
+	})
 	public UserProfileResponseDto updateProfile(Long userId, UpdateProfileRequestDto requestDto) {
 		log.info("Updating profile for userId: {}", userId);
 		UserProfile profile = userProfileRepository.findByUserId(userId)
@@ -52,9 +59,9 @@ public class UserProfileServiceImpl implements UserProfileService {
 
 	@Override
 	@Transactional
-	public void createProfile(Long userId, String email) {
-		log.info("Creating profile for userId: {}, email: {}", userId, email);
-		UserProfile profile = userProfileMapper.toEntity(userId, email);
+	public void createProfile(Long userId, String email, String username) {
+		log.info("Creating profile for userId: {}, email: {}, username: {}", userId, email, username);
+		UserProfile profile = userProfileMapper.toEntity(userId, email, username);
 		userProfileRepository.save(profile);
 		log.info("UserProfile created successfully for userId: {}", userId);
 	}

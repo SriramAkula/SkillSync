@@ -6,6 +6,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MentorStore } from '../../../../core/auth/mentor.store';
 import { SkillStore } from '../../../../core/auth/skill.store';
+import { AuthStore } from '../../../../core/auth/auth.store';
 
 // No fallback categories needed anymore - we use the skill-service database.
 
@@ -381,6 +382,7 @@ import { SkillStore } from '../../../../core/auth/skill.store';
 export class ApplyMentorPage implements OnInit {
   readonly mentorStore = inject(MentorStore);
   readonly skillStore = inject(SkillStore);
+  readonly authStore = inject(AuthStore);
   readonly router = inject(Router);
   private readonly snack = inject(MatSnackBar);
 
@@ -449,6 +451,8 @@ export class ApplyMentorPage implements OnInit {
     setTimeout(() => {
       if (!this.mentorStore.error()) {
         this.snack.open('Application submitted! Awaiting admin review.', 'OK', { duration: 4000 });
+        // Update user role immediately to reflect in Navbar UI as requested
+        this.authStore.addRole('ROLE_MENTOR');
       }
     }, 800);
   }
