@@ -454,7 +454,7 @@ export class EditProfilePage implements OnInit {
         // ── Mandatory success message ──
         this.snack.open('Profile changed successfully', 'OK', {
           duration: 4000,
-          horizontalPosition: 'center',
+          horizontalPosition: 'right',
           verticalPosition: 'top',
           panelClass: ['snack-success']
         });

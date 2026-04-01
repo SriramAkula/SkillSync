@@ -127,7 +127,7 @@ public class AuthServiceImpl implements AuthService {
 
         List<String> roles = Arrays.asList(user.getRole().split(","));
         String token = jwtUtil.generateToken(user.getId(), user.getEmail(), roles);
-        return new AuthResponse(token, roles);
+        return new AuthResponse(token, roles, user.getUsername(), user.getId(), user.getEmail());
     }
 
     @Override
@@ -154,7 +154,7 @@ public class AuthServiceImpl implements AuthService {
         List<String> roles = Arrays.asList(user.getRole().split(","));
         String token = jwtUtil.generateToken(user.getId(), user.getEmail(), roles);
         auditService.log("User", user.getId(), "LOGIN", user.getId().toString(), "email=" + user.getEmail());
-        return new AuthResponse(token, roles);
+        return new AuthResponse(token, roles, user.getUsername(), user.getId(), user.getEmail());
     }
 
     @Override
@@ -169,7 +169,7 @@ public class AuthServiceImpl implements AuthService {
 
         List<String> roles = Arrays.asList(user.getRole().split(","));
         String newToken = jwtUtil.generateToken(user.getId(), email, roles);
-        return new AuthResponse(newToken, roles);
+        return new AuthResponse(newToken, roles, user.getUsername(), user.getId(), user.getEmail());
     }
 
     // ─────────────────────────────────────────────────────────────

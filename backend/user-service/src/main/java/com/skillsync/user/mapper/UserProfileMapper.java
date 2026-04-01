@@ -42,7 +42,7 @@ public class UserProfileMapper {
         dto.setId(profile.getId());
         dto.setUserId(profile.getUserId());
         dto.setEmail(profile.getEmail());
-        dto.setUsername(profile.getUsername());
+        dto.setUsername(profile.getUsername() != null ? profile.getUsername() : profile.getEmail().split("@")[0]);
         dto.setName(profile.getName());
         dto.setBio(profile.getBio());
         dto.setPhoneNumber(profile.getPhoneNumber());

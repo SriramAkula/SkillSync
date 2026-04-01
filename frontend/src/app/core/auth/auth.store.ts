@@ -90,8 +90,8 @@ export const AuthStore = signalStore(
                   token: res.token,
                   roles: res.roles ?? claims.roles ?? [],
                   userId: claims.userId ?? null,
-                  email: claims.sub ?? null,
-                  username: claims.sub ?? null,
+                  email: claims.sub ?? res.email ?? null,
+                  username: res.username ?? claims.sub ?? null,
                   loading: false, error: null
                 });
                 router.navigate(['/mentors']);
@@ -116,8 +116,8 @@ export const AuthStore = signalStore(
                   token: res.token,
                   roles: res.roles ?? claims.roles ?? [],
                   userId: claims.userId ?? null,
-                  email: claims.sub ?? null,
-                  username: claims.sub ?? null,
+                  email: claims.sub ?? res.email ?? null,
+                  username: res.username ?? claims.sub ?? null,
                   loading: false, error: null
                 });
                 router.navigate(['/mentors']);
@@ -150,8 +150,8 @@ export const AuthStore = signalStore(
                   token: res.token,
                   roles: res.roles ?? claims.roles ?? [],
                   userId: claims.userId ?? null,
-                  email: claims.sub ?? null,
-                  username: claims.sub ?? null,
+                  email: claims.sub ?? res.email ?? null,
+                  username: res.username ?? claims.sub ?? null,
                   loading: false, error: null
                 });
                 router.navigate(['/mentors']);

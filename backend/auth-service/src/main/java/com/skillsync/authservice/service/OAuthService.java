@@ -75,7 +75,7 @@ public class OAuthService {
                 user.getId().toString(), "email=" + email);
         log.info("Google OAuth login successful for email={}", email);
 
-        return new AuthResponse(token, roles);
+        return new AuthResponse(token, roles, user.getUsername(), user.getId(), user.getEmail());
     }
 
     // ─────────────────────────────────────────────────────────────
@@ -100,7 +100,7 @@ public class OAuthService {
     // Create new OAuth user with dummy password - password stays NOT NULL
     // ─────────────────────────────────────────────────────────────
     private User createOAuthUser(String email, String name, String providerId, AuthProvider provider) {
-        String username = email.replace("@", ".").toLowerCase();
+        String username = email.split("@")[0].toLowerCase();
 
         // Handle duplicate username
         if (userRepository.existsByUsername(username)) {
