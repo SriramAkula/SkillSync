@@ -190,6 +190,16 @@ export const AuthStore = signalStore(
       }
     },
 
+    updateUser(name?: string, username?: string): void {
+      if (name) {
+        localStorage.setItem('name', name);
+      }
+      if (username) {
+        localStorage.setItem('username', username);
+        patchState(store, { username });
+      }
+    },
+
     clearError(): void {
       patchState(store, { error: null });
     }

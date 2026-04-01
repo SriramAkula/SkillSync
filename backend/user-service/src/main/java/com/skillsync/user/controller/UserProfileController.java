@@ -11,12 +11,14 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
+import jakarta.servlet.http.HttpServletRequest;
 
 import com.skillsync.user.dto.request.UpdateProfileRequestDto;
 import com.skillsync.user.dto.response.ApiResponse;
 import com.skillsync.user.dto.response.UserProfileResponseDto;
 import com.skillsync.user.entity.UserProfile;
 import com.skillsync.user.service.UserProfileService;
+import com.skillsync.user.util.SecurityContextUtil;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -39,6 +41,7 @@ import lombok.extern.slf4j.Slf4j;
 public class UserProfileController {
 
 	private final UserProfileService userProfileService;
+	private final SecurityContextUtil securityUtil;
 
 	/**
 	 * GET /api/user/profile
@@ -53,12 +56,21 @@ public class UserProfileController {
 	})
 	@SecurityRequirement(name = "bearerAuth")
 	public ResponseEntity<ApiResponse<UserProfileResponseDto>> getProfile(
-			@Parameter(hidden = true) @RequestHeader("X-User-Id") Long userId,
-			@Parameter(hidden = true) @RequestHeader(value = "loggedInUser", required = false) String email,
-			@Parameter(hidden = true) @RequestHeader(value = "roles", required = false) String roles) {
+			@Parameter(hidden = true) @RequestHeader("X-User-Id") Long headerUserId,
+			@Parameter(hidden = true) @RequestHeader(value = "loggedInUser", required = false) String headerEmail,
+			@Parameter(hidden = true) @RequestHeader(value = "roles", required = false) String roles,
+			HttpServletRequest request) {
 
-		if (roles == null || roles.isEmpty()) {
-			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Authenticated access required");
+		// 1. Robust identification from JWT
+		Long userId = securityUtil.extractUserId(request);
+		String email = securityUtil.extractEmail(request);
+		
+		// Fallback to headers (only if secure/internal)
+		if (userId == null) userId = headerUserId;
+		if (email == null) email = headerEmail;
+
+		if (userId == null && (email == null || email.isEmpty())) {
+			throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unidentified user");
 		}
 		log.info("Fetching profile for userId: {} (fallback email: {})", userId, email);
 
@@ -117,24 +129,38 @@ public class UserProfileController {
 	})
 	@SecurityRequirement(name = "bearerAuth")
 	public ResponseEntity<ApiResponse<UserProfileResponseDto>> updateProfile(
-			@Parameter(hidden = true) @RequestHeader("X-User-Id") Long userId,
-			@Parameter(hidden = true) @RequestHeader(value = "loggedInUser", required = false) String email,
+			@Parameter(hidden = true) @RequestHeader("X-User-Id") Long headerUserId,
+			@Parameter(hidden = true) @RequestHeader(value = "loggedInUser", required = false) String headerEmail,
 			@Parameter(hidden = true) @RequestHeader(value = "roles", required = false) String roles,
-			@Valid @RequestBody UpdateProfileRequestDto requestDto) {
+			@Valid @RequestBody UpdateProfileRequestDto requestDto,
+			HttpServletRequest request) {
 
-		if (roles == null || roles.isEmpty()) {
-			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Authenticated access required");
+		// 1. Robust identification from JWT
+		Long userId = securityUtil.extractUserId(request);
+		String email = securityUtil.extractEmail(request);
+		
+		// Fallback to headers (only if secure/internal)
+		if (userId == null) userId = headerUserId;
+		if (email == null) email = headerEmail;
+
+		if (userId == null && (email == null || email.isEmpty())) {
+			throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unidentified user");
 		}
-		log.info("Updating profile for userId: {} (fallback email: {})", userId, email);
+
+		log.info("Updating profile for userId: {} (email: {})", userId, email);
 
 		UserProfileResponseDto response;
 		try {
-			response = userProfileService.updateProfile(userId, requestDto);
+			if (userId != null) {
+				response = userProfileService.updateProfile(userId, requestDto);
+			} else {
+				// We have email but no ID (possibly older OAuth token format)
+				UserProfileResponseDto existing = userProfileService.getProfileByEmail(email);
+				response = userProfileService.updateProfile(existing.getUserId(), requestDto);
+			}
 		} catch (Exception e) {
 			if (email != null && !email.trim().isEmpty()) {
-				log.info("Profile update failed by userId, attempting fallback with email: {}", email);
-				// We need an updateByEmail method or just find the ID then update
-				// Better to just fetch by email, get the UserID from that profile, and retry update.
+				log.info("Profile update retry by email: {}", email);
 				UserProfileResponseDto profileByEmail = userProfileService.getProfileByEmail(email);
 				response = userProfileService.updateProfile(profileByEmail.getUserId(), requestDto);
 			} else {

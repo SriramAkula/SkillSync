@@ -459,6 +459,9 @@ export class EditProfilePage implements OnInit {
           panelClass: ['snack-success']
         });
 
+        // ── Sync AuthStore state immediately ──
+        this.authStore.updateUser(name, val.username ?? '');
+
         // ── Navigate to profile — profile page will re-fetch from DB ──
         this.router.navigate(['/profile']);
       },
