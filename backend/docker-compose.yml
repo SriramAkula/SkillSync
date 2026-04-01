@@ -178,6 +178,9 @@ services:
         condition: service_started
       eureka-server:
         condition: service_started
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
     networks:
       - skillsync-network
 
@@ -409,6 +412,9 @@ services:
         condition: service_started
       eureka-server:
         condition: service_started
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
     networks:
       - skillsync-network
 

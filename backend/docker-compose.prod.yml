@@ -114,8 +114,12 @@ services:
         condition: service_healthy
       eureka-server:
         condition: service_started
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
     networks:
       - private-network
+      - proxy-network
 
   user-service:
     image: ${DOCKER_USERNAME}/skillsync-user-service:latest
@@ -274,8 +278,12 @@ services:
         condition: service_healthy
       eureka-server:
         condition: service_started
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
     networks:
       - private-network
+      - proxy-network
 
   payment-gateway:
     image: ${DOCKER_USERNAME}/skillsync-payment-gateway:latest
