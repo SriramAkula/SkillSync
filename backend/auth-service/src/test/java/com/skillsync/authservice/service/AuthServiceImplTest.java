@@ -56,7 +56,7 @@ class AuthServiceImplTest {
         when(userRepository.existsByUsername("test.example.com")).thenReturn(false);
         when(passwordEncoder.encode("password123")).thenReturn("encodedPass");
         when(userRepository.save(any(User.class))).thenReturn(user);
-        when(jwtUtil.generateToken(anyLong(), anyString(), anyList())).thenReturn("jwt-token");
+        when(jwtUtil.generateToken(anyLong(), anyString(), anyString(), anyList())).thenReturn("jwt-token");
 
         AuthResponse response = authService.register(request);
 
@@ -113,7 +113,7 @@ class AuthServiceImplTest {
         when(userRepository.existsByUsername(anyString())).thenReturn(false);
         when(passwordEncoder.encode(anyString())).thenReturn("encodedPass");
         when(userRepository.save(any())).thenReturn(user);
-        when(jwtUtil.generateToken(anyLong(), anyString(), anyList())).thenReturn("jwt-token");
+        when(jwtUtil.generateToken(anyLong(), anyString(), anyString(), anyList())).thenReturn("jwt-token");
         doThrow(new RuntimeException("RabbitMQ down")).when(eventPublisher).publishUserCreated(any());
 
         AuthResponse response = authService.register(request);
@@ -129,7 +129,7 @@ class AuthServiceImplTest {
         when(userRepository.existsByUsername(anyString())).thenReturn(false);
         when(passwordEncoder.encode(anyString())).thenReturn("encodedPass");
         when(userRepository.save(any())).thenReturn(user);
-        when(jwtUtil.generateToken(anyLong(), anyString(), anyList())).thenReturn("jwt-token");
+        when(jwtUtil.generateToken(anyLong(), anyString(), anyString(), anyList())).thenReturn("jwt-token");
         doThrow(new RuntimeException("Feign error")).when(userServiceClient).createProfile(any());
 
         AuthResponse response = authService.register(request);
@@ -144,7 +144,7 @@ class AuthServiceImplTest {
         LoginRequest request = new LoginRequest("test@example.com", "password123");
         when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.of(user));
         when(passwordEncoder.matches("password123", "encodedPass")).thenReturn(true);
-        when(jwtUtil.generateToken(anyLong(), anyString(), anyList())).thenReturn("jwt-token");
+        when(jwtUtil.generateToken(anyLong(), anyString(), anyString(), anyList())).thenReturn("jwt-token");
 
         AuthResponse response = authService.login(request);
 
@@ -190,7 +190,7 @@ class AuthServiceImplTest {
     void refreshToken_shouldReturnNewToken_whenValid() {
         when(jwtUtil.extractEmail("old-token")).thenReturn("test@example.com");
         when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.of(user));
-        when(jwtUtil.generateToken(anyLong(), anyString(), anyList())).thenReturn("new-token");
+        when(jwtUtil.generateToken(anyLong(), anyString(), anyString(), anyList())).thenReturn("new-token");
 
         AuthResponse response = authService.refreshToken("old-token");
 

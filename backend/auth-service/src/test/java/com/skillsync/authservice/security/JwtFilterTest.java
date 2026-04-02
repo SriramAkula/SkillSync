@@ -49,7 +49,7 @@ class JwtFilterTest {
 
     @Test
     void doFilterInternal_shouldSetAuthentication_whenValidToken() throws Exception {
-        String token = jwtUtil.generateToken(1L, "test@example.com", List.of("ROLE_LEARNER"));
+        String token = jwtUtil.generateToken(1L, "test@example.com", "testuser", List.of("ROLE_LEARNER"));
 
         MockHttpServletRequest request = new MockHttpServletRequest("GET", "/some/protected");
         request.addHeader("Authorization", "Bearer " + token);

@@ -58,6 +58,19 @@ public class SecurityContextUtil {
         }
     }
 
+    /**
+     * Extracts the username from the Authorization header of the request.
+     */
+    public String extractUsername(HttpServletRequest request) {
+        try {
+            Claims claims = extractClaims(request);
+            return (claims != null) ? claims.get("username", String.class) : null;
+        } catch (Exception e) {
+            log.error("Failed to extract username from JWT: {}", e.getMessage());
+            return null;
+        }
+    }
+
     private Claims extractClaims(HttpServletRequest request) {
         String authHeader = request.getHeader("Authorization");
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {

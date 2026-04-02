@@ -24,10 +24,11 @@ public class JwtUtil {
     }
 
     // generate token
-    public String generateToken(Long userId, String email, List<String> roles) {
+    public String generateToken(Long userId, String email, String username, List<String> roles) {
         return Jwts.builder()
                 .subject(email)
                 .claim("userId", userId)
+                .claim("username", username)
                 .claim("roles", roles) 
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + jwtConfig.getExpiration()))
@@ -51,7 +52,14 @@ public class JwtUtil {
 
     // extract userId
     public Long extractUserId(String token) {
-        return extractClaims(token).get("userId", Long.class);
+        Object userId = extractClaims(token).get("userId");
+        if (userId instanceof Integer) return ((Integer) userId).longValue();
+        return (Long) userId;
+    }
+
+    // extract username
+    public String extractUsername(String token) {
+        return extractClaims(token).get("username", String.class);
     }
 
     // extract roles

@@ -19,6 +19,7 @@ import com.skillsync.user.dto.response.UserProfileResponseDto;
 import com.skillsync.user.entity.UserProfile;
 import com.skillsync.user.service.UserProfileService;
 import com.skillsync.user.util.SecurityContextUtil;
+import com.skillsync.user.exception.UserProfileNotFoundException;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -143,11 +144,32 @@ public class UserProfileController {
 			throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unidentified user: No valid email in security context.");
 		}
 
-		log.info("Updating profile strictly by email: {}", email);
-
-		UserProfileResponseDto response = userProfileService.updateProfileByEmail(email, requestDto);
-
-		return ResponseEntity.ok(new ApiResponse<>("Profile updated successfully", response));
+		try {
+			log.info("Updating profile strictly by email: {}", email);
+			UserProfileResponseDto response = userProfileService.updateProfileByEmail(email, requestDto);
+			return ResponseEntity.ok(new ApiResponse<>("Profile updated successfully", response));
+		} catch (UserProfileNotFoundException e) {
+			log.warn("Profile not found for email: {}. Attempting fail-safe creation.", email);
+			
+			// 1. Extract missing data from JWT or headers
+			Long userId = securityUtil.extractUserId(request);
+			if (userId == null) userId = headerUserId;
+			
+			String username = securityUtil.extractUsername(request);
+			
+			if (userId != null) {
+				// 2. Create the missing profile
+				log.info("Creating missing profile for userId: {}, email: {}, username: {}", userId, email, username);
+				userProfileService.createProfile(userId, email, username);
+				
+				// 3. Retry the update
+				UserProfileResponseDto response = userProfileService.updateProfileByEmail(email, requestDto);
+				return ResponseEntity.ok(new ApiResponse<>("Profile created and updated successfully", response));
+			} else {
+				log.error("Fail-safe failed: No userId found in JWT or headers for email: {}", email);
+				throw e;
+			}
+		}
 	}
 
 

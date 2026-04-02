@@ -22,31 +22,31 @@ class JwtUtilTest {
 
     @Test
     void generateToken_shouldReturnNonNullToken() {
-        String token = jwtUtil.generateToken(1L, "test@example.com", List.of("ROLE_LEARNER"));
+        String token = jwtUtil.generateToken(1L, "test@example.com", "testuser", List.of("ROLE_LEARNER"));
         assertThat(token).isNotNull().isNotBlank();
     }
 
     @Test
     void extractEmail_shouldReturnCorrectEmail() {
-        String token = jwtUtil.generateToken(1L, "test@example.com", List.of("ROLE_LEARNER"));
+        String token = jwtUtil.generateToken(1L, "test@example.com", "testuser", List.of("ROLE_LEARNER"));
         assertThat(jwtUtil.extractEmail(token)).isEqualTo("test@example.com");
     }
 
     @Test
     void extractUserId_shouldReturnCorrectId() {
-        String token = jwtUtil.generateToken(42L, "test@example.com", List.of("ROLE_LEARNER"));
+        String token = jwtUtil.generateToken(42L, "test@example.com", "testuser", List.of("ROLE_LEARNER"));
         assertThat(jwtUtil.extractUserId(token)).isEqualTo(42L);
     }
 
     @Test
     void extractRoles_shouldReturnCorrectRoles() {
-        String token = jwtUtil.generateToken(1L, "test@example.com", List.of("ROLE_LEARNER", "ROLE_MENTOR"));
+        String token = jwtUtil.generateToken(1L, "test@example.com", "testuser", List.of("ROLE_LEARNER", "ROLE_MENTOR"));
         assertThat(jwtUtil.extractRoles(token)).containsExactly("ROLE_LEARNER", "ROLE_MENTOR");
     }
 
     @Test
     void isTokenValid_shouldReturnTrue_forFreshToken() {
-        String token = jwtUtil.generateToken(1L, "test@example.com", List.of("ROLE_LEARNER"));
+        String token = jwtUtil.generateToken(1L, "test@example.com", "testuser", List.of("ROLE_LEARNER"));
         assertThat(jwtUtil.isTokenValid(token)).isTrue();
     }
 
@@ -57,7 +57,13 @@ class JwtUtilTest {
 
     @Test
     void isTokenExpired_shouldReturnFalse_forFreshToken() {
-        String token = jwtUtil.generateToken(1L, "test@example.com", List.of("ROLE_LEARNER"));
+        String token = jwtUtil.generateToken(1L, "test@example.com", "testuser", List.of("ROLE_LEARNER"));
         assertThat(jwtUtil.isTokenExpired(token)).isFalse();
+    }
+
+    @Test
+    void extractUsername_shouldReturnCorrectUsername() {
+        String token = jwtUtil.generateToken(1L, "test@example.com", "testuser", List.of("ROLE_LEARNER"));
+        assertThat(jwtUtil.extractUsername(token)).isEqualTo("testuser");
     }
 }

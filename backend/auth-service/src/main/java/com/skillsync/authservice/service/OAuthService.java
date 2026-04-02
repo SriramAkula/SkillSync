@@ -69,7 +69,7 @@ public class OAuthService {
                 .orElseGet(() -> createOAuthUser(email, name, providerId, AuthProvider.GOOGLE));
 
         List<String> roles = Arrays.asList(user.getRole().split(","));
-        String token = jwtUtil.generateToken(user.getId(), user.getEmail(), roles);
+        String token = jwtUtil.generateToken(user.getId(), user.getEmail(), user.getUsername(), roles);
 
         auditService.log("User", user.getId(), "OAUTH_LOGIN_GOOGLE",
                 user.getId().toString(), "email=" + email);

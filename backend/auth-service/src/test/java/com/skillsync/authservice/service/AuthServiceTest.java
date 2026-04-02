@@ -78,7 +78,7 @@ class AuthServiceTest {
         when(userRepository.existsByUsername(anyString())).thenReturn(false);
         when(passwordEncoder.encode(anyString())).thenReturn("encodedPassword");
         when(userRepository.save(any(User.class))).thenReturn(user);
-        when(jwtUtil.generateToken(any(), anyString(), any())).thenReturn("mockToken");
+        when(jwtUtil.generateToken(any(), anyString(), anyString(), any())).thenReturn("mockToken");
 
         // Act
         AuthResponse response = authService.register(registerRequest);
@@ -111,7 +111,7 @@ class AuthServiceTest {
         when(userRepository.existsByUsername(anyString())).thenReturn(false);
         when(passwordEncoder.encode(anyString())).thenReturn("encodedPassword");
         when(userRepository.save(any(User.class))).thenReturn(user);
-        when(jwtUtil.generateToken(any(), anyString(), any())).thenReturn("mockToken");
+        when(jwtUtil.generateToken(any(), anyString(), anyString(), any())).thenReturn("mockToken");
         doThrow(new RuntimeException("Feign failure")).when(userServiceClient).createProfile(any());
 
         // Act
@@ -129,7 +129,7 @@ class AuthServiceTest {
         user.setIsActive(true);
         when(userRepository.findByEmail(anyString())).thenReturn(Optional.of(user));
         when(passwordEncoder.matches(anyString(), anyString())).thenReturn(true);
-        when(jwtUtil.generateToken(any(), anyString(), any())).thenReturn("mockToken");
+        when(jwtUtil.generateToken(any(), anyString(), anyString(), any())).thenReturn("mockToken");
 
         // Act
         AuthResponse response = authService.login(loginRequest);
@@ -176,7 +176,7 @@ class AuthServiceTest {
         // Arrange
         when(jwtUtil.extractEmail(anyString())).thenReturn("test@example.com");
         when(userRepository.findByEmail(anyString())).thenReturn(Optional.of(user));
-        when(jwtUtil.generateToken(any(), anyString(), any())).thenReturn("newToken");
+        when(jwtUtil.generateToken(any(), anyString(), anyString(), any())).thenReturn("newToken");
 
         // Act
         AuthResponse response = authService.refreshToken("oldToken");
