@@ -114,7 +114,8 @@ import { forkJoin } from 'rxjs';
 
                 <!-- Delete: only creator or admin -->
                 @if (isCreator(g) || authStore.isAdmin()) {
-                  <button class="btn-delete" (click)="deleteGroup(g.id)">
+                  <button class="btn-delete" (click)="deleteGroup(g.id)" 
+                          title="Only group creator or admin can delete">
                     <span class="material-icons">delete</span>
                   </button>
                 }
@@ -207,7 +208,7 @@ import { forkJoin } from 'rxjs';
             <div class="modal-actions">
               <button class="btn-modal-cancel" (click)="showCreate.set(false)">Cancel</button>
               <button class="btn-modal-create" (click)="createGroup()"
-                      [disabled]="!newGroup.name.trim() || !newGroup.skillId || !newGroup.maxMembers || creating()">
+                      [disabled]="creating()">
                 @if (creating()) {
                   <mat-spinner diameter="18" /><span>Creating...</span>
                 } @else {
@@ -456,18 +457,46 @@ export class GroupListPage implements OnInit {
   }
 
   createGroup(): void {
+    console.log('createGroup() triggered with data:', this.newGroup);
     const { name, skillId, maxMembers, description } = this.newGroup;
-    if (!name.trim() || !skillId || !maxMembers) return;
+    
+    if (!name || !name.trim()) {
+      this.snack.open('Group Name is required.', 'OK', { duration: 3000 });
+      return;
+    }
+    if (!skillId) {
+      this.snack.open('Please select a skill.', 'OK', { duration: 3000 });
+      return;
+    }
+    if (!maxMembers || maxMembers < 2) {
+      this.snack.open('Max members must be at least 2.', 'OK', { duration: 3000 });
+      return;
+    }
+
     this.creating.set(true);
-    this.groupService.createGroup({ name: name.trim(), skillId: Number(skillId), maxMembers: Number(maxMembers), description }).subscribe({
+    const payload = { 
+      name: name.trim(), 
+      skillId: Number(skillId), 
+      maxMembers: Number(maxMembers), 
+      description 
+    };
+    
+    console.log('Sending creation payload:', payload);
+
+    this.groupService.createGroup(payload).subscribe({
       next: (r) => {
+        console.log('Group created successfully:', r.data);
         this.groups.update(list => [r.data, ...list]);
         this.showCreate.set(false);
         this.creating.set(false);
         this.newGroup = { name: '', skillId: null, maxMembers: null, description: '' };
         this.snack.open('Group created successfully!', 'OK', { duration: 3000 });
       },
-      error: (e) => { this.creating.set(false); this.snack.open(e.error?.message ?? 'Failed to create group', 'OK', { duration: 3000 }); }
+      error: (e) => { 
+        console.error('Group creation failed:', e);
+        this.creating.set(false); 
+        this.snack.open(e.error?.message ?? 'Failed to create group', 'OK', { duration: 3000 }); 
+      }
     });
   }
 }
