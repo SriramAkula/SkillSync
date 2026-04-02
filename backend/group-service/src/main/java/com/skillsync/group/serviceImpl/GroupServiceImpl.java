@@ -12,6 +12,8 @@ import com.skillsync.group.mapper.GroupMapper;
 import com.skillsync.group.repository.GroupMemberRepository;
 import com.skillsync.group.repository.GroupRepository;
 import com.skillsync.group.service.GroupService;
+import com.skillsync.group.client.SkillServiceClient;
+import com.skillsync.group.client.UserServiceClient;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheConfig;
@@ -33,6 +35,8 @@ public class GroupServiceImpl implements GroupService {
     private final GroupRepository groupRepository;
     private final GroupMemberRepository groupMemberRepository;
     private final GroupMapper groupMapper;
+    private final SkillServiceClient skillServiceClient;
+    private final UserServiceClient userServiceClient;
 
     @Override
     @Transactional
@@ -40,6 +44,21 @@ public class GroupServiceImpl implements GroupService {
     public GroupResponseDto createGroup(Long creatorId, CreateGroupRequestDto request) {
         log.info("Creating group '{}' with skill {} by creator {}",
                 request.getName(), request.getSkillId(), creatorId);
+
+        // Cross-service validation: Skill Sync
+        try {
+            skillServiceClient.getSkillById(request.getSkillId());
+        } catch (Exception e) {
+            throw new GroupNotFoundException("Referenced skill (ID: " + request.getSkillId() + ") does not exist or skill-service is down.");
+        }
+
+        // Cross-service validation: User Sync
+        try {
+            userServiceClient.getProfile(creatorId);
+        } catch (Exception e) {
+            throw new GroupNotFoundException("Creator user (ID: " + creatorId + ") does not exist or user-service is down.");
+        }
+
         Group group = groupMapper.toEntity(creatorId, request);
         Group savedGroup = groupRepository.save(group);
         groupMemberRepository.save(groupMapper.toMemberEntity(savedGroup.getId(), creatorId, MemberRole.CREATOR));
@@ -79,6 +98,14 @@ public class GroupServiceImpl implements GroupService {
     @CacheEvict(allEntries = true)
     public GroupResponseDto joinGroup(Long groupId, Long userId) {
         log.info("User {} joining group {}", userId, groupId);
+
+        // Cross-service validation: User Sync
+        try {
+            userServiceClient.getProfile(userId);
+        } catch (Exception e) {
+            throw new GroupNotFoundException("User (ID: " + userId + ") does not exist or user-service is down.");
+        }
+
         Group group = groupRepository.findById(groupId)
                 .orElseThrow(() -> new GroupNotFoundException("Group not found"));
         Optional<GroupMember> existing = groupMemberRepository.findByGroupIdAndUserId(groupId, userId);

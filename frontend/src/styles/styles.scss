@@ -1,50 +1,115 @@
 
 html {
   color-scheme: light;
+  &.dark-theme { color-scheme: dark; }
 }
 
-// ── CSS Variables ─────────────────────────────────────────────────────────────
+// ── CSS Variables (Standardized) ──────────────────────────────────────────────
 :root {
+  --bg-color: #f9fafb;
+  --text-primary: #111827;
+  --text-secondary: #6b7280;
+  --card-bg: #ffffff;
+  --border-color: #e5e7eb;
+  
   --primary: #5c6bc0;
   --primary-dark: #3949ab;
   --accent: #ff4081;
-  --bg: #f5f5f5;
-  --surface: #ffffff;
-  --text: #212121;
-  --text-secondary: #616161;
-  --border: #e0e0e0;
   --radius: 12px;
-  --shadow: 0 2px 8px rgba(0,0,0,0.08);
+  --shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+
+  // Semantic Aliases
+  --bg-page: var(--bg-color);
+  --bg-card: var(--card-bg);
+  --text-main: var(--text-primary);
+  --text-muted: var(--text-secondary);
+  --border-main: var(--border-color);
+  --card-shadow: var(--shadow);
 }
 
-// ── Reset & Base ──────────────────────────────────────────────────────────────
-*, *::before, *::after { box-sizing: border-box; }
+.dark-theme {
+  --bg-color: #111827;
+  --text-primary: #f9fafb;
+  --text-secondary: #9ca3af;
+  --card-bg: #1f2937;
+  --border-color: #374151;
+  
+  --shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  
+  --bg-page: var(--bg-color);
+  --bg-card: var(--card-bg);
+  --text-main: var(--text-primary);
+  --text-muted: var(--text-secondary);
+  --border-main: var(--border-color);
+  --card-shadow: var(--shadow);
+}
+
+// ── Transitions & Resets ──────────────────────────────────────────────────────
+* {
+  box-sizing: border-box;
+  transition: background 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
 
 html, body {
   height: 100%;
   margin: 0;
   font-family: 'Roboto', 'Segoe UI', sans-serif;
-  background: var(--bg);
-  color: var(--text);
+  background: var(--bg-color);
+  color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
+}
+
+// ── Global Input Styles ───────────────────────────────────────────────────────
+input, textarea, select {
+  background: var(--card-bg);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 8px 12px;
+  outline: none;
+  
+  &::placeholder {
+    color: var(--text-secondary);
+    opacity: 0.7;
+  }
+  
+  &:focus {
+    border-color: var(--primary);
+  }
+}
+
+label {
+  color: var(--text-secondary);
+  font-weight: 500;
 }
 
 // ── Scrollbar ─────────────────────────────────────────────────────────────────
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #bdbdbd; border-radius: 3px; }
+::-webkit-scrollbar-thumb { 
+  background: #bdbdbd; 
+  border-radius: 3px; 
+  .dark-theme & { background: #475569; }
+}
 
 // ── Utility ───────────────────────────────────────────────────────────────────
 .full-width { width: 100%; }
 .text-center { text-align: center; }
 .flex-center { display: flex; align-items: center; justify-content: center; }
 
-// ── Snackbar: success ─────────────────────────────────────────────────────────
-.snack-success .mdc-snackbar__surface {
-  background: #16a34a !important;
+// ── Custom Toasts ─────────────────────────────────────────────────────────────
+.toast-success .mdc-snackbar__surface {
+  background: #10B981 !important;
   color: #fff !important;
-  border-radius: 12px !important;
-  font-weight: 600 !important;
-  box-shadow: 0 4px 16px rgba(22,163,74,.35) !important;
+  border-radius: 16px !important;
+  padding: 8px 16px !important;
 }
-.snack-success .mat-mdc-snack-bar-action { color: rgba(255,255,255,.85) !important; }
+
+.toast-error .mdc-snackbar__surface {
+  background: #EF4444 !important;
+  color: #fff !important;
+  border-radius: 16px !important;
+  padding: 8px 16px !important;
+}
+
+.mat-mdc-snack-bar-label { font-weight: 600 !important; font-size: 14px !important; }

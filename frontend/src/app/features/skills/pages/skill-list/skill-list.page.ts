@@ -7,6 +7,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { SkillService } from '../../../../core/services/skill.service';
 import { AuthStore } from '../../../../core/auth/auth.store';
 import { SkillStore } from '../../../../core/auth/skill.store';
+import { UserService } from '../../../../core/services/user.service';
 import { SkillDto, CreateSkillRequest } from '../../../../shared/models/skill.models';
 import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
 
@@ -44,11 +45,18 @@ import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
         </div>
 
         <div class="category-chips">
-          <button class="chip" [class.active]="selectedCategory() === ''"
-                  (click)="filterByCategory('')">All</button>
+          <button class="chip" [class.active]="selectedCategory() === '' && !showMySkills()"
+                  (click)="filterByCategory('', false)">All</button>
+                  
+          <button class="chip my-skills-chip" [class.active]="showMySkills()"
+                  (click)="filterByCategory('', true)">
+            <span class="material-icons star-icon">star</span>
+            My Skills
+          </button>
+          
           @for (cat of categories(); track cat) {
-            <button class="chip" [class.active]="selectedCategory() === cat"
-                    (click)="filterByCategory(cat)">{{ cat }}</button>
+            <button class="chip" [class.active]="selectedCategory() === cat && !showMySkills()"
+                    (click)="filterByCategory(cat, false)">{{ cat }}</button>
           }
         </div>
       </div>
@@ -59,6 +67,7 @@ import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
           <strong>{{ filteredSkills().length }}</strong> skills
           @if (searchQuery) { matching "<em>{{ searchQuery }}</em>" }
           @if (selectedCategory()) { in <em>{{ selectedCategory() }}</em> }
+          @if (showMySkills()) { inside your profile }
         </span>
       </div>
 
@@ -74,9 +83,14 @@ import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
             <div class="skill-card" (click)="selectSkill(skill)">
               <div class="skill-top">
                 <div class="skill-icon">{{ skill.skillName[0].toUpperCase() }}</div>
-                @if (skill.category) {
-                  <span class="category-tag">{{ skill.category }}</span>
-                }
+                <div class="tags-wrap">
+                  @if (skill.popularityScore >= 50) {
+                    <span class="popular-tag"><span class="material-icons">local_fire_department</span> Popular</span>
+                  }
+                  @if (skill.category) {
+                    <span class="category-tag">{{ skill.category }}</span>
+                  }
+                </div>
               </div>
               <h3 class="skill-name">{{ skill.skillName }}</h3>
               @if (skill.description) {
@@ -87,16 +101,25 @@ import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
                   <span class="material-icons">trending_up</span>
                   {{ skill.popularityScore }} learners
                 </div>
-                @if (authStore.isAdmin()) {
-                  <div class="admin-actions">
-                    <button class="btn-edit" (click)="$event.stopPropagation(); openEdit(skill)">
-                      <span class="material-icons">edit</span>
-                    </button>
-                    <button class="btn-delete" (click)="$event.stopPropagation(); deleteSkill(skill.id)">
-                      <span class="material-icons">delete</span>
-                    </button>
-                  </div>
-                }
+                <div class="action-wrap">
+                  @if (authStore.isAdmin()) {
+                    <div class="admin-actions">
+                      <button class="btn-edit" (click)="$event.stopPropagation(); openEdit(skill)">
+                        <span class="material-icons">edit</span>
+                      </button>
+                      <button class="btn-delete" (click)="$event.stopPropagation(); deleteSkill(skill.id)">
+                        <span class="material-icons">delete</span>
+                      </button>
+                    </div>
+                  }
+                  <button class="btn-add-skill" [class.added]="isSkillSelected(skill.skillName)" (click)="$event.stopPropagation(); toggleProfileSkill(skill.skillName)">
+                    @if (isSkillSelected(skill.skillName)) {
+                      <span class="material-icons">check</span> Added
+                    } @else {
+                      <span class="material-icons">add</span> Add
+                    }
+                  </button>
+                </div>
               </div>
             </div>
           }
@@ -104,8 +127,13 @@ import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
             <div class="empty-state">
               <div class="empty-icon"><span class="material-icons">search_off</span></div>
               <h3>No skills found</h3>
-              <p>Try a different search or category</p>
-              @if (searchQuery || selectedCategory()) {
+              <p>
+                @if (searchQuery) { No results match "{{ searchQuery }}" }
+                @else if (selectedCategory()) { No skills found in this category }
+                @else if (showMySkills()) { You haven't added any skills to your profile yet! }
+                @else { No skills available. Please add skills in backend. }
+              </p>
+              @if (searchQuery || selectedCategory() || showMySkills()) {
                 <button class="btn-clear" (click)="clearAll()">Clear filters</button>
               }
             </div>
@@ -240,6 +268,10 @@ import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
     .chip { height: 34px; padding: 0 14px; border-radius: 20px; border: 1.5px solid #e5e7eb; background: white; color: #6b7280; font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
     .chip:hover { border-color: #4f46e5; color: #4f46e5; }
     .chip.active { background: #4f46e5; border-color: #4f46e5; color: white; font-weight: 600; }
+    
+    .my-skills-chip { display: flex; align-items: center; }
+    .my-skills-chip .star-icon { font-size: 14px; margin-right: 4px; }
+    .my-skills-chip.active { background: #f59e0b; border-color: #f59e0b; color: white; }
 
     /* Stats */
     .stats-bar { margin-bottom: 20px; font-size: 14px; color: #6b7280; }
@@ -258,7 +290,10 @@ import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
 
     .skill-top { display: flex; align-items: center; justify-content: space-between; }
     .skill-icon { width: 44px; height: 44px; border-radius: 12px; background: linear-gradient(135deg, #4f46e5, #7c3aed); color: white; font-size: 18px; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .tags-wrap { display: flex; align-items: center; gap: 6px; }
     .category-tag { background: #f3f4f6; color: #6b7280; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+    .popular-tag { background: rgba(245, 158, 11, 0.1); color: #d97706; padding: 3px 8px; border-radius: 20px; font-size: 11px; font-weight: 700; display: flex; align-items: center; gap: 2px; }
+    .popular-tag .material-icons { font-size: 12px; }
 
     .skill-name { font-size: 15px; font-weight: 700; color: #111827; margin: 0; }
     .skill-desc { font-size: 13px; color: #6b7280; margin: 0; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; flex: 1; }
@@ -273,6 +308,12 @@ import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
     .btn-delete { background: #fee2e2; color: #dc2626; }
     .btn-delete:hover { background: #fecaca; }
     .btn-edit .material-icons, .btn-delete .material-icons { font-size: 14px; }
+    
+    .action-wrap { display: flex; align-items: center; gap: 8px; }
+    .btn-add-skill { display: flex; align-items: center; gap: 4px; border: none; background: #eef2ff; color: #4f46e5; font-size: 12px; font-weight: 700; padding: 6px 12px; border-radius: 8px; cursor: pointer; transition: 0.2s; }
+    .btn-add-skill .material-icons { font-size: 16px; }
+    .btn-add-skill:hover { background: #e0e7ff; }
+    .btn-add-skill.added { background: rgba(16, 185, 129, 0.1); color: #059669; }
 
     /* Empty State */
     .empty-state { grid-column: 1/-1; display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 80px 20px; text-align: center; }
@@ -343,6 +384,7 @@ import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
 })
 export class SkillListPage implements OnInit {
   private readonly skillService = inject(SkillService);
+  private readonly userService = inject(UserService);
   readonly authStore = inject(AuthStore);
   readonly skillStore = inject(SkillStore);
   private readonly router = inject(Router);
@@ -355,7 +397,9 @@ export class SkillListPage implements OnInit {
   readonly showForm = signal(false);
   readonly editingSkill = signal<SkillDto | null>(null);
   readonly selectedCategory = signal('');
+  readonly showMySkills = signal(false);
   readonly categories = signal<string[]>([]);
+  readonly selectedSkills = signal<string[]>([]);
 
   searchQuery = '';
   formData: CreateSkillRequest = { skillName: '', description: '', category: '' };
@@ -374,14 +418,31 @@ export class SkillListPage implements OnInit {
         this.skillStore.loadAll(undefined);
       }
     });
+
+    this.userService.getMyProfile().subscribe({
+      next: (res: any) => {
+        const str = res.data.skills;
+        if (str) {
+          this.selectedSkills.set(str.split(',').map((s: string) => s.trim()));
+        }
+      }
+    });
   }
 
   loadAll(): void { this.skillStore.loadAll(undefined); }
 
   filteredSkills(): SkillDto[] {
     let list = this.skillStore.skills();
-    if (this.selectedCategory()) list = list.filter(s => s.category === this.selectedCategory());
-    if (this.searchQuery.length >= 2) list = list.filter(s => s.skillName.toLowerCase().includes(this.searchQuery.toLowerCase()) || s.category?.toLowerCase().includes(this.searchQuery.toLowerCase()));
+    if (this.showMySkills()) {
+      list = list.filter(ss => !!ss.skillName && this.selectedSkills().includes(ss.skillName));
+    } else if (this.selectedCategory()) {
+      list = list.filter(s => s.category === this.selectedCategory());
+    }
+    
+    if (this.searchQuery.trim().length >= 2) {
+      const q = this.searchQuery.toLowerCase();
+      list = list.filter(s => !!s.skillName && s.skillName.toLowerCase().includes(q) || (s.category && s.category.toLowerCase().includes(q)));
+    }
     return list;
   }
 
@@ -392,18 +453,41 @@ export class SkillListPage implements OnInit {
     this.categories.set(cats);
   }
 
-  filterByCategory(cat: string): void {
+  filterByCategory(cat: string, mySkills: boolean = false): void {
+    this.showMySkills.set(mySkills);
     this.selectedCategory.set(cat);
-    if (cat) {
-      this.skillService.getByCategory(cat).subscribe({
-        next: (r) => { /* just filter locally */ },
-        error: () => {}
-      });
-    }
+    // Categories act as local filter 
   }
 
   clearSearch(): void { this.searchQuery = ''; }
-  clearAll(): void { this.searchQuery = ''; this.selectedCategory.set(''); }
+  clearAll(): void { this.searchQuery = ''; this.selectedCategory.set(''); this.showMySkills.set(false); }
+
+  isSkillSelected(name: string): boolean {
+    return this.selectedSkills().includes(name);
+  }
+
+  toggleProfileSkill(name: string): void {
+    const list = this.selectedSkills();
+    let updated: string[];
+    let actionStr = '';
+    
+    if (list.includes(name)) {
+      updated = list.filter(n => n !== name);
+      actionStr = 'Removed from';
+    } else {
+      updated = [...list, name];
+      actionStr = 'Added to';
+    }
+    
+    this.selectedSkills.set(updated);
+    
+    // Fire and forget auto-save to user profile
+    this.userService.updateProfile({ skills: updated.join(',') }).subscribe({
+      next: () => {
+         this.snack.open(`${actionStr} your profile 🎉`, 'OK', { duration: 2500 });
+      }
+    });
+  }
 
   selectSkill(skill: SkillDto): void { this.selectedSkill.set(skill); }
 

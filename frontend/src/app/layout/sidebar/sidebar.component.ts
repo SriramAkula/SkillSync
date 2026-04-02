@@ -29,20 +29,22 @@ interface NavItem { label: string; icon: string; route: string; roles?: string[]
     .nav-item {
       display: flex; align-items: center; gap: 12px;
       padding: 10px 12px; border-radius: 10px;
-      text-decoration: none; color: #6b7280;
+      text-decoration: none; color: var(--text-secondary);
       font-size: 14px; font-weight: 500;
       transition: background 0.15s, color 0.15s;
       white-space: nowrap;
     }
-    .nav-item:hover { background: #f3f4f6; color: #111827; }
-    .nav-item:hover .nav-icon { color: #4f46e5; }
+    .nav-item:hover { background: var(--bg-color); color: var(--text-primary); }
+    .nav-item:hover .nav-icon { color: var(--primary); }
 
     .nav-item.active {
-      background: #eef2ff; color: #4f46e5; font-weight: 600;
+      background: var(--bg-color); color: var(--primary); font-weight: 600;
+      box-shadow: inset 2px 0 0 var(--primary);
+      border-radius: 0 10px 10px 0;
     }
-    .nav-item.active .nav-icon { color: #4f46e5; }
+    .nav-item.active .nav-icon { color: var(--primary); }
 
-    .nav-icon { font-size: 20px; color: #9ca3af; transition: color 0.15s; flex-shrink: 0; }
+    .nav-icon { font-size: 20px; color: var(--text-secondary); transition: color 0.15s; flex-shrink: 0; }
   `]
 })
 export class SidebarComponent {

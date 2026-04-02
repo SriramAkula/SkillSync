@@ -1,367 +1,596 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, inject, OnInit, signal, effect, computed, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { UserService } from '../../../../core/services/user.service';
 import { AuthStore } from '../../../../core/auth/auth.store';
+import { SkillStore } from '../../../../core/auth/skill.store';
 import { UserProfileDto } from '../../../../shared/models';
+import { ToastService } from '../../../../core/services/toast.service';
+import { ProfileCompletionService } from '../../../../core/services/profile-completion.service';
+
+interface UserActivity {
+  id: string;
+  icon: string;
+  colorClass: string;
+  text: string;
+  timestamp: number;
+}
 
 @Component({
   selector: 'app-profile-page',
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, RouterLink, MatProgressSpinnerModule, MatSnackBarModule],
   template: `
-    <div class="page-container">
+    <!-- CONFETTI CANVAS -->
+    @if (showConfetti()) {
+      <div class="confetti-container">
+        @for (c of confettiDrops; track $index) {
+           <div class="confetti" [style.left.%]="c.x" [style.animationDelay.s]="c.delay" [style.backgroundColor]="c.color"></div>
+        }
+      </div>
+    }
+
+    <div class="page-container" [class.edit-mode]="isEditing()">
+      <!-- Profile Completion Banner -->
+      <div class="completion-banner" [class.complete]="completionPercentage() === 100">
+        <div class="banner-top">
+          <div class="banner-info">
+            <h3 class="banner-title">
+              @if (completionPercentage() === 100) {
+                🎉 Profile Complete!
+              } @else {
+                Profile {{ completionPercentage() }}% complete — Level: {{ profileLevel() }}
+              }
+            </h3>
+            <p class="banner-hint">
+              @if (completionPercentage() === 100) {
+                You are all set to connect with mentors and peers!
+              } @else {
+                Complete your profile to reach 'Pro' status and get better matches.
+              }
+            </p>
+          </div>
+          @if (completionPercentage() < 100) {
+            <button class="expand-hints-btn" (click)="toggleHints()">
+              {{ hintsExpanded() ? 'Hide Details' : 'Show Details' }}
+            </button>
+          }
+        </div>
+        
+        <div class="progress-section" title="Complete profile to get better mentor matches">
+          <div class="progress-track">
+            <div class="progress-fill" 
+                 [style.width.%]="completionPercentage()"
+                 [class.low]="completionPercentage() < 40"
+                 [class.mid]="completionPercentage() >= 40 && completionPercentage() < 80"
+                 [class.high]="completionPercentage() >= 80">
+            </div>
+          </div>
+        </div>
+
+        <!-- Smart Hints Dropdown -->
+        @if (hintsExpanded() && completionPercentage() < 100) {
+           <div class="hints-dropdown">
+             <ul class="hints-list">
+               @for (f of completionService.getMissingFields(profile()); track f.key) {
+                 <li class="hint-item missing" (click)="editField(f.key)"><span class="material-icons">close</span> Missing {{ f.label }}</li>
+               }
+               <!-- Mock showing completed fields for 'why' breakdown -->
+               <li class="hint-item complete"><span class="material-icons">check</span> Username</li>
+               <li class="hint-item complete"><span class="material-icons">check</span> Email</li>
+             </ul>
+           </div>
+        }
+      </div>
+
       <!-- Header Area -->
       <div class="header-section">
         <div class="header-content">
           <h1>My Profile</h1>
           <p>Manage your account settings and profile information</p>
         </div>
-        <button class="logout-btn" (click)="logout()">
-          <span class="material-icons">logout</span>
-          <span>Sign Out</span>
-        </button>
+        <div class="header-actions">
+           <!-- Visibility Toggle (UI only) -->
+           <div class="visibility-toggle" (click)="toggleVisibility()" title="Toggle Profile Visibility">
+              <span class="material-icons">{{ isPrivate() ? 'lock' : 'public' }}</span>
+              <span>{{ isPrivate() ? 'Private' : 'Public' }}</span>
+           </div>
+          <button class="logout-btn" (click)="logout()">
+            <span class="material-icons">logout</span>
+            <span>Sign Out</span>
+          </button>
+        </div>
       </div>
 
-      <!-- Loading State -->
+      <!-- Loading State (Skeleton) -->
       @if (loading()) {
-        <div class="loader-box">
-          <mat-spinner diameter="40"></mat-spinner>
+        <div class="profile-layout">
+          <div class="profile-sidebar skeleton-box sidebar-skeleton">
+            <div class="skeleton-avatar"></div>
+            <div class="skeleton-text w-60"></div>
+            <div class="skeleton-text w-40"></div>
+          </div>
+          <div class="profile-main skeleton-box main-skeleton">
+            <div class="skeleton-title w-30"></div>
+            <div class="skeleton-text w-100 h-line"></div>
+            <div class="skeleton-text w-100 h-line"></div>
+            <div class="skeleton-text w-80 h-line"></div>
+          </div>
         </div>
       }
 
       <!-- Profile Content -->
-      @if (profile()) {
+      @if (profile() && !loading()) {
         <div class="profile-layout">
           
           <!-- Sidebar -->
           <div class="profile-sidebar">
             <div class="user-card">
-              <div class="user-avatar">{{ initials() }}</div>
+              <div class="user-avatar-wrap" 
+                   [class.drag-over]="isDragOver()"
+                   (dragover)="onDragOver($event)" 
+                   (dragleave)="onDragLeave($event)" 
+                   (drop)="onDrop($event)">
+                
+                <input type="file" #fileInput (change)="onFileSelected($event)" accept="image/png, image/jpeg" hidden />
+                
+                <div class="user-avatar">
+                  @if (avatarUrl()) {
+                    <img [src]="avatarUrl()!" alt="Avatar" class="avatar-img" />
+                  } @else {
+                    {{ initials() }}
+                  }
+                </div>
+                
+                <div class="avatar-overlay" (click)="fileInput.click()">
+                  <span class="material-icons">photo_camera</span>
+                  <span style="font-size: 11px;">Change Photo</span>
+                </div>
+
+                <div class="add-avatar-btn" (click)="fileInput.click()" title="Upload Photo">
+                  <span class="material-icons">add</span>
+                </div>
+              </div>
+
               <h2 class="user-name">{{ fullName() }}</h2>
-              <p class="user-email">{{ profile()!.email }}</p>
-              <div class="user-handle">&#64;{{ profile()!.username }}</div>
+              <div class="user-email">
+                 {{ profile()!.email }}
+                 <span class="material-icons copy-icon" (click)="copyToClipboard(profile()!.email)" title="Copy Email">content_copy</span>
+              </div>
+              <div class="user-handle">
+                 &#64;{{ displayUsername() }}
+                 <span class="material-icons copy-icon" (click)="copyToClipboard(displayUsername())" title="Copy Username">content_copy</span>
+              </div>
               
               <div class="badge-row">
                 <span class="role-pill learner">
                   <span class="pulse"></span> Learner
                 </span>
+                @if (showBadge()) {
+                  <span class="complete-badge">100% Complete</span>
+                }
               </div>
 
               @if (profile()!.createdAt) {
                 <div class="joined-date">
                   <span class="material-icons">event</span>
-                  Member since {{ profile()!.createdAt | date:'mediumDate' }}
+                  Joined {{ profile()!.createdAt | date:'mediumDate' }}
                 </div>
               }
             </div>
-
-            <nav class="profile-nav">
-              <a routerLink="/sessions" class="nav-button">
-                <span class="material-icons">calendar_today</span>
-                <span>My Sessions</span>
-                <span class="material-icons chevron">chevron_right</span>
-              </a>
-              <a routerLink="/notifications" class="nav-button">
-                <span class="material-icons">notifications</span>
-                <span>Notifications</span>
-                <span class="material-icons chevron">chevron_right</span>
-              </a>
-            </nav>
           </div>
 
           <!-- Main Content Area -->
           <div class="profile-main">
             <div class="content-card">
-              <div class="card-top">
-                <h3>{{ isEditing() ? 'Edit Profile' : 'Account Details' }}</h3>
-                @if (!isEditing()) {
-                  <button class="edit-toggle" (click)="isEditing.set(true)">
-                    <span class="material-icons">edit</span> Edit
-                  </button>
-                }
-              </div>
-
-              @if (!isEditing()) {
-                <!-- View Mode -->
-                <div class="info-list">
-                  <div class="info-item">
-                    <div class="info-icon"><span class="material-icons">person</span></div>
-                    <div class="info-label">Full Name</div>
-                    <div class="info-value">{{ fullName() }}</div>
-                  </div>
-                  <div class="info-item">
-                    <div class="info-icon"><span class="material-icons">alternate_email</span></div>
-                    <div class="info-label">Username</div>
-                    <div class="info-value">&#64;{{ profile()!.username }}</div>
-                  </div>
-                  <div class="info-item">
-                    <div class="info-icon"><span class="material-icons">email</span></div>
-                    <div class="info-label">Email Address</div>
-                    <div class="info-value">{{ profile()!.email }}</div>
-                  </div>
-                  <div class="info-item">
-                    <div class="info-icon"><span class="material-icons">phone</span></div>
-                    <div class="info-label">Phone Number</div>
-                    <div class="info-value">{{ profile()!.phoneNumber || 'Not provided' }}</div>
-                  </div>
-                  <div class="info-item">
-                    <div class="info-icon"><span class="material-icons">description</span></div>
-                    <div class="info-label">Bio</div>
-                    <div class="info-value bio-text">{{ profile()!.bio || 'Tell us about yourself...' }}</div>
-                  </div>
-                  <div class="info-item">
-                    <div class="info-icon"><span class="material-icons">workspace_premium</span></div>
-                    <div class="info-label">Skills</div>
-                    <div class="info-value">Select Skills</div>
+              <div class="card-header">
+                <h3>Account Details <span class="header-shortcut-hint" *ngIf="isEditing()">[ Esc to cancel, Ctrl+S to save ]</span></h3>
+                
+                <!-- Preview / Edit Toggle -->
+                <div class="mode-toggle" (click)="toggleEdit()">
+                  <div class="toggle-track">
+                     <div class="toggle-pill" [class.right]="isEditing()"></div>
+                     <div class="toggle-opt" [class.active]="!isEditing()">
+                        <span class="material-icons">visibility</span> Preview
+                     </div>
+                     <div class="toggle-opt" [class.active]="isEditing()">
+                        <span class="material-icons">edit_note</span> Edit Mode
+                     </div>
                   </div>
                 </div>
-              } @else {
-                <!-- Edit Mode -->
-                <form [formGroup]="form" (ngSubmit)="save()" class="profile-form">
-                  <div class="form-grid">
-                    <div class="form-field">
-                      <label>Username</label>
-                      <div class="input-container">
-                        <span class="material-icons">person</span>
-                        <input type="text" formControlName="username" />
-                      </div>
-                    </div>
-                    
-                    <div class="form-row">
-                      <div class="form-field">
-                        <label>First Name</label>
-                        <div class="input-container">
-                          <input type="text" formControlName="firstName" />
-                        </div>
-                      </div>
-                      <div class="form-field">
-                        <label>Last Name</label>
-                        <div class="input-container">
-                          <input type="text" formControlName="lastName" />
-                        </div>
-                      </div>
-                    </div>
+              </div>
 
-                    <div class="form-field">
-                      <label>Bio</label>
-                      <div class="input-container textarea-container">
-                        <textarea formControlName="bio" rows="4"></textarea>
-                      </div>
-                    </div>
-
-                    <div class="form-field">
-                      <label>Phone Number</label>
-                      <div class="input-container">
-                        <span class="material-icons">phone</span>
-                        <input type="text" formControlName="phoneNumber" />
-                      </div>
-                    </div>
+              <form [formGroup]="form" (ngSubmit)="save()" class="notion-form">
+                
+                <!-- Section: Personal Info -->
+                <div class="form-section">
+                  <div class="section-header" (click)="toggleSection('personal')">
+                     <span class="material-icons section-carat" [class.open]="sectionsExpanded().personal">expand_more</span>
+                     <h4 class="section-title">Personal Information</h4>
                   </div>
-
-                  <div class="form-footer">
-                    <button type="button" class="cancel-btn" (click)="isEditing.set(false)">Cancel</button>
-                    <button type="submit" class="save-btn" [disabled]="saving() || form.invalid">
-                      @if (saving()) {
-                        <mat-spinner diameter="20"></mat-spinner>
-                      } @else {
-                        <span>Save Changes</span>
-                      }
-                    </button>
-                  </div>
-                  @if (form.get('phoneNumber')?.invalid && form.get('phoneNumber')?.touched) {
-                    <p class="error-msg">Phone number must be exactly 10 digits.</p>
+                  
+                  @if (sectionsExpanded().personal) {
+                     <div class="form-grid">
+                       <div class="form-group span-2 inline-field" [class.editing]="isEditing()" [class.missing-field]="isFieldMissing('username')">
+                         <label>Username</label>
+                         @if (isEditing()) {
+                            <input type="text" formControlName="username" placeholder="Enter username" />
+                         } @else {
+                            <div class="inline-value" (click)="editField('username')">&#64;{{ form.get('username')?.value || 'Not set' }} <span class="material-icons edit-icon">edit</span></div>
+                         }
+                       </div>
+                       
+                       <div class="form-group inline-field" [class.editing]="isEditing()" [class.missing-field]="isFieldMissing('firstName')">
+                         <label>First Name</label>
+                         @if (isEditing()) {
+                            <input type="text" formControlName="firstName" placeholder="First name" />
+                         } @else {
+                            <div class="inline-value" (click)="editField('firstName')">{{ form.get('firstName')?.value || 'Not set' }} <span class="material-icons edit-icon">edit</span></div>
+                         }
+                       </div>
+                       
+                       <div class="form-group inline-field" [class.editing]="isEditing()" [class.missing-field]="isFieldMissing('lastName')">
+                         <label>Last Name</label>
+                         @if (isEditing()) {
+                            <input type="text" formControlName="lastName" placeholder="Last name" />
+                         } @else {
+                            <div class="inline-value" (click)="editField('lastName')">{{ form.get('lastName')?.value || 'Not set' }} <span class="material-icons edit-icon">edit</span></div>
+                         }
+                       </div>
+                     </div>
                   }
-                </form>
-              }
+                </div>
+
+                <!-- Section: Contact Details -->
+                <div class="form-section">
+                  <div class="section-header" (click)="toggleSection('contact')">
+                     <span class="material-icons section-carat" [class.open]="sectionsExpanded().contact">expand_more</span>
+                     <h4 class="section-title">Contact Details</h4>
+                  </div>
+                  @if (sectionsExpanded().contact) {
+                     <div class="form-grid">
+                       <div class="form-group inline-field">
+                         <label>Email Address</label>
+                         <div class="inline-value locked">
+                           {{ profile()!.email }} <span class="material-icons lock-icon" title="Cannot be changed">lock</span>
+                         </div>
+                       </div>
+                       <div class="form-group inline-field" [class.editing]="isEditing()" [class.missing-field]="isFieldMissing('phoneNumber')">
+                         <label>Phone Number</label>
+                         @if (isEditing()) {
+                            <input type="text" formControlName="phoneNumber" placeholder="10-digit number" />
+                         } @else {
+                            <div class="inline-value" (click)="editField('phoneNumber')">{{ form.get('phoneNumber')?.value || 'Not provided' }} <span class="material-icons edit-icon" >edit</span></div>
+                         }
+                       </div>
+                     </div>
+                  }
+                </div>
+
+                <!-- Section: About Me -->
+                <div class="form-section">
+                  <div class="section-header" (click)="toggleSection('about')">
+                     <span class="material-icons section-carat" [class.open]="sectionsExpanded().about">expand_more</span>
+                     <h4 class="section-title">About Me</h4>
+                  </div>
+                  @if (sectionsExpanded().about) {
+                     <div class="form-group inline-field span-2" [class.editing]="isEditing()" [class.missing-field]="isFieldMissing('bio')">
+                       @if (isEditing()) {
+                          <textarea formControlName="bio" rows="3" placeholder="Tell us about yourself..."></textarea>
+                       } @else {
+                          @if (form.get('bio')?.value) {
+                             <div class="inline-value bio-text" (click)="editField('bio')">{{ form.get('bio')?.value }} <span class="material-icons edit-icon">edit</span></div>
+                          } @else {
+                             <div class="smart-suggestion" (click)="editField('bio')">
+                                <span class="material-icons">info</span> 
+                                <span>⚠ Add a short bio to let others know you better.</span>
+                             </div>
+                          }
+                       }
+                     </div>
+                  }
+                </div>
+
+                <!-- Section: Skills -->
+                <div class="form-section">
+                  <div class="section-header" (click)="toggleSection('skills')">
+                     <span class="material-icons section-carat" [class.open]="sectionsExpanded().skills">expand_more</span>
+                     <h4 class="section-title">Professional Skills</h4>
+                  </div>
+                  @if (sectionsExpanded().skills) {
+                     <div class="form-group inline-field span-2" [class.editing]="isEditing()" [class.missing-field]="isFieldMissing('skills')">
+                       @if (isEditing()) {
+                          <div class="interactive-skills">
+                            <div class="skill-tags">
+                              @for (skill of selectedSkills(); track skill) {
+                                <span class="tag editable">
+                                   {{ skill }} <span class="material-icons remove-tag" (click)="removeSkill(skill)">close</span>
+                                </span>
+                              }
+                            </div>
+                            <div class="custom-dropdown" (click)="toggleSkillDropdown()">
+                              <div class="dropdown-display">
+                                <span class="placeholder">+ Add skills</span>
+                                <span class="material-icons arrow" [class.open]="isSkillDropdownOpen()">expand_more</span>
+                              </div>
+                              @if (isSkillDropdownOpen()) {
+                                <div class="dropdown-menu">
+                                  @for (skill of allSkillOptions(); track skill) {
+                                    <div class="dropdown-item" (click)="toggleSkill(skill, $event)" [class.selected]="selectedSkills().includes(skill)">
+                                      {{ skill }}
+                                      @if (selectedSkills().includes(skill)) { <span class="material-icons check">check</span> }
+                                    </div>
+                                  }
+                                </div>
+                              }
+                            </div>
+                          </div>
+                       } @else {
+                          @if (selectedSkills().length > 0) {
+                             <div class="skill-tags">
+                                @for (skill of selectedSkills(); track skill) {
+                                  <span class="tag view-only">{{ skill }}</span>
+                                }
+                                <span class="material-icons edit-icon" (click)="editField('skills')" style="cursor: pointer; opacity: 0.5; margin-left: 8px;">edit</span>
+                             </div>
+                          } @else {
+                             <div class="smart-suggestion" (click)="editField('skills')">
+                                <span class="material-icons">lightbulb</span> 
+                                <span>⚠ Add skills to improve mentor matches.</span>
+                             </div>
+                          }
+                       }
+                     </div>
+                  }
+                </div>
+
+                <!-- Sticky Save Bar -->
+                @if (isEditing()) {
+                  <div class="sticky-save-bar form-actions">
+                     <span class="unsaved-text">You have unsaved changes. <span class="hint">Press Ctrl+S</span></span>
+                     <div class="action-btns">
+                       <button type="button" class="btn-cancel" (click)="cancelEdit()" [disabled]="saving()">Cancel</button>
+                       <button type="submit" class="btn-submit" [disabled]="saving() || form.invalid">
+                         @if (saving()) {
+                           <mat-progress-spinner diameter="18" mode="indeterminate" style="display:inline-block; vertical-align: middle; margin-right: 8px;"></mat-progress-spinner>
+                           Saving...
+                         } @else {
+                           Save Changes
+                         }
+                       </button>
+                     </div>
+                  </div>
+                }
+              </form>
+            </div>
+
+            <!-- Activity Timeline Component -->
+            <div class="activity-card">
+              <h3 class="activity-title">Recent Activity</h3>
+              <div class="timeline">
+                 @for (act of activities(); track act.id) {
+                   <div class="timeline-item">
+                      <div class="tl-icon" [ngClass]="act.colorClass"><span class="material-icons">{{ act.icon }}</span></div>
+                      <div class="tl-content">
+                         <p class="tl-text">{{ act.text }}</p>
+                         <p class="tl-time">{{ formatTime(act.timestamp) }}</p>
+                      </div>
+                   </div>
+                 } @empty {
+                   <p style="color: var(--text-secondary); font-size: 13px;">No recent activity.</p>
+                 }
+              </div>
             </div>
           </div>
         </div>
       }
     </div>
   `,
-  styles: [`
-    :host { display: block; background-color: #f8fafc; min-height: 100vh; }
-    
-    .page-container { max-width: 1100px; margin: 0 auto; padding: 40px 20px; }
-
-    /* Header Section */
-    .header-section { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 40px; }
-    .header-content h1 { font-size: 32px; font-weight: 800; color: #0f172a; margin: 0 0 8px; letter-spacing: -0.025em; }
-    .header-content p { color: #64748b; font-size: 15px; margin: 0; }
-
-    .logout-btn {
-      display: flex; align-items: center; gap: 8px;
-      padding: 10px 20px; border-radius: 12px;
-      background: #fee2e2; color: #ef4444; border: none;
-      font-size: 14px; font-weight: 700; cursor: pointer;
-      transition: all 0.2s ease;
-    }
-    .logout-btn:hover { background: #fecaca; transform: translateY(-1px); }
-    .logout-btn .material-icons { font-size: 20px; }
-
-    .loader-box { display: flex; justify-content: center; padding: 100px; }
-
-    /* Layout Grid */
-    .profile-layout { display: grid; grid-template-columns: 320px 1fr; gap: 32px; align-items: start; }
-    @media (max-width: 900px) { .profile-layout { grid-template-columns: 1fr; } }
-
-    /* Sidebar Components */
-    .profile-sidebar { display: flex; flex-direction: column; gap: 24px; }
-    
-    .user-card {
-      background: white; border-radius: 24px; padding: 40px 24px;
-      display: flex; flex-direction: column; align-items: center;
-      text-align: center; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05);
-      border: 1px solid #e2e8f0;
-    }
-    .user-avatar {
-      width: 100px; height: 100px; border-radius: 50%;
-      background: linear-gradient(135deg, #6366f1, #8b5cf6);
-      color: white; font-size: 38px; font-weight: 800;
-      display: flex; align-items: center; justify-content: center;
-      margin-bottom: 20px; box-shadow: 0 10px 20px -5px rgba(99,102,241,0.4);
-    }
-    .user-name { font-size: 22px; font-weight: 800; color: #0f172a; margin: 0 0 4px; }
-    .user-email { font-size: 14px; color: #6366f1; font-weight: 600; margin: 0 0 2px; }
-    .user-handle { font-size: 13px; color: #94a3b8; margin: 0 0 20px; }
-
-    .badge-row { margin-bottom: 20px; }
-    .role-pill {
-      display: inline-flex; align-items: center; gap: 8px;
-      padding: 6px 14px; border-radius: 20px;
-      font-size: 11px; font-weight: 700;
-    }
-    .role-pill.learner { background: #dcfce7; color: #15803d; }
-    .pulse { width: 6px; height: 6px; border-radius: 50%; background: #22c55e; position: relative; }
-    .pulse::after {
-      content: ''; position: absolute; width: 100%; height: 100%;
-      background: inherit; border-radius: 50%; animation: pulse 2s infinite;
-    }
-    @keyframes pulse { 0% { transform: scale(1); opacity: 0.8; } 100% { transform: scale(2.5); opacity: 0; } }
-
-    .joined-date {
-      display: flex; align-items: center; gap: 6px;
-      color: #94a3b8; font-size: 12px; font-weight: 500;
-    }
-    .joined-date .material-icons { font-size: 15px; }
-
-    /* Profile Nav */
-    .profile-nav {
-      background: white; border-radius: 20px; overflow: hidden;
-      border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);
-    }
-    .nav-button {
-      display: flex; align-items: center; gap: 14px;
-      padding: 16px 20px; text-decoration: none; color: #475569;
-      font-size: 14px; font-weight: 600; transition: all 0.2s;
-      border-bottom: 1px solid #f1f5f9;
-    }
-    .nav-button:last-child { border-bottom: none; }
-    .nav-button:hover { background: #f8fafc; color: #6366f1; }
-    .nav-button .material-icons:not(.chevron) { font-size: 20px; color: #94a3b8; }
-    .nav-button .chevron { margin-left: auto; font-size: 18px; color: #cbd5e1; }
-    .nav-button:hover .material-icons { color: #6366f1; }
-
-    /* Main Content Area */
-    .profile-main { }
-    .content-card {
-      background: white; border-radius: 24px; padding: 40px;
-      border: 1px solid #e2e8f0; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05);
-      min-height: 500px;
-    }
-    .card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; }
-    .card-top h3 { font-size: 20px; font-weight: 800; color: #0f172a; margin: 0; }
-
-    .edit-toggle {
-      display: flex; align-items: center; gap: 6px;
-      padding: 8px 16px; border-radius: 10px;
-      background: #f1f5f9; color: #475569; border: none;
-      font-size: 13px; font-weight: 700; cursor: pointer;
-      transition: all 0.2s;
-    }
-    .edit-toggle:hover { background: #e2e8f0; }
-
-    /* Info List */
-    .info-list { display: flex; flex-direction: column; }
-    .info-item {
-      display: grid; grid-template-columns: 44px 160px 1fr;
-      align-items: center; padding: 22px 0; border-bottom: 1px solid #f1f5f9;
-    }
-    .info-item:last-child { border-bottom: none; }
-    .info-icon { color: #94a3b8; display: flex; align-items: center; }
-    .info-icon .material-icons { font-size: 20px; }
-    .info-label { font-size: 14px; font-weight: 600; color: #64748b; }
-    .info-value { font-size: 14px; font-weight: 600; color: #1e293b; }
-    .bio-text { line-height: 1.6; color: #475569; font-weight: 500; }
-
-    /* Form Styles */
-    .profile-form { display: flex; flex-direction: column; gap: 24px; }
-    .form-grid { display: flex; flex-direction: column; gap: 20px; }
-    .form-field { display: flex; flex-direction: column; gap: 6px; }
-    .form-field label { font-size: 13px; font-weight: 700; color: #475569; }
-    
-    .input-container {
-      display: flex; align-items: center; gap: 10px;
-      background: #f8fafc; border: 2px solid #e2e8f0;
-      border-radius: 12px; padding: 0 14px; height: 50px;
-    }
-    .input-container:focus-within { border-color: #6366f1; background: white; }
-    .input-container input {
-      flex: 1; border: none; outline: none; background: transparent;
-      font-size: 14px; font-weight: 600; color: #1e293b;
-    }
-    .textarea-container { height: auto; padding: 12px 14px; }
-    .textarea-container textarea {
-      width: 100%; border: none; outline: none; background: transparent;
-      font-size: 14px; font-weight: 500; color: #1e293b; font-family: inherit;
-      resize: none;
-    }
-
-    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-
-    .form-footer { display: flex; justify-content: flex-end; gap: 12px; margin-top: 12px; }
-    .cancel-btn {
-      height: 48px; padding: 0 24px; border-radius: 12px;
-      background: white; border: 2px solid #e2e8f0;
-      color: #64748b; font-size: 14px; font-weight: 700; cursor: pointer;
-    }
-    .save-btn {
-      display: flex; align-items: center; justify-content: center;
-      height: 48px; padding: 0 32px; border-radius: 12px;
-      background: linear-gradient(135deg, #6366f1, #4f46e5);
-      color: white; border: none; font-size: 14px; font-weight: 700;
-      cursor: pointer; box-shadow: 0 8px 16px rgba(99,102,241,0.25);
-    }
-    .save-btn:disabled { opacity: 0.6; cursor: not-allowed; }
-    .error-msg { color: #ef4444; font-size: 12px; font-weight: 600; text-align: right; margin: -10px 0 0; }
-  `]
+  styleUrls: ['./profile.page.scss']
 })
 export class ProfilePage implements OnInit {
   private readonly userService = inject(UserService);
-  private readonly snack = inject(MatSnackBar);
+  private readonly toast = inject(ToastService);
   private readonly fb = inject(FormBuilder);
+  readonly completionService = inject(ProfileCompletionService);
   readonly authStore = inject(AuthStore);
+  readonly skillStore = inject(SkillStore);
 
   readonly profile = signal<UserProfileDto | null>(null);
   readonly loading = signal(true);
   readonly saving = signal(false);
   readonly isEditing = signal(false);
+  readonly showBadge = signal(false);
+  readonly avatarUrl = signal<string | null>(null);
+  readonly isSkillDropdownOpen = signal(false);
+  readonly hintsExpanded = signal(false);
+  readonly isPrivate = signal(false);
+  readonly showConfetti = signal(false);
+  readonly isDragOver = signal(false);
+  readonly activities = signal<UserActivity[]>([]);
+
+  readonly sectionsExpanded = signal({
+    personal: true,
+    contact: true,
+    about: true,
+    skills: true
+  });
+
+  confettiDrops: any[] = [];
+
+  private readonly SOFT_SKILLS = [
+    'Problem Solving', 'Adaptability', 'Communication', 'Teamwork', 
+    'Leadership', 'Time Management', 'Creativity', 'Critical Thinking'
+  ];
+
+  readonly allSkillOptions = computed(() => {
+    const backend = this.skillStore.skillNames();
+    return [...new Set([...backend, ...this.SOFT_SKILLS])].sort();
+  });
 
   readonly form = this.fb.group({
     username:    ['', [Validators.required, Validators.minLength(2)]],
     firstName:   ['', [Validators.required]],
     lastName:    [''],
     bio:         ['', [Validators.maxLength(500)]],
-    phoneNumber: ['', [Validators.pattern('^[0-9]{10}$')]],
+    phoneNumber: ['', [Validators.pattern('^[6789][0-9]{9}$')]],
     skills:      [[] as string[]]
   });
 
+  constructor() {
+    effect(() => {
+      const percentage = this.completionPercentage();
+      if (percentage === 100 && !this.showBadge() && this.profile()) { 
+        this.showBadge.set(true);
+        localStorage.setItem('profileBadge', 'true');
+        this.triggerConfetti();
+      }
+    }, { allowSignalWrites: true });
+  }
+
+  // Computed properties
+  readonly completionPercentage = computed(() => this.completionService.calculateCompletion(this.profile()));
+  readonly missingFields = computed(() => this.completionService.getMissingFields(this.profile()));
+  
+  readonly profileLevel = computed(() => {
+    const p = this.completionPercentage();
+    if (p < 40) return 'Beginner 🥉';
+    if (p < 80) return 'Intermediate 🥈';
+    return 'Pro 🥇';
+  });
+
+  selectedSkills(): string[] {
+    return (this.form.get('skills')?.value || []) as string[];
+  }
+
   ngOnInit(): void {
+    const savedAvatar = localStorage.getItem('userAvatar');
+    if (savedAvatar) this.avatarUrl.set(savedAvatar);
+
+    const savedBadge = localStorage.getItem('profileBadge');
+    if (savedBadge === 'true') this.showBadge.set(true);
+
+    this.loadActivities();
+    this.skillStore.loadAll(undefined);
     this.refreshProfile();
+  }
+
+  loadActivities() {
+    const saved = localStorage.getItem('userActivities');
+    if (saved) {
+      this.activities.set(JSON.parse(saved));
+    } else {
+      this.addActivity('person_add', 'bg-green', 'Joined SkillSync Platform');
+    }
+  }
+
+  addActivity(icon: string, colorClass: string, text: string) {
+    const act: UserActivity = {
+      id: Date.now().toString() + Math.random().toString(36).substring(2, 9),
+      icon, colorClass, text, timestamp: Date.now()
+    };
+    const updated = [act, ...this.activities()].slice(0, 10);
+    this.activities.set(updated);
+    localStorage.setItem('userActivities', JSON.stringify(updated));
+  }
+
+  formatTime(ts: number): string {
+    const diffMs = Date.now() - ts;
+    const diffMins = Math.floor(diffMs / 60000);
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins} min${diffMins > 1 ? 's' : ''} ago`;
+    const diffHours = Math.floor(diffMins / 60);
+    if (diffHours < 24) return `${diffHours} hr${diffHours > 1 ? 's' : ''} ago`;
+    const diffDays = Math.floor(diffHours / 24);
+    if (diffDays === 1) return 'Yesterday';
+    return `${diffDays} days ago`;
+  }
+
+  triggerConfetti() {
+    this.confettiDrops = Array.from({ length: 50 }).map((_, i) => ({
+      x: Math.random() * 100,
+      delay: Math.random() * 3,
+      color: ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'][Math.floor(Math.random()*6)]
+    }));
+    this.showConfetti.set(true);
+    setTimeout(() => this.showConfetti.set(false), 5000);
+  }
+
+  toggleVisibility() {
+    this.isPrivate.set(!this.isPrivate());
+    const status = this.isPrivate() ? "Private" : "Public";
+    this.toast.success(`Profile visibility set to ${status}`);
+  }
+
+  copyToClipboard(text: string) {
+    navigator.clipboard.writeText(text).then(() => {
+      this.toast.success("Copied to clipboard 📋");
+    });
+  }
+
+  toggleHints() {
+    this.hintsExpanded.update(v => !v);
+  }
+
+  toggleSection(section: 'personal' | 'contact' | 'about' | 'skills') {
+    this.sectionsExpanded.update(s => ({ ...s, [section]: !s[section] }));
+  }
+
+  toggleEdit(): void {
+    if (!this.profile()) return;
+    this.isEditing.update(v => !v);
+    if (!this.isEditing()) {
+       this.patchFormValues(this.profile()!);
+    }
+  }
+
+  editField(fieldName: string) {
+    if (!this.isEditing()) {
+      this.isEditing.set(true);
+    }
+    const sec = this.sectionsExpanded();
+    if (['firstName', 'lastName', 'username'].includes(fieldName) && !sec.personal) this.toggleSection('personal');
+    if (fieldName === 'phoneNumber' && !sec.contact) this.toggleSection('contact');
+    if (fieldName === 'bio' && !sec.about) this.toggleSection('about');
+    if (fieldName === 'skills' && !sec.skills) this.toggleSection('skills');
+    
+    setTimeout(() => {
+      const el = document.querySelector(`[formControlName="${fieldName}"]`) as HTMLElement;
+      if (el) el.focus();
+    }, 100);
+  }
+
+  cancelEdit() {
+    this.isEditing.set(false);
+    if (this.profile()) {
+      this.patchFormValues(this.profile()!);
+    }
+  }
+
+  patchFormValues(p: UserProfileDto) {
+    let first = '', last = '';
+    if (p.name) {
+      const parts = p.name.trim().split(' ');
+      first = parts[0];
+      last = parts.slice(1).join(' ');
+    }
+
+    let parsedSkills: string[] = [];
+    if (p.skills) {
+      parsedSkills = p.skills.split(',').map(s => s.trim()).filter(s => s.length > 0);
+    }
+
+    this.form.patchValue({
+      username: p.username || p.email.split('@')[0],
+      firstName: first || p.firstName || '',
+      lastName: last || p.lastName || '',
+      bio: p.bio || '',
+      phoneNumber: p.phoneNumber || '',
+      skills: parsedSkills as any
+    });
   }
 
   refreshProfile(): void {
@@ -370,71 +599,166 @@ export class ProfilePage implements OnInit {
       next: (res) => {
         const p = res.data;
         this.profile.set(p);
-
-        // Name Handing: Split backend 'name' into firstName/lastName
-        let first = '', last = '';
-        if (p.name) {
-          const parts = p.name.trim().split(' ');
-          first = parts[0];
-          last = parts.slice(1).join(' ');
-        }
-
-        const emailPrefix = p.email.split('@')[0];
-        
-        this.form.patchValue({
-          username: p.username || emailPrefix,
-          firstName: first,
-          lastName: last,
-          bio: p.bio || '',
-          phoneNumber: p.phoneNumber || ''
-        });
-        this.loading.set(false);
+        this.userService.setUser(p);
+        this.patchFormValues(p);
+        setTimeout(() => this.loading.set(false), 800);
       },
       error: () => this.loading.set(false)
     });
   }
 
   save(): void {
-    if (this.form.invalid) return;
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
+      this.toast.error("Please fill required fields correctly.");
+      return;
+    }
     this.saving.set(true);
-    const val = this.form.getRawValue();
     
-    // Concatenate name for backend UpdateProfileRequest
+    const oldSkills = this.profile()?.skills || '';
+    
+    const val = this.form.getRawValue();
+    const newSkillsStr = Array.isArray(val.skills) ? val.skills.join(',') : (val.skills || '');
     const combinedName = `${val.firstName ?? ''} ${val.lastName ?? ''}`.trim();
 
     this.userService.updateProfile({
       username: val.username || undefined,
       name: combinedName || undefined,
       bio: val.bio || undefined,
-      phoneNumber: val.phoneNumber || undefined
+      phoneNumber: val.phoneNumber || undefined,
+      skills: newSkillsStr || undefined
     }).subscribe({
       next: (res) => {
-        this.profile.set(res.data);
+        const updated = res.data;
+        this.profile.set(updated);
+        this.userService.updateUser(updated);  
         this.saving.set(false);
         this.isEditing.set(false);
-        this.snack.open('Profile updated successfully!', 'OK', { duration: 3000 });
+        this.toast.success("Profile updated ✅");
+        
+        this.addActivity('edit', 'bg-blue', 'Updated profile details');
+        
+        if (oldSkills !== newSkillsStr && newSkillsStr.length > oldSkills.length) {
+          this.addActivity('star', 'bg-indigo', 'Added new skills');
+        }
+        
+        this.patchFormValues(updated);
       },
       error: (err) => {
         this.saving.set(false);
-        console.error('Update Failed:', err);
-        this.snack.open('Failed to update profile. Please check your inputs.', 'Retry', { duration: 5000 });
+        this.toast.error("Failed to update profile.");
       }
     });
   }
 
   logout(): void { this.authStore.logout(); }
 
+  displayUsername(): string {
+    const p = this.profile();
+    if (!p) return '';
+    if (p.username && p.username.trim()) return p.username;
+    return p.email.split('@')[0];
+  }
+
   initials(): string {
     const p = this.profile();
     if (!p) return '?';
-    // Use part of name if available
-    const name = p.name || p.username || '';
+    const name = p.name || this.displayUsername() || '';
     return name.charAt(0).toUpperCase();
   }
 
   fullName(): string {
     const p = this.profile();
     if (!p) return '';
-    return p.name || p.username;
+    return p.name || this.displayUsername();
+  }
+
+  isFieldMissing(key: string): boolean {
+    if (key === 'username') return !this.form.get('username')?.value;
+    if (key === 'firstName') return !this.form.get('firstName')?.value;
+    if (key === 'lastName') return false; 
+    return this.missingFields().some(f => f.key === key);
+  }
+
+  onDragOver(event: DragEvent) {
+    event.preventDefault();
+    this.isDragOver.set(true);
+  }
+  onDragLeave(event: DragEvent) {
+    event.preventDefault();
+    this.isDragOver.set(false);
+  }
+  onDrop(event: DragEvent) {
+    event.preventDefault();
+    this.isDragOver.set(false);
+    const files = event.dataTransfer?.files;
+    if (files && files.length > 0) {
+      this.handleFile(files[0]);
+    }
+  }
+  onFileSelected(event: Event): void {
+    const target = event.target as HTMLInputElement;
+    if (target.files && target.files.length > 0) {
+      this.handleFile(target.files[0]);
+      target.value = '';
+    }
+  }
+  private handleFile(file: File) {
+    if (!file.type.startsWith('image/')) {
+      this.toast.error("Only image files are allowed.");
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      this.toast.error("File size must be under 2MB.");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64 = reader.result as string;
+      this.avatarUrl.set(base64);
+      localStorage.setItem('userAvatar', base64);
+      this.addActivity('photo_camera', 'bg-indigo', 'Updated profile picture');
+      this.toast.success("Avatar uploaded ✅");
+    };
+    reader.readAsDataURL(file);
+  }
+
+  toggleSkillDropdown(): void {
+    this.isSkillDropdownOpen.update(v => !v);
+  }
+
+  toggleSkill(skill: string, event: Event): void {
+    event.stopPropagation();
+    const curr = this.selectedSkills();
+    if (curr.includes(skill)) {
+      this.form.patchValue({ skills: curr.filter(s => s !== skill) as any });
+    } else {
+      this.form.patchValue({ skills: [...curr, skill] as any });
+    }
+  }
+  removeSkill(skill: string) {
+    const curr = this.selectedSkills();
+    this.form.patchValue({ skills: curr.filter(s => s !== skill) as any });
+  }
+
+  @HostListener('document:keydown', ['$event'])
+  onKeydown(event: KeyboardEvent) {
+    if (this.isEditing()) {
+      if (event.key === 'Escape') {
+        this.cancelEdit();
+      }
+      if ((event.ctrlKey || event.metaKey) && event.key === 's') {
+        event.preventDefault();
+        this.save();
+      }
+    }
+  }
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent) {
+    const target = event.target as HTMLElement;
+    if (!target.closest('.custom-dropdown') && !target.closest('.interactive-skills')) {
+      this.isSkillDropdownOpen.set(false);
+    }
   }
 }

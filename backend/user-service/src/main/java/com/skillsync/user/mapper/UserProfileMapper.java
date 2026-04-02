@@ -13,7 +13,11 @@ public class UserProfileMapper {
         UserProfile profile = new UserProfile();
         profile.setUserId(userId);
         profile.setEmail(email);
-        profile.setUsername(username != null ? username : email.split("@")[0]);
+        
+        // Ensure username is never blank on creation
+        boolean hasUsername = username != null && !username.trim().isEmpty();
+        profile.setUsername(hasUsername ? username : email.split("@")[0]);
+        
         profile.setProfileComplete(false);
         profile.setRating(0.0);
         profile.setTotalReviews(0);
@@ -22,13 +26,16 @@ public class UserProfileMapper {
 
     // Apply UpdateProfileRequestDto fields onto existing entity
     public void updateEntity(UserProfile profile, UpdateProfileRequestDto request) {
-        if (request.getUsername() != null) {
+        // Only update username if it's provided and not blank
+        if (request.getUsername() != null && !request.getUsername().trim().isEmpty()) {
             profile.setUsername(request.getUsername());
         }
+        
         profile.setName(request.getName());
         profile.setBio(request.getBio());
         profile.setPhoneNumber(request.getPhoneNumber());
         profile.setSkills(request.getSkills());
+        
         profile.setProfileComplete(
                 request.getName() != null &&
                 request.getSkills() != null &&
@@ -42,7 +49,11 @@ public class UserProfileMapper {
         dto.setId(profile.getId());
         dto.setUserId(profile.getUserId());
         dto.setEmail(profile.getEmail());
-        dto.setUsername(profile.getUsername() != null ? profile.getUsername() : profile.getEmail().split("@")[0]);
+        
+        // Fallback to email prefix if username in DB is somehow null or blank
+        boolean hasUsername = profile.getUsername() != null && !profile.getUsername().trim().isEmpty();
+        dto.setUsername(hasUsername ? profile.getUsername() : profile.getEmail().split("@")[0]);
+        
         dto.setName(profile.getName());
         dto.setBio(profile.getBio());
         dto.setPhoneNumber(profile.getPhoneNumber());
