@@ -48,8 +48,8 @@ public class GroupController {
             @Parameter(hidden = true) @RequestHeader(value = "roles", required = false) String roles,
             @Valid @RequestBody CreateGroupRequestDto request) {
         
-        if (roles == null || roles.contains("ROLE_ADMIN") || (!roles.contains("ROLE_MENTOR") && !roles.contains("ROLE_LEARNER"))) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only learners or mentors can create learning groups. Admins are restricted from this action.");
+        if (roles == null || (!roles.contains("ROLE_MENTOR") && !roles.contains("ROLE_LEARNER"))) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only learners or mentors can create learning groups.");
         }
         log.info("POST / - User {} creating group", creatorId);
         GroupResponseDto response = groupService.createGroup(creatorId, request);
@@ -163,8 +163,8 @@ public class GroupController {
             @Parameter(hidden = true) @RequestHeader("X-User-Id") Long creatorId,
             @Parameter(hidden = true) @RequestHeader(value = "roles", required = false) String roles) {
         
-        if (roles == null || (!roles.contains("ROLE_MENTOR") && !roles.contains("ROLE_ADMIN"))) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only mentors or admins can delete groups");
+        if (roles == null || (!roles.contains("ROLE_MENTOR") && !roles.contains("ROLE_LEARNER") && !roles.contains("ROLE_ADMIN"))) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Access denied.");
         }
         log.info("DELETE /{} - Creator {} deleting group", groupId, creatorId);
         GroupResponseDto response = groupService.deleteGroup(groupId, creatorId);

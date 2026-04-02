@@ -23,7 +23,7 @@ export const jwtInterceptor: HttpInterceptorFn = (req, next) => {
         return handle401(req, next, authService, router);
       }
       if (err.status === 403) {
-        router.navigate(['/unauthorized']);
+        // Only return the error; individual components will handle specific 403s
         return throwError(() => err);
       }
       return throwError(() => err);

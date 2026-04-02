@@ -431,10 +431,14 @@ export class GroupListPage implements OnInit {
 
 
   openCreate(): void {
+    if (this.authStore.isAdmin()) {
+      this.snack.open('Admins cannot create groups.', 'OK', { duration: 3000 });
+      return;
+    }
     this.newGroupCategory = '';
     this.newGroup = { name: '', skillId: null, maxMembers: null, description: '' };
-    this.skillStore.loadAll(undefined);
     this.showCreate.set(true);
+    this.skillStore.loadAll(undefined);
   }
 
   join(id: number): void {
