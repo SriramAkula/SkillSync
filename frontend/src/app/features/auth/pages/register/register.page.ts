@@ -229,8 +229,16 @@ export class RegisterPage implements OnInit {
   }
 
   verifyOtp(otp: string): void {
-    this.authStore.verifyOtp({ email: this.emailForm.value.email!, otp });
-    setTimeout(() => { if (!this.authStore.error()) this.step.set('details'); }, 600);
+    const email = this.emailForm.value.email!;
+    this.authStore.verifyOtp({ email, otp });
+    
+    setTimeout(() => { 
+      if (!this.authStore.error()) {
+        const defaultUsername = email.split('@')[0];
+        this.detailsForm.patchValue({ username: defaultUsername });
+        this.step.set('details'); 
+      }
+    }, 600);
   }
 
   register(): void {

@@ -1,8 +1,9 @@
-import { Component, inject, OnInit, OnDestroy, signal } from '@angular/core';
-import { CommonModule, DatePipe } from '@angular/common';
-import { Router, RouterLink, NavigationEnd } from '@angular/router';
+import { Component, inject, OnInit, signal } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { Subscription, filter } from 'rxjs';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { UserService } from '../../../../core/services/user.service';
 import { AuthStore } from '../../../../core/auth/auth.store';
 import { UserProfileDto } from '../../../../shared/models';
@@ -10,442 +11,430 @@ import { UserProfileDto } from '../../../../shared/models';
 @Component({
   selector: 'app-profile-page',
   standalone: true,
-  imports: [CommonModule, DatePipe, MatProgressSpinnerModule, RouterLink],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, MatProgressSpinnerModule, MatSnackBarModule],
   template: `
-    <div class="page">
-
-      <!-- ── Page Header ── -->
-      <div class="page-header">
-        <div class="header-text">
+    <div class="page-container">
+      <!-- Header Area -->
+      <div class="header-section">
+        <div class="header-content">
           <h1>My Profile</h1>
-          <p>View your personal information</p>
+          <p>Manage your account settings and profile information</p>
         </div>
-        <div class="header-actions">
-          <button class="btn-danger" (click)="logout()">
-            <span class="material-icons">logout</span>
-            Sign Out
-          </button>
-        </div>
+        <button class="logout-btn" (click)="logout()">
+          <span class="material-icons">logout</span>
+          <span>Sign Out</span>
+        </button>
       </div>
 
-      <!-- ── Loading ── -->
+      <!-- Loading State -->
       @if (loading()) {
-        <div class="loading-center">
-          <mat-spinner diameter="48" />
-          <p class="loading-text">Loading profile...</p>
+        <div class="loader-box">
+          <mat-spinner diameter="40"></mat-spinner>
         </div>
       }
 
-      <!-- ── Profile Content (View Only — NO inputs) ── -->
-      @if (!loading()) {
-        <div class="layout">
+      <!-- Profile Content -->
+      @if (profile()) {
+        <div class="profile-layout">
+          
+          <!-- Sidebar -->
+          <div class="profile-sidebar">
+            <div class="user-card">
+              <div class="user-avatar">{{ initials() }}</div>
+              <h2 class="user-name">{{ fullName() }}</h2>
+              <p class="user-email">{{ profile()!.email }}</p>
+              <div class="user-handle">&#64;{{ profile()!.username }}</div>
+              
+              <div class="badge-row">
+                <span class="role-pill learner">
+                  <span class="pulse"></span> Learner
+                </span>
+              </div>
 
-          <!-- Left: Avatar Card -->
-          <div class="left-col">
-
-            <div class="avatar-card">
-              <div class="avatar-circle">{{ initials() }}</div>
-              <h2 class="avatar-name">{{ displayName() }}</h2>
-              <p class="avatar-username">&#64;{{ displayUsername() }}</p>
-              <p class="avatar-email">{{ displayEmail() }}</p>
-
-              @if (profile()?.createdAt) {
-                <div class="joined-pill">
-                  <span class="material-icons">calendar_today</span>
-                  Joined {{ profile()!.createdAt | date:'mediumDate' }}
+              @if (profile()!.createdAt) {
+                <div class="joined-date">
+                  <span class="material-icons">event</span>
+                  Member since {{ profile()!.createdAt | date:'mediumDate' }}
                 </div>
               }
-
-              <div class="roles-row">
-                @if (authStore.isAdmin()) {
-                  <span class="role-pill admin">
-                    <span class="material-icons">admin_panel_settings</span> Admin
-                  </span>
-                }
-                @if (authStore.isMentor()) {
-                  <span class="role-pill mentor">
-                    <span class="material-icons">school</span> Mentor
-                  </span>
-                }
-                @if (authStore.isLearner()) {
-                  <span class="role-pill learner">
-                    <span class="material-icons">person</span> Learner
-                  </span>
-                }
-              </div>
             </div>
 
-
-            <!-- Quick Links -->
-            <nav class="quick-links">
-              <a routerLink="/sessions" class="quick-link">
-                <span class="material-icons">event</span>
+            <nav class="profile-nav">
+              <a routerLink="/sessions" class="nav-button">
+                <span class="material-icons">calendar_today</span>
                 <span>My Sessions</span>
-                <span class="material-icons ml-auto">chevron_right</span>
+                <span class="material-icons chevron">chevron_right</span>
               </a>
-              <a routerLink="/notifications" class="quick-link">
+              <a routerLink="/notifications" class="nav-button">
                 <span class="material-icons">notifications</span>
                 <span>Notifications</span>
-                <span class="material-icons ml-auto">chevron_right</span>
+                <span class="material-icons chevron">chevron_right</span>
               </a>
-              @if (authStore.isMentor()) {
-                <a routerLink="/mentor-dashboard" class="quick-link">
-                  <span class="material-icons">dashboard</span>
-                  <span>Mentor Dashboard</span>
-                  <span class="material-icons ml-auto">chevron_right</span>
-                </a>
-              }
-              @if (authStore.isAdmin()) {
-                <a routerLink="/admin" class="quick-link">
-                  <span class="material-icons">admin_panel_settings</span>
-                  <span>Admin Panel</span>
-                  <span class="material-icons ml-auto">chevron_right</span>
-                </a>
-              }
             </nav>
-
           </div>
 
-          <!-- Right: Profile Details (READ-ONLY — zero inputs) -->
-          <div class="right-col">
-            <div class="details-card">
-
-              <div class="details-header">
-                <h3>Profile Details</h3>
-                <button class="btn-edit-sm" (click)="goEdit()">
-                  <span class="material-icons">edit</span> Edit
-                </button>
+          <!-- Main Content Area -->
+          <div class="profile-main">
+            <div class="content-card">
+              <div class="card-top">
+                <h3>{{ isEditing() ? 'Edit Profile' : 'Account Details' }}</h3>
+                @if (!isEditing()) {
+                  <button class="edit-toggle" (click)="isEditing.set(true)">
+                    <span class="material-icons">edit</span> Edit
+                  </button>
+                }
               </div>
 
-              <!-- Name -->
-              <div class="detail-row">
-                <div class="detail-label">
-                  <span class="material-icons">person</span>
-                  Full Name
+              @if (!isEditing()) {
+                <!-- View Mode -->
+                <div class="info-list">
+                  <div class="info-item">
+                    <div class="info-icon"><span class="material-icons">person</span></div>
+                    <div class="info-label">Full Name</div>
+                    <div class="info-value">{{ fullName() }}</div>
+                  </div>
+                  <div class="info-item">
+                    <div class="info-icon"><span class="material-icons">alternate_email</span></div>
+                    <div class="info-label">Username</div>
+                    <div class="info-value">&#64;{{ profile()!.username }}</div>
+                  </div>
+                  <div class="info-item">
+                    <div class="info-icon"><span class="material-icons">email</span></div>
+                    <div class="info-label">Email Address</div>
+                    <div class="info-value">{{ profile()!.email }}</div>
+                  </div>
+                  <div class="info-item">
+                    <div class="info-icon"><span class="material-icons">phone</span></div>
+                    <div class="info-label">Phone Number</div>
+                    <div class="info-value">{{ profile()!.phoneNumber || 'Not provided' }}</div>
+                  </div>
+                  <div class="info-item">
+                    <div class="info-icon"><span class="material-icons">description</span></div>
+                    <div class="info-label">Bio</div>
+                    <div class="info-value bio-text">{{ profile()!.bio || 'Tell us about yourself...' }}</div>
+                  </div>
+                  <div class="info-item">
+                    <div class="info-icon"><span class="material-icons">workspace_premium</span></div>
+                    <div class="info-label">Skills</div>
+                    <div class="info-value">Select Skills</div>
+                  </div>
                 </div>
-                <div class="detail-value" [class.is-placeholder]="!profile()?.name?.trim()">
-                  {{ profile()?.name?.trim() || 'Name' }}
-                </div>
-              </div>
-
-              <!-- Email -->
-              <div class="detail-row">
-                <div class="detail-label">
-                  <span class="material-icons">email</span>
-                  Email
-                </div>
-                <div class="detail-value" [class.is-placeholder]="!displayEmail()">
-                  {{ displayEmail() || 'Email' }}
-                </div>
-              </div>
-
-              <!-- Username -->
-              <div class="detail-row">
-                <div class="detail-label">
-                  <span class="material-icons">alternate_email</span>
-                  Username
-                </div>
-                <div class="detail-value" [class.is-placeholder]="!displayUsername()">
-                  {{ displayUsername() || 'Username' }}
-                </div>
-              </div>
-
-              <!-- Phone -->
-              <div class="detail-row">
-                <div class="detail-label">
-                  <span class="material-icons">phone</span>
-                  Phone
-                </div>
-                <div class="detail-value" [class.is-placeholder]="!profile()?.phoneNumber?.trim()">
-                  {{ profile()?.phoneNumber?.trim() || 'Add phone number' }}
-                </div>
-              </div>
-
-              <!-- Bio -->
-              <div class="detail-row bio-row">
-                <div class="detail-label">
-                  <span class="material-icons">info_outline</span>
-                  Bio
-                </div>
-                <div class="detail-value bio-value" [class.is-placeholder]="!profile()?.bio?.trim()">
-                  {{ profile()?.bio?.trim() || 'Add bio' }}
-                </div>
-              </div>
-
-              <!-- Skills -->
-              <div class="detail-row skills-row">
-                <div class="detail-label">
-                  <span class="material-icons">auto_stories</span>
-                  Skills
-                </div>
-                <div class="detail-value">
-                  @if (skillList().length > 0) {
-                    <div class="skill-chips">
-                      @for (skill of skillList(); track skill) {
-                        <span class="skill-chip">{{ skill }}</span>
-                      }
+              } @else {
+                <!-- Edit Mode -->
+                <form [formGroup]="form" (ngSubmit)="save()" class="profile-form">
+                  <div class="form-grid">
+                    <div class="form-field">
+                      <label>Username</label>
+                      <div class="input-container">
+                        <span class="material-icons">person</span>
+                        <input type="text" formControlName="username" />
+                      </div>
                     </div>
-                  } @else {
-                    <span class="is-placeholder">Select Skills</span>
-                  }
-                </div>
-              </div>
+                    
+                    <div class="form-row">
+                      <div class="form-field">
+                        <label>First Name</label>
+                        <div class="input-container">
+                          <input type="text" formControlName="firstName" />
+                        </div>
+                      </div>
+                      <div class="form-field">
+                        <label>Last Name</label>
+                        <div class="input-container">
+                          <input type="text" formControlName="lastName" />
+                        </div>
+                      </div>
+                    </div>
 
+                    <div class="form-field">
+                      <label>Bio</label>
+                      <div class="input-container textarea-container">
+                        <textarea formControlName="bio" rows="4"></textarea>
+                      </div>
+                    </div>
+
+                    <div class="form-field">
+                      <label>Phone Number</label>
+                      <div class="input-container">
+                        <span class="material-icons">phone</span>
+                        <input type="text" formControlName="phoneNumber" />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="form-footer">
+                    <button type="button" class="cancel-btn" (click)="isEditing.set(false)">Cancel</button>
+                    <button type="submit" class="save-btn" [disabled]="saving() || form.invalid">
+                      @if (saving()) {
+                        <mat-spinner diameter="20"></mat-spinner>
+                      } @else {
+                        <span>Save Changes</span>
+                      }
+                    </button>
+                  </div>
+                  @if (form.get('phoneNumber')?.invalid && form.get('phoneNumber')?.touched) {
+                    <p class="error-msg">Phone number must be exactly 10 digits.</p>
+                  }
+                </form>
+              }
             </div>
           </div>
-
         </div>
       }
-
     </div>
   `,
   styles: [`
-    /* ── Page ── */
-    .page { max-width: 980px; margin: 0 auto; padding-bottom: 40px; }
+    :host { display: block; background-color: #f8fafc; min-height: 100vh; }
+    
+    .page-container { max-width: 1100px; margin: 0 auto; padding: 40px 20px; }
 
-    /* ── Header ── */
-    .page-header {
-      display: flex; justify-content: space-between; align-items: flex-start;
-      margin-bottom: 32px; flex-wrap: wrap; gap: 16px;
-    }
-    .header-text h1 {
-      font-size: 28px; font-weight: 800; color: #111827; margin: 0 0 4px;
-      letter-spacing: -0.5px;
-    }
-    .header-text p { font-size: 14px; color: #6b7280; margin: 0; }
-    .header-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+    /* Header Section */
+    .header-section { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 40px; }
+    .header-content h1 { font-size: 32px; font-weight: 800; color: #0f172a; margin: 0 0 8px; letter-spacing: -0.025em; }
+    .header-content p { color: #64748b; font-size: 15px; margin: 0; }
 
-    .btn-primary {
-      display: inline-flex; align-items: center; gap: 7px;
-      height: 42px; padding: 0 20px; border-radius: 10px;
-      background: #4f46e5; color: #fff; border: none;
-      font-size: 14px; font-weight: 600; cursor: pointer;
-      transition: background .15s, transform .1s;
+    .logout-btn {
+      display: flex; align-items: center; gap: 8px;
+      padding: 10px 20px; border-radius: 12px;
+      background: #fee2e2; color: #ef4444; border: none;
+      font-size: 14px; font-weight: 700; cursor: pointer;
+      transition: all 0.2s ease;
     }
-    .btn-primary:hover { background: #4338ca; transform: translateY(-1px); }
-    .btn-primary .material-icons { font-size: 18px; }
+    .logout-btn:hover { background: #fecaca; transform: translateY(-1px); }
+    .logout-btn .material-icons { font-size: 20px; }
 
-    .btn-danger {
-      display: inline-flex; align-items: center; gap: 7px;
-      height: 42px; padding: 0 18px; border-radius: 10px;
-      background: #fef2f2; color: #dc2626; border: 1px solid #fecaca;
-      font-size: 14px; font-weight: 600; cursor: pointer;
-      transition: background .15s;
-    }
-    .btn-danger:hover { background: #fee2e2; }
-    .btn-danger .material-icons { font-size: 18px; }
+    .loader-box { display: flex; justify-content: center; padding: 100px; }
 
-    /* ── Loading ── */
-    .loading-center {
+    /* Layout Grid */
+    .profile-layout { display: grid; grid-template-columns: 320px 1fr; gap: 32px; align-items: start; }
+    @media (max-width: 900px) { .profile-layout { grid-template-columns: 1fr; } }
+
+    /* Sidebar Components */
+    .profile-sidebar { display: flex; flex-direction: column; gap: 24px; }
+    
+    .user-card {
+      background: white; border-radius: 24px; padding: 40px 24px;
       display: flex; flex-direction: column; align-items: center;
-      justify-content: center; padding: 80px; gap: 16px;
+      text-align: center; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05);
+      border: 1px solid #e2e8f0;
     }
-    .loading-text { font-size: 14px; color: #6b7280; margin: 0; }
-
-    /* ── Layout ── */
-    .layout { display: grid; grid-template-columns: 290px 1fr; gap: 24px; align-items: start; }
-    @media (max-width: 780px) { .layout { grid-template-columns: 1fr; } }
-
-    /* ── Left Column ── */
-    .left-col { display: flex; flex-direction: column; gap: 16px; }
-
-    /* Avatar Card */
-    .avatar-card {
-      background: #fff; border-radius: 20px; border: 1px solid #e5e7eb;
-      padding: 32px 24px; display: flex; flex-direction: column;
-      align-items: center; gap: 8px; text-align: center;
-      box-shadow: 0 1px 3px rgba(0,0,0,.06);
-    }
-    .avatar-circle {
-      width: 90px; height: 90px; border-radius: 50%;
-      background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
-      color: #fff; font-size: 36px; font-weight: 800;
+    .user-avatar {
+      width: 100px; height: 100px; border-radius: 50%;
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      color: white; font-size: 38px; font-weight: 800;
       display: flex; align-items: center; justify-content: center;
-      margin-bottom: 4px; box-shadow: 0 4px 14px rgba(79,70,229,.35);
+      margin-bottom: 20px; box-shadow: 0 10px 20px -5px rgba(99,102,241,0.4);
     }
-    .avatar-name { font-size: 18px; font-weight: 700; color: #111827; margin: 0; }
-    .avatar-username { font-size: 13px; color: #4f46e5; font-weight: 600; margin: 0; }
-    .avatar-email { font-size: 12px; color: #6b7280; margin: 0; word-break: break-all; }
+    .user-name { font-size: 22px; font-weight: 800; color: #0f172a; margin: 0 0 4px; }
+    .user-email { font-size: 14px; color: #6366f1; font-weight: 600; margin: 0 0 2px; }
+    .user-handle { font-size: 13px; color: #94a3b8; margin: 0 0 20px; }
 
-    .joined-pill {
-      display: inline-flex; align-items: center; gap: 5px;
-      background: #f3f4f6; padding: 5px 12px; border-radius: 20px;
-      font-size: 11px; color: #6b7280; margin-top: 4px;
-    }
-    .joined-pill .material-icons { font-size: 13px; }
-
-    .roles-row { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-top: 4px; }
+    .badge-row { margin-bottom: 20px; }
     .role-pill {
-      display: inline-flex; align-items: center; gap: 4px;
-      padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 700;
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 6px 14px; border-radius: 20px;
+      font-size: 11px; font-weight: 700;
     }
-    .role-pill .material-icons { font-size: 13px; }
-    .role-pill.admin   { background: #fef3c7; color: #d97706; }
-    .role-pill.mentor  { background: #e0e7ff; color: #4f46e5; }
-    .role-pill.learner { background: #dcfce7; color: #16a34a; }
+    .role-pill.learner { background: #dcfce7; color: #15803d; }
+    .pulse { width: 6px; height: 6px; border-radius: 50%; background: #22c55e; position: relative; }
+    .pulse::after {
+      content: ''; position: absolute; width: 100%; height: 100%;
+      background: inherit; border-radius: 50%; animation: pulse 2s infinite;
+    }
+    @keyframes pulse { 0% { transform: scale(1); opacity: 0.8; } 100% { transform: scale(2.5); opacity: 0; } }
 
-    /* CTA Card */
-    .cta-card {
-      background: linear-gradient(135deg, #4f46e5, #7c3aed);
-      border-radius: 16px; padding: 20px;
-      display: flex; flex-direction: column; gap: 10px; color: #fff;
-      box-shadow: 0 4px 14px rgba(79,70,229,.3);
+    .joined-date {
+      display: flex; align-items: center; gap: 6px;
+      color: #94a3b8; font-size: 12px; font-weight: 500;
     }
-    .cta-icon { font-size: 28px; }
-    .cta-card strong { font-size: 14px; font-weight: 700; }
-    .cta-card p { font-size: 12px; opacity: .85; margin: 0; line-height: 1.5; }
-    .cta-btn {
-      display: block; text-align: center; text-decoration: none;
-      background: #fff; color: #4f46e5;
-      height: 38px; line-height: 38px; border-radius: 10px;
-      font-size: 13px; font-weight: 700; transition: opacity .15s;
-    }
-    .cta-btn:hover { opacity: .9; }
+    .joined-date .material-icons { font-size: 15px; }
 
-    /* Quick Links */
-    .quick-links {
-      background: #fff; border-radius: 16px; border: 1px solid #e5e7eb;
-      overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,.06);
+    /* Profile Nav */
+    .profile-nav {
+      background: white; border-radius: 20px; overflow: hidden;
+      border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);
     }
-    .quick-link {
-      display: flex; align-items: center; gap: 12px;
-      padding: 14px 16px; text-decoration: none; color: #374151;
-      font-size: 14px; font-weight: 500;
-      border-bottom: 1px solid #f3f4f6; transition: background .15s;
+    .nav-button {
+      display: flex; align-items: center; gap: 14px;
+      padding: 16px 20px; text-decoration: none; color: #475569;
+      font-size: 14px; font-weight: 600; transition: all 0.2s;
+      border-bottom: 1px solid #f1f5f9;
     }
-    .quick-link:last-child { border-bottom: none; }
-    .quick-link:hover { background: #f9fafb; }
-    .quick-link .material-icons { font-size: 20px; color: #9ca3af; }
-    .ml-auto { margin-left: auto; color: #d1d5db !important; font-size: 18px !important; }
+    .nav-button:last-child { border-bottom: none; }
+    .nav-button:hover { background: #f8fafc; color: #6366f1; }
+    .nav-button .material-icons:not(.chevron) { font-size: 20px; color: #94a3b8; }
+    .nav-button .chevron { margin-left: auto; font-size: 18px; color: #cbd5e1; }
+    .nav-button:hover .material-icons { color: #6366f1; }
 
-    /* ── Right Column ── */
-    .right-col { display: flex; flex-direction: column; gap: 20px; }
-
-    .details-card {
-      background: #fff; border-radius: 20px; border: 1px solid #e5e7eb;
-      padding: 28px; box-shadow: 0 1px 3px rgba(0,0,0,.06);
+    /* Main Content Area */
+    .profile-main { }
+    .content-card {
+      background: white; border-radius: 24px; padding: 40px;
+      border: 1px solid #e2e8f0; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05);
+      min-height: 500px;
     }
-    .details-header {
-      display: flex; justify-content: space-between; align-items: center;
-      margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid #f3f4f6;
+    .card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; }
+    .card-top h3 { font-size: 20px; font-weight: 800; color: #0f172a; margin: 0; }
+
+    .edit-toggle {
+      display: flex; align-items: center; gap: 6px;
+      padding: 8px 16px; border-radius: 10px;
+      background: #f1f5f9; color: #475569; border: none;
+      font-size: 13px; font-weight: 700; cursor: pointer;
+      transition: all 0.2s;
     }
-    .details-header h3 { font-size: 18px; font-weight: 700; color: #111827; margin: 0; }
+    .edit-toggle:hover { background: #e2e8f0; }
 
-    .btn-edit-sm {
-      display: inline-flex; align-items: center; gap: 5px;
-      height: 34px; padding: 0 14px; border-radius: 8px;
-      background: #ede9fe; color: #4f46e5; border: none;
-      font-size: 13px; font-weight: 600; cursor: pointer; transition: background .15s;
+    /* Info List */
+    .info-list { display: flex; flex-direction: column; }
+    .info-item {
+      display: grid; grid-template-columns: 44px 160px 1fr;
+      align-items: center; padding: 22px 0; border-bottom: 1px solid #f1f5f9;
     }
-    .btn-edit-sm:hover { background: #ddd6fe; }
-    .btn-edit-sm .material-icons { font-size: 16px; }
+    .info-item:last-child { border-bottom: none; }
+    .info-icon { color: #94a3b8; display: flex; align-items: center; }
+    .info-icon .material-icons { font-size: 20px; }
+    .info-label { font-size: 14px; font-weight: 600; color: #64748b; }
+    .info-value { font-size: 14px; font-weight: 600; color: #1e293b; }
+    .bio-text { line-height: 1.6; color: #475569; font-weight: 500; }
 
-    /* Detail Rows — READ ONLY, no inputs ever */
-    .detail-row {
-      display: flex; align-items: flex-start; gap: 16px;
-      padding: 14px 0; border-bottom: 1px solid #f9fafb;
+    /* Form Styles */
+    .profile-form { display: flex; flex-direction: column; gap: 24px; }
+    .form-grid { display: flex; flex-direction: column; gap: 20px; }
+    .form-field { display: flex; flex-direction: column; gap: 6px; }
+    .form-field label { font-size: 13px; font-weight: 700; color: #475569; }
+    
+    .input-container {
+      display: flex; align-items: center; gap: 10px;
+      background: #f8fafc; border: 2px solid #e2e8f0;
+      border-radius: 12px; padding: 0 14px; height: 50px;
     }
-    .detail-row:last-child { border-bottom: none; padding-bottom: 0; }
-
-    .detail-label {
-      display: flex; align-items: center; gap: 7px;
-      min-width: 140px; font-size: 13px; font-weight: 600; color: #6b7280;
-      flex-shrink: 0; padding-top: 1px;
+    .input-container:focus-within { border-color: #6366f1; background: white; }
+    .input-container input {
+      flex: 1; border: none; outline: none; background: transparent;
+      font-size: 14px; font-weight: 600; color: #1e293b;
     }
-    .detail-label .material-icons { font-size: 17px; color: #9ca3af; }
-
-    .detail-value {
-      font-size: 14px; color: #111827; flex: 1;
-      line-height: 1.6; word-break: break-word;
-    }
-    .detail-value.is-placeholder { color: #9ca3af; font-style: italic; }
-
-    .bio-row { align-items: flex-start; }
-    .bio-value { white-space: pre-wrap; }
-
-    .skills-row { align-items: flex-start; }
-    .skill-chips { display: flex; flex-wrap: wrap; gap: 8px; }
-    .skill-chip {
-      background: #ede9fe; color: #4f46e5;
-      padding: 5px 14px; border-radius: 20px;
-      font-size: 12px; font-weight: 600; letter-spacing: .2px;
+    .textarea-container { height: auto; padding: 12px 14px; }
+    .textarea-container textarea {
+      width: 100%; border: none; outline: none; background: transparent;
+      font-size: 14px; font-weight: 500; color: #1e293b; font-family: inherit;
+      resize: none;
     }
 
-    /* ── Responsive ── */
-    @media (max-width: 500px) {
-      .page-header { flex-direction: column; }
-      .header-actions { width: 100%; }
-      .btn-primary, .btn-danger { flex: 1; justify-content: center; }
-      .detail-row { flex-direction: column; gap: 4px; }
-      .detail-label { min-width: unset; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+    .form-footer { display: flex; justify-content: flex-end; gap: 12px; margin-top: 12px; }
+    .cancel-btn {
+      height: 48px; padding: 0 24px; border-radius: 12px;
+      background: white; border: 2px solid #e2e8f0;
+      color: #64748b; font-size: 14px; font-weight: 700; cursor: pointer;
     }
+    .save-btn {
+      display: flex; align-items: center; justify-content: center;
+      height: 48px; padding: 0 32px; border-radius: 12px;
+      background: linear-gradient(135deg, #6366f1, #4f46e5);
+      color: white; border: none; font-size: 14px; font-weight: 700;
+      cursor: pointer; box-shadow: 0 8px 16px rgba(99,102,241,0.25);
+    }
+    .save-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+    .error-msg { color: #ef4444; font-size: 12px; font-weight: 600; text-align: right; margin: -10px 0 0; }
   `]
 })
-export class ProfilePage implements OnInit, OnDestroy {
+export class ProfilePage implements OnInit {
   private readonly userService = inject(UserService);
-  private readonly router      = inject(Router);
-  readonly authStore            = inject(AuthStore);
+  private readonly snack = inject(MatSnackBar);
+  private readonly fb = inject(FormBuilder);
+  readonly authStore = inject(AuthStore);
 
   readonly profile = signal<UserProfileDto | null>(null);
   readonly loading = signal(true);
+  readonly saving = signal(false);
+  readonly isEditing = signal(false);
 
-  private navSub!: Subscription;
+  readonly form = this.fb.group({
+    username:    ['', [Validators.required, Validators.minLength(2)]],
+    firstName:   ['', [Validators.required]],
+    lastName:    [''],
+    bio:         ['', [Validators.maxLength(500)]],
+    phoneNumber: ['', [Validators.pattern('^[0-9]{10}$')]],
+    skills:      [[] as string[]]
+  });
 
   ngOnInit(): void {
-    // Re-fetch every time the user enters the profile page
-    // This handles initial load, forward navigation, and back navigation from Edit Profile
-    this.navSub = this.router.events
-      .pipe(
-        filter((e): e is NavigationEnd => e instanceof NavigationEnd),
-        // Trigger on /profile or /profile with query params
-        filter(e => e.urlAfterRedirects.split('?')[0] === '/profile')
-      )
-      .subscribe(() => this.fetchProfile());
-
-    // Trigger initial fetch if we're already on the profile page upon component creation
-    if (this.router.url.split('?')[0] === '/profile') {
-      this.fetchProfile();
-    }
+    this.refreshProfile();
   }
 
-  ngOnDestroy(): void {
-    this.navSub?.unsubscribe();
-  }
-
-  /** Always hits the API — no local cache, no stale state */
-  private fetchProfile(): void {
+  refreshProfile(): void {
     this.loading.set(true);
-    this.profile.set(null);
     this.userService.getMyProfile().subscribe({
-      next:  res => { this.profile.set(res.data); this.loading.set(false); },
-      error: ()  => this.loading.set(false)
+      next: (res) => {
+        const p = res.data;
+        this.profile.set(p);
+
+        // Name Handing: Split backend 'name' into firstName/lastName
+        let first = '', last = '';
+        if (p.name) {
+          const parts = p.name.trim().split(' ');
+          first = parts[0];
+          last = parts.slice(1).join(' ');
+        }
+
+        const emailPrefix = p.email.split('@')[0];
+        
+        this.form.patchValue({
+          username: p.username || emailPrefix,
+          firstName: first,
+          lastName: last,
+          bio: p.bio || '',
+          phoneNumber: p.phoneNumber || ''
+        });
+        this.loading.set(false);
+      },
+      error: () => this.loading.set(false)
     });
   }
 
-  // ── Display helpers — never return blank ──────────────────────────────────
+  save(): void {
+    if (this.form.invalid) return;
+    this.saving.set(true);
+    const val = this.form.getRawValue();
+    
+    // Concatenate name for backend UpdateProfileRequest
+    const combinedName = `${val.firstName ?? ''} ${val.lastName ?? ''}`.trim();
 
-  displayName(): string {
-    return this.profile()?.name?.trim() || this.authStore.username() || 'Name';
+    this.userService.updateProfile({
+      username: val.username || undefined,
+      name: combinedName || undefined,
+      bio: val.bio || undefined,
+      phoneNumber: val.phoneNumber || undefined
+    }).subscribe({
+      next: (res) => {
+        this.profile.set(res.data);
+        this.saving.set(false);
+        this.isEditing.set(false);
+        this.snack.open('Profile updated successfully!', 'OK', { duration: 3000 });
+      },
+      error: (err) => {
+        this.saving.set(false);
+        console.error('Update Failed:', err);
+        this.snack.open('Failed to update profile. Please check your inputs.', 'Retry', { duration: 5000 });
+      }
+    });
   }
 
-  displayUsername(): string {
-    return this.profile()?.username || this.authStore.username() || 'user';
-  }
-
-  displayEmail(): string {
-    return this.profile()?.email?.trim() || this.authStore.email() || 'Email';
-  }
+  logout(): void { this.authStore.logout(); }
 
   initials(): string {
-    const src = this.profile()?.name?.trim() || this.authStore.username() || '?';
-    return src[0].toUpperCase();
+    const p = this.profile();
+    if (!p) return '?';
+    // Use part of name if available
+    const name = p.name || p.username || '';
+    return name.charAt(0).toUpperCase();
   }
 
-  skillList(): string[] {
-    const raw = this.profile()?.skills;
-    return raw ? raw.split(',').map(s => s.trim()).filter(Boolean) : [];
+  fullName(): string {
+    const p = this.profile();
+    if (!p) return '';
+    return p.name || p.username;
   }
-
-  goEdit(): void  { this.router.navigate(['/profile/edit']); }
-  logout(): void  { this.authStore.logout(); }
 }
