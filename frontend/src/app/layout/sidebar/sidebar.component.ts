@@ -29,20 +29,20 @@ interface NavItem { label: string; icon: string; route: string; roles?: string[]
     .nav-item {
       display: flex; align-items: center; gap: 12px;
       padding: 10px 12px; border-radius: 10px;
-      text-decoration: none; color: #6b7280;
+      text-decoration: none; color: var(--text-secondary);
       font-size: 14px; font-weight: 500;
       transition: background 0.15s, color 0.15s;
       white-space: nowrap;
     }
-    .nav-item:hover { background: #f3f4f6; color: #111827; }
-    .nav-item:hover .nav-icon { color: #4f46e5; }
+    .nav-item:hover { background: var(--surface-alt); color: var(--text); }
+    .nav-item:hover .nav-icon { color: var(--primary); }
 
     .nav-item.active {
-      background: #eef2ff; color: #4f46e5; font-weight: 600;
+      background: var(--primary-light); color: var(--primary); font-weight: 600;
     }
-    .nav-item.active .nav-icon { color: #4f46e5; }
+    .nav-item.active .nav-icon { color: var(--primary); }
 
-    .nav-icon { font-size: 20px; color: #9ca3af; transition: color 0.15s; flex-shrink: 0; }
+    .nav-icon { font-size: 20px; color: var(--text-muted); transition: color 0.15s; flex-shrink: 0; }
   `]
 })
 export class SidebarComponent {
@@ -50,14 +50,15 @@ export class SidebarComponent {
   private readonly authStore = inject(AuthStore);
 
   private readonly allItems: NavItem[] = [
-    { label: 'Mentors',       icon: 'people',               route: '/mentors' },
-    { label: 'Skills',        icon: 'auto_stories',         route: '/skills' },
-    { label: 'My Sessions',   icon: 'event',                route: '/sessions',         roles: ['ROLE_LEARNER'] },
-    { label: 'Groups',        icon: 'group_work',           route: '/groups' },
-    { label: 'Notifications', icon: 'notifications',        route: '/notifications' },
-    { label: 'Profile',       icon: 'person',               route: '/profile' },
-    { label: 'Dashboard',     icon: 'dashboard',            route: '/mentor-dashboard', roles: ['ROLE_MENTOR'] },
-    { label: 'Admin',         icon: 'admin_panel_settings', route: '/admin',            roles: ['ROLE_ADMIN'] },
+    { label: 'Mentors',            icon: 'people',               route: '/mentors' },
+    { label: 'Skills',             icon: 'auto_stories',         route: '/skills' },
+    { label: 'My Sessions',        icon: 'event',                route: '/sessions',         roles: ['ROLE_LEARNER'] },
+    { label: 'Groups',             icon: 'group_work',           route: '/groups' },
+    { label: 'Notifications',      icon: 'notifications',        route: '/notifications' },
+    { label: 'Profile',            icon: 'person',               route: '/profile' },
+    { label: 'Dashboard',          icon: 'dashboard',            route: '/mentor-dashboard', roles: ['ROLE_MENTOR'] },
+    { label: 'Admin Panel',        icon: 'admin_panel_settings', route: '/admin',            roles: ['ROLE_ADMIN'] },
+    { label: 'Skills Management',  icon: 'tune',                 route: '/admin/skills',     roles: ['ROLE_ADMIN'] },
   ];
 
   visibleItems() {

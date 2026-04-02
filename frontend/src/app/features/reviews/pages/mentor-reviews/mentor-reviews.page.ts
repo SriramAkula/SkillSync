@@ -127,66 +127,67 @@ import { ReviewDto, MentorRatingDto } from '../../../../shared/models';
   `,
   styles: [`
     .page { max-width: 760px; margin: 0 auto; }
-    .back-btn { display: inline-flex; align-items: center; gap: 6px; background: none; border: none; color: #6b7280; font-size: 14px; font-weight: 500; cursor: pointer; padding: 8px 0; margin-bottom: 20px; transition: color 0.15s; }
-    .back-btn:hover { color: #4f46e5; }
+    .back-btn { display: inline-flex; align-items: center; gap: 6px; background: none; border: none; color: var(--text-secondary); font-size: 14px; font-weight: 500; cursor: pointer; padding: 8px 0; margin-bottom: 20px; transition: color 0.15s; }
+    .back-btn:hover { color: var(--primary); }
     .back-btn .material-icons { font-size: 18px; }
 
     .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 28px; flex-wrap: wrap; gap: 16px; }
-    .page-header h1 { font-size: 28px; font-weight: 800; color: #111827; margin: 0; }
-    .rating-summary { display: flex; align-items: center; gap: 16px; background: #fef3c7; padding: 12px 20px; border-radius: 14px; }
+    .page-header h1 { font-size: 28px; font-weight: 800; color: var(--text); margin: 0; }
+    .rating-summary { display: flex; align-items: center; gap: 16px; background: var(--warning-bg); padding: 12px 20px; border-radius: 14px; border: 1px solid var(--border); }
     .big-rating { font-size: 36px; font-weight: 800; color: #d97706; }
     .stars-row { color: #f59e0b; font-size: 18px; letter-spacing: 2px; }
-    .review-count { font-size: 13px; color: #92400e; margin-top: 2px; }
+    .review-count { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
 
-    .review-form-card { background: white; border-radius: 20px; border: 1px solid #e5e7eb; padding: 24px; margin-bottom: 28px; }
-    .review-form-card h3 { font-size: 18px; font-weight: 700; color: #111827; margin: 0 0 4px; }
-    .review-form-card p { font-size: 14px; color: #6b7280; margin: 0 0 20px; }
+    .review-form-card { background: var(--surface); border-radius: 20px; border: 1px solid var(--border); padding: 24px; margin-bottom: 28px; box-shadow: var(--shadow-sm); }
+    .review-form-card h3 { font-size: 18px; font-weight: 700; color: var(--text); margin: 0 0 4px; }
+    .review-form-card p { font-size: 14px; color: var(--text-secondary); margin: 0 0 20px; }
     .form { display: flex; flex-direction: column; gap: 16px; }
     .input-group { display: flex; flex-direction: column; gap: 6px; }
-    .input-label { font-size: 13px; font-weight: 600; color: #374151; }
-    .required { color: #ef4444; }
-    .input-wrapper { background: #f9fafb; border: 1.5px solid #e5e7eb; border-radius: 12px; padding: 0 14px; height: 52px; display: flex; align-items: center; transition: border-color 0.2s; }
-    .input-wrapper:focus-within { border-color: #4f46e5; box-shadow: 0 0 0 3px rgba(79,70,229,0.1); background: white; }
-    .input-icon { font-size: 18px; color: #9ca3af; margin-right: 10px; }
-    .input-wrapper input { flex: 1; border: none; outline: none; font-size: 15px; color: #111827; background: transparent; }
+    .input-label { font-size: 13px; font-weight: 600; color: var(--text); }
+    .required { color: var(--error); }
+    .input-wrapper { background: var(--surface-alt); border: 1.5px solid var(--border); border-radius: 12px; padding: 0 14px; height: 52px; display: flex; align-items: center; transition: border-color 0.2s; }
+    .input-wrapper:focus-within { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-muted); background: var(--surface); }
+    .input-icon { font-size: 18px; color: var(--text-muted); margin-right: 10px; }
+    .input-wrapper input { flex: 1; border: none; outline: none; font-size: 15px; color: var(--text); background: transparent; }
     .textarea-wrap { height: auto; padding: 12px 14px; align-items: flex-start; }
-    .textarea-wrap textarea { flex: 1; border: none; outline: none; font-size: 14px; color: #111827; background: transparent; resize: none; font-family: inherit; width: 100%; }
+    .textarea-wrap textarea { flex: 1; border: none; outline: none; font-size: 14px; color: var(--text); background: transparent; resize: none; font-family: inherit; width: 100%; }
 
     .star-picker { display: flex; align-items: center; gap: 4px; }
     .star-btn { background: none; border: none; cursor: pointer; padding: 2px; transition: transform 0.1s; }
     .star-btn:hover { transform: scale(1.2); }
-    .star-btn .material-icons { font-size: 28px; color: #d1d5db; transition: color 0.15s; }
+    .star-btn .material-icons { font-size: 28px; color: var(--border-strong); transition: color 0.15s; }
     .star-btn.active .material-icons { color: #f59e0b; }
-    .rating-label { font-size: 13px; color: #6b7280; margin-left: 8px; font-weight: 500; }
+    .rating-label { font-size: 13px; color: var(--text-secondary); margin-left: 8px; font-weight: 500; }
 
-    .btn-submit { height: 48px; border-radius: 12px; background: linear-gradient(135deg, #4f46e5, #7c3aed); color: white; border: none; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 12px rgba(79,70,229,0.3); transition: opacity 0.2s; }
+    .btn-submit { height: 48px; border-radius: 12px; background: linear-gradient(135deg, var(--primary), var(--accent)); color: white; border: none; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: var(--shadow-primary); transition: opacity 0.2s; }
     .btn-submit:hover:not(:disabled) { opacity: 0.9; }
     .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
     .btn-submit .material-icons { font-size: 18px; }
 
     .loading-center { display: flex; justify-content: center; padding: 40px; }
     .reviews-list { display: flex; flex-direction: column; gap: 14px; }
-    .review-card { background: white; border-radius: 16px; border: 1px solid #e5e7eb; padding: 20px; }
+    .review-card { background: var(--surface); border-radius: 16px; border: 1px solid var(--border); padding: 20px; transition: box-shadow .15s; }
+    .review-card:hover { box-shadow: var(--shadow-md); }
     .review-top { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 12px; }
-    .reviewer-avatar { width: 40px; height: 40px; border-radius: 12px; background: #e0e7ff; color: #4f46e5; font-weight: 700; font-size: 16px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .reviewer-avatar { width: 40px; height: 40px; border-radius: 12px; background: var(--primary-light); color: var(--primary); font-weight: 700; font-size: 16px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
     .reviewer-info { flex: 1; }
-    .review-date { font-size: 12px; color: #9ca3af; margin-top: 3px; }
-    .review-text { font-size: 14px; color: #374151; margin: 0; line-height: 1.6; }
+    .review-date { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
+    .review-text { font-size: 14px; color: var(--text); margin: 0; line-height: 1.6; }
     .review-actions { display: flex; gap: 4px; margin-left: auto; }
     .btn-edit, .btn-delete { width: 32px; height: 32px; border-radius: 8px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-    .btn-edit { background: #e0e7ff; color: #4f46e5; }
-    .btn-delete { background: #fee2e2; color: #dc2626; }
+    .btn-edit { background: var(--primary-light); color: var(--primary); }
+    .btn-delete { background: var(--error-bg); color: var(--error); }
     .btn-edit .material-icons, .btn-delete .material-icons { font-size: 16px; }
     .edit-form { display: flex; flex-direction: column; gap: 10px; }
     .edit-actions { display: flex; gap: 8px; justify-content: flex-end; }
-    .btn-cancel-edit { height: 36px; padding: 0 14px; border-radius: 8px; background: #f3f4f6; color: #374151; border: none; font-size: 13px; font-weight: 600; cursor: pointer; }
-    .btn-save-edit { height: 36px; padding: 0 14px; border-radius: 8px; background: #4f46e5; color: white; border: none; font-size: 13px; font-weight: 600; cursor: pointer; }
+    .btn-cancel-edit { height: 36px; padding: 0 14px; border-radius: 8px; background: var(--surface-alt); color: var(--text); border: 1px solid var(--border); font-size: 13px; font-weight: 600; cursor: pointer; }
+    .btn-save-edit { height: 36px; padding: 0 14px; border-radius: 8px; background: var(--primary); color: white; border: none; font-size: 13px; font-weight: 600; cursor: pointer; }
 
     .empty-state { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 60px; }
-    .empty-icon { width: 64px; height: 64px; border-radius: 18px; background: #f3f4f6; display: flex; align-items: center; justify-content: center; }
-    .empty-icon .material-icons { font-size: 32px; color: #9ca3af; }
-    .empty-state h3 { font-size: 16px; font-weight: 700; color: #111827; margin: 0; }
-    .empty-state p { font-size: 13px; color: #6b7280; margin: 0; }
+    .empty-icon { width: 64px; height: 64px; border-radius: 18px; background: var(--surface-alt); display: flex; align-items: center; justify-content: center; }
+    .empty-icon .material-icons { font-size: 32px; color: var(--text-muted); }
+    .empty-state h3 { font-size: 16px; font-weight: 700; color: var(--text); margin: 0; }
+    .empty-state p { font-size: 13px; color: var(--text-secondary); margin: 0; }
   `]
 })
 export class MentorReviewsPage implements OnInit {

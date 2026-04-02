@@ -123,8 +123,8 @@ import { UserProfileDto } from '../../../../shared/models';
                   <span class="material-icons">person</span>
                   Full Name
                 </div>
-                <div class="detail-value" [class.is-placeholder]="!profile()?.name?.trim()">
-                  {{ profile()?.name?.trim() || 'Name' }}
+                <div class="detail-value" [class.is-placeholder]="!displayName()">
+                  {{ displayName() }}
                 </div>
               </div>
 
@@ -209,10 +209,10 @@ import { UserProfileDto } from '../../../../shared/models';
       margin-bottom: 32px; flex-wrap: wrap; gap: 16px;
     }
     .header-text h1 {
-      font-size: 28px; font-weight: 800; color: #111827; margin: 0 0 4px;
+      font-size: 28px; font-weight: 800; color: var(--text); margin: 0 0 4px;
       letter-spacing: -0.5px;
     }
-    .header-text p { font-size: 14px; color: #6b7280; margin: 0; }
+    .header-text p { font-size: 14px; color: var(--text-secondary); margin: 0; }
     .header-actions { display: flex; gap: 10px; flex-wrap: wrap; }
 
     .btn-primary {
@@ -251,26 +251,26 @@ import { UserProfileDto } from '../../../../shared/models';
 
     /* Avatar Card */
     .avatar-card {
-      background: #fff; border-radius: 20px; border: 1px solid #e5e7eb;
+      background: var(--surface); border-radius: 20px; border: 1px solid var(--border);
       padding: 32px 24px; display: flex; flex-direction: column;
       align-items: center; gap: 8px; text-align: center;
-      box-shadow: 0 1px 3px rgba(0,0,0,.06);
+      box-shadow: var(--shadow-sm);
     }
     .avatar-circle {
       width: 90px; height: 90px; border-radius: 50%;
-      background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+      background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
       color: #fff; font-size: 36px; font-weight: 800;
       display: flex; align-items: center; justify-content: center;
-      margin-bottom: 4px; box-shadow: 0 4px 14px rgba(79,70,229,.35);
+      margin-bottom: 4px; box-shadow: var(--shadow-primary);
     }
-    .avatar-name { font-size: 18px; font-weight: 700; color: #111827; margin: 0; }
-    .avatar-username { font-size: 13px; color: #4f46e5; font-weight: 600; margin: 0; }
-    .avatar-email { font-size: 12px; color: #6b7280; margin: 0; word-break: break-all; }
+    .avatar-name { font-size: 18px; font-weight: 700; color: var(--text); margin: 0; }
+    .avatar-username { font-size: 13px; color: var(--primary); font-weight: 600; margin: 0; }
+    .avatar-email { font-size: 12px; color: var(--text-secondary); margin: 0; word-break: break-all; }
 
     .joined-pill {
       display: inline-flex; align-items: center; gap: 5px;
-      background: #f3f4f6; padding: 5px 12px; border-radius: 20px;
-      font-size: 11px; color: #6b7280; margin-top: 4px;
+      background: var(--surface-alt); padding: 5px 12px; border-radius: 20px;
+      font-size: 11px; color: var(--text-secondary); margin-top: 4px;
     }
     .joined-pill .material-icons { font-size: 13px; }
 
@@ -304,32 +304,32 @@ import { UserProfileDto } from '../../../../shared/models';
 
     /* Quick Links */
     .quick-links {
-      background: #fff; border-radius: 16px; border: 1px solid #e5e7eb;
-      overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,.06);
+      background: var(--surface); border-radius: 16px; border: 1px solid var(--border);
+      overflow: hidden; box-shadow: var(--shadow-sm);
     }
     .quick-link {
       display: flex; align-items: center; gap: 12px;
-      padding: 14px 16px; text-decoration: none; color: #374151;
+      padding: 14px 16px; text-decoration: none; color: var(--text);
       font-size: 14px; font-weight: 500;
-      border-bottom: 1px solid #f3f4f6; transition: background .15s;
+      border-bottom: 1px solid var(--border); transition: background .15s;
     }
     .quick-link:last-child { border-bottom: none; }
-    .quick-link:hover { background: #f9fafb; }
-    .quick-link .material-icons { font-size: 20px; color: #9ca3af; }
-    .ml-auto { margin-left: auto; color: #d1d5db !important; font-size: 18px !important; }
+    .quick-link:hover { background: var(--surface-alt); }
+    .quick-link .material-icons { font-size: 20px; color: var(--text-muted); }
+    .ml-auto { margin-left: auto; color: var(--border-strong) !important; font-size: 18px !important; }
 
     /* ── Right Column ── */
     .right-col { display: flex; flex-direction: column; gap: 20px; }
 
     .details-card {
-      background: #fff; border-radius: 20px; border: 1px solid #e5e7eb;
-      padding: 28px; box-shadow: 0 1px 3px rgba(0,0,0,.06);
+      background: var(--surface); border-radius: 20px; border: 1px solid var(--border);
+      padding: 28px; box-shadow: var(--shadow-sm);
     }
     .details-header {
       display: flex; justify-content: space-between; align-items: center;
-      margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid #f3f4f6;
+      margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid var(--border);
     }
-    .details-header h3 { font-size: 18px; font-weight: 700; color: #111827; margin: 0; }
+    .details-header h3 { font-size: 18px; font-weight: 700; color: var(--text); margin: 0; }
 
     .btn-edit-sm {
       display: inline-flex; align-items: center; gap: 5px;
@@ -343,22 +343,22 @@ import { UserProfileDto } from '../../../../shared/models';
     /* Detail Rows — READ ONLY, no inputs ever */
     .detail-row {
       display: flex; align-items: flex-start; gap: 16px;
-      padding: 14px 0; border-bottom: 1px solid #f9fafb;
+      padding: 14px 0; border-bottom: 1px solid var(--border);
     }
     .detail-row:last-child { border-bottom: none; padding-bottom: 0; }
 
     .detail-label {
       display: flex; align-items: center; gap: 7px;
-      min-width: 140px; font-size: 13px; font-weight: 600; color: #6b7280;
+      min-width: 140px; font-size: 13px; font-weight: 600; color: var(--text-secondary);
       flex-shrink: 0; padding-top: 1px;
     }
-    .detail-label .material-icons { font-size: 17px; color: #9ca3af; }
+    .detail-label .material-icons { font-size: 17px; color: var(--text-muted); }
 
     .detail-value {
-      font-size: 14px; color: #111827; flex: 1;
+      font-size: 14px; color: var(--text); flex: 1;
       line-height: 1.6; word-break: break-word;
     }
-    .detail-value.is-placeholder { color: #9ca3af; font-style: italic; }
+    .detail-value.is-placeholder { color: var(--text-muted); font-style: italic; }
 
     .bio-row { align-items: flex-start; }
     .bio-value { white-space: pre-wrap; }
@@ -366,7 +366,7 @@ import { UserProfileDto } from '../../../../shared/models';
     .skills-row { align-items: flex-start; }
     .skill-chips { display: flex; flex-wrap: wrap; gap: 8px; }
     .skill-chip {
-      background: #ede9fe; color: #4f46e5;
+      background: var(--primary-light); color: var(--primary);
       padding: 5px 14px; border-radius: 20px;
       font-size: 12px; font-weight: 600; letter-spacing: .2px;
     }
@@ -418,14 +418,35 @@ export class ProfilePage implements OnInit, OnDestroy {
     this.profile.set(null);
     this.userService.getMyProfile().subscribe({
       next:  res => { this.profile.set(res.data); this.loading.set(false); },
-      error: ()  => this.loading.set(false)
+      error: (e) => {
+        // 404 on fresh DB — set a minimal profile from authStore so the page renders
+        if (e?.status === 404 || e?.status === 0) {
+          this.profile.set({
+            userId:   0,
+            email:    this.authStore.email()    || '',
+            username: this.authStore.username() || '',
+            name:     null,
+            bio:      null,
+            phoneNumber: null,
+            skills:   null,
+            createdAt: null
+          } as any);
+        }
+        this.loading.set(false);
+      }
     });
   }
 
   // ── Display helpers — never return blank ──────────────────────────────────
 
   displayName(): string {
-    return this.profile()?.name?.trim() || this.authStore.username() || 'Name';
+    const backendName = this.profile()?.name?.trim();
+    if (backendName) return backendName;
+
+    const oauthName = localStorage.getItem('oauth_name');
+    if (oauthName) return oauthName;
+
+    return this.authStore.username() || 'User';
   }
 
   displayUsername(): string {
@@ -437,8 +458,8 @@ export class ProfilePage implements OnInit, OnDestroy {
   }
 
   initials(): string {
-    const src = this.profile()?.name?.trim() || this.authStore.username() || '?';
-    return src[0].toUpperCase();
+    const src = this.displayName();
+    return src ? src[0].toUpperCase() : '?';
   }
 
   skillList(): string[] {

@@ -28,6 +28,7 @@ import { CommonModule } from '@angular/common';
   `]
 })
 export class OtpInputComponent {
+  @Output() otpChange = new EventEmitter<string>();
   @Output() otpComplete = new EventEmitter<string>();
   @ViewChildren('otpInput') inputs!: QueryList<ElementRef<HTMLInputElement>>;
 
@@ -35,13 +36,24 @@ export class OtpInputComponent {
   readonly digits = signal<string[]>(['', '', '', '', '', '']);
 
   onInput(event: Event, index: number): void {
-    const val = (event.target as HTMLInputElement).value.replace(/\D/g, '');
+    const input = event.target as HTMLInputElement;
+    const val = input.value.replace(/\D/g, '');
     const updated = [...this.digits()];
     updated[index] = val.slice(-1);
     this.digits.set(updated);
-    if (val && index < 5) this.inputs.toArray()[index + 1].nativeElement.focus();
-    const otp = updated.join('');
-    if (otp.length === 6) this.otpComplete.emit(otp);
+
+    // move focus forward
+    if (val && index < 5) {
+      this.inputs.toArray()[index + 1].nativeElement.focus();
+    }
+
+    const joined = updated.join('');
+    this.otpChange.emit(joined);
+
+    // emit complete only when all 6 boxes are filled
+    if (updated.every(d => d !== '')) {
+      this.otpComplete.emit(joined);
+    }
   }
 
   onKeydown(event: KeyboardEvent, index: number): void {
@@ -51,7 +63,13 @@ export class OtpInputComponent {
 
   onPaste(event: ClipboardEvent): void {
     const pasted = event.clipboardData?.getData('text').replace(/\D/g, '').slice(0, 6) ?? '';
-    if (pasted.length === 6) { this.digits.set(pasted.split('')); this.otpComplete.emit(pasted); }
+    if (pasted.length > 0) {
+      const newDigits = pasted.split('');
+      const fullDigits = [...newDigits, ...Array(6 - newDigits.length).fill('')].slice(0, 6);
+      this.digits.set(fullDigits);
+      this.otpChange.emit(fullDigits.join(''));
+      if (fullDigits.length === 6) this.otpComplete.emit(fullDigits.join(''));
+    }
     event.preventDefault();
   }
 }

@@ -38,9 +38,9 @@ import { SidebarComponent } from '../sidebar/sidebar.component';
     /* Sidebar — desktop */
     .sidebar-wrap {
       width: 240px; flex-shrink: 0;
-      background: white; border-right: 1px solid #e5e7eb;
+      background: var(--surface); border-right: 1px solid var(--border);
       overflow-y: auto; z-index: 50;
-      transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.25s ease;
       margin-left: 0;
     }
     
@@ -50,7 +50,8 @@ import { SidebarComponent } from '../sidebar/sidebar.component';
     /* Main content */
     .main-content {
       flex: 1; overflow-y: auto;
-      padding: 24px; background: #f9fafb;
+      padding: 24px; background: var(--bg);
+      transition: background-color 0.25s ease;
     }
 
     /* Mobile overlay */

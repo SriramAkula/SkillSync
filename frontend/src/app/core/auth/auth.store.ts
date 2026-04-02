@@ -51,7 +51,7 @@ export const AuthStore = signalStore(
 
     sendOtp: rxMethod<string>(
       pipe(
-        tap(() => patchState(store, { loading: true, error: null })),
+        tap(() => patchState(store, { loading: true, error: null, otpSent: false, otpVerified: false })),
         switchMap(email =>
           authService.sendOtp(email).pipe(
             tapResponse({
@@ -65,7 +65,7 @@ export const AuthStore = signalStore(
 
     verifyOtp: rxMethod<OtpVerifyRequest>(
       pipe(
-        tap(() => patchState(store, { loading: true, error: null })),
+        tap(() => patchState(store, { loading: true, error: null, otpVerified: false })),
         switchMap(req =>
           authService.verifyOtp(req.email, req.otp).pipe(
             tapResponse({
@@ -140,26 +140,32 @@ export const AuthStore = signalStore(
     googleLogin: rxMethod<string>(
       pipe(
         tap(() => patchState(store, { loading: true, error: null })),
-        switchMap(idToken =>
-          authService.googleLogin(idToken).pipe(
+        switchMap(idToken => {
+          // ── Frontend-only name extraction ──
+          const claims = decodeJwt(idToken);
+          if (claims.name) {
+            localStorage.setItem('oauth_name', claims.name);
+            console.log('Extracted name from Google token:', claims.name);
+          }
+          return authService.googleLogin(idToken).pipe(
             tapResponse({
               next: (res) => {
                 persistAuth(res);
-                const claims = decodeJwt(res.token);
+                const authClaims = decodeJwt(res.token);
                 patchState(store, {
                   token: res.token,
-                  roles: res.roles ?? claims.roles ?? [],
-                  userId: claims.userId ?? null,
-                  email: claims.sub ?? res.email ?? null,
-                  username: res.username ?? claims.sub ?? null,
+                  roles: res.roles ?? authClaims.roles ?? [],
+                  userId: authClaims.userId ?? null,
+                  email: authClaims.sub    ?? res.email    ?? null,
+                  username: res.username  ?? authClaims.sub ?? null,
                   loading: false, error: null
                 });
                 router.navigate(['/mentors']);
               },
               error: (err: any) => patchState(store, { loading: false, error: err.error?.message ?? 'Google login failed' })
             })
-          )
-        )
+          );
+        })
       )
     ),
 
@@ -216,7 +222,7 @@ function persistAuth(res: AuthResponse): void {
 }
 
 function clearAuth(): void {
-  ['token', 'userId', 'email', 'username', 'roles'].forEach(k => localStorage.removeItem(k));
+  ['token', 'userId', 'email', 'username', 'roles', 'oauth_name'].forEach(k => localStorage.removeItem(k));
 }
 
 function decodeJwt(token: string): any {

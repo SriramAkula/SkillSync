@@ -102,8 +102,8 @@ type FilterTab = 'all' | 'active' | 'completed' | 'cancelled';
       display: flex; justify-content: space-between; align-items: flex-start;
       margin-bottom: 24px; flex-wrap: wrap; gap: 12px;
     }
-    .page-header h1 { font-size: 28px; font-weight: 800; color: #111827; margin: 0 0 4px; }
-    .page-header p { color: #6b7280; font-size: 14px; margin: 0; }
+    .page-header h1 { font-size: 28px; font-weight: 800; color: var(--text); margin: 0 0 4px; }
+    .page-header p { color: var(--text-secondary); font-size: 14px; margin: 0; }
     .btn-book {
       display: flex; align-items: center; gap: 6px;
       height: 44px; padding: 0 20px; border-radius: 12px;
@@ -124,42 +124,42 @@ type FilterTab = 'all' | 'active' | 'completed' | 'cancelled';
     @media (max-width: 600px) { .summary-row { grid-template-columns: repeat(2, 1fr); } }
 
     .summary-card {
-      background: white; border-radius: 14px; border: 2px solid #e5e7eb;
+      background: var(--surface); border-radius: 14px; border: 2px solid var(--border);
       padding: 16px; text-align: center; cursor: pointer;
       transition: border-color 0.15s, box-shadow 0.15s;
     }
-    .summary-card:hover { border-color: #c7d2fe; }
-    .summary-card.active-card { border-color: #4f46e5; box-shadow: 0 0 0 3px rgba(79,70,229,0.1); }
+    .summary-card:hover { border-color: var(--primary); }
+    .summary-card.active-card { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-muted); }
     .summary-num {
-      display: block; font-size: 28px; font-weight: 800; color: #111827; line-height: 1;
+      display: block; font-size: 28px; font-weight: 800; color: var(--text); line-height: 1;
     }
     .summary-num.blue { color: #2563eb; }
     .summary-num.green { color: #16a34a; }
     .summary-num.red { color: #dc2626; }
-    .summary-lbl { display: block; font-size: 12px; color: #6b7280; margin-top: 4px; font-weight: 500; }
+    .summary-lbl { display: block; font-size: 12px; color: var(--text-secondary); margin-top: 4px; font-weight: 500; }
 
     /* Filter Tabs */
     .filter-tabs {
-      display: flex; gap: 4px; background: #f3f4f6;
+      display: flex; gap: 4px; background: var(--surface-alt);
       border-radius: 12px; padding: 4px; margin-bottom: 20px;
       overflow-x: auto; flex-wrap: nowrap;
     }
     .filter-tab {
       display: flex; align-items: center; gap: 6px;
       height: 36px; padding: 0 14px; border-radius: 9px;
-      border: none; background: none; color: #6b7280;
+      border: none; background: none; color: var(--text-secondary);
       font-size: 13px; font-weight: 600; cursor: pointer;
       white-space: nowrap; transition: background 0.15s, color 0.15s;
     }
-    .filter-tab:hover { color: #111827; }
-    .filter-tab.active { background: white; color: #4f46e5; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+    .filter-tab:hover { color: var(--text); }
+    .filter-tab.active { background: var(--surface); color: var(--primary); box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
     .tab-count {
-      background: #e5e7eb; color: #6b7280;
+      background: var(--border); color: var(--text-secondary);
       font-size: 11px; font-weight: 700;
       min-width: 18px; height: 18px; border-radius: 9px; padding: 0 4px;
       display: flex; align-items: center; justify-content: center;
     }
-    .tab-count.active { background: #e0e7ff; color: #4f46e5; }
+    .tab-count.active { background: var(--primary-light); color: var(--primary); }
 
     /* Grid */
     .sessions-grid {
@@ -176,11 +176,11 @@ type FilterTab = 'all' | 'active' | 'completed' | 'cancelled';
     }
     .empty-icon {
       width: 72px; height: 72px; border-radius: 20px;
-      background: #f3f4f6; display: flex; align-items: center; justify-content: center;
+      background: var(--surface-alt); display: flex; align-items: center; justify-content: center;
     }
-    .empty-icon .material-icons { font-size: 36px; color: #9ca3af; }
-    .empty-state h3 { font-size: 18px; font-weight: 700; color: #111827; margin: 0; }
-    .empty-state p { font-size: 14px; color: #6b7280; margin: 0; max-width: 300px; }
+    .empty-icon .material-icons { font-size: 36px; color: var(--text-muted); }
+    .empty-state h3 { font-size: 18px; font-weight: 700; color: var(--text); margin: 0; }
+    .empty-state p { font-size: 14px; color: var(--text-secondary); margin: 0; max-width: 300px; }
     .btn-book-empty {
       display: flex; align-items: center; gap: 6px;
       height: 44px; padding: 0 20px; border-radius: 12px;

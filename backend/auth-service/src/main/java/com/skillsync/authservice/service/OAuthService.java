@@ -121,7 +121,7 @@ public class OAuthService {
 
         try {
             UserCreatedEvent event = new UserCreatedEvent(
-                saved.getId(), saved.getEmail(), null,
+                saved.getId(), saved.getEmail(), name,
                 saved.getUsername(), saved.getRole(), System.currentTimeMillis()
             );
             eventPublisher.publishUserCreated(event);

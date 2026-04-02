@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { AuthStore } from '../../core/auth/auth.store';
 import { NotificationStore } from '../../core/auth/notification.store';
+import { ThemeService } from '../../core/services/theme.service';
 
 @Component({
   selector: 'app-navbar',
@@ -42,6 +43,13 @@ import { NotificationStore } from '../../core/auth/notification.store';
               </span>
             }
           </a>
+
+          <!-- Dark / Light Mode Toggle -->
+          <button class="icon-btn theme-toggle" (click)="themeService.toggle()"
+                  [attr.aria-label]="themeService.isDark() ? 'Switch to light mode' : 'Switch to dark mode'"
+                  [title]="themeService.isDark() ? 'Light mode' : 'Dark mode'">
+            <span class="material-icons">{{ themeService.isDark() ? 'light_mode' : 'dark_mode' }}</span>
+          </button>
         </div>
 
         <!-- Avatar + Custom Dropdown -->
@@ -107,8 +115,8 @@ import { NotificationStore } from '../../core/auth/notification.store';
   styles: [`
     .navbar {
       height: 64px;
-      background: white;
-      border-bottom: 1px solid #e5e7eb;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -116,7 +124,8 @@ import { NotificationStore } from '../../core/auth/notification.store';
       position: sticky;
       top: 0;
       z-index: 200;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+      box-shadow: var(--shadow-sm);
+      transition: background-color 0.25s ease, border-color 0.25s ease;
     }
 
     /* Left */
@@ -126,14 +135,14 @@ import { NotificationStore } from '../../core/auth/notification.store';
       width: 40px; height: 40px; border-radius: 10px;
       background: none; border: none; cursor: pointer;
       display: flex; align-items: center; justify-content: center;
-      color: #6b7280; transition: background 0.15s, color 0.15s;
+      color: var(--text-secondary); transition: background 0.15s, color 0.15s;
     }
-    .hamburger:hover { background: #f3f4f6; color: #4f46e5; }
+    .hamburger:hover { background: var(--surface-alt); color: var(--primary); }
     .hamburger .material-icons { font-size: 22px; }
 
     .nav-brand { display: flex; align-items: center; gap: 6px; text-decoration: none; }
     .bolt { font-size: 20px; }
-    .brand-name { font-size: 18px; font-weight: 800; color: #4f46e5; letter-spacing: -0.5px; }
+    .brand-name { font-size: 18px; font-weight: 800; color: var(--primary); letter-spacing: -0.5px; }
     @media (max-width: 360px) { .brand-name { display: none; } }
 
     /* Right */
@@ -142,11 +151,13 @@ import { NotificationStore } from '../../core/auth/notification.store';
     .icon-btn {
       width: 40px; height: 40px; border-radius: 10px;
       display: flex; align-items: center; justify-content: center;
-      color: #6b7280; text-decoration: none; position: relative;
+      color: var(--text-secondary); text-decoration: none; position: relative;
       transition: background 0.15s, color 0.15s;
+      background: none; border: none; cursor: pointer;
     }
-    .icon-btn:hover { background: #f3f4f6; color: #4f46e5; }
+    .icon-btn:hover { background: var(--surface-alt); color: var(--primary); }
     .icon-btn .material-icons { font-size: 22px; }
+    .theme-toggle .material-icons { font-size: 20px; }
 
     .nav-actions-wrap { display: flex; align-items: center; gap: 8px; }
 
@@ -194,10 +205,10 @@ import { NotificationStore } from '../../core/auth/notification.store';
       top: calc(100% + 10px);
       right: 0;
       width: 240px;
-      background: white;
+      background: var(--surface);
       border-radius: 16px;
-      border: 1px solid #e5e7eb;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-lg);
       overflow: hidden;
       z-index: 999;
       animation: dropIn 0.15s ease;
@@ -213,26 +224,26 @@ import { NotificationStore } from '../../core/auth/notification.store';
       align-items: center;
       gap: 12px;
       padding: 14px 16px;
-      background: #f9fafb;
+      background: var(--surface-alt);
     }
     .dropdown-avatar {
       width: 38px; height: 38px; border-radius: 10px;
-      background: linear-gradient(135deg, #4f46e5, #7c3aed);
+      background: linear-gradient(135deg, var(--primary), var(--accent));
       color: white; font-weight: 700; font-size: 15px;
       display: flex; align-items: center; justify-content: center;
       flex-shrink: 0;
     }
     .dropdown-user { min-width: 0; }
     .dropdown-name {
-      display: block; font-weight: 600; font-size: 14px; color: #111827;
+      display: block; font-weight: 600; font-size: 14px; color: var(--text);
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
     .dropdown-email {
-      display: block; font-size: 12px; color: #6b7280;
+      display: block; font-size: 12px; color: var(--text-secondary);
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
 
-    .dropdown-divider { height: 1px; background: #e5e7eb; margin: 4px 0; }
+    .dropdown-divider { height: 1px; background: var(--border); margin: 4px 0; }
 
     .dropdown-item {
       display: flex;
@@ -241,7 +252,7 @@ import { NotificationStore } from '../../core/auth/notification.store';
       padding: 10px 16px;
       font-size: 14px;
       font-weight: 500;
-      color: #374151;
+      color: var(--text);
       text-decoration: none;
       background: none;
       border: none;
@@ -250,9 +261,9 @@ import { NotificationStore } from '../../core/auth/notification.store';
       cursor: pointer;
       transition: background 0.12s, color 0.12s;
     }
-    .dropdown-item:hover { background: #f3f4f6; color: #4f46e5; }
-    .dropdown-item:hover .material-icons { color: #4f46e5; }
-    .dropdown-item .material-icons { font-size: 18px; color: #9ca3af; transition: color 0.12s; }
+    .dropdown-item:hover { background: var(--surface-alt); color: var(--primary); }
+    .dropdown-item:hover .material-icons { color: var(--primary); }
+    .dropdown-item .material-icons { font-size: 18px; color: var(--text-muted); transition: color 0.12s; }
 
     .item-badge {
       margin-left: auto;
@@ -272,6 +283,7 @@ export class NavbarComponent implements OnInit {
 
   readonly authStore = inject(AuthStore);
   readonly notifStore = inject(NotificationStore);
+  readonly themeService = inject(ThemeService);
   readonly dropdownOpen = signal(false);
 
   ngOnInit(): void { this.notifStore.startPolling(); }

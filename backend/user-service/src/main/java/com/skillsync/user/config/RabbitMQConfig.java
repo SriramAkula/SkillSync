@@ -10,6 +10,9 @@ import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.amqp.support.converter.DefaultClassMapper;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * RabbitMQ Configuration for User Service
@@ -61,10 +64,21 @@ public class RabbitMQConfig {
                 .with(USER_UPDATED_ROUTING_KEY);
     }
 
+    @Bean
+    public DefaultClassMapper classMapper() {
+        DefaultClassMapper classMapper = new DefaultClassMapper();
+        Map<String, Class<?>> idClassMapping = new HashMap<>();
+        idClassMapping.put("user_created", com.skillsync.user.event.UserCreatedEvent.class);
+        idClassMapping.put("user_updated", com.skillsync.user.event.UserUpdatedEvent.class);
+        classMapper.setIdClassMapping(idClassMapping);
+        return classMapper;
+    }
+
     // ====== MESSAGE CONVERTER & TEMPLATE ======
     @Bean
     public MessageConverter messageConverter() {
         Jackson2JsonMessageConverter converter = new Jackson2JsonMessageConverter();
+        converter.setClassMapper(classMapper());
         // Don't include type ID header to allow loose coupling between services
         // Each service deserializes to its own event class based on fields
         converter.setCreateMessageIds(false);
