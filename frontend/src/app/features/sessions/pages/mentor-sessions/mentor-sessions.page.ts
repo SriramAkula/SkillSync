@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal, computed } from '@angular/core';
+import { Component, inject, OnInit, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -6,6 +6,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { SessionStore } from '../../../../core/auth/session.store';
 import { MentorStore } from '../../../../core/auth/mentor.store';
+import { AuthStore } from '../../../../core/auth/auth.store';
 import { SessionCardComponent } from '../../components/session-card/session-card.component';
 import { SessionDto } from '../../../../shared/models';
 
@@ -30,8 +31,8 @@ type DashTab = 'pending' | 'upcoming' | 'all';
           </div>
         </div>
         <button class="btn-availability" (click)="toggleAvailability()">
-          <span class="avail-dot" [class.available]="isAvailable()"></span>
-          {{ isAvailable() ? 'Available' : 'Unavailable' }}
+          <span class="avail-dot" [class.available]="mentorStore.isAvailable()"></span>
+          {{ mentorStore.isAvailable() ? 'Available' : 'Unavailable' }}
           <span class="material-icons">expand_more</span>
         </button>
       </div>
@@ -455,12 +456,12 @@ type DashTab = 'pending' | 'upcoming' | 'all';
 export class MentorSessionsPage implements OnInit {
   readonly sessionStore = inject(SessionStore);
   readonly mentorStore = inject(MentorStore);
+  readonly authStore = inject(AuthStore);
   readonly router = inject(Router);
   private readonly snack = inject(MatSnackBar);
 
   readonly activeTab = signal<DashTab>('pending');
   readonly rejectingSession = signal<SessionDto | null>(null);
-  readonly isAvailable = signal(true);
   rejectReason = '';
 
   readonly quickReasons = [
@@ -486,16 +487,32 @@ export class MentorSessionsPage implements OnInit {
   ngOnInit(): void {
     this.sessionStore.loadMentorSessions(undefined);
     this.mentorStore.loadMyProfile(undefined);
-    // Set initial availability from profile
-    setTimeout(() => {
-      const p = this.mentorStore.myProfile();
-      if (p) this.isAvailable.set(p.availabilityStatus === 'AVAILABLE');
-    }, 500);
+
+    // Proactive token refresh: if the server confirms this user is a mentor
+    // but their JWT still lacks ROLE_MENTOR (stale token after approval),
+    // silently fetch a fresh token so the availability toggle works immediately.
+    effect(() => {
+      const profile = this.mentorStore.myProfile();
+      if (profile && !this.authStore.isMentor()) {
+        this.authStore.refreshToken(undefined);
+      }
+    }, { allowSignalWrites: false });
   }
 
   toggleAvailability(): void {
-    const next = this.isAvailable() ? 'UNAVAILABLE' : 'AVAILABLE';
-    this.isAvailable.set(!this.isAvailable());
+    // Guard: if the token is stale and doesn't yet reflect ROLE_MENTOR,
+    // refresh it first and prompt the user to retry.
+    if (!this.authStore.isMentor()) {
+      this.authStore.refreshToken(undefined);
+      this.snack.open(
+        'Syncing your mentor permissions... Please try again in a moment.',
+        'OK',
+        { duration: 4000 }
+      );
+      return;
+    }
+
+    const next = this.mentorStore.isAvailable() ? 'BUSY' : 'AVAILABLE';
     this.mentorStore.updateAvailability({ availabilityStatus: next as any });
     this.snack.open(`Status set to ${next}`, 'OK', { duration: 2000 });
   }

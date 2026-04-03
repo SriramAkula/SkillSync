@@ -6,6 +6,7 @@ import { pipe, switchMap, tap, interval, Subscription } from 'rxjs';
 import { NotificationService } from '../services/notification.service';
 import { NotificationDto } from '../../shared/models';
 import { environment } from '../../../environments/environment';
+import { AuthStore } from './auth.store';
 
 interface NotificationState {
   notifications: NotificationDto[];
@@ -97,9 +98,19 @@ export const NotificationStore = signalStore(
       // To upgrade to SSE: replace interval() with svc.streamNotifications()
       startPolling(): void {
         if (pollSub) return;
+        const authStore = inject(AuthStore);
         pollSub = interval(environment.pollIntervalMs).subscribe(() => {
-          svc.getUnreadCount().subscribe({
-            next: (res) => patchState(store, { unreadCount: res.data })
+          svc.getUnread().subscribe({
+            next: (res) => {
+              const unread = res.data || [];
+              patchState(store, { unreadCount: unread.length });
+              
+              // Automatically sync role if mentor approval notification is detected
+              const hasMentorApproval = unread.some(n => n.type === 'MENTOR_APPROVED');
+              if (hasMentorApproval && !authStore.isMentor()) {
+                authStore.refreshToken();
+              }
+            }
           });
         });
       },

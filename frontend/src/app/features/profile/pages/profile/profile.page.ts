@@ -166,8 +166,8 @@ interface UserActivity {
               </div>
               
               <div class="badge-row">
-                <span class="role-pill learner">
-                  <span class="pulse"></span> Learner
+                <span class="role-pill" [ngClass]="displayRole().toLowerCase()">
+                  <span class="pulse"></span> {{ displayRole() }}
                 </span>
                 @if (showBadge()) {
                   <span class="complete-badge">100% Complete</span>
@@ -473,6 +473,12 @@ export class ProfilePage implements OnInit {
     if (p < 40) return 'Beginner 🥉';
     if (p < 80) return 'Intermediate 🥈';
     return 'Pro 🥇';
+  });
+
+  readonly displayRole = computed(() => {
+    if (this.authStore.isAdmin()) return 'Admin';
+    if (this.authStore.isMentor()) return 'Mentor';
+    return 'Learner';
   });
 
   selectedSkills(): string[] {

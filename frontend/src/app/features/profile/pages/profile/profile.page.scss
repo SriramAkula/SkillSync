@@ -200,9 +200,14 @@
 .badge-row { display: flex; justify-content: center; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
 .role-pill { 
   padding: 4px 10px; border-radius: 12px; font-size: 10px; font-weight: 700;
-  background: #dcfce7; color: #15803d; display: inline-flex; align-items: center; gap: 4px;
+  display: inline-flex; align-items: center; gap: 4px;
+  background: #f1f5f9; color: #475569;
 }
-.pulse { width: 5px; height: 5px; border-radius: 50%; background: #22c55e; }
+.role-pill.admin { background: #fae8ff; color: #a21caf; }
+.role-pill.mentor { background: #e0e7ff; color: #4338ca; }
+.role-pill.learner { background: #dcfce7; color: #15803d; }
+
+.pulse { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
 
 .complete-badge {
   background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 4px 10px; border-radius: 12px;

@@ -4,6 +4,7 @@ import { rxMethod } from '@ngrx/signals/rxjs-interop';
 import { tapResponse } from '@ngrx/operators';
 import { pipe, switchMap, tap } from 'rxjs';
 import { MentorService } from '../services/mentor.service';
+import { AuthStore } from './auth.store';
 import { MentorProfileDto, ApplyMentorRequest, UpdateAvailabilityRequest } from '../../shared/models';
 
 interface MentorState {
@@ -31,10 +32,11 @@ export const MentorStore = signalStore(
   withComputed((store) => ({
     approvedCount: computed(() => store.approved().length),
     pendingCount: computed(() => store.pending().length),
-    hasMyProfile: computed(() => !!store.myProfile())
+    hasMyProfile: computed(() => !!store.myProfile()),
+    isAvailable: computed(() => store.myProfile()?.availabilityStatus === 'AVAILABLE')
   })),
 
-  withMethods((store, svc = inject(MentorService)) => ({
+  withMethods((store, svc = inject(MentorService), authStore = inject(AuthStore)) => ({
 
     loadApproved: rxMethod<void>(
       pipe(
@@ -154,8 +156,16 @@ export const MentorStore = signalStore(
         switchMap(req =>
           svc.updateAvailability(req).pipe(
             tapResponse({
-              next: (res) => patchState(store, { myProfile: res.data }),
-              error: () => {}
+              next: (res) => patchState(store, { 
+                myProfile: res.data,
+                approved: store.approved().map(m => m.id === res.data.id ? res.data : m)
+              }),
+              error: (err: any) => {
+                // On 403, silently refresh the JWT token so the next toggle attempt succeeds
+                if (err?.status === 403) {
+                  authStore.refreshToken(undefined);
+                }
+              }
             })
           )
         )

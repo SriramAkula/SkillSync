@@ -162,17 +162,34 @@ export const AuthStore = signalStore(
       )
     ),
 
-    refreshToken(): void {
-      const token = store.token();
-      if (!token) return;
-      authService.refreshToken(token).subscribe({
-        next: (res) => {
-          persistAuth(res);
-          patchState(store, { token: res.token });
-        },
-        error: () => this.logout()
-      });
-    },
+    refreshToken: rxMethod<void>(
+      pipe(
+        switchMap(() => {
+          const token = store.token();
+          if (!token) return [];
+          return authService.refreshToken(token).pipe(
+            tapResponse({
+              next: (res) => {
+                persistAuth(res);
+                const claims = decodeJwt(res.token);
+                patchState(store, {
+                  token: res.token,
+                  roles: res.roles ?? claims.roles ?? [],
+                  userId: claims.userId ?? null,
+                  email: claims.sub ?? res.email ?? null,
+                  username: res.username ?? claims.sub ?? null,
+                });
+              },
+              error: () => {
+                clearAuth();
+                patchState(store, { ...initialState, token: null, userId: null, roles: [], email: null, username: null });
+                router.navigate(['/auth/login']);
+              }
+            })
+          );
+        })
+      )
+    ),
 
     logout(): void {
       clearAuth();

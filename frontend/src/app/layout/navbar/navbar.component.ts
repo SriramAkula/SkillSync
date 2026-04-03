@@ -115,7 +115,7 @@ import { ThemeService } from '../../core/services/theme.service';
                   <span class="dropdown-name">{{ authStore.username() || 'User' }}</span>
                   <span class="dropdown-email">{{ authStore.email() || '' }}</span>
                   <div class="badges">
-                    <span class="role-badge">{{ authStore.isMentor() ? 'Mentor' : (authStore.isAdmin() ? 'Admin' : 'Learner') }}</span>
+                    <span class="role-badge" [ngClass]="displayRole().toLowerCase()">{{ displayRole() }}</span>
                   </div>
                 </div>
               </div>
@@ -354,6 +354,9 @@ import { ThemeService } from '../../core/services/theme.service';
       background: rgba(99,102,241,0.1); color: var(--primary);
       padding: 2px 6px; border-radius: 6px; display: inline-block;
     }
+    .role-badge.admin   { background: #fae8ff; color: #a21caf; }
+    .role-badge.mentor  { background: #e0e7ff; color: #4338ca; }
+    .role-badge.learner { background: #dcfce7; color: #15803d; }
     .dropdown-section { padding: 4px 6px; }
     .section-title {
       font-size: 11px; font-weight: 700; color: var(--text-muted);
@@ -402,6 +405,12 @@ export class NavbarComponent implements OnInit {
     { key: 'messages' as NotifCategory, label: 'Messages' },
     { key: 'sessions' as NotifCategory, label: 'Sessions' }
   ];
+
+  readonly displayRole = computed(() => {
+    if (this.authStore.isAdmin()) return 'Admin';
+    if (this.authStore.isMentor()) return 'Mentor';
+    return 'Learner';
+  });
 
   filteredNotifs = computed(() => {
     const list = this.notifStore.notifications();
