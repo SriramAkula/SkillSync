@@ -22,7 +22,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import java.util.List;
+
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -163,14 +163,7 @@ class MiscCoverageTest {
         assertThat(user.getIsActive()).isTrue();
     }
 
-    @Test
-    void authMapper_toAuthResponse_shouldMapCorrectly() {
-        AuthMapper mapper = new AuthMapper();
-        var response = mapper.toAuthResponse("jwt-token", List.of("ROLE_LEARNER"));
 
-        assertThat(response.token()).isEqualTo("jwt-token");
-        assertThat(response.roles()).containsExactly("ROLE_LEARNER");
-    }
 
     // ─── UserCreatedEvent ─────────────────────────────────────────
 

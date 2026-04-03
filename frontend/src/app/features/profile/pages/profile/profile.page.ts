@@ -214,14 +214,20 @@ interface UserActivity {
                   
                   @if (sectionsExpanded().personal) {
                      <div class="form-grid">
-                       <div class="form-group span-2 inline-field" [class.editing]="isEditing()" [class.missing-field]="isFieldMissing('username')">
-                         <label>Username</label>
-                         @if (isEditing()) {
-                            <input type="text" formControlName="username" placeholder="Enter username" />
-                         } @else {
-                            <div class="inline-value" (click)="editField('username')">&#64;{{ form.get('username')?.value || 'Not set' }} <span class="material-icons edit-icon">edit</span></div>
-                         }
-                       </div>
+                        <div class="form-group span-2 inline-field" [class.editing]="isEditing()" [class.missing-field]="isFieldMissing('username')">
+                          <label>Username</label>
+                          @if (isEditing()) {
+                             <input type="text" formControlName="username" placeholder="Enter username" />
+                             @if (form.get('username')?.invalid && (form.get('username')?.dirty || form.get('username')?.touched)) {
+                               <div class="validation-msg">
+                                 @if (form.get('username')?.hasError('required')) { <span>Username is required</span> }
+                                 @if (form.get('username')?.hasError('minlength')) { <span>Must be at least 2 characters</span> }
+                               </div>
+                             }
+                          } @else {
+                             <div class="inline-value" (click)="editField('username')">&#64;{{ form.get('username')?.value || 'Not set' }} <span class="material-icons edit-icon">edit</span></div>
+                          }
+                        </div>
                        
                        <div class="form-group inline-field" [class.editing]="isEditing()" [class.missing-field]="isFieldMissing('firstName')">
                          <label>First Name</label>
@@ -261,7 +267,14 @@ interface UserActivity {
                        <div class="form-group inline-field" [class.editing]="isEditing()" [class.missing-field]="isFieldMissing('phoneNumber')">
                          <label>Phone Number</label>
                          @if (isEditing()) {
-                            <input type="text" formControlName="phoneNumber" placeholder="10-digit number" />
+                            <input type="text" formControlName="phoneNumber" placeholder="10-digit number" maxlength="10" />
+                            @if (form.get('phoneNumber')?.invalid && (form.get('phoneNumber')?.dirty || form.get('phoneNumber')?.touched)) {
+                               <div class="validation-msg">
+                                 @if (form.get('phoneNumber')?.hasError('pattern')) { <span>Only numbers are allowed</span> }
+                                 @if (form.get('phoneNumber')?.hasError('minlength')) { <span>Number must be 10 digits</span> }
+                                 @if (form.get('phoneNumber')?.hasError('maxlength')) { <span>Number must be exactly 10 digits</span> }
+                               </div>
+                            }
                          } @else {
                             <div class="inline-value" (click)="editField('phoneNumber')">{{ form.get('phoneNumber')?.value || 'Not provided' }} <span class="material-icons edit-icon" >edit</span></div>
                          }
@@ -436,7 +449,7 @@ export class ProfilePage implements OnInit {
     firstName:   ['', [Validators.required]],
     lastName:    [''],
     bio:         ['', [Validators.maxLength(500)]],
-    phoneNumber: ['', [Validators.pattern('^[6789][0-9]{9}$')]],
+    phoneNumber: ['', [Validators.pattern('^[0-9]*$'), Validators.minLength(10), Validators.maxLength(10)]],
     skills:      [[] as string[]]
   });
 
@@ -631,7 +644,8 @@ export class ProfilePage implements OnInit {
       next: (res) => {
         const updated = res.data;
         this.profile.set(updated);
-        this.userService.updateUser(updated);  
+        this.userService.updateUser(updated);
+        this.authStore.updateUser(updated.name, updated.username);
         this.saving.set(false);
         this.isEditing.set(false);
         this.toast.success("Profile updated ✅");

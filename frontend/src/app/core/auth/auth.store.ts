@@ -94,7 +94,6 @@ export const AuthStore = signalStore(
                   username: res.username ?? claims.sub ?? null,
                   loading: false, error: null
                 });
-                router.navigate(['/mentors']);
               },
               error: (err: any) => patchState(store, { loading: false, error: err.error?.message ?? 'Registration failed' })
             })

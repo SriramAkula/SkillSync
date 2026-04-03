@@ -22,8 +22,7 @@ public class SecurityConfig {
                         .requestMatchers("/webjars/**").permitAll()
                         .requestMatchers("/actuator/**").permitAll()
                         // Allow all other requests (will be handled by GatewayRequestFilter)
-                        .anyRequest().permitAll()
-                )
+                        .anyRequest().permitAll())
                 .httpBasic(basic -> basic.disable())
                 .csrf(csrf -> csrf.disable());
 

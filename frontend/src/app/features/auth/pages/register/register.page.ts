@@ -1,34 +1,35 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
-import { RouterLink, ActivatedRoute } from '@angular/router';
+import { RouterLink, Router } from '@angular/router';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { AuthStore } from '../../../../core/auth/auth.store';
-import { OtpInputComponent } from '../../components/otp-input/otp-input.component';
 
-type Step = 'email' | 'otp' | 'details';
 
 @Component({
   selector: 'app-register-page',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink, MatProgressSpinnerModule, OtpInputComponent],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, MatProgressSpinnerModule],
   template: `
     <div class="page">
       <div class="left-panel">
         <div class="brand-content">
           <div class="brand-logo"><span class="bolt">⚡</span></div>
           <h1>SkillSync</h1>
-          <p>Start your learning journey today</p>
+          <p>Join our mentor network today</p>
           <div class="steps-preview">
-            @for (s of steps; track s.num) {
-              <div class="step-item" [class.active]="stepIndex() >= s.num" [class.done]="stepIndex() > s.num">
-                <div class="step-circle">
-                  @if (stepIndex() > s.num) { <span class="material-icons">check</span> }
-                  @else { {{ s.num }} }
-                </div>
-                <span>{{ s.label }}</span>
-              </div>
-            }
+            <div class="step-item active">
+              <div class="step-circle">1</div>
+              <span>Create account</span>
+            </div>
+            <div class="step-item">
+              <div class="step-circle">2</div>
+              <span>Verify email</span>
+            </div>
+            <div class="step-item">
+              <div class="step-circle">3</div>
+              <span>Start learning</span>
+            </div>
           </div>
         </div>
         <div class="blob blob-1"></div>
@@ -40,71 +41,44 @@ type Step = 'email' | 'otp' | 'details';
           <div class="mobile-logo">⚡ SkillSync</div>
 
           <div class="form-header">
-            <h2>{{ stepTitle() }}</h2>
-            <p>{{ stepSubtitle() }}</p>
+            <h2>Join SkillSync</h2>
+            <p>Fill in your details to get started</p>
           </div>
 
-          <!-- Step 1: Email -->
-          @if (step() === 'email') {
-            <form [formGroup]="emailForm" (ngSubmit)="sendOtp()" class="form">
-              <div class="input-group">
-                <label class="input-label">Email address</label>
-                <div class="input-wrapper" [class.focused]="emailFocused()" [class.error]="emailForm.get('email')?.invalid && emailForm.get('email')?.touched">
-                  <span class="material-icons input-icon">email</span>
-                  <input type="email" formControlName="email" placeholder="you@example.com"
-                    (focus)="emailFocused.set(true)" (blur)="emailFocused.set(false)" />
-                </div>
-                @if (emailForm.get('email')?.invalid && emailForm.get('email')?.touched) {
-                  <span class="field-error">Enter a valid email</span>
-                }
+          <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="form">
+            <div class="input-group">
+              <label class="input-label">Email address</label>
+              <div class="input-wrapper" [class.focused]="emailFocused()" [class.error]="registerForm.get('email')?.invalid && registerForm.get('email')?.touched">
+                <span class="material-icons input-icon">email</span>
+                <input type="email" formControlName="email" placeholder="you@example.com"
+                  (focus)="emailFocused.set(true)" (blur)="emailFocused.set(false)" />
               </div>
-              @if (authStore.error()) { <div class="error-banner"><span class="material-icons">error_outline</span>{{ authStore.error() }}</div> }
-              <button type="submit" class="submit-btn" [disabled]="emailForm.invalid || authStore.loading()">
-                @if (authStore.loading()) { <mat-spinner diameter="22" /> }
-                @else { <span>Send OTP</span><span class="material-icons">arrow_forward</span> }
-              </button>
-            </form>
-          }
-
-          <!-- Step 2: OTP -->
-          @if (step() === 'otp') {
-            <div class="otp-section">
-              <p class="otp-hint">We sent a 6-digit code to <strong>{{ emailForm.value.email }}</strong></p>
-              <app-otp-input (otpComplete)="verifyOtp($event)" />
-              @if (authStore.error()) { <div class="error-banner"><span class="material-icons">error_outline</span>{{ authStore.error() }}</div> }
-              <button class="resend-btn" (click)="sendOtp()">Didn't receive it? Resend OTP</button>
             </div>
-          }
 
-          <!-- Step 3: Details -->
-          @if (step() === 'details') {
-            <form [formGroup]="detailsForm" (ngSubmit)="register()" class="form">
-              <div class="input-group">
-                <label class="input-label">Username</label>
-                <div class="input-wrapper" [class.focused]="userFocused()">
-                  <span class="material-icons input-icon">person</span>
-                  <input type="text" formControlName="username" placeholder="Choose a username"
-                    (focus)="userFocused.set(true)" (blur)="userFocused.set(false)" />
-                </div>
+            <div class="input-group">
+              <label class="input-label">Password</label>
+              <div class="input-wrapper" [class.focused]="pwdFocused()" [class.error]="registerForm.get('password')?.invalid && registerForm.get('password')?.touched">
+                <span class="material-icons input-icon">lock</span>
+                <input [type]="showPwd() ? 'text' : 'password'" formControlName="password" placeholder="Min 8 characters"
+                  (focus)="pwdFocused.set(true)" (blur)="pwdFocused.set(false)" />
+                <button type="button" class="toggle-pwd" (click)="showPwd.set(!showPwd())">
+                  <span class="material-icons">{{ showPwd() ? 'visibility_off' : 'visibility' }}</span>
+                </button>
               </div>
-              <div class="input-group">
-                <label class="input-label">Password</label>
-                <div class="input-wrapper" [class.focused]="pwdFocused()">
-                  <span class="material-icons input-icon">lock</span>
-                  <input [type]="showPwd() ? 'text' : 'password'" formControlName="password" placeholder="Min 8 characters"
-                    (focus)="pwdFocused.set(true)" (blur)="pwdFocused.set(false)" />
-                  <button type="button" class="toggle-pwd" (click)="showPwd.set(!showPwd())">
-                    <span class="material-icons">{{ showPwd() ? 'visibility_off' : 'visibility' }}</span>
-                  </button>
-                </div>
+            </div>
+
+            @if (authStore.error()) {
+              <div class="error-banner">
+                <span class="material-icons">error_outline</span>
+                {{ authStore.error() }}
               </div>
-              @if (authStore.error()) { <div class="error-banner"><span class="material-icons">error_outline</span>{{ authStore.error() }}</div> }
-              <button type="submit" class="submit-btn" [disabled]="detailsForm.invalid || authStore.loading()">
-                @if (authStore.loading()) { <mat-spinner diameter="22" /> }
-                @else { <span>Create Account</span><span class="material-icons">arrow_forward</span> }
-              </button>
-            </form>
-          }
+            }
+
+            <button type="submit" class="submit-btn" [disabled]="registerForm.invalid || authStore.loading()">
+              @if (authStore.loading()) { <mat-spinner diameter="22" /> }
+              @else { <span>Create Account</span><span class="material-icons">arrow_forward</span> }
+            </button>
+          </form>
 
           <p class="login-link">Already have an account? <a routerLink="/auth/login">Sign in</a></p>
         </div>
@@ -135,8 +109,6 @@ type Step = 'email' | 'otp' | 'details';
       font-size: 13px; font-weight: 700; flex-shrink: 0;
     }
     .step-item.active .step-circle { background: white; color: #4f46e5; border-color: white; }
-    .step-item.done .step-circle { background: #10b981; border-color: #10b981; }
-    .step-item.done .step-circle .material-icons { font-size: 16px; color: white; }
     .step-item span:last-child { font-size: 14px; font-weight: 500; }
 
     .blob { position: absolute; border-radius: 50%; filter: blur(60px); opacity: 0.25; }
@@ -162,19 +134,13 @@ type Step = 'email' | 'otp' | 'details';
     .input-wrapper input::placeholder { color: #9ca3af; }
     .toggle-pwd { background: none; border: none; cursor: pointer; padding: 4px; color: #9ca3af; display: flex; align-items: center; }
     .toggle-pwd .material-icons { font-size: 20px; }
-    .field-error { font-size: 12px; color: #ef4444; }
 
     .error-banner { display: flex; align-items: center; gap: 8px; background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; padding: 10px 14px; border-radius: 10px; font-size: 14px; }
     .error-banner .material-icons { font-size: 18px; }
 
-    .submit-btn { height: 52px; background: linear-gradient(135deg, #4f46e5, #7c3aed); color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: opacity 0.2s, transform 0.1s, box-shadow 0.2s; box-shadow: 0 4px 15px rgba(79,70,229,0.35); }
+    .submit-btn { height: 52px; background: linear-gradient(135deg, #4f46e5, #7c3aed); color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s; box-shadow: 0 4px 15px rgba(79,70,229,0.35); }
     .submit-btn:hover:not(:disabled) { opacity: 0.92; transform: translateY(-1px); }
     .submit-btn:disabled { opacity: 0.6; cursor: not-allowed; }
-    .submit-btn .material-icons { font-size: 20px; }
-
-    .otp-section { display: flex; flex-direction: column; align-items: center; gap: 20px; }
-    .otp-hint { color: #6b7280; font-size: 14px; text-align: center; margin: 0; }
-    .resend-btn { background: none; border: none; color: #4f46e5; font-size: 14px; font-weight: 500; cursor: pointer; text-decoration: underline; }
 
     .login-link { text-align: center; font-size: 14px; color: #6b7280; margin: 20px 0 0; }
     .login-link a { color: #4f46e5; font-weight: 600; text-decoration: none; margin-left: 4px; }
@@ -188,61 +154,32 @@ type Step = 'email' | 'otp' | 'details';
     }
   `]
 })
-export class RegisterPage implements OnInit {
+export class RegisterPage {
   readonly authStore = inject(AuthStore);
-  readonly step = signal<Step>('email');
   readonly showPwd = signal(false);
   readonly emailFocused = signal(false);
-  readonly userFocused = signal(false);
   readonly pwdFocused = signal(false);
   private readonly fb = inject(FormBuilder);
-  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
 
-  readonly steps = [
-    { num: 1, label: 'Verify your email' },
-    { num: 2, label: 'Enter OTP code' },
-    { num: 3, label: 'Set up your account' }
-  ];
-
-  readonly emailForm = this.fb.group({ email: ['', [Validators.required, Validators.email]] });
-  readonly detailsForm = this.fb.group({
-    username: ['', [Validators.required, Validators.minLength(3)]],
+  readonly registerForm = this.fb.group({
+    email: ['', [Validators.required, Validators.email]],
     password: ['', [Validators.required, Validators.minLength(8)]]
   });
 
-  readonly stepIndex = () => ({ email: 1, otp: 2, details: 3 }[this.step()]);
-  readonly stepTitle = () => ({ email: 'Create your account', otp: 'Verify your email', details: 'Almost there!' }[this.step()]);
-  readonly stepSubtitle = () => ({ email: 'Enter your email to get started', otp: 'Check your inbox for the code', details: 'Choose a username and password' }[this.step()]);
-
-  ngOnInit(): void {
-    const emailParam = this.route.snapshot.queryParamMap.get('email');
-    if (emailParam) {
-      this.emailForm.patchValue({ email: emailParam });
-      // Clear the query params after reading them to keep the URL clean
-    }
-  }
-
-  sendOtp(): void {
-    if (this.emailForm.invalid) return;
-    this.authStore.sendOtp(this.emailForm.value.email!);
-    setTimeout(() => { if (!this.authStore.error()) this.step.set('otp'); }, 600);
-  }
-
-  verifyOtp(otp: string): void {
-    const email = this.emailForm.value.email!;
-    this.authStore.verifyOtp({ email, otp });
+  onSubmit(): void {
+    if (this.registerForm.invalid) return;
     
-    setTimeout(() => { 
+    const { email, password } = this.registerForm.value;
+    this.authStore.sendOtp(email!);
+    
+    // Navigate to verify page with form data
+    setTimeout(() => {
       if (!this.authStore.error()) {
-        const defaultUsername = email.split('@')[0];
-        this.detailsForm.patchValue({ username: defaultUsername });
-        this.step.set('details'); 
+        this.router.navigate(['/auth/verify-otp'], { 
+          state: { email, password } 
+        });
       }
     }, 600);
-  }
-
-  register(): void {
-    if (this.detailsForm.invalid) return;
-    this.authStore.register({ email: this.emailForm.value.email!, ...this.detailsForm.getRawValue() } as any);
   }
 }

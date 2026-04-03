@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { BehaviorSubject, Observable, tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { ApiResponse, UserProfileDto, UpdateProfileRequest } from '../../shared/models';
 
@@ -43,6 +43,15 @@ export class UserService {
   }
 
   updateProfile(req: UpdateProfileRequest): Observable<ApiResponse<UserProfileDto>> {
-    return this.http.put<ApiResponse<UserProfileDto>>(`${this.base}/profile`, req);
+    return this.http.put<ApiResponse<UserProfileDto>>(`${this.base}/profile`, req).pipe(
+      tap(res => this.updateUser(res.data))
+    );
+  }
+
+  refreshUser(): void {
+    this.getMyProfile().subscribe({
+      next: res => this.setUser(res.data),
+      error: () => this.setUser(null)
+    });
   }
 }

@@ -47,7 +47,7 @@ class AuthControllerTest {
     @MockBean UserServiceClient userServiceClient;
     @MockBean com.skillsync.authservice.service.OAuthService oAuthService;
 
-    private final AuthResponse authResponse = new AuthResponse("jwt-token", List.of("ROLE_LEARNER"));
+    private final AuthResponse authResponse = new AuthResponse("jwt-token", List.of("ROLE_LEARNER"), "testuser", 1L, "test@example.com");
 
     // ─── POST /auth/register ─────────────────────────────────────────────────
 

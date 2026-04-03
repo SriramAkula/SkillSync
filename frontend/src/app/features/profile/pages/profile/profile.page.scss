@@ -303,6 +303,19 @@ input:focus, textarea:focus { border-color: var(--primary); background: var(--bg
 .missing-field input, .missing-field textarea { border-color: #f59e0b; background: rgba(245, 158, 11, 0.05); }
 .missing-field label { color: #d97706; }
 
+.validation-msg {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 4px;
+  padding-left: 4px;
+}
+.validation-msg span {
+  font-size: 11px;
+  font-weight: 700;
+  color: #ef4444;
+}
+
 /* Interactive Skills */
 .skill-tags { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 8px;}
 .tag { 

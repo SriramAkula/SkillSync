@@ -122,9 +122,8 @@ import { UserProfileDto } from '../../../../shared/models';
                 <div class="err-list">
                   @if (form.get('phoneNumber')?.hasError('required')) { <p class="err">Phone number is required</p> }
                   @if (form.get('phoneNumber')?.hasError('pattern')) { <p class="err">Only numbers are allowed</p> }
-                  @if (form.get('phoneNumber')?.hasError('minlength') || form.get('phoneNumber')?.hasError('maxlength')) { 
-                    <p class="err">Phone number must be exactly 10 digits</p> 
-                  }
+                  @if (form.get('phoneNumber')?.hasError('minlength')) { <p class="err">Number must be 10 digits</p> }
+                  @if (form.get('phoneNumber')?.hasError('maxlength')) { <p class="err">Number must be exactly 10 digits</p> }
                 </div>
               }
             </div>
@@ -377,7 +376,7 @@ export class EditProfilePage implements OnInit {
     lastName:    [''],
     username:    ['', [Validators.required, Validators.minLength(2), Validators.maxLength(50)]],
     email:       [{ value: '', disabled: true }],
-    phoneNumber: ['', [Validators.required, Validators.pattern('^[0-9]+$'), Validators.minLength(10), Validators.maxLength(10)]],
+    phoneNumber: ['', [Validators.required, Validators.pattern('^[0-9]*$'), Validators.minLength(10), Validators.maxLength(10)]],
     bio:         ['', [Validators.maxLength(500)]]
   });
 
@@ -448,21 +447,23 @@ export class EditProfilePage implements OnInit {
       // Map skills to comma-separated string for backend
       skills:      this.selectedSkills().join(',') || undefined
     }).subscribe({
-      next: () => {
+      next: (res) => {
         this.saving.set(false);
+        const updatedUser = res.data;
 
         // ── Mandatory success message ──
-        this.snack.open('Profile changed successfully', 'OK', {
+        this.snack.open('Profile updated successfully', 'OK', {
           duration: 4000,
           horizontalPosition: 'right',
           verticalPosition: 'top',
           panelClass: ['snack-success']
         });
 
-        // ── Sync AuthStore state immediately ──
-        this.authStore.updateUser(name, val.username ?? '');
+        // ── Sync shared state instantly ──
+        this.userService.updateUser(updatedUser);
+        this.authStore.updateUser(updatedUser.name, updatedUser.username);
 
-        // ── Navigate to profile — profile page will re-fetch from DB ──
+        // ── Navigate to profile ──
         this.router.navigate(['/profile']);
       },
       error: (e) => {

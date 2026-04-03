@@ -98,6 +98,7 @@ services:
   # ─── Microservices (private-network only) ────────────────────────────────
 
   auth-service:
+    build: ./auth-service
     image: ${DOCKER_USERNAME}/skillsync-auth-service:latest
     container_name: auth-service
     restart: on-failure
@@ -122,6 +123,7 @@ services:
       - proxy-network
 
   user-service:
+    build: ./user-service
     image: ${DOCKER_USERNAME}/skillsync-user-service:latest
     container_name: user-service
     restart: on-failure
@@ -146,6 +148,7 @@ services:
       - private-network
 
   skill-service:
+    build: ./skill-service
     image: ${DOCKER_USERNAME}/skillsync-skill-service:latest
     container_name: skill-service
     restart: on-failure
@@ -168,6 +171,7 @@ services:
       - private-network
 
   session-service:
+    build: ./session-service
     image: ${DOCKER_USERNAME}/skillsync-session-service:latest
     container_name: session-service
     restart: on-failure
@@ -192,6 +196,7 @@ services:
       - private-network
 
   mentor-service:
+    build: ./mentor-service
     image: ${DOCKER_USERNAME}/skillsync-mentor-service:latest
     container_name: mentor-service
     restart: on-failure
@@ -216,6 +221,7 @@ services:
       - private-network
 
   group-service:
+    build: ./group-service
     image: ${DOCKER_USERNAME}/skillsync-group-service:latest
     container_name: group-service
     restart: on-failure
@@ -238,6 +244,7 @@ services:
       - private-network
 
   review-service:
+    build: ./review-service
     image: ${DOCKER_USERNAME}/skillsync-review-service:latest
     container_name: review-service
     restart: on-failure
@@ -262,6 +269,7 @@ services:
       - private-network
 
   notification-service:
+    build: ./notification-service
     image: ${DOCKER_USERNAME}/skillsync-notification-service:latest
     container_name: notification-service
     restart: on-failure
@@ -286,6 +294,7 @@ services:
       - proxy-network
 
   payment-gateway:
+    build: ./payment-gateway
     image: ${DOCKER_USERNAME}/skillsync-payment-gateway:latest
     container_name: payment-gateway
     restart: on-failure
@@ -311,6 +320,7 @@ services:
   # while they continue talking to DBs/queues via private-network.
 
   eureka-server:
+    build: ./eureka-server
     image: ${DOCKER_USERNAME}/skillsync-eureka-server:latest
     container_name: eureka-server
     restart: on-failure
@@ -327,6 +337,7 @@ services:
       - proxy-network
 
   api-gateway:
+    build: ./api-gateway
     image: ${DOCKER_USERNAME}/skillsync-api-gateway:latest
     container_name: api-gateway
     restart: on-failure

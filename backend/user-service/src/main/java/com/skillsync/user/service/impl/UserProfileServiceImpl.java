@@ -27,6 +27,7 @@ public class UserProfileServiceImpl implements UserProfileService {
 
 	private final UserProfileRepository userProfileRepository;
 	private final UserProfileMapper userProfileMapper;
+	private final com.skillsync.user.client.AuthClient authClient;
 
 	@Override
 	@Cacheable(key = "'userId_' + #userId")
@@ -51,8 +52,26 @@ public class UserProfileServiceImpl implements UserProfileService {
 		UserProfile profile = userProfileRepository.findByUserId(userId)
 			.orElseThrow(() -> new UserProfileNotFoundException(
 				"User profile not found for userId: " + userId));
+		
+		String oldUsername = profile.getUsername();
 		userProfileMapper.updateEntity(profile, requestDto);
 		UserProfile updated = userProfileRepository.save(profile);
+		
+		// ── Sync with Auth Service if username changed ──
+		if (requestDto.getUsername() != null && !requestDto.getUsername().equals(oldUsername)) {
+			try {
+				log.info("Syncing username change to Auth Service: {} -> {}", oldUsername, requestDto.getUsername());
+				authClient.updateUserProfile(
+					userId, 
+					new com.skillsync.user.dto.internal.AuthProfileUpdateDTO(requestDto.getUsername()),
+					"user-service"
+				);
+			} catch (Exception e) {
+				log.error("Failed to sync username with Auth Service for userId {}: {}", userId, e.getMessage());
+				// We don't fail the whole transaction here to avoid breaking core profile updates if auth-service is down
+			}
+		}
+		
 		log.info("Profile updated successfully for userId: {}", userId);
 		return userProfileMapper.toDto(updated);
 	}
