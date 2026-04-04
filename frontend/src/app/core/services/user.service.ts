@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { BehaviorSubject, Observable, tap } from 'rxjs';
+import { BehaviorSubject, Observable, tap, map } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { ApiResponse, UserProfileDto, UpdateProfileRequest } from '../../shared/models';
 
@@ -35,17 +35,41 @@ export class UserService {
   // ────────────────────────────────────────────────────────────────────────────
 
   getMyProfile(): Observable<ApiResponse<UserProfileDto>> {
-    return this.http.get<ApiResponse<UserProfileDto>>(`${this.base}/profile`, { headers: NO_CACHE_HEADERS });
+    return this.http.get<ApiResponse<UserProfileDto>>(`${this.base}/profile`, { headers: NO_CACHE_HEADERS }).pipe(
+      map(res => {
+        res.data = this.mapProfile(res.data);
+        return res;
+      })
+    );
   }
 
   getProfile(userId: number): Observable<ApiResponse<UserProfileDto>> {
-    return this.http.get<ApiResponse<UserProfileDto>>(`${this.base}/profile/${userId}`, { headers: NO_CACHE_HEADERS });
+    return this.http.get<ApiResponse<UserProfileDto>>(`${this.base}/profile/${userId}`, { headers: NO_CACHE_HEADERS }).pipe(
+      map(res => {
+        res.data = this.mapProfile(res.data);
+        return res;
+      })
+    );
   }
 
   updateProfile(req: UpdateProfileRequest): Observable<ApiResponse<UserProfileDto>> {
     return this.http.put<ApiResponse<UserProfileDto>>(`${this.base}/profile`, req).pipe(
+      map(res => {
+        res.data = this.mapProfile(res.data);
+        return res;
+      }),
       tap(res => this.updateUser(res.data))
     );
+  }
+
+  private mapProfile(p: UserProfileDto): UserProfileDto {
+    if (!p) return p;
+    if (p.name && !p.firstName) {
+      const parts = p.name.trim().split(' ');
+      p.firstName = parts[0];
+      p.lastName = parts.slice(1).join(' ');
+    }
+    return p;
   }
 
   refreshUser(): void {

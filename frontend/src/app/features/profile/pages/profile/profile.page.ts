@@ -7,9 +7,10 @@ import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { UserService } from '../../../../core/services/user.service';
 import { AuthStore } from '../../../../core/auth/auth.store';
 import { SkillStore } from '../../../../core/auth/skill.store';
-import { UserProfileDto } from '../../../../shared/models';
+import { UserProfileDto, NotificationDto } from '../../../../shared/models';
 import { ToastService } from '../../../../core/services/toast.service';
 import { ProfileCompletionService } from '../../../../core/services/profile-completion.service';
+import { NotificationService } from '../../../../core/services/notification.service';
 
 interface UserActivity {
   id: string;
@@ -411,6 +412,7 @@ export class ProfilePage implements OnInit {
   readonly completionService = inject(ProfileCompletionService);
   readonly authStore = inject(AuthStore);
   readonly skillStore = inject(SkillStore);
+  private readonly notificationService = inject(NotificationService);
 
   readonly profile = signal<UserProfileDto | null>(null);
   readonly loading = signal(true);
@@ -498,12 +500,61 @@ export class ProfilePage implements OnInit {
   }
 
   loadActivities() {
-    const saved = localStorage.getItem('userActivities');
-    if (saved) {
-      this.activities.set(JSON.parse(saved));
-    } else {
-      this.addActivity('person_add', 'bg-green', 'Joined SkillSync Platform');
+    this.notificationService.getAll().subscribe({
+      next: (res) => {
+        const backendActivities = (res.data || []).map(n => this.mapNotificationToActivity(n));
+        const localData = localStorage.getItem('userActivities');
+        const localActivities = localData ? JSON.parse(localData) : [];
+        
+        // Merge and sort by timestamp
+        const combined = [...backendActivities, ...localActivities]
+          .sort((a, b) => b.timestamp - a.timestamp)
+          .slice(0, 15);
+        
+        this.activities.set(combined);
+      },
+      error: () => {
+        const saved = localStorage.getItem('userActivities');
+        if (saved) this.activities.set(JSON.parse(saved));
+      }
+    });
+  }
+
+  private mapNotificationToActivity(n: NotificationDto): UserActivity {
+    let icon = 'notifications';
+    let colorClass = 'bg-gray';
+    let text = n.message;
+
+    switch (n.type) {
+      case 'MENTOR_APPLICATION_SUBMITTED':
+        icon = 'assignment_ind';
+        colorClass = 'bg-blue';
+        break;
+      case 'MENTOR_APPLICATION_APPROVED':
+        icon = 'verified_user';
+        colorClass = 'bg-green';
+        break;
+      case 'MENTOR_APPLICATION_REJECTED':
+        icon = 'cancel';
+        colorClass = 'bg-red';
+        break;
+      case 'SESSION_BOOKED':
+        icon = 'event_available';
+        colorClass = 'bg-purple';
+        break;
+      case 'PAYMENT_COMPLETED':
+        icon = 'payments';
+        colorClass = 'bg-emerald';
+        break;
     }
+
+    return {
+      id: `nf-${n.id}`,
+      icon,
+      colorClass,
+      text,
+      timestamp: new Date(n.createdAt).getTime()
+    };
   }
 
   addActivity(icon: string, colorClass: string, text: string) {
@@ -511,9 +562,9 @@ export class ProfilePage implements OnInit {
       id: Date.now().toString() + Math.random().toString(36).substring(2, 9),
       icon, colorClass, text, timestamp: Date.now()
     };
-    const updated = [act, ...this.activities()].slice(0, 10);
+    const updated = [act, ...this.activities()].slice(0, 15);
     this.activities.set(updated);
-    localStorage.setItem('userActivities', JSON.stringify(updated));
+    localStorage.setItem('userActivities', JSON.stringify(updated.filter(a => !a.id.startsWith('nf-'))));
   }
 
   formatTime(ts: number): string {
@@ -590,13 +641,6 @@ export class ProfilePage implements OnInit {
   }
 
   patchFormValues(p: UserProfileDto) {
-    let first = '', last = '';
-    if (p.name) {
-      const parts = p.name.trim().split(' ');
-      first = parts[0];
-      last = parts.slice(1).join(' ');
-    }
-
     let parsedSkills: string[] = [];
     if (p.skills) {
       parsedSkills = p.skills.split(',').map(s => s.trim()).filter(s => s.length > 0);
@@ -604,8 +648,8 @@ export class ProfilePage implements OnInit {
 
     this.form.patchValue({
       username: p.username || p.email.split('@')[0],
-      firstName: first || p.firstName || '',
-      lastName: last || p.lastName || '',
+      firstName: p.firstName || '',
+      lastName: p.lastName || '',
       bio: p.bio || '',
       phoneNumber: p.phoneNumber || '',
       skills: parsedSkills as any
