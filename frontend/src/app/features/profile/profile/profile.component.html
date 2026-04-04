@@ -1,0 +1,54 @@
+<div class="max-w-3xl mx-auto py-10 px-4 sm:px-6 lg:px-8">
+  <div class="bg-white shadow rounded-lg overflow-hidden">
+    <div class="bg-indigo-600 h-32"></div>
+    <div class="px-4 sm:px-6 py-4 relative">
+      <div class="absolute -top-16">
+        <div class="h-32 w-32 rounded-full border-4 border-white bg-slate-200 flex items-center justify-center text-4xl text-slate-400 overflow-hidden">
+          <img *ngIf="profile?.profileImageUrl" [src]="profile?.profileImageUrl" class="object-cover h-full w-full">
+          <span *ngIf="!profile?.profileImageUrl && profile?.username">{{profile!.username.charAt(0).toUpperCase()}}</span>
+        </div>
+      </div>
+      
+      <div class="mt-16 flex justify-between items-center">
+        <div>
+          <h1 class="text-2xl font-bold text-slate-900">{{profile?.username || 'Loading...'}}</h1>
+          <p class="text-sm text-slate-500">{{profile?.email}}</p>
+        </div>
+        <button *ngIf="!editing" (click)="editing = true" class="px-4 py-2 border border-slate-300 rounded-md shadow-sm text-sm font-medium text-slate-700 bg-white hover:bg-slate-50">
+          Edit Profile
+        </button>
+      </div>
+
+      <div class="mt-8 border-t border-slate-200 pt-8">
+        <div *ngIf="loading" class="animate-pulse space-y-4">
+          <div class="h-4 bg-slate-200 rounded w-1/4"></div>
+          <div class="h-4 bg-slate-200 rounded w-1/2"></div>
+        </div>
+
+        <form *ngIf="!loading && editing" (ngSubmit)="save()" class="space-y-6 max-w-lg">
+          <div>
+            <label class="block text-sm font-medium text-slate-700">Username</label>
+            <input type="text" [(ngModel)]="profile!.username" name="username" class="mt-1 block w-full border border-slate-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-slate-700">Bio</label>
+            <textarea [(ngModel)]="profile!.bio" name="bio" rows="4" class="mt-1 block w-full border border-slate-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"></textarea>
+          </div>
+          <div class="flex space-x-3">
+            <button type="submit" [disabled]="saving" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+              Save Changes
+            </button>
+            <button type="button" (click)="editing = false" class="inline-flex justify-center py-2 px-4 border border-slate-300 shadow-sm text-sm font-medium rounded-md text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+              Cancel
+            </button>
+          </div>
+        </form>
+
+        <div *ngIf="!loading && !editing">
+          <h3 class="text-lg leading-6 font-medium text-slate-900">About</h3>
+          <p class="mt-2 text-sm text-slate-500 whitespace-pre-line">{{profile?.bio || 'No bio provided yet.'}}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

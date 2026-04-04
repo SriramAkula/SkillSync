@@ -138,16 +138,13 @@ export class OtpVerifyPage implements OnInit {
   readonly router = inject(Router);
 
   email = '';
-  password = '';
   otp = signal('');
 
   ngOnInit() {
-    const state = window.history.state;
-    if (state && state.email) {
-      this.email = state.email;
-      this.password = state.password || '';
-    } else {
+    this.email = sessionStorage.getItem('reg_email') || window.history.state?.email || '';
+    if (!this.email) {
       console.warn('No email state found');
+      this.router.navigate(['/auth/register']);
     }
   }
 
@@ -166,25 +163,14 @@ export class OtpVerifyPage implements OnInit {
     this.authStore.verifyOtp({ email: this.email, otp });
     
     // Check verification status
-    setTimeout(() => {
-      if (this.authStore.otpVerified()) {
-        this.register();
+    const checkInterval: number = window.setInterval(() => {
+      if (!this.authStore.loading()) {
+        window.clearInterval(checkInterval);
+        if (this.authStore.otpVerified()) {
+          this.router.navigate(['/auth/register-details']);
+        }
       }
-    }, 600);
-  }
-
-  private register() {
-    this.authStore.register({
-      email: this.email,
-      password: this.password
-    } as any);
-
-    // Watch for registration success and redirect to login
-    setTimeout(() => {
-      if (!this.authStore.error() && !this.authStore.loading()) {
-        this.router.navigate(['/auth/login']);
-      }
-    }, 1000);
+    }, 100);
   }
 
   resendOtp() {

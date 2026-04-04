@@ -1,0 +1,52 @@
+<div class="space-y-6">
+  <div class="bg-white p-6 rounded-lg shadow-sm border border-slate-200">
+    <h2 class="text-xl font-bold text-slate-800">Your Sessions</h2>
+    <p class="text-sm text-slate-500 mt-1">Manage your upcoming matches and payments.</p>
+  </div>
+
+  <div *ngIf="loading" class="animate-pulse space-y-4">
+    <div class="h-24 bg-white rounded-lg shadow-sm border border-slate-200" *ngFor="let i of [1,2,3]"></div>
+  </div>
+
+  <div *ngIf="!loading && sessions.length === 0" class="text-center py-12 bg-white rounded-xl border border-slate-200 shadow-sm">
+      <h3 class="mt-2 text-sm font-medium text-slate-900">No sessions found</h3>
+      <p class="mt-1 text-sm text-slate-500">You don't have any requested or upcoming sessions.</p>
+  </div>
+
+  <div *ngIf="!loading" class="grid grid-cols-1 gap-4">
+    <div *ngFor="let s of sessions" class="bg-white p-4 rounded-lg shadow-sm border border-slate-200 flex flex-col md:flex-row justify-between items-start md:items-center">
+      <div class="mb-4 md:mb-0">
+        <h4 class="font-bold text-slate-800">Session with {{ s.otherUserName || 'User' }}</h4>
+        <div class="flex text-sm text-slate-500 space-x-4 mt-2">
+          <span>Date: {{ s.startTime | date:'mediumDate' }}</span>
+          <span>Time: {{ s.startTime | date:'shortTime' }} - {{ s.endTime | date:'shortTime'}}</span>
+          <span class="font-medium px-2.5 py-0.5 rounded-full text-xs"
+                [ngClass]="{
+                  'bg-yellow-100 text-yellow-800': s.status === 'PENDING',
+                  'bg-blue-100 text-blue-800': s.status === 'ACCEPTED',
+                  'bg-emerald-100 text-emerald-800': s.status === 'CONFIRMED',
+                  'bg-red-100 text-red-800': s.status === 'REJECTED' || s.status === 'CANCELLED'
+                }">
+            {{ s.status }}
+          </span>
+        </div>
+      </div>
+      
+      <div class="flex space-x-2 w-full md:w-auto">
+        <!-- Mentor actions -->
+        <ng-container *ngIf="isMentor && s.status === 'PENDING'">
+          <button (click)="acceptSession(s.sessionId)" [disabled]="actionLoading" class="flex-grow md:flex-grow-0 px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-70">
+            Accept
+          </button>
+        </ng-container>
+
+        <!-- Learner Payment Action (BUG FIX: SHOW ONLY FOR LEARNERS) -->
+        <ng-container *ngIf="isLearner && s.status === 'ACCEPTED'">
+          <button (click)="payNow(s.sessionId)" [disabled]="actionLoading" class="flex-grow md:flex-grow-0 px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-70">
+            Pay Now
+          </button>
+        </ng-container>
+      </div>
+    </div>
+  </div>
+</div>

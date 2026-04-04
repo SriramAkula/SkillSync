@@ -14,6 +14,10 @@ export const AUTH_ROUTES: Routes = [
     loadComponent: () => import('./pages/otp-verify/otp-verify.page').then(m => m.OtpVerifyPage)
   },
   {
+    path: 'register-details',
+    loadComponent: () => import('./pages/register-details/register-details.page').then(m => m.RegisterDetailsPage)
+  },
+  {
     path: 'forgot-password',
     loadComponent: () => import('./pages/forgot-password/forgot-password.page').then(m => m.ForgotPasswordPage)
   },

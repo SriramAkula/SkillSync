@@ -1,0 +1,28 @@
+import { Component, inject } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { ToastService } from '../../services/toast.service';
+
+@Component({
+  selector: 'app-toast',
+  standalone: true,
+  imports: [CommonModule],
+  template: `
+    <div class="fixed bottom-4 right-4 z-50 flex flex-col gap-2">
+      <div *ngFor="let toast of toastService.toasts$ | async"
+           class="px-4 py-3 rounded-md shadow-lg flex items-center justify-between min-w-[300px] text-white transition-all transform translate-y-0"
+           [ngClass]="{
+             'bg-emerald-500': toast.type === 'success',
+             'bg-red-500': toast.type === 'error',
+             'bg-indigo-500': toast.type === 'info'
+           }">
+        <span>{{ toast.message }}</span>
+        <button (click)="toastService.remove(toast.id!)" class="ml-4 text-white hover:text-gray-200">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+      </div>
+    </div>
+  `
+})
+export class ToastComponent {
+  toastService = inject(ToastService);
+}

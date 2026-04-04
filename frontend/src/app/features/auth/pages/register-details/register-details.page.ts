@@ -1,31 +1,31 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
-import { RouterLink, Router } from '@angular/router';
+import { ReactiveFormsModule, FormBuilder, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
+import { Router } from '@angular/router';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { AuthStore } from '../../../../core/auth/auth.store';
 
 @Component({
-  selector: 'app-register-page',
+  selector: 'app-register-details-page',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink, MatProgressSpinnerModule],
+  imports: [CommonModule, ReactiveFormsModule, MatProgressSpinnerModule],
   template: `
     <div class="page">
       <div class="left-panel">
         <div class="brand-content">
           <div class="brand-logo"><span class="bolt">⚡</span></div>
           <h1>SkillSync</h1>
-          <p>Join our mentor network today</p>
+          <p>Secure your new account</p>
           <div class="steps-preview">
-            <div class="step-item active">
-              <div class="step-circle">1</div>
+            <div class="step-item done">
+              <div class="step-circle"><span class="material-icons">check</span></div>
               <span>Enter Email</span>
             </div>
-            <div class="step-item">
-              <div class="step-circle">2</div>
+            <div class="step-item done">
+              <div class="step-circle"><span class="material-icons">check</span></div>
               <span>Verify OTP</span>
             </div>
-            <div class="step-item">
+            <div class="step-item active">
               <div class="step-circle">3</div>
               <span>Set Password</span>
             </div>
@@ -40,18 +40,36 @@ import { AuthStore } from '../../../../core/auth/auth.store';
           <div class="mobile-logo">⚡ SkillSync</div>
 
           <div class="form-header">
-            <h2>Join SkillSync</h2>
-            <p>Enter your email to receive a verification code</p>
+            <h2>Set Password</h2>
+            <p>Create a secure password for <strong>{{ email }}</strong></p>
           </div>
 
           <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="form">
             <div class="input-group">
-              <label class="input-label">Email address</label>
-              <div class="input-wrapper" [class.focused]="emailFocused()" [class.error]="registerForm.get('email')?.invalid && registerForm.get('email')?.touched">
-                <span class="material-icons input-icon">email</span>
-                <input type="email" formControlName="email" placeholder="you@example.com"
-                  (focus)="emailFocused.set(true)" (blur)="emailFocused.set(false)" />
+              <label class="input-label">Password</label>
+              <div class="input-wrapper" [class.focused]="pwdFocused()" [class.error]="registerForm.get('password')?.invalid && registerForm.get('password')?.touched">
+                <span class="material-icons input-icon">lock</span>
+                <input [type]="showPwd() ? 'text' : 'password'" formControlName="password" placeholder="Min 8 characters"
+                  (focus)="pwdFocused.set(true)" (blur)="pwdFocused.set(false)" />
+                <button type="button" class="toggle-pwd" (click)="showPwd.set(!showPwd())">
+                  <span class="material-icons">{{ showPwd() ? 'visibility_off' : 'visibility' }}</span>
+                </button>
               </div>
+            </div>
+            
+            <div class="input-group">
+              <label class="input-label">Confirm Password</label>
+              <div class="input-wrapper" [class.focused]="confirmPwdFocused()" [class.error]="registerForm.get('confirmPassword')?.invalid && registerForm.get('confirmPassword')?.touched">
+                <span class="material-icons input-icon">lock_outline</span>
+                <input [type]="showConfirmPwd() ? 'text' : 'password'" formControlName="confirmPassword" placeholder="Confirm Password"
+                  (focus)="confirmPwdFocused.set(true)" (blur)="confirmPwdFocused.set(false)" />
+                <button type="button" class="toggle-pwd" (click)="showConfirmPwd.set(!showConfirmPwd())">
+                  <span class="material-icons">{{ showConfirmPwd() ? 'visibility_off' : 'visibility' }}</span>
+                </button>
+              </div>
+              @if(registerForm.hasError('mismatch') && registerForm.get('confirmPassword')?.touched) {
+                 <span class="error-text">Passwords must match</span>
+              }
             </div>
 
             @if (authStore.error()) {
@@ -63,11 +81,9 @@ import { AuthStore } from '../../../../core/auth/auth.store';
 
             <button type="submit" class="submit-btn" [disabled]="registerForm.invalid || authStore.loading()">
               @if (authStore.loading()) { <mat-spinner diameter="22" /> }
-              @else { <span>Send OTP</span><span class="material-icons">arrow_forward</span> }
+              @else { <span>Complete Registration</span><span class="material-icons">check_circle</span> }
             </button>
           </form>
-
-          <p class="login-link">Already have an account? <a routerLink="/auth/login">Sign in</a></p>
         </div>
       </div>
     </div>
@@ -85,6 +101,8 @@ import { AuthStore } from '../../../../core/auth/auth.store';
     .step-item.active { opacity: 1; }
     .step-circle { width: 32px; height: 32px; border-radius: 50%; background: rgba(255,255,255,0.2); border: 2px solid rgba(255,255,255,0.4); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; flex-shrink: 0; }
     .step-item.active .step-circle { background: white; color: #4f46e5; border-color: white; }
+    .step-item.done .step-circle { background: #10b981; border-color: #10b981; }
+    .step-item.done .step-circle .material-icons { font-size: 16px; color: white; }
     .step-item span:last-child { font-size: 14px; font-weight: 500; }
     .blob { position: absolute; border-radius: 50%; filter: blur(60px); opacity: 0.25; }
     .blob-1 { width: 280px; height: 280px; background: #818cf8; top: -60px; right: -60px; }
@@ -105,40 +123,61 @@ import { AuthStore } from '../../../../core/auth/auth.store';
     .input-wrapper.focused .input-icon { color: #4f46e5; }
     .input-wrapper input { flex: 1; border: none; outline: none; font-size: 15px; color: #111827; background: transparent; }
     .input-wrapper input::placeholder { color: #9ca3af; }
+    .toggle-pwd { background: none; border: none; cursor: pointer; padding: 4px; color: #9ca3af; display: flex; align-items: center; }
+    .toggle-pwd .material-icons { font-size: 20px; }
+    .error-text { color: #ef4444; font-size: 12px; margin-top: 4px; }
     .error-banner { display: flex; align-items: center; gap: 8px; background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; padding: 10px 14px; border-radius: 10px; font-size: 14px; }
     .error-banner .material-icons { font-size: 18px; }
     .submit-btn { height: 52px; background: linear-gradient(135deg, #4f46e5, #7c3aed); color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s; box-shadow: 0 4px 15px rgba(79,70,229,0.35); }
     .submit-btn:hover:not(:disabled) { opacity: 0.92; transform: translateY(-1px); }
     .submit-btn:disabled { opacity: 0.6; cursor: not-allowed; }
-    .login-link { text-align: center; font-size: 14px; color: #6b7280; margin: 20px 0 0; }
-    .login-link a { color: #4f46e5; font-weight: 600; text-decoration: none; margin-left: 4px; }
-    .login-link a:hover { text-decoration: underline; }
     @media (max-width: 900px) { .page { grid-template-columns: 1fr; } .left-panel { display: none; } .right-panel { background: white; padding: 32px 20px; } .mobile-logo { display: block; } }
   `]
 })
-export class RegisterPage {
+export class RegisterDetailsPage implements OnInit {
   readonly authStore = inject(AuthStore);
-  readonly emailFocused = signal(false);
+  readonly showPwd = signal(false);
+  readonly showConfirmPwd = signal(false);
+  readonly pwdFocused = signal(false);
+  readonly confirmPwdFocused = signal(false);
   private readonly fb = inject(FormBuilder);
   private readonly router = inject(Router);
 
+  email = '';
+
   readonly registerForm = this.fb.group({
-    email: ['', [Validators.required, Validators.email]]
-  });
+    password: ['', [Validators.required, Validators.minLength(8)]],
+    confirmPassword: ['', [Validators.required]]
+  }, { validators: this.passwordMatchValidator });
+
+  passwordMatchValidator(g: AbstractControl): ValidationErrors | null {
+    return g.get('password')?.value === g.get('confirmPassword')?.value 
+      ? null : { mismatch: true };
+  }
+
+  ngOnInit() {
+    this.email = sessionStorage.getItem('reg_email') ?? '';
+    if (!this.email) {
+      this.router.navigate(['/auth/register']);
+    }
+  }
 
   onSubmit(): void {
     if (this.registerForm.invalid) return;
     
-    const email = this.registerForm.value.email!;
-    this.authStore.sendOtp(email);
+    const password = this.registerForm.value.password!;
+    this.authStore.register({
+      email: this.email,
+      password: password
+    });
     
-    // Check loading state to prevent immediate route
-    const checkInterval: number = window.setInterval(() => {
+    // Check loading state to navigate to login after success
+    const checkInterval: any = window.setInterval(() => {
       if (!this.authStore.loading()) {
         window.clearInterval(checkInterval);
-        if (!this.authStore.error() && this.authStore.otpSent()) {
-          sessionStorage.setItem('reg_email', email);
-          this.router.navigate(['/auth/verify-otp']);
+        if (!this.authStore.error() && this.authStore.isAuthenticated()) {
+          sessionStorage.removeItem('reg_email');
+          this.router.navigate(['/auth/login']);
         }
       }
     }, 100);

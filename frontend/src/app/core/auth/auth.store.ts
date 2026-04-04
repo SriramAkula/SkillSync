@@ -111,15 +111,20 @@ export const AuthStore = signalStore(
               next: (res) => {
                 persistAuth(res);
                 const claims = decodeJwt(res.token);
+                const userRoles = res.roles ?? claims.roles ?? [];
                 patchState(store, {
                   token: res.token,
-                  roles: res.roles ?? claims.roles ?? [],
+                  roles: userRoles,
                   userId: claims.userId ?? null,
                   email: claims.sub ?? res.email ?? null,
                   username: res.username ?? claims.sub ?? null,
                   loading: false, error: null
                 });
-                router.navigate(['/mentors']);
+                if (userRoles.includes('ROLE_MENTOR')) {
+                  router.navigate(['/mentor-dashboard']);
+                } else {
+                  router.navigate(['/mentors']);
+                }
               },
               error: (err: any) => {
                 const msg = err.error?.message ?? 'Invalid credentials';
@@ -145,15 +150,20 @@ export const AuthStore = signalStore(
               next: (res) => {
                 persistAuth(res);
                 const claims = decodeJwt(res.token);
+                const userRoles = res.roles ?? claims.roles ?? [];
                 patchState(store, {
                   token: res.token,
-                  roles: res.roles ?? claims.roles ?? [],
+                  roles: userRoles,
                   userId: claims.userId ?? null,
                   email: claims.sub ?? res.email ?? null,
                   username: res.username ?? claims.sub ?? null,
                   loading: false, error: null
                 });
-                router.navigate(['/mentors']);
+                if (userRoles.includes('ROLE_MENTOR')) {
+                  router.navigate(['/mentor-dashboard']);
+                } else {
+                  router.navigate(['/mentors']);
+                }
               },
               error: (err: any) => patchState(store, { loading: false, error: err.error?.message ?? 'Google login failed' })
             })
