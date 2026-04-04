@@ -10,15 +10,15 @@ import org.springframework.web.bind.annotation.PathVariable;
 @FeignClient(name = "mentor-service", fallback = MentorServiceClient.MentorServiceFallback.class)
 public interface MentorServiceClient {
 
-    @GetMapping("/mentor/{mentorId}")
-    MentorRateDto getMentorProfile(@PathVariable Long mentorId);
+    @GetMapping("/mentor/internal/{mentorId}")
+    MentorRateDto fetchMentorProfileForSaga(@PathVariable Long mentorId);
 
     class MentorServiceFallback implements MentorServiceClient {
         private static final Logger log = LoggerFactory.getLogger(MentorServiceFallback.class);
 
         @Override
-        public MentorRateDto getMentorProfile(Long mentorId) {
-            log.error("Fallback: mentor-service unavailable for getMentorProfile({})", mentorId);
+        public MentorRateDto fetchMentorProfileForSaga(Long mentorId) {
+            log.error("Fallback: mentor-service unavailable for fetchMentorProfileForSaga({})", mentorId);
             throw new RuntimeException("mentor-service is currently unavailable");
         }
     }

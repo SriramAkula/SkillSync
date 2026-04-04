@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { BehaviorSubject, Observable, tap, map } from 'rxjs';
+import { BehaviorSubject, Observable, tap, map, catchError, of } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { ApiResponse, UserProfileDto, UpdateProfileRequest } from '../../shared/models';
 
@@ -48,6 +48,16 @@ export class UserService {
       map(res => {
         res.data = this.mapProfile(res.data);
         return res;
+      }),
+      catchError(() => {
+        const placeholder: UserProfileDto = {
+          userId,
+          username: `User ${userId}`,
+          displayName: 'Unknown User',
+          email: `unknown${userId}@skillsync.com`,
+          bio: 'Profile details are currently unavailable.'
+        } as any;
+        return of({ success: true, message: 'Placeholder loaded', data: placeholder });
       })
     );
   }

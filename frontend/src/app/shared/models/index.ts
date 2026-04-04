@@ -60,6 +60,9 @@ export type AvailabilityStatus = 'AVAILABLE' | 'BUSY' | 'UNAVAILABLE';
 export interface MentorProfileDto {
   id: number;
   userId: number;
+  name?: string; // Enriched in frontend
+  username?: string; // Enriched in frontend
+  user?: UserProfileDto; // Full enriched profile
   status: MentorStatus;
   isApproved: boolean;
   specialization: string;
@@ -93,6 +96,9 @@ export interface SessionDto {
   mentorId: number;
   learnerId: number;
   skillId: number;
+  mentorName?: string; // Enriched in frontend
+  learnerName?: string; // Enriched in frontend
+  skillName?: string; // Enriched in frontend
   scheduledAt: string;
   durationMinutes: number;
   status: SessionStatus;

@@ -10,9 +10,9 @@
         <relativePath/>
     </parent>
     <groupId>com.skillsync</groupId>
-    <artifactId>payment-gateway</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
-    <name>payment-gateway</name>
+    <artifactId>payment-gateway-diagnostic</artifactId>
+    <version>9.9.9-DIAGNOSTIC</version>
+    <name>payment-gateway-diagnostic</name>
 
     <properties>
         <java.version>17</java.version>

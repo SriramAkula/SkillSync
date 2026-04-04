@@ -60,7 +60,7 @@ import { ReviewDto, MentorRatingDto } from '../../../../shared/models';
                   Go to Dashboard
                 </button>
               } @else {
-                <button class="book-btn" [disabled]="mentor.availabilityStatus !== 'AVAILABLE'" (click)="bookSession(mentor.id)">
+                <button class="book-btn" [disabled]="mentor.availabilityStatus !== 'AVAILABLE'" (click)="bookSession(mentor.userId)">
                   <span class="material-icons">event</span>
                   Book a Session
                 </button>
@@ -199,8 +199,10 @@ export class MentorDetailPage implements OnInit {
   readonly rating = signal<MentorRatingDto | null>(null);
 
   ngOnInit(): void {
-    const id = Number(this.route.snapshot.paramMap.get('id'));
+    const id = Number(this.route.snapshot.paramMap.get('id')); // This is now the userId passed from the list
     this.mentorStore.loadById(id);
+    
+    // We fetch reviews and ratings by the same ID (which is now the userId)
     this.reviewService.getMentorReviews(id).subscribe(r => this.reviews.set(r.data));
     this.reviewService.getMentorRating(id).subscribe(r => this.rating.set(r.data));
   }

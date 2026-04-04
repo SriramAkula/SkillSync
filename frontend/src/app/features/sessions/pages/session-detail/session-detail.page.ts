@@ -95,7 +95,7 @@ const STATUS: Record<string, { color: string; bg: string; icon: string }> = {
             <div class="actions-card">
               <h3>Actions</h3>
 
-              @if (s.status === 'ACCEPTED') {
+              @if (s.status === 'ACCEPTED' && isLearnerForThisSession) {
                 <button class="action-btn primary" (click)="router.navigate(['/payment'], { queryParams: { sessionId: s.id } })">
                   <span class="material-icons">payment</span>
                   Pay Now
@@ -237,6 +237,11 @@ export class SessionDetailPage implements OnInit {
   cancel(id: number): void {
     this.sessionStore.cancel(id);
     this.snack.open('Session cancelled.', 'OK', { duration: 3000 });
+  }
+
+  get isLearnerForThisSession(): boolean {
+    const s = this.sessionStore.selected() as any;
+    return s ? Number(this.authStore.userId()) === Number(s.learnerId) : false;
   }
 
   cfg(status: string) { return STATUS[status] ?? STATUS['CANCELLED']; }

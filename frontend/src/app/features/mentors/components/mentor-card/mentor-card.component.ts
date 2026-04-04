@@ -8,7 +8,7 @@ import { AuthStore } from '../../../../core/auth/auth.store';
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="card" (click)="view.emit(mentor.id)">
+    <div class="card" (click)="view.emit(mentor.userId)">
       <div class="card-top">
         <div class="avatar">{{ initials() }}</div>
         <div class="avail-badge" [class]="'avail-' + mentor.availabilityStatus.toLowerCase()">
@@ -17,7 +17,8 @@ import { AuthStore } from '../../../../core/auth/auth.store';
       </div>
 
       <div class="card-body">
-        <h3 class="specialization">{{ mentor.specialization }}</h3>
+        <h3 class="mentor-name">{{ mentor.name || mentor.username }}</h3>
+        <p class="specialization">{{ mentor.specialization }}</p>
         <p class="experience">{{ mentor.yearsOfExperience }} years of experience</p>
 
         <div class="stats">
@@ -39,17 +40,17 @@ import { AuthStore } from '../../../../core/auth/auth.store';
       <div class="card-actions">
         @if (isOwnProfile()) {
           <!-- Own profile: single full-width manage button -->
-          <button class="btn-manage" (click)="$event.stopPropagation(); view.emit(mentor.id)">
+          <button class="btn-manage" (click)="$event.stopPropagation(); view.emit(mentor.userId)">
             <span class="material-icons">settings</span> Manage Profile
           </button>
         } @else {
           <!-- Other mentor: book + view -->
           <button class="btn-book"
-                  (click)="$event.stopPropagation(); book.emit(mentor.id)"
+                  (click)="$event.stopPropagation(); book.emit(mentor.userId)"
                   [disabled]="mentor.availabilityStatus !== 'AVAILABLE'">
             Book Session
           </button>
-          <button class="btn-view" (click)="$event.stopPropagation(); view.emit(mentor.id)">
+          <button class="btn-view" (click)="$event.stopPropagation(); view.emit(mentor.userId)">
             View Profile
           </button>
         }
@@ -88,7 +89,8 @@ import { AuthStore } from '../../../../core/auth/auth.store';
     .avail-unavailable .dot { background: #dc2626; }
 
     .card-body { flex: 1; }
-    .specialization { font-size: 16px; font-weight: 700; color: #111827; margin: 0 0 4px; }
+    .mentor-name { font-size: 18px; font-weight: 800; color: #111827; margin: 0 0 2px; letter-spacing: -0.3px; }
+    .specialization { font-size: 14px; font-weight: 600; color: #4f46e5; margin: 0 0 4px; }
     .experience { font-size: 13px; color: #6b7280; margin: 0 0 14px; }
 
     .stats { display: flex; gap: 16px; }
@@ -138,6 +140,7 @@ export class MentorCardComponent {
   }
 
   initials(): string {
-    return this.mentor.specialization.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+    const name = this.mentor.name || this.mentor.username || '';
+    return name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
   }
 }

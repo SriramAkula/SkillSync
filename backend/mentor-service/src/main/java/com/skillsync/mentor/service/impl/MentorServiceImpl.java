@@ -76,8 +76,19 @@ public class MentorServiceImpl implements MentorService {
     @Cacheable(key = "#mentorId")
     public MentorProfileResponseDto getMentorProfile(Long mentorId) {
         log.info("Cache MISS - fetching mentorId={} from DB", mentorId);
+        
+        // Try finding by primary key (Mentor Internal ID)
         MentorProfile profile = mentorRepository.findById(mentorId)
-                .orElseThrow(() -> new MentorNotFoundException("Mentor not found with ID: " + mentorId));
+                .orElseGet(() -> {
+                    // Fallback: try finding by userId (Auth ID)
+                    log.info("Mentor not found by PK {}, searching by userId", mentorId);
+                    return mentorRepository.findByUserId(mentorId).orElse(null);
+                });
+
+        if (profile == null) {
+            throw new MentorNotFoundException("Mentor not found with ID or UserID: " + mentorId);
+        }
+        
         return mentorMapper.toDto(profile);
     }
 

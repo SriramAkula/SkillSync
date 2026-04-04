@@ -1,8 +1,10 @@
+import 'tslib';
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { SessionStore } from '../../../../core/auth/session.store';
+import { SkillStore } from '../../../../core/auth/skill.store';
 import { SessionCardComponent } from '../../components/session-card/session-card.component';
 import { SessionDto } from '../../../../shared/models';
 
@@ -191,7 +193,8 @@ type FilterTab = 'all' | 'active' | 'completed' | 'cancelled';
   `]
 })
 export class MySessionsPage implements OnInit {
-  readonly sessionStore = inject(SessionStore);
+  readonly sessionStore = inject(SessionStore) as any;
+  readonly skillStore = inject(SkillStore) as any;
   readonly router = inject(Router);
 
   readonly activeTab = signal<FilterTab>('all');
@@ -203,11 +206,16 @@ export class MySessionsPage implements OnInit {
     { key: 'cancelled' as FilterTab, label: 'Cancelled' },
   ];
 
-  ngOnInit(): void { this.sessionStore.loadLearnerSessions(undefined); }
+  ngOnInit(): void { 
+    this.sessionStore.loadLearnerSessions(undefined); 
+    if (this.skillStore.skills().length === 0) {
+      this.skillStore.loadAll(undefined);
+    }
+  }
 
-  activeSessions()   { return this.sessionStore.learnerSessions().filter(s => ['REQUESTED','ACCEPTED','CONFIRMED'].includes(s.status)); }
-  completedSessions(){ return this.sessionStore.learnerSessions().filter(s => s.status === 'CONFIRMED'); }
-  cancelledSessions(){ return this.sessionStore.learnerSessions().filter(s => ['CANCELLED','REJECTED','PAYMENT_FAILED'].includes(s.status)); }
+  activeSessions()   { return (this.sessionStore.learnerSessions() as SessionDto[]).filter((s: SessionDto) => ['REQUESTED','ACCEPTED','CONFIRMED'].includes(s.status)); }
+  completedSessions(){ return (this.sessionStore.learnerSessions() as SessionDto[]).filter((s: SessionDto) => s.status === 'CONFIRMED'); }
+  cancelledSessions(){ return (this.sessionStore.learnerSessions() as SessionDto[]).filter((s: SessionDto) => ['CANCELLED','REJECTED','PAYMENT_FAILED'].includes(s.status)); }
 
   filteredSessions(): SessionDto[] {
     const all = this.sessionStore.learnerSessions();

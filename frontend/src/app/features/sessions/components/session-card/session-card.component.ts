@@ -1,6 +1,9 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import 'tslib';
+import { Component, Input, Output, EventEmitter, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { SessionDto } from '../../../../shared/models';
+import { SkillStore } from '../../../../core/auth/skill.store';
+import { AuthStore } from '../../../../core/auth/auth.store';
 
 const STATUS: Record<string, { color: string; bg: string; icon: string; label: string }> = {
   REQUESTED:      { color: '#d97706', bg: '#fef3c7', icon: 'schedule',      label: 'Requested' },
@@ -38,24 +41,30 @@ const STATUS: Record<string, { color: string; bg: string; icon: string; label: s
         </div>
         <div class="meta-item">
           <span class="material-icons">person</span>
-          Mentor #{{ session.mentorId }}
+          {{ session.mentorName || ('Mentor #' + session.mentorId) }}
         </div>
         <div class="meta-item">
           <span class="material-icons">auto_stories</span>
-          Skill #{{ session.skillId }}
+          {{ skillName }}
         </div>
       </div>
 
-      @if (session.rejectionReason) {
-        <div class="rejection-note">
-          <span class="material-icons">info</span>
-          {{ session.rejectionReason }}
+      @if (session.status === 'REQUESTED' && isLearner) {
+        <div class="status-note">
+          <span class="material-icons">hourglass_empty</span>
+          Waiting for mentor approval
+        </div>
+      }
+      @if (session.status === 'ACCEPTED' && isLearner) {
+        <div class="status-note payment-pending">
+          <span class="material-icons">payments</span>
+          Payment Pending
         </div>
       }
 
       <div class="card-actions">
         <button class="btn-details" (click)="view.emit(session.id)">View Details</button>
-        @if (session.status === 'ACCEPTED') {
+        @if (session.status === 'ACCEPTED' && isLearner) {
           <button class="btn-pay" (click)="pay.emit(session.id)">
             <span class="material-icons">payment</span> Pay Now
           </button>
@@ -69,7 +78,6 @@ const STATUS: Record<string, { color: string; bg: string; icon: string; label: s
   styles: [`
     .card { background: white; border-radius: 16px; border: 1px solid #e5e7eb; padding: 18px; display: flex; flex-direction: column; gap: 14px; transition: box-shadow 0.2s, border-color 0.2s; }
     .card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.08); border-color: #c7d2fe; }
-
     .card-top { display: flex; align-items: center; gap: 12px; }
     .session-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
     .session-icon .material-icons { font-size: 22px; }
@@ -77,14 +85,12 @@ const STATUS: Record<string, { color: string; bg: string; icon: string; label: s
     .session-id { display: block; font-size: 15px; font-weight: 700; color: #111827; }
     .session-date { display: block; font-size: 12px; color: #6b7280; margin-top: 2px; }
     .status-badge { padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; white-space: nowrap; }
-
     .card-meta { display: flex; gap: 16px; flex-wrap: wrap; }
     .meta-item { display: flex; align-items: center; gap: 4px; font-size: 13px; color: #6b7280; }
     .meta-item .material-icons { font-size: 15px; color: #9ca3af; }
-
-    .rejection-note { display: flex; align-items: flex-start; gap: 8px; background: #fef2f2; color: #dc2626; padding: 10px 12px; border-radius: 10px; font-size: 13px; }
-    .rejection-note .material-icons { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
-
+    .rejection-note { display: flex; align-items: flex-start; gap: 8px; background: #fef2f2; color: #dc2626; padding: 10px 12px; border-radius: 10px; font-size: 13px; margin-bottom: 4px; }
+    .status-note { display: flex; align-items: flex-start; gap: 8px; background: #fffbeb; color: #d97706; padding: 10px 12px; border-radius: 10px; font-size: 13px; margin-bottom: 4px; border: 1px solid #fef3c7; }
+    .rejection-note .material-icons, .status-note .material-icons { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
     .card-actions { display: flex; gap: 8px; flex-wrap: wrap; }
     .btn-details { height: 36px; padding: 0 14px; border-radius: 8px; background: #f3f4f6; color: #374151; border: none; font-size: 13px; font-weight: 600; cursor: pointer; transition: background 0.15s; }
     .btn-details:hover { background: #e5e7eb; }
@@ -99,5 +105,19 @@ export class SessionCardComponent {
   @Output() view = new EventEmitter<number>();
   @Output() cancel = new EventEmitter<number>();
   @Output() pay = new EventEmitter<number>();
+
+  private readonly skillStore = inject(SkillStore) as any;
+  private readonly authStore = inject(AuthStore) as any;
+
+  get isLearner(): boolean {
+    // Use Number() to prevent type mismatch (string vs number) from JWT vs DB IDs
+    return Number(this.authStore.userId()) === Number(this.session.learnerId);
+  }
+
+  get skillName(): string {
+    const s = this.skillStore.getSkillById(this.session.skillId);
+    return s ? (s.skillName || s.name) : ('Skill #' + this.session.skillId);
+  }
+
   s() { return STATUS[this.session.status] ?? STATUS['CANCELLED']; }
 }

@@ -39,6 +39,7 @@ public class SessionServiceImpl implements SessionService {
 
     @Override
     @Transactional
+    @CacheEvict(allEntries = true)
     public SessionResponseDto requestSession(Long learnerId, RequestSessionRequestDto request) {
         log.info("Requesting session: learnerId={}, mentorId={}, skillId={}, scheduledAt={}",
                 learnerId, request.getMentorId(), request.getSkillId(), request.getScheduledAt());

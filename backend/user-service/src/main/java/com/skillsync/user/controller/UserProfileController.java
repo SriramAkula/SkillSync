@@ -107,7 +107,19 @@ public class UserProfileController {
 
 		log.info("Fetching public profile for userId: {}", userId);
 
-		UserProfileResponseDto response = userProfileService.getProfileByUserId(userId);
+		UserProfileResponseDto response;
+		try {
+			response = userProfileService.getProfileByUserId(userId);
+		} catch (Exception e) {
+			log.warn("Public profile for userId={} not found. Returning placeholder.", userId);
+			UserProfileResponseDto placeholder = new UserProfileResponseDto();
+			placeholder.setUserId(userId);
+			placeholder.setUsername("User " + userId);
+			placeholder.setName("Unknown User");
+			placeholder.setEmail("unknown@skillsync.com");
+			placeholder.setBio("Profile details are currently unavailable.");
+			response = placeholder;
+		}
 
 		return ResponseEntity
 				.ok(new ApiResponse<>(

@@ -311,8 +311,12 @@ services:
         condition: service_healthy
       eureka-server:
         condition: service_started
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
     networks:
       - private-network
+      - proxy-network
 
   # ─── Proxy-facing Services (both networks) ───────────────────────────────
   # These sit on BOTH networks so that when Nginx Proxy Manager is added

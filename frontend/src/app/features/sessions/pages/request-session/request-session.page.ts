@@ -1,4 +1,5 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
+import { patchState } from '@ngrx/signals';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -24,8 +25,9 @@ import { SkillStore } from '../../../../core/auth/skill.store';
         <div class="mentor-col">
           @if (mentorStore.selected(); as mentor) {
             <div class="mentor-card">
-              <div class="mentor-avatar">{{ initials(mentor.specialization) }}</div>
-              <h3>{{ mentor.specialization }}</h3>
+              <div class="mentor-avatar">{{ mentorInitials() }}</div>
+              <h3>{{ mentor.name || mentor.username }}</h3>
+              <p class="mentor-specialization">{{ mentor.specialization }}</p>
               <p class="mentor-exp">{{ mentor.yearsOfExperience }} years experience</p>
               <div class="mentor-stats">
                 <div class="stat"><span class="material-icons">star</span>{{ mentor.rating | number:'1.1-1' }}</div>
@@ -197,7 +199,8 @@ import { SkillStore } from '../../../../core/auth/skill.store';
       color: white; font-size: 26px; font-weight: 800;
       display: flex; align-items: center; justify-content: center;
     }
-    .mentor-card h3 { font-size: 16px; font-weight: 700; color: #111827; margin: 0; }
+    .mentor-card h3 { font-size: 18px; font-weight: 800; color: #111827; margin: 0 0 2px; }
+    .mentor-specialization { font-size: 14px; font-weight: 600; color: #4f46e5; margin: 0 0 4px; }
     .mentor-exp { font-size: 13px; color: #6b7280; margin: 0; }
     .mentor-stats { display: flex; gap: 16px; }
     .stat { display: flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 600; color: #374151; }
@@ -349,9 +352,9 @@ import { SkillStore } from '../../../../core/auth/skill.store';
   `]
 })
 export class RequestSessionPage implements OnInit {
-  readonly sessionStore = inject(SessionStore);
-  readonly mentorStore = inject(MentorStore);
-  readonly skillStore = inject(SkillStore);
+  readonly sessionStore = inject(SessionStore) as any;
+  readonly mentorStore = inject(MentorStore) as any;
+  readonly skillStore = inject(SkillStore) as any;
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly snack = inject(MatSnackBar);
@@ -377,6 +380,7 @@ export class RequestSessionPage implements OnInit {
   });
 
   ngOnInit(): void {
+    patchState(this.sessionStore, { error: null });
     const mentorId = Number(this.route.snapshot.queryParamMap.get('mentorId'));
     if (mentorId) this.mentorStore.loadById(mentorId);
     if (this.skillStore.skills().length === 0) {
@@ -425,5 +429,11 @@ export class RequestSessionPage implements OnInit {
   }
 
   back(): void { this.router.navigate(['/mentors']); }
-  initials(s: string): string { return s.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase(); }
+  
+  mentorInitials(): string {
+    const m = this.mentorStore.selected();
+    if (!m) return 'M';
+    const name = (m.name || m.username || '') as string;
+    return name.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase();
+  }
 }

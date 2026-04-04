@@ -27,7 +27,7 @@ export const NotificationStore = signalStore(
     hasUnread: computed(() => store.unreadCount() > 0)
   })),
 
-  withMethods((store, svc = inject(NotificationService)) => {
+  withMethods((store, svc = inject(NotificationService), authStore = inject(AuthStore)) => {
     // ── Polling subscription (swap for SSE later without touching components) ──
     let pollSub: Subscription | null = null;
 
@@ -98,17 +98,24 @@ export const NotificationStore = signalStore(
       // To upgrade to SSE: replace interval() with svc.streamNotifications()
       startPolling(): void {
         if (pollSub) return;
-        const authStore = inject(AuthStore);
         pollSub = interval(environment.pollIntervalMs).subscribe(() => {
           svc.getUnread().subscribe({
             next: (res) => {
               const unread = res.data || [];
-              patchState(store, { unreadCount: unread.length });
+              const oldCount = store.unreadCount();
+              const newCount = unread.length;
+              
+              patchState(store, { unreadCount: newCount });
+              
+              // If we have new notifications, refresh the full list to show them
+              if (newCount > oldCount) {
+                this.loadAll();
+              }
               
               // Automatically sync role if mentor approval notification is detected
               const hasMentorApproval = unread.some(n => n.type === 'MENTOR_APPROVED');
               if (hasMentorApproval && !authStore.isMentor()) {
-                authStore.refreshToken();
+                authStore.refreshToken(undefined);
               }
             }
           });

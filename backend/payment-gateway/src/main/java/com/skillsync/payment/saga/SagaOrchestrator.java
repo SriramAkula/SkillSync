@@ -8,7 +8,6 @@ import com.skillsync.payment.dto.request.VerifyPaymentRequest;
 import com.skillsync.payment.dto.response.SagaResponse;
 import com.skillsync.payment.entity.PaymentSaga;
 import com.skillsync.payment.enums.SagaStatus;
-import com.skillsync.payment.exception.DuplicateSagaException;
 import com.skillsync.payment.exception.SagaNotFoundException;
 import com.skillsync.payment.audit.AuditService;
 import com.skillsync.payment.mapper.PaymentSagaMapper;
@@ -22,7 +21,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -56,18 +54,60 @@ public class SagaOrchestrator {
     // ─────────────────────────────────────────────────────────────
     @Transactional
     public SagaResponse startSaga(StartSagaRequest request) {
-        if (sagaRepository.existsBySessionIdAndStatusIn(request.getSessionId(),
-                List.of(SagaStatus.INITIATED, SagaStatus.PAYMENT_PENDING,
-                        SagaStatus.PAYMENT_PROCESSING, SagaStatus.COMPLETED))) {
-            throw new DuplicateSagaException("Saga already exists for sessionId=" + request.getSessionId());
+        // 1. Fetch current session status to enforce strict flow
+        String sessionStatus = "UNKNOWN";
+        try {
+            var sessionResponse = sessionServiceClient.getSession(request.getSessionId());
+            if (sessionResponse != null && sessionResponse.getData() != null) {
+                sessionStatus = sessionResponse.getData().getStatus();
+            }
+        } catch (Exception e) {
+            log.warn("[SAGA] Could not verify session status for {}: {}", request.getSessionId(), e.getMessage());
         }
+
+        var existingSaga = sagaRepository.findBySessionId(request.getSessionId());
+
+        // 2. If saga already exists and is beyond INITIATED/FAILED/REJECTED, return as-is (idempotency)
+        if (existingSaga.isPresent()) {
+            PaymentSaga saga = existingSaga.get();
+            SagaStatus status = saga.getStatus();
+
+            if (status != SagaStatus.INITIATED && status != SagaStatus.FAILED && status != SagaStatus.REJECTED) {
+                log.info("[SAGA] Returning existing saga (status={}) for sessionId={}", status, request.getSessionId());
+                return sagaMapper.toDto(saga);
+            }
+        }
+
+        // 3. Block if not ACCEPTED (Must be ACCEPTED to Start or Retry)
+        if (!"ACCEPTED".equals(sessionStatus)) {
+            log.warn("[SAGA] Rejecting startSaga for session {} - status is {}", request.getSessionId(), sessionStatus);
+            throw new RuntimeException("Payment allowed only after mentor acceptance");
+        }
+
+        // 4. Handle existing Saga (INITIATED, FAILED, or REJECTED)
+        if (existingSaga.isPresent()) {
+            PaymentSaga saga = existingSaga.get();
+            log.info("[SAGA] Restarting {} saga for session {}", saga.getStatus(), request.getSessionId());
+
+            if (saga.getStatus() != SagaStatus.INITIATED) {
+                saga.setStatus(SagaStatus.INITIATED);
+                saga.setFailureReason(null);
+                saga.setPaymentReference(null);
+                saga = sagaRepository.save(saga);
+            }
+            return onSessionAccepted(saga.getSessionId(), saga.getMentorId(), saga.getLearnerId());
+        }
+
+        // 5. Create fresh Saga and move straight to order creation
+        log.info("[SAGA] Starting new saga for session {}", request.getSessionId());
         PaymentSaga saga = sagaMapper.toEntity(request);
+        saga.setStatus(SagaStatus.INITIATED);
         saga = sagaRepository.save(saga);
+
         auditService.log("PaymentSaga", saga.getId(), "SAGA_STARTED",
                 saga.getLearnerId().toString(), "sessionId=" + saga.getSessionId());
-        log.info("[SAGA][{}] Started - sessionId={}, mentorId={}, learnerId={}",
-                saga.getCorrelationId(), saga.getSessionId(), saga.getMentorId(), saga.getLearnerId());
-        return sagaMapper.toDto(saga);
+
+        return onSessionAccepted(saga.getSessionId(), saga.getMentorId(), saga.getLearnerId());
     }
 
     // ─────────────────────────────────────────────────────────────
@@ -223,9 +263,25 @@ public class SagaOrchestrator {
     // ─────────────────────────────────────────────────────────────
     // Query
     // ─────────────────────────────────────────────────────────────
+    @Transactional
     public SagaResponse getSagaBySessionId(Long sessionId) {
-        return sagaMapper.toDto(sagaRepository.findBySessionId(sessionId)
-                .orElseThrow(() -> new SagaNotFoundException("No saga for sessionId=" + sessionId)));
+        PaymentSaga saga = sagaRepository.findBySessionId(sessionId)
+                .orElseThrow(() -> new SagaNotFoundException("No saga for sessionId=" + sessionId));
+
+        // Proactively advance if status is INITIATED but session is already ACCEPTED
+        if (saga.getStatus() == SagaStatus.INITIATED) {
+            try {
+                var sessionResponse = sessionServiceClient.getSession(sessionId);
+                if (sessionResponse != null && sessionResponse.getData() != null && "ACCEPTED".equals(sessionResponse.getData().getStatus())) {
+                    log.info("[SAGA] Query found INITIATED saga for accepted session {}. Advancing proactively.", sessionId);
+                    return onSessionAccepted(saga.getSessionId(), saga.getMentorId(), saga.getLearnerId());
+                }
+            } catch (Exception e) {
+                log.warn("[SAGA] Proactive check failed in query for session {}: {}", sessionId, e.getMessage());
+            }
+        }
+
+        return sagaMapper.toDto(saga);
     }
 
     // ─────────────────────────────────────────────────────────────
@@ -234,7 +290,7 @@ public class SagaOrchestrator {
     @CircuitBreaker(name = "mentor-service")
     @Retry(name = "mentor-service")
     private BigDecimal fetchMentorRate(Long mentorId) {
-        MentorRateDto response = mentorServiceClient.getMentorProfile(mentorId);
+        MentorRateDto response = mentorServiceClient.fetchMentorProfileForSaga(mentorId);
         if (response == null || response.getData() == null || response.getData().getHourlyRate() == null) {
             throw new RuntimeException("Could not fetch hourly rate for mentorId=" + mentorId);
         }

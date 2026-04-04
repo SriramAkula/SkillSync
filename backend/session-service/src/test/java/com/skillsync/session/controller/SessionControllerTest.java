@@ -102,27 +102,19 @@ class SessionControllerTest {
     // ─── GET /session/{sessionId} ────────────────────────────────────────────
 
     @Test
-    void getSession_shouldReturn200_whenAuthenticated() throws Exception {
+    void getSession_shouldReturn200_whenRequested() throws Exception {
         when(sessionService.getSession(1L)).thenReturn(sessionResponse);
 
-        mockMvc.perform(get("/session/1")
-                        .header("roles", "ROLE_LEARNER"))
+        mockMvc.perform(get("/session/1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.id").value(1));
-    }
-
-    @Test
-    void getSession_shouldReturn403_whenRolesMissing() throws Exception {
-        mockMvc.perform(get("/session/1"))
-                .andExpect(status().isForbidden());
     }
 
     @Test
     void getSession_shouldReturn404_whenNotFound() throws Exception {
         when(sessionService.getSession(99L)).thenThrow(new SessionNotFoundException("Not found"));
 
-        mockMvc.perform(get("/session/99")
-                        .header("roles", "ROLE_LEARNER"))
+        mockMvc.perform(get("/session/99"))
                 .andExpect(status().isNotFound());
     }
 

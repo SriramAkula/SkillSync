@@ -527,22 +527,31 @@ export class ProfilePage implements OnInit {
 
     switch (n.type) {
       case 'MENTOR_APPLICATION_SUBMITTED':
+      case 'MENTOR_REQUEST':
         icon = 'assignment_ind';
         colorClass = 'bg-blue';
         break;
       case 'MENTOR_APPLICATION_APPROVED':
+      case 'MENTOR_APPROVED':
         icon = 'verified_user';
         colorClass = 'bg-green';
         break;
       case 'MENTOR_APPLICATION_REJECTED':
+      case 'MENTOR_REJECTED':
         icon = 'cancel';
         colorClass = 'bg-red';
         break;
       case 'SESSION_BOOKED':
+      case 'SESSION_REQUESTED':
         icon = 'event_available';
         colorClass = 'bg-purple';
         break;
+      case 'SESSION_ACCEPTED':
+        icon = 'check_circle';
+        colorClass = 'bg-indigo';
+        break;
       case 'PAYMENT_COMPLETED':
+      case 'PAYMENT_SUCCESS':
         icon = 'payments';
         colorClass = 'bg-emerald';
         break;

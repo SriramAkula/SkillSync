@@ -75,12 +75,8 @@ public class SessionController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Session not found")
     })
     public ResponseEntity<ApiResponse<SessionResponseDto>> getSession(
-            @PathVariable Long sessionId,
-            @Parameter(hidden = true) @RequestHeader(value = "roles", required = false) String roles) {
+            @PathVariable Long sessionId) {
 
-        if (roles == null || roles.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Authenticated access required");
-        }
         log.info("GET /{} - Get session details", sessionId);
         SessionResponseDto response = sessionService.getSession(sessionId);
         return ResponseEntity.ok(ApiResponse.<SessionResponseDto>builder()

@@ -1,3 +1,4 @@
+import 'tslib';
 import { Component, inject, OnInit, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -7,6 +8,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { SessionStore } from '../../../../core/auth/session.store';
 import { MentorStore } from '../../../../core/auth/mentor.store';
 import { AuthStore } from '../../../../core/auth/auth.store';
+import { SkillStore } from '../../../../core/auth/skill.store';
 import { SessionCardComponent } from '../../components/session-card/session-card.component';
 import { SessionDto } from '../../../../shared/models';
 
@@ -30,11 +32,17 @@ type DashTab = 'pending' | 'upcoming' | 'all';
             <p>Manage your sessions and track your progress</p>
           </div>
         </div>
-        <button class="btn-availability" (click)="toggleAvailability()">
-          <span class="avail-dot" [class.available]="mentorStore.isAvailable()"></span>
-          {{ mentorStore.isAvailable() ? 'Available' : 'Unavailable' }}
-          <span class="material-icons">expand_more</span>
-        </button>
+        <div class="header-actions">
+          <button class="btn-refresh" (click)="refresh()" [disabled]="sessionStore.loading()">
+            <span class="material-icons" [class.spinning]="sessionStore.loading()">refresh</span>
+            Refresh
+          </button>
+          <button class="btn-availability" (click)="toggleAvailability()">
+            <span class="avail-dot" [class.available]="mentorStore.isAvailable()"></span>
+            {{ mentorStore.isAvailable() ? 'Available' : 'Unavailable' }}
+            <span class="material-icons">expand_more</span>
+          </button>
+        </div>
       </div>
 
       @if (sessionStore.loading()) {
@@ -131,7 +139,7 @@ type DashTab = 'pending' | 'upcoming' | 'all';
                           </span>
                           <span class="meta-chip">
                             <span class="material-icons">auto_stories</span>
-                            Skill #{{ s.skillId }}
+                            {{ getSkillName(s.skillId) }}
                           </span>
                         </div>
                       </div>
@@ -283,6 +291,20 @@ type DashTab = 'pending' | 'upcoming' | 'all';
     .btn-availability .material-icons { font-size: 18px; color: #9ca3af; }
     .avail-dot { width: 8px; height: 8px; border-radius: 50%; background: #9ca3af; }
     .avail-dot.available { background: #16a34a; }
+    
+    .header-actions { display: flex; align-items: center; gap: 12px; }
+    .btn-refresh {
+      display: flex; align-items: center; gap: 8px;
+      height: 40px; padding: 0 16px; border-radius: 20px;
+      border: 1.5px solid #e5e7eb; background: #f9fafb;
+      font-size: 13px; font-weight: 600; color: #4f46e5;
+      cursor: pointer; transition: all 0.2s;
+    }
+    .btn-refresh:hover:not(:disabled) { background: #eef2ff; border-color: #4f46e5; }
+    .btn-refresh:disabled { opacity: 0.6; cursor: not-allowed; }
+    .btn-refresh .material-icons { font-size: 18px; }
+    .spinning { animation: spin 1s linear infinite; }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
     .loading-center { display: flex; justify-content: center; padding: 80px; }
 
@@ -454,11 +476,21 @@ type DashTab = 'pending' | 'upcoming' | 'all';
   `]
 })
 export class MentorSessionsPage implements OnInit {
-  readonly sessionStore = inject(SessionStore);
-  readonly mentorStore = inject(MentorStore);
-  readonly authStore = inject(AuthStore);
+  readonly sessionStore = inject(SessionStore) as any;
+  readonly mentorStore = inject(MentorStore) as any;
+  readonly authStore = inject(AuthStore) as any;
+  readonly skillStore = inject(SkillStore) as any;
   readonly router = inject(Router);
   private readonly snack = inject(MatSnackBar);
+
+  constructor() {
+    effect(() => {
+      const profile = this.mentorStore.myProfile();
+      if (profile && !this.authStore.isMentor()) {
+        this.authStore.refreshToken(undefined);
+      }
+    }, { allowSignalWrites: false });
+  }
 
   readonly activeTab = signal<DashTab>('pending');
   readonly rejectingSession = signal<SessionDto | null>(null);
@@ -472,31 +504,33 @@ export class MentorSessionsPage implements OnInit {
   ];
 
   readonly pendingSessions = computed(() =>
-    this.sessionStore.mentorSessions().filter(s => s.status === 'REQUESTED')
+    (this.sessionStore.mentorSessions() as SessionDto[]).filter((s: SessionDto) => s.status === 'REQUESTED')
   );
   readonly upcomingSessions = computed(() =>
-    this.sessionStore.mentorSessions().filter(s =>
+    (this.sessionStore.mentorSessions() as SessionDto[]).filter((s: SessionDto) =>
       ['ACCEPTED', 'CONFIRMED'].includes(s.status) &&
       new Date(s.scheduledAt) > new Date()
     )
   );
   readonly confirmedSessions = computed(() =>
-    this.sessionStore.mentorSessions().filter(s => s.status === 'CONFIRMED')
+    (this.sessionStore.mentorSessions() as SessionDto[]).filter((s: SessionDto) => s.status === 'CONFIRMED')
   );
 
   ngOnInit(): void {
-    this.sessionStore.loadMentorSessions(undefined);
+    this.refresh();
     this.mentorStore.loadMyProfile(undefined);
+    if (this.skillStore.skills().length === 0) {
+      this.skillStore.loadAll(undefined);
+    }
+  }
 
-    // Proactive token refresh: if the server confirms this user is a mentor
-    // but their JWT still lacks ROLE_MENTOR (stale token after approval),
-    // silently fetch a fresh token so the availability toggle works immediately.
-    effect(() => {
-      const profile = this.mentorStore.myProfile();
-      if (profile && !this.authStore.isMentor()) {
-        this.authStore.refreshToken(undefined);
-      }
-    }, { allowSignalWrites: false });
+  getSkillName(id: number): string {
+    const s = this.skillStore.getSkillById(id);
+    return s ? (s.skillName || s.name) : ('Skill #' + id);
+  }
+
+  refresh(): void {
+    this.sessionStore.loadMentorSessions(undefined);
   }
 
   toggleAvailability(): void {
