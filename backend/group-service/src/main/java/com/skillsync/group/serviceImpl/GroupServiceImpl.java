@@ -49,14 +49,16 @@ public class GroupServiceImpl implements GroupService {
         try {
             skillServiceClient.getSkillById(request.getSkillId());
         } catch (Exception e) {
-            throw new GroupNotFoundException("Referenced skill (ID: " + request.getSkillId() + ") does not exist or skill-service is down.");
+            log.error("Failed to validate skill {}: {}", request.getSkillId(), e.getMessage());
+            throw new GroupNotFoundException("Referenced skill (ID: " + request.getSkillId() + ") does not exist or skill-service is down. Cause: " + e.getMessage());
         }
 
         // Cross-service validation: User Sync
         try {
             userServiceClient.getProfile(creatorId);
         } catch (Exception e) {
-            throw new GroupNotFoundException("Creator user (ID: " + creatorId + ") does not exist or user-service is down.");
+            log.error("Failed to validate user {}: {}", creatorId, e.getMessage());
+            throw new GroupNotFoundException("Creator user (ID: " + creatorId + ") does not exist or user-service is down. Cause: " + e.getMessage());
         }
 
         Group group = groupMapper.toEntity(creatorId, request);
@@ -103,7 +105,8 @@ public class GroupServiceImpl implements GroupService {
         try {
             userServiceClient.getProfile(userId);
         } catch (Exception e) {
-            throw new GroupNotFoundException("User (ID: " + userId + ") does not exist or user-service is down.");
+            log.error("Failed to validate user {} for joining group {}: {}", userId, groupId, e.getMessage());
+            throw new GroupNotFoundException("User (ID: " + userId + ") does not exist or user-service is down. Cause: " + e.getMessage());
         }
 
         Group group = groupRepository.findById(groupId)

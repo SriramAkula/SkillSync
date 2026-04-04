@@ -88,8 +88,10 @@ public class UserProfileController {
 
 		return ResponseEntity
 				.ok(new ApiResponse<>(
+						true,
 						"Profile fetched successfully",
-						response));
+						response,
+						200));
 	}
 
 	/**
@@ -123,8 +125,10 @@ public class UserProfileController {
 
 		return ResponseEntity
 				.ok(new ApiResponse<>(
+						true,
 						"Profile fetched successfully",
-						response));
+						response,
+						200));
 	}
 
 	/**
@@ -182,8 +186,10 @@ public class UserProfileController {
 
 		return ResponseEntity
 				.ok(new ApiResponse<>(
+						true,
 						"Profile updated successfully",
-						response));
+						response,
+						200));
 	}
 
 	/**
@@ -260,8 +266,10 @@ public class UserProfileController {
 
 		return ResponseEntity
 				.ok(new ApiResponse<>(
+						true,
 						"Profile fetched successfully",
-						response));
+						response,
+						200));
 	}
 
 }

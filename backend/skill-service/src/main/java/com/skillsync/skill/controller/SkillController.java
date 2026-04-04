@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.skillsync.skill.dto.request.CreateSkillRequestDto;
+import com.skillsync.skill.dto.response.ApiResponse;
 import com.skillsync.skill.dto.response.SkillResponseDto;
 import com.skillsync.skill.service.SkillService;
 
@@ -66,8 +67,10 @@ public class SkillController {
 		return ResponseEntity
 			.status(HttpStatus.CREATED)
 			.body(new ApiResponse<>(
+				true,
 				"Skill created successfully",
-				response
+				response,
+				201
 			));
 	}
 
@@ -88,8 +91,10 @@ public class SkillController {
 
 		return ResponseEntity
 			.ok(new ApiResponse<>(
+				true,
 				"Skill fetched successfully",
-				response
+				response,
+				200
 			));
 	}
 
@@ -110,8 +115,10 @@ public class SkillController {
 
 		return ResponseEntity
 			.ok(new ApiResponse<>(
+				true,
 				"Skills fetched successfully",
-				response
+				response,
+				200
 			));
 	}
 
@@ -132,8 +139,10 @@ public class SkillController {
 
 		return ResponseEntity
 			.ok(new ApiResponse<>(
+				true,
 				"Skills found",
-				response
+				response,
+				200
 			));
 	}
 
@@ -151,8 +160,10 @@ public class SkillController {
 
 		return ResponseEntity
 			.ok(new ApiResponse<>(
+				true,
 				"Skills fetched successfully",
-				response
+				response,
+				200
 			));
 	}
 
@@ -175,8 +186,10 @@ public class SkillController {
 
 		return ResponseEntity
 			.ok(new ApiResponse<>(
+				true,
 				"Skill updated successfully",
-				response
+				response,
+				200
 			));
 	}
 
@@ -198,21 +211,11 @@ public class SkillController {
 
 		return ResponseEntity
 			.ok(new ApiResponse<>(
+				true,
 				"Skill deleted successfully",
-				null
+				null,
+				200
 			));
 	}
 }
 
-class ApiResponse<T> {
-	public String message;
-	public T data;
-
-	public ApiResponse(String message, T data) {
-		this.message = message;
-		this.data = data;
-	}
-
-	public String getMessage() { return message; }
-	public T getData() { return data; }
-}

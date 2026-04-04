@@ -2,6 +2,7 @@ package com.skillsync.skill.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.skillsync.skill.dto.request.CreateSkillRequestDto;
+import com.skillsync.skill.dto.response.ApiResponse;
 import com.skillsync.skill.dto.response.SkillResponseDto;
 import com.skillsync.skill.service.SkillService;
 import org.junit.jupiter.api.BeforeEach;
@@ -71,8 +72,10 @@ class SkillControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(createRequest)))
                 .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.message").value("Skill created successfully"))
-                .andExpect(jsonPath("$.data.skillName").value("Java"));
+                .andExpect(jsonPath("$.data.skillName").value("Java"))
+                .andExpect(jsonPath("$.statusCode").value(201));
     }
 
     @Test
@@ -131,9 +134,11 @@ class SkillControllerTest {
         mockMvc.perform(get("/skill/1")
                         .header("X-Gateway-Request", "true"))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.message").value("Skill fetched successfully"))
                 .andExpect(jsonPath("$.data.id").value(1))
-                .andExpect(jsonPath("$.data.skillName").value("Java"));
+                .andExpect(jsonPath("$.data.skillName").value("Java"))
+                .andExpect(jsonPath("$.statusCode").value(200));
     }
 
     @Test
@@ -154,8 +159,10 @@ class SkillControllerTest {
         mockMvc.perform(get("/skill")
                         .header("X-Gateway-Request", "true"))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.message").value("Skills fetched successfully"))
-                .andExpect(jsonPath("$.data[0].skillName").value("Java"));
+                .andExpect(jsonPath("$.data[0].skillName").value("Java"))
+                .andExpect(jsonPath("$.statusCode").value(200));
     }
 
     @Test
@@ -178,8 +185,10 @@ class SkillControllerTest {
                         .param("keyword", "java")
                         .header("X-Gateway-Request", "true"))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.message").value("Skills found"))
-                .andExpect(jsonPath("$.data[0].skillName").value("Java"));
+                .andExpect(jsonPath("$.data[0].skillName").value("Java"))
+                .andExpect(jsonPath("$.statusCode").value(200));
     }
 
     @Test
@@ -202,8 +211,10 @@ class SkillControllerTest {
         mockMvc.perform(get("/skill/category/Programming")
                         .header("X-Gateway-Request", "true"))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.message").value("Skills fetched successfully"))
-                .andExpect(jsonPath("$.data[0].category").value("Programming"));
+                .andExpect(jsonPath("$.data[0].category").value("Programming"))
+                .andExpect(jsonPath("$.statusCode").value(200));
     }
 
     @Test
@@ -228,8 +239,10 @@ class SkillControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(createRequest)))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.message").value("Skill updated successfully"))
-                .andExpect(jsonPath("$.data.skillName").value("Java"));
+                .andExpect(jsonPath("$.data.skillName").value("Java"))
+                .andExpect(jsonPath("$.statusCode").value(200));
     }
 
     @Test
@@ -288,7 +301,9 @@ class SkillControllerTest {
                         .header("roles", "ROLE_ADMIN")
                         .header("X-Gateway-Request", "true"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.message").value("Skill deleted successfully"));
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.message").value("Skill deleted successfully"))
+                .andExpect(jsonPath("$.statusCode").value(200));
     }
 
     @Test
