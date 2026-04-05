@@ -2,478 +2,264 @@ import 'tslib';
 import { Component, inject, OnInit, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { Router, RouterModule } from '@angular/router';
 import { SessionStore } from '../../../../core/auth/session.store';
 import { MentorStore } from '../../../../core/auth/mentor.store';
 import { AuthStore } from '../../../../core/auth/auth.store';
 import { SkillStore } from '../../../../core/auth/skill.store';
 import { SessionCardComponent } from '../../components/session-card/session-card.component';
 import { SessionDto } from '../../../../shared/models';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 
 type DashTab = 'pending' | 'upcoming' | 'all';
 
 @Component({
   selector: 'app-mentor-sessions-page',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatProgressSpinnerModule, MatSnackBarModule, SessionCardComponent],
+  imports: [CommonModule, FormsModule, RouterModule, SessionCardComponent, MatSnackBarModule],
   template: `
-    <div class="page">
+    <div class="max-w-7xl mx-auto space-y-10 animate-fade-in pb-20 px-2 lg:px-4">
 
-      <!-- ── Header ── -->
-      <div class="dash-header">
-        <div class="header-left">
-          <div class="header-icon">
-            <span class="material-icons">dashboard</span>
+      <!-- Premium Dashboard Header -->
+      <div class="flex flex-col lg:flex-row lg:items-end justify-between gap-8 pb-4 border-b border-slate-50">
+        <div class="space-y-2">
+          <div class="flex items-center gap-3 text-primary-600 font-bold text-xs uppercase tracking-[0.2em] mb-2">
+             <span class="material-icons text-sm">verified_user</span>
+             Verified Expert Dashboard
           </div>
-          <div>
-            <h1>Mentor Dashboard</h1>
-            <p>Manage your sessions and track your progress</p>
-          </div>
+          <h1 class="text-4xl lg:text-5xl font-black tracking-tighter text-slate-900">Manage Your <span class="text-primary-600">Impact</span></h1>
+          <p class="text-slate-500 font-medium text-lg lg:text-xl">Accept requests, track upcoming meetings, and grow your student base.</p>
         </div>
-        <div class="header-actions">
-          <button class="btn-refresh" (click)="refresh()" [disabled]="sessionStore.loading()">
-            <span class="material-icons" [class.spinning]="sessionStore.loading()">refresh</span>
-            Refresh
+
+        <div class="flex items-center gap-4">
+          <button (click)="refresh()" [disabled]="sessionStore.loading()" class="w-12 h-12 bg-white border border-slate-200 rounded-2xl flex items-center justify-center text-slate-400 hover:text-primary-600 transition-all hover:shadow-lg active:scale-95 group">
+             <span class="material-icons" [class.animate-spin]="sessionStore.loading()">refresh</span>
           </button>
-          <button class="btn-availability" (click)="toggleAvailability()">
-            <span class="avail-dot" [class.available]="mentorStore.isAvailable()"></span>
-            {{ mentorStore.isAvailable() ? 'Available' : 'Unavailable' }}
-            <span class="material-icons">expand_more</span>
+          
+          <!-- Availability Toggle (Premium) -->
+          <button (click)="toggleAvailability()" 
+                  class="bg-white border-2 border-slate-100 rounded-3xl px-6 py-3.5 flex items-center gap-4 hover:border-primary-200 transition-all active:scale-95 shadow-sm group">
+            <div class="relative">
+              <div class="w-3 h-3 rounded-full shadow-sm" [ngClass]="mentorStore.isAvailable() ? 'bg-emerald-500 shadow-emerald-200 animate-pulse' : 'bg-slate-300'"></div>
+            </div>
+            <div class="text-left">
+              <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-1">My Status</p>
+              <p class="text-xs font-black text-slate-800 uppercase tracking-wider leading-none">{{ mentorStore.isAvailable() ? 'Available' : 'Unavailable' }}</p>
+            </div>
+            <span class="material-icons text-slate-300 group-hover:text-primary-600 transition-colors">swap_horiz</span>
           </button>
         </div>
       </div>
 
-      @if (sessionStore.loading()) {
-        <div class="loading-center"><mat-spinner diameter="48" /></div>
-      } @else {
-
-        <!-- ── Stats Row ── -->
-        <div class="stats-row">
-          <div class="stat-card" [class.highlight]="activeTab() === 'pending'" (click)="activeTab.set('pending')">
-            <div class="stat-icon pending-icon">
+      <!-- Stats Grid (Glassmorphic) -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+        <div (click)="activeTab.set('pending')" 
+             [class.ring-2]="activeTab() === 'pending'"
+             class="glass-card p-6 cursor-pointer hover:shadow-2xl transition-all duration-300 ring-amber-500/50 ring-offset-2 relative overflow-hidden group">
+          <div class="flex items-center gap-4 relative z-10">
+            <div class="w-12 h-12 bg-amber-50 rounded-xl flex items-center justify-center text-amber-500 group-hover:bg-amber-100 transition-colors">
               <span class="material-icons">pending_actions</span>
             </div>
-            <div class="stat-body">
-              <span class="stat-num">{{ pendingSessions().length }}</span>
-              <span class="stat-lbl">Pending</span>
+            <div>
+              <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Action Required</p>
+              <p class="text-2xl font-black text-slate-800 tracking-tight">{{ pendingSessions().length }}</p>
             </div>
-            @if (pendingSessions().length > 0) {
-              <span class="stat-badge">Action needed</span>
-            }
           </div>
+          @if (pendingSessions().length > 0) {
+            <span class="absolute -top-2 -right-2 bg-amber-500 text-white text-[9px] font-bold px-3 py-1 rounded-bl-xl uppercase tracking-widest shadow-lg">New Inbound</span>
+          }
+        </div>
 
-          <div class="stat-card" [class.highlight]="activeTab() === 'upcoming'" (click)="activeTab.set('upcoming')">
-            <div class="stat-icon upcoming-icon">
+        <div (click)="activeTab.set('upcoming')" 
+             [class.ring-2]="activeTab() === 'upcoming'"
+             class="glass-card p-6 cursor-pointer hover:shadow-2xl transition-all duration-300 ring-blue-500/50 ring-offset-2 group">
+          <div class="flex items-center gap-4">
+            <div class="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center text-blue-500 group-hover:bg-blue-100 transition-colors">
               <span class="material-icons">event_available</span>
             </div>
-            <div class="stat-body">
-              <span class="stat-num">{{ upcomingSessions().length }}</span>
-              <span class="stat-lbl">Upcoming</span>
-            </div>
-          </div>
-
-          <div class="stat-card" [class.highlight]="activeTab() === 'all'" (click)="activeTab.set('all')">
-            <div class="stat-icon total-icon">
-              <span class="material-icons">event_note</span>
-            </div>
-            <div class="stat-body">
-              <span class="stat-num">{{ sessionStore.mentorSessions().length }}</span>
-              <span class="stat-lbl">Total</span>
-            </div>
-          </div>
-
-          <div class="stat-card earnings-card">
-            <div class="stat-icon earn-icon">
-              <span class="material-icons">payments</span>
-            </div>
-            <div class="stat-body">
-              <span class="stat-num">{{ confirmedSessions().length }}</span>
-              <span class="stat-lbl">Confirmed</span>
+            <div>
+              <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Confirmed</p>
+              <p class="text-2xl font-black text-slate-800 tracking-tight">{{ upcomingSessions().length }}</p>
             </div>
           </div>
         </div>
 
-        <!-- ── Pending Requests ── -->
-        @if (activeTab() === 'pending') {
-          <div class="section">
-            <div class="section-header">
-              <h2>
-                <span class="material-icons">pending_actions</span>
-                Pending Requests
-              </h2>
-              @if (pendingSessions().length > 0) {
-                <span class="section-badge">{{ pendingSessions().length }} awaiting response</span>
+        <div (click)="activeTab.set('all')" 
+             [class.ring-2]="activeTab() === 'all'"
+             class="glass-card p-6 cursor-pointer hover:shadow-2xl transition-all duration-300 ring-violet-500/50 ring-offset-2 group">
+          <div class="flex items-center gap-4">
+            <div class="w-12 h-12 bg-violet-50 rounded-xl flex items-center justify-center text-violet-500 group-hover:bg-violet-100 transition-colors">
+              <span class="material-icons">history</span>
+            </div>
+            <div>
+              <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Lifetime</p>
+              <p class="text-2xl font-black text-slate-800 tracking-tight">{{ sessionStore.mentorSessions().length }}</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="glass-card p-6 border-emerald-100 bg-emerald-50/5 relative overflow-hidden">
+          <div class="flex items-center gap-4">
+            <div class="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-500">
+              <span class="material-icons">account_balance_wallet</span>
+            </div>
+            <div>
+              <p class="text-[10px] font-bold uppercase tracking-widest text-emerald-600">Total Confirmed</p>
+              <p class="text-2xl font-black text-emerald-700 tracking-tight">{{ confirmedSessions().length }}</p>
+            </div>
+          </div>
+          <div class="absolute -right-4 -bottom-4 opacity-5 pointer-events-none">
+             <span class="material-icons text-8xl text-emerald-600">volunteer_activism</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Content Area -->
+      <div class="space-y-8">
+        
+        <!-- Tab Switches (Premium Pill) -->
+        <div class="flex items-center gap-2 p-1.5 bg-slate-100/50 rounded-2xl w-fit">
+          @for (tab of tabs; track tab.key) {
+            <button 
+              (click)="activeTab.set(tab.key)"
+              [class.bg-white]="activeTab() === tab.key"
+              [class.shadow-md]="activeTab() === tab.key"
+              [class.text-primary-600]="activeTab() === tab.key"
+              [class.text-slate-500]="activeTab() !== tab.key"
+              class="px-8 py-3 rounded-xl text-xs font-bold uppercase tracking-widest transition-all active:scale-95 whitespace-nowrap">
+              {{ tab.label }}
+            </button>
+          }
+        </div>
+
+        <!-- Dynamic List View -->
+        @if (sessionStore.loading()) {
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              @for (i of [1,2,3]; track i) {
+                <div class="h-64 bg-slate-50 rounded-[2.5rem] animate-pulse"></div>
               }
             </div>
-
-            @if (pendingSessions().length === 0) {
-              <div class="empty-state">
-                <div class="empty-icon"><span class="material-icons">inbox</span></div>
-                <h3>All caught up!</h3>
-                <p>No pending session requests right now.</p>
-              </div>
-            } @else {
-              <div class="request-list">
-                @for (s of pendingSessions(); track s.id) {
-                  <div class="request-card">
-                    <div class="request-left">
-                      <div class="request-avatar">
-                        <span class="material-icons">person</span>
-                      </div>
-                      <div class="request-info">
-                        <div class="request-title">Session Request #{{ s.id }}</div>
-                        <div class="request-meta">
-                          <span class="meta-chip">
-                            <span class="material-icons">calendar_today</span>
-                            {{ s.scheduledAt | date:'EEE, MMM d' }}
-                          </span>
-                          <span class="meta-chip">
-                            <span class="material-icons">schedule</span>
-                            {{ s.scheduledAt | date:'h:mm a' }}
-                          </span>
-                          <span class="meta-chip">
-                            <span class="material-icons">timer</span>
-                            {{ s.durationMinutes }} min
-                          </span>
-                          <span class="meta-chip">
-                            <span class="material-icons">auto_stories</span>
-                            {{ getSkillName(s.skillId) }}
-                          </span>
-                        </div>
-                      </div>
+        } @else {
+          
+          <!-- Special View for Pending to emphasize action -->
+          @if (activeTab() === 'pending') {
+            <div class="space-y-4 animate-drop-in">
+              @for (s of pendingSessions(); track s.id) {
+                <div class="glass-card p-6 md:p-8 flex flex-col md:flex-row md:items-center justify-between gap-8 border border-white/40 shadow-xl hover:shadow-2xl transition-all duration-300 group">
+                  <div class="flex items-center gap-6">
+                    <div class="w-16 h-16 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-300 group-hover:bg-amber-50 group-hover:text-amber-500 transition-colors">
+                      <span class="material-icons text-3xl">contact_support</span>
                     </div>
-                    <div class="request-actions">
-                      <button class="btn-details-sm" (click)="router.navigate(['/sessions', s.id])">
-                        <span class="material-icons">open_in_new</span>
-                      </button>
-                      <button class="btn-reject-sm" (click)="openReject(s)">
-                        <span class="material-icons">close</span>
-                        Decline
-                      </button>
-                      <button class="btn-accept-sm" (click)="accept(s.id)">
-                        <span class="material-icons">check</span>
-                        Accept
-                      </button>
+                    <div class="space-y-2">
+                      <div class="flex gap-2">
+                         <span class="bg-amber-100 text-amber-700 px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-widest">New Booking Request</span>
+                         <span class="text-[10px] font-bold text-slate-300 uppercase tracking-widest pt-0.5">Session #{{ s.id }}</span>
+                      </div>
+                      <h4 class="text-xl font-black text-slate-800 tracking-tight leading-none">{{ getSkillName(s.skillId) }}</h4>
+                      <div class="flex items-center gap-4 text-[11px] font-bold text-slate-400 tracking-wide uppercase">
+                         <span class="flex items-center gap-1"><span class="material-icons text-sm">calendar_month</span> {{ s.scheduledAt | date:'EEE, MMM d' }}</span>
+                         <span class="flex items-center gap-1"><span class="material-icons text-sm">schedule</span> {{ s.scheduledAt | date:'h:mm a' }}</span>
+                         <span class="flex items-center gap-1 text-slate-300 flex-shrink-0">•</span>
+                         <span class="flex items-center gap-1"><span class="material-icons text-sm">timer</span> {{ s.durationMinutes }} Min</span>
+                      </div>
                     </div>
                   </div>
-                }
-              </div>
-            }
-          </div>
-        }
-
-        <!-- ── Upcoming Sessions ── -->
-        @if (activeTab() === 'upcoming') {
-          <div class="section">
-            <div class="section-header">
-              <h2>
-                <span class="material-icons">event_available</span>
-                Upcoming Sessions
-              </h2>
-            </div>
-            @if (upcomingSessions().length === 0) {
-              <div class="empty-state">
-                <div class="empty-icon"><span class="material-icons">event_busy</span></div>
-                <h3>No upcoming sessions</h3>
-                <p>Accepted sessions scheduled in the future will appear here.</p>
-              </div>
-            } @else {
-              <div class="sessions-grid">
-                @for (s of upcomingSessions(); track s.id) {
-                  <app-session-card [session]="s"
-                    (view)="router.navigate(['/sessions', $event])"
-                    (cancel)="cancelSession($event)"
-                    (pay)="noop()" />
-                }
-              </div>
-            }
-          </div>
-        }
-
-        <!-- ── All Sessions ── -->
-        @if (activeTab() === 'all') {
-          <div class="section">
-            <div class="section-header">
-              <h2>
-                <span class="material-icons">event_note</span>
-                All Sessions
-              </h2>
-            </div>
-            @if (sessionStore.mentorSessions().length === 0) {
-              <div class="empty-state">
-                <div class="empty-icon"><span class="material-icons">event_note</span></div>
-                <h3>No sessions yet</h3>
-                <p>Your session history will appear here.</p>
-              </div>
-            } @else {
-              <div class="sessions-grid">
-                @for (s of sessionStore.mentorSessions(); track s.id) {
-                  <app-session-card [session]="s"
-                    (view)="router.navigate(['/sessions', $event])"
-                    (cancel)="cancelSession($event)"
-                    (pay)="noop()" />
-                }
-              </div>
-            }
-          </div>
-        }
-
-      }
-
-      <!-- ── Reject Modal ── -->
-      @if (rejectingSession()) {
-        <div class="modal-overlay" (click)="rejectingSession.set(null)">
-          <div class="modal-card" (click)="$event.stopPropagation()">
-            <div class="modal-header">
-              <div class="modal-icon">
-                <span class="material-icons">cancel</span>
-              </div>
-              <div>
-                <h3>Decline Session</h3>
-                <p>Session #{{ rejectingSession()!.id }}</p>
-              </div>
-              <button class="modal-close" (click)="rejectingSession.set(null)">
-                <span class="material-icons">close</span>
-              </button>
-            </div>
-            <p class="modal-sub">Let the learner know why you're declining so they can find another mentor.</p>
-            <div class="reason-chips">
-              @for (r of quickReasons; track r) {
-                <button class="reason-chip" [class.active]="rejectReason === r"
-                        (click)="rejectReason = r">{{ r }}</button>
+                  
+                  <div class="flex items-center gap-3 pt-4 md:pt-0 border-t md:border-t-0 border-slate-50">
+                    <button (click)="openReject(s)" class="flex-1 md:flex-none px-6 py-3 rounded-xl border border-red-100 text-red-500 text-xs font-extrabold uppercase tracking-widest hover:bg-red-50 transition-all active:scale-95">Decline</button>
+                    <button (click)="accept(s.id)" class="flex-[2] md:flex-none px-10 py-3 bg-emerald-600 text-white rounded-xl text-xs font-extrabold uppercase tracking-widest shadow-xl shadow-emerald-100 hover:bg-emerald-700 hover:-translate-y-1 transition-all active:scale-95 flex items-center justify-center gap-2">
+                       <span class="material-icons text-base">verified</span>
+                       Accept Session
+                    </button>
+                  </div>
+                </div>
+              } @empty {
+                <div class="py-24 glass-card border border-dashed border-slate-200 flex flex-col items-center text-center space-y-4">
+                   <div class="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center text-slate-200">
+                      <span class="material-icons text-3xl">inbox</span>
+                   </div>
+                   <h3 class="text-xl font-bold text-slate-800">No pending requests</h3>
+                   <p class="text-slate-500 text-sm max-w-xs font-medium">When learners book sessions with you, they'll appear here for your approval.</p>
+                </div>
               }
             </div>
-            <div class="input-wrapper">
-              <span class="material-icons input-icon">edit_note</span>
-              <input type="text" [(ngModel)]="rejectReason" placeholder="Or type a custom reason..." />
+          } @else {
+            <!-- Regular Grid for Other Tabs -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 animate-drop-in">
+              @for (s of (activeTab() === 'upcoming' ? upcomingSessions() : sessionStore.mentorSessions()); track s.id) {
+                <app-session-card 
+                  [session]="s"
+                  (view)="router.navigate(['/sessions', $event])"
+                  (cancel)="cancelSession($event)"
+                  (pay)="noop()" />
+              } @empty {
+                <div class="col-span-full py-24 flex flex-col items-center text-center space-y-4 text-slate-300">
+                   <span class="material-icons text-6xl">event_busy</span>
+                   <p class="text-sm font-bold uppercase tracking-widest">No matching activities found.</p>
+                </div>
+              }
             </div>
-            <div class="modal-actions">
-              <button class="btn-modal-cancel" (click)="rejectingSession.set(null)">Cancel</button>
-              <button class="btn-modal-reject" (click)="confirmReject()" [disabled]="!rejectReason.trim()">
-                <span class="material-icons">cancel</span>
-                Decline Session
-              </button>
-            </div>
-          </div>
-        </div>
-      }
+          }
 
+        }
+
+      </div>
     </div>
-  `,
-  styles: [`
-    .page { max-width: 1100px; margin: 0 auto; }
 
-    /* Header */
-    .dash-header {
-      display: flex; justify-content: space-between; align-items: center;
-      margin-bottom: 28px; flex-wrap: wrap; gap: 16px;
-    }
-    .header-left { display: flex; align-items: center; gap: 16px; }
-    .header-icon {
-      width: 52px; height: 52px; border-radius: 16px;
-      background: linear-gradient(135deg, #4f46e5, #7c3aed);
-      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-    }
-    .header-icon .material-icons { font-size: 26px; color: white; }
-    .dash-header h1 { font-size: 26px; font-weight: 800; color: #111827; margin: 0 0 3px; }
-    .dash-header p { color: #6b7280; font-size: 14px; margin: 0; }
+    <!-- Rejection Modal (Premium Backdrop) -->
+    @if (rejectingSession()) {
+      <div class="fixed inset-0 z-[200] flex items-center justify-center p-4 animate-fade-in">
+        <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" (click)="rejectingSession.set(null)"></div>
+        
+        <div class="bg-white rounded-[2.5rem] w-full max-w-lg p-10 relative z-10 shadow-2xl animate-drop-in border border-slate-100">
+           <div class="flex items-center gap-4 mb-8">
+              <div class="w-14 h-14 bg-red-50 rounded-2xl flex items-center justify-center text-red-500 shadow-sm border border-red-100">
+                 <span class="material-icons">block</span>
+              </div>
+              <div class="space-y-0.5">
+                 <h2 class="text-xl font-black text-slate-800 tracking-tight">Decline Session Request</h2>
+                 <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">Session #{{ rejectingSession()!.id }}</p>
+              </div>
+           </div>
 
-    .btn-availability {
-      display: flex; align-items: center; gap: 8px;
-      height: 40px; padding: 0 16px; border-radius: 20px;
-      border: 1.5px solid #e5e7eb; background: white;
-      font-size: 13px; font-weight: 600; color: #374151;
-      cursor: pointer; transition: border-color 0.15s;
-    }
-    .btn-availability:hover { border-color: #4f46e5; }
-    .btn-availability .material-icons { font-size: 18px; color: #9ca3af; }
-    .avail-dot { width: 8px; height: 8px; border-radius: 50%; background: #9ca3af; }
-    .avail-dot.available { background: #16a34a; }
-    
-    .header-actions { display: flex; align-items: center; gap: 12px; }
-    .btn-refresh {
-      display: flex; align-items: center; gap: 8px;
-      height: 40px; padding: 0 16px; border-radius: 20px;
-      border: 1.5px solid #e5e7eb; background: #f9fafb;
-      font-size: 13px; font-weight: 600; color: #4f46e5;
-      cursor: pointer; transition: all 0.2s;
-    }
-    .btn-refresh:hover:not(:disabled) { background: #eef2ff; border-color: #4f46e5; }
-    .btn-refresh:disabled { opacity: 0.6; cursor: not-allowed; }
-    .btn-refresh .material-icons { font-size: 18px; }
-    .spinning { animation: spin 1s linear infinite; }
-    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+           <p class="text-sm text-slate-500 font-medium leading-relaxed mb-8 italic">Let the learner know why you are unable to fulfill this request. This keeps our community transparent and helpful.</p>
 
-    .loading-center { display: flex; justify-content: center; padding: 80px; }
+           <!-- Quick Reasons Chips -->
+           <div class="flex flex-wrap gap-2 mb-8">
+             @for (r of quickReasons; track r) {
+               <button 
+                 (click)="rejectReason = r"
+                 [class.bg-red-500]="rejectReason === r"
+                 [class.text-white]="rejectReason === r"
+                 [class.ring-4]="rejectReason === r"
+                 [class.ring-red-100]="rejectReason === r"
+                 [class.bg-slate-50]="rejectReason !== r"
+                 [class.text-slate-500]="rejectReason !== r"
+                 class="px-4 py-2.5 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all active:scale-95">
+                 {{ r }}
+               </button>
+             }
+           </div>
 
-    /* Stats Row */
-    .stats-row {
-      display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px;
-      margin-bottom: 28px;
-    }
-    @media (max-width: 768px) { .stats-row { grid-template-columns: repeat(2, 1fr); } }
-    @media (max-width: 400px) { .stats-row { grid-template-columns: 1fr 1fr; } }
+           <!-- Custom Input -->
+           <div class="relative group mb-10">
+              <span class="material-icons absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-red-500 transition-colors">edit_note</span>
+              <input type="text" [(ngModel)]="rejectReason" placeholder="Or provide a custom reason..." class="w-full bg-slate-50 border border-slate-200 rounded-xl py-4 pl-12 pr-4 text-sm focus:ring-4 focus:ring-red-500/10 focus:border-red-500/50 outline-none transition-all font-bold text-slate-700">
+           </div>
 
-    .stat-card {
-      background: white; border-radius: 16px; border: 2px solid #e5e7eb;
-      padding: 18px; cursor: pointer;
-      display: flex; flex-direction: column; gap: 12px;
-      transition: border-color 0.15s, box-shadow 0.15s;
+           <div class="flex gap-4">
+              <button (click)="rejectingSession.set(null)" class="flex-1 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest hover:text-slate-600 transition-colors">Cancel Interaction</button>
+              <button 
+                 (click)="confirmReject()" 
+                 [disabled]="!rejectReason.trim()"
+                 class="flex-[2] bg-red-600 text-white rounded-2xl py-4 text-xs font-black uppercase tracking-[0.2em] shadow-xl shadow-red-100 hover:bg-red-700 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2">
+                 Confirm Rejection
+              </button>
+           </div>
+        </div>
+      </div>
     }
-    .stat-card:hover { border-color: #c7d2fe; }
-    .stat-card.highlight { border-color: #4f46e5; box-shadow: 0 0 0 3px rgba(79,70,229,0.08); }
-    .earnings-card { cursor: default; }
-    .earnings-card:hover { border-color: #e5e7eb; }
-
-    .stat-icon {
-      width: 40px; height: 40px; border-radius: 12px;
-      display: flex; align-items: center; justify-content: center;
-    }
-    .stat-icon .material-icons { font-size: 20px; }
-    .pending-icon  { background: #fef3c7; } .pending-icon  .material-icons { color: #d97706; }
-    .upcoming-icon { background: #dbeafe; } .upcoming-icon .material-icons { color: #2563eb; }
-    .total-icon    { background: #e0e7ff; } .total-icon    .material-icons { color: #4f46e5; }
-    .earn-icon     { background: #dcfce7; } .earn-icon     .material-icons { color: #16a34a; }
-
-    .stat-body { display: flex; flex-direction: column; gap: 2px; }
-    .stat-num { font-size: 28px; font-weight: 800; color: #111827; line-height: 1; }
-    .stat-lbl { font-size: 13px; color: #6b7280; font-weight: 500; }
-    .stat-badge {
-      font-size: 11px; font-weight: 600; color: #d97706;
-      background: #fef3c7; padding: 2px 8px; border-radius: 20px;
-      width: fit-content;
-    }
-
-    /* Section */
-    .section { display: flex; flex-direction: column; gap: 16px; }
-    .section-header {
-      display: flex; align-items: center; justify-content: space-between;
-      flex-wrap: wrap; gap: 8px;
-    }
-    .section-header h2 {
-      display: flex; align-items: center; gap: 8px;
-      font-size: 18px; font-weight: 700; color: #111827; margin: 0;
-    }
-    .section-header h2 .material-icons { font-size: 20px; color: #4f46e5; }
-    .section-badge {
-      background: #fef3c7; color: #d97706;
-      padding: 4px 12px; border-radius: 20px;
-      font-size: 12px; font-weight: 600;
-    }
-
-    /* Request List */
-    .request-list { display: flex; flex-direction: column; gap: 10px; }
-    .request-card {
-      background: white; border-radius: 14px; border: 1px solid #e5e7eb;
-      padding: 16px 20px;
-      display: flex; align-items: center; justify-content: space-between;
-      gap: 16px; flex-wrap: wrap;
-      transition: box-shadow 0.15s, border-color 0.15s;
-    }
-    .request-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.06); border-color: #c7d2fe; }
-
-    .request-left { display: flex; align-items: center; gap: 14px; flex: 1; min-width: 0; }
-    .request-avatar {
-      width: 44px; height: 44px; border-radius: 12px;
-      background: #eef2ff; display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0;
-    }
-    .request-avatar .material-icons { font-size: 22px; color: #4f46e5; }
-    .request-info { min-width: 0; }
-    .request-title { font-size: 15px; font-weight: 700; color: #111827; margin-bottom: 6px; }
-    .request-meta { display: flex; gap: 8px; flex-wrap: wrap; }
-    .meta-chip {
-      display: flex; align-items: center; gap: 4px;
-      background: #f3f4f6; color: #6b7280;
-      padding: 3px 8px; border-radius: 6px;
-      font-size: 12px; font-weight: 500;
-    }
-    .meta-chip .material-icons { font-size: 13px; }
-
-    .request-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
-    .btn-details-sm {
-      width: 36px; height: 36px; border-radius: 8px;
-      background: #f3f4f6; color: #6b7280; border: none; cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      transition: background 0.15s;
-    }
-    .btn-details-sm:hover { background: #e5e7eb; color: #374151; }
-    .btn-details-sm .material-icons { font-size: 16px; }
-
-    .btn-reject-sm {
-      display: flex; align-items: center; gap: 5px;
-      height: 36px; padding: 0 14px; border-radius: 8px;
-      background: #fee2e2; color: #dc2626; border: none;
-      font-size: 13px; font-weight: 600; cursor: pointer; transition: background 0.15s;
-    }
-    .btn-reject-sm:hover { background: #fecaca; }
-    .btn-reject-sm .material-icons { font-size: 15px; }
-
-    .btn-accept-sm {
-      display: flex; align-items: center; gap: 5px;
-      height: 36px; padding: 0 16px; border-radius: 8px;
-      background: linear-gradient(135deg, #4f46e5, #7c3aed);
-      color: white; border: none;
-      font-size: 13px; font-weight: 600; cursor: pointer;
-      box-shadow: 0 2px 8px rgba(79,70,229,0.25); transition: opacity 0.15s;
-    }
-    .btn-accept-sm:hover { opacity: 0.9; }
-    .btn-accept-sm .material-icons { font-size: 15px; }
-
-    /* Sessions Grid */
-    .sessions-grid {
-      display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px;
-    }
-    @media (max-width: 480px) { .sessions-grid { grid-template-columns: 1fr; } }
-
-    /* Empty State */
-    .empty-state {
-      display: flex; flex-direction: column; align-items: center;
-      gap: 10px; padding: 60px 20px; text-align: center;
-      background: white; border-radius: 16px; border: 1px solid #e5e7eb;
-    }
-    .empty-icon { width: 64px; height: 64px; border-radius: 18px; background: #f3f4f6; display: flex; align-items: center; justify-content: center; }
-    .empty-icon .material-icons { font-size: 32px; color: #9ca3af; }
-    .empty-state h3 { font-size: 16px; font-weight: 700; color: #111827; margin: 0; }
-    .empty-state p { font-size: 13px; color: #6b7280; margin: 0; }
-
-    /* Modal */
-    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 16px; }
-    .modal-card { background: white; border-radius: 20px; padding: 28px; width: 100%; max-width: 460px; box-shadow: 0 20px 60px rgba(0,0,0,0.2); }
-    .modal-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
-    .modal-icon { width: 44px; height: 44px; border-radius: 12px; background: #fee2e2; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-    .modal-icon .material-icons { font-size: 22px; color: #dc2626; }
-    .modal-header h3 { font-size: 17px; font-weight: 800; color: #111827; margin: 0 0 2px; }
-    .modal-header p { font-size: 12px; color: #9ca3af; margin: 0; }
-    .modal-close { margin-left: auto; background: none; border: none; cursor: pointer; color: #9ca3af; display: flex; align-items: center; padding: 4px; border-radius: 6px; }
-    .modal-close:hover { background: #f3f4f6; }
-    .modal-close .material-icons { font-size: 20px; }
-    .modal-sub { font-size: 14px; color: #6b7280; margin: 0 0 16px; line-height: 1.5; }
-
-    .reason-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
-    .reason-chip {
-      padding: 6px 12px; border-radius: 20px; border: 1.5px solid #e5e7eb;
-      background: white; color: #6b7280; font-size: 12px; font-weight: 500;
-      cursor: pointer; transition: all 0.15s;
-    }
-    .reason-chip:hover { border-color: #dc2626; color: #dc2626; }
-    .reason-chip.active { background: #fee2e2; border-color: #dc2626; color: #dc2626; font-weight: 600; }
-
-    .input-wrapper { display: flex; align-items: center; background: #f9fafb; border: 1.5px solid #e5e7eb; border-radius: 12px; padding: 0 14px; height: 52px; margin-bottom: 20px; }
-    .input-wrapper:focus-within { border-color: #4f46e5; box-shadow: 0 0 0 3px rgba(79,70,229,0.1); background: white; }
-    .input-icon { font-size: 18px; color: #9ca3af; margin-right: 10px; }
-    .input-wrapper input { flex: 1; border: none; outline: none; font-size: 14px; color: #111827; background: transparent; }
-    .input-wrapper input::placeholder { color: #9ca3af; }
-
-    .modal-actions { display: flex; gap: 10px; }
-    .btn-modal-cancel { flex: 1; height: 48px; border-radius: 12px; background: #f3f4f6; color: #374151; border: none; font-size: 14px; font-weight: 600; cursor: pointer; }
-    .btn-modal-reject { flex: 1; height: 48px; border-radius: 12px; background: #dc2626; color: white; border: none; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: opacity 0.15s; }
-    .btn-modal-reject:hover:not(:disabled) { opacity: 0.9; }
-    .btn-modal-reject:disabled { opacity: 0.5; cursor: not-allowed; }
-    .btn-modal-reject .material-icons { font-size: 18px; }
-  `]
+  `
 })
 export class MentorSessionsPage implements OnInit {
   readonly sessionStore = inject(SessionStore) as any;
@@ -496,24 +282,30 @@ export class MentorSessionsPage implements OnInit {
   readonly rejectingSession = signal<SessionDto | null>(null);
   rejectReason = '';
 
+  readonly tabs: { key: DashTab; label: string }[] = [
+    { key: 'pending',  label: 'Incoming Requests' },
+    { key: 'upcoming', label: 'Accepted Schedule' },
+    { key: 'all',      label: 'Session History' },
+  ];
+
   readonly quickReasons = [
-    'Schedule conflict',
-    'Not available that day',
-    'Outside my expertise',
-    'Already fully booked',
+    'Schedule Conflict',
+    'Personal Emergency',
+    'Topic Misaligned',
+    'Full Capacity',
   ];
 
   readonly pendingSessions = computed(() =>
-    (this.sessionStore.mentorSessions() as SessionDto[]).filter((s: SessionDto) => s.status === 'REQUESTED')
+    (this.sessionStore.mentorSessions() as SessionDto[]).filter(s => s.status === 'REQUESTED')
   );
   readonly upcomingSessions = computed(() =>
-    (this.sessionStore.mentorSessions() as SessionDto[]).filter((s: SessionDto) =>
+    (this.sessionStore.mentorSessions() as SessionDto[]).filter(s =>
       ['ACCEPTED', 'CONFIRMED'].includes(s.status) &&
       new Date(s.scheduledAt) > new Date()
     )
   );
   readonly confirmedSessions = computed(() =>
-    (this.sessionStore.mentorSessions() as SessionDto[]).filter((s: SessionDto) => s.status === 'CONFIRMED')
+    (this.sessionStore.mentorSessions() as SessionDto[]).filter(s => s.status === 'CONFIRMED')
   );
 
   ngOnInit(): void {
@@ -534,26 +326,16 @@ export class MentorSessionsPage implements OnInit {
   }
 
   toggleAvailability(): void {
-    // Guard: if the token is stale and doesn't yet reflect ROLE_MENTOR,
-    // refresh it first and prompt the user to retry.
     if (!this.authStore.isMentor()) {
       this.authStore.refreshToken(undefined);
-      this.snack.open(
-        'Syncing your mentor permissions... Please try again in a moment.',
-        'OK',
-        { duration: 4000 }
-      );
       return;
     }
-
     const next = this.mentorStore.isAvailable() ? 'BUSY' : 'AVAILABLE';
     this.mentorStore.updateAvailability({ availabilityStatus: next as any });
-    this.snack.open(`Status set to ${next}`, 'OK', { duration: 2000 });
   }
 
   accept(id: number): void {
     this.sessionStore.accept(id);
-    this.snack.open('Session accepted! The learner will be notified.', 'OK', { duration: 3000 });
   }
 
   openReject(s: SessionDto): void { this.rejectingSession.set(s); this.rejectReason = ''; }
@@ -563,12 +345,10 @@ export class MentorSessionsPage implements OnInit {
     if (!s || !this.rejectReason.trim()) return;
     this.sessionStore.reject({ id: s.id, reason: this.rejectReason });
     this.rejectingSession.set(null);
-    this.snack.open('Session declined.', 'OK', { duration: 3000 });
   }
 
   cancelSession(id: number): void {
     this.sessionStore.cancel(id);
-    this.snack.open('Session cancelled.', 'OK', { duration: 3000 });
   }
 
   noop(): void {}

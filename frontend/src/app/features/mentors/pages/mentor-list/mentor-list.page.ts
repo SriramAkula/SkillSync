@@ -239,11 +239,11 @@ export class MentorListPage implements OnInit {
       this.skillStore.loadAll(undefined);
     }
     this.filterForm.valueChanges.pipe(debounceTime(400)).subscribe(vals => {
-      const hasFilter = (vals.skill && vals.skill.length >= 2) || 
-                        vals.minExperience != null || 
-                        vals.maxExperience != null || 
-                        vals.maxRate != null || 
-                        vals.minRating != null;
+      const hasFilter = (vals.skill && vals.skill.length >= 2) ||
+        vals.minExperience != null ||
+        vals.maxExperience != null ||
+        vals.maxRate != null ||
+        vals.minRating != null;
       if (hasFilter) {
         this.mentorStore.search(vals as any);
       } else {
@@ -254,11 +254,11 @@ export class MentorListPage implements OnInit {
 
   filteredMentors() {
     const avail = this.availFilter();
-    
+
     // Check if any filter in form has a value
     const v = this.filterForm.value;
     const hasSearchActive = (v.skill && v.skill.length >= 2) || v.minExperience != null || v.maxExperience != null || v.maxRate != null || v.minRating != null;
-    
+
     const list = hasSearchActive ? this.mentorStore.searchResults() : this.mentorStore.approved();
     return avail ? list.filter(m => m.availabilityStatus === avail) : list;
   }

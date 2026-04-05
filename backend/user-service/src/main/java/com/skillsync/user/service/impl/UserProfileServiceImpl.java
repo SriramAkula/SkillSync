@@ -90,6 +90,10 @@ public class UserProfileServiceImpl implements UserProfileService {
 
 	@Override
 	@Transactional
+	@Caching(evict = {
+		@CacheEvict(key = "'userId_' + #userId"),
+		@CacheEvict(key = "'email_' + #email")
+	})
 	public void createProfile(Long userId, String email, String username) {
 		log.info("Creating profile for userId: {}, email: {}, username: {}", userId, email, username);
 		UserProfile profile = userProfileMapper.toEntity(userId, email, username);

@@ -29,7 +29,7 @@ export class LoginComponent {
       return;
     }
     this.loading = true;
-    this.api.post<{token: string, type: string, roles: string[]}>('/auth/login', {
+    this.api.post<{ token: string, type: string, roles: string[] }>('/auth/login', {
       email: this.email,
       password: this.password
     }).subscribe({

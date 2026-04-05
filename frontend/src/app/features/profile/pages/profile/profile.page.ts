@@ -158,8 +158,8 @@ interface UserActivity {
 
               <h2 class="user-name">{{ fullName() }}</h2>
               <div class="user-email">
-                 {{ profile()!.email }}
-                 <span class="material-icons copy-icon" (click)="copyToClipboard(profile()!.email)" title="Copy Email">content_copy</span>
+                 {{ displayEmail() }}
+                 <span class="material-icons copy-icon" (click)="copyToClipboard(displayEmail())" title="Copy Email">content_copy</span>
               </div>
               <div class="user-handle">
                  &#64;{{ displayUsername() }}
@@ -259,12 +259,12 @@ interface UserActivity {
                   </div>
                   @if (sectionsExpanded().contact) {
                      <div class="form-grid">
-                       <div class="form-group inline-field">
-                         <label>Email Address</label>
-                         <div class="inline-value locked">
-                           {{ profile()!.email }} <span class="material-icons lock-icon" title="Cannot be changed">lock</span>
-                         </div>
-                       </div>
+                        <div class="form-group inline-field">
+                          <label>Email Address</label>
+                          <div class="inline-value locked">
+                            {{ displayEmail() }} <span class="material-icons lock-icon" title="Cannot be changed">lock</span>
+                          </div>
+                        </div>
                        <div class="form-group inline-field" [class.editing]="isEditing()" [class.missing-field]="isFieldMissing('phoneNumber')">
                          <label>Phone Number</label>
                          @if (isEditing()) {
@@ -481,6 +481,16 @@ export class ProfilePage implements OnInit {
     if (this.authStore.isAdmin()) return 'Admin';
     if (this.authStore.isMentor()) return 'Mentor';
     return 'Learner';
+  });
+
+  readonly displayEmail = computed(() => this.authStore.email() || this.profile()?.email || '');
+
+  readonly displayUsername = computed(() => {
+    const p = this.profile();
+    if (p?.username && p.username.trim()) return p.username;
+    const authEmail = this.authStore.email();
+    if (authEmail) return authEmail.split('@')[0];
+    return p?.email?.split('@')[0] || '';
   });
 
   selectedSkills(): string[] {
@@ -726,12 +736,7 @@ export class ProfilePage implements OnInit {
 
   logout(): void { this.authStore.logout(); }
 
-  displayUsername(): string {
-    const p = this.profile();
-    if (!p) return '';
-    if (p.username && p.username.trim()) return p.username;
-    return p.email.split('@')[0];
-  }
+
 
   initials(): string {
     const p = this.profile();

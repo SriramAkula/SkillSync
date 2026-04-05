@@ -1,8 +1,7 @@
 import 'tslib';
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, inject, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { SessionStore } from '../../../../core/auth/session.store';
 import { SkillStore } from '../../../../core/auth/skill.store';
 import { SessionCardComponent } from '../../components/session-card/session-card.component';
@@ -13,184 +12,132 @@ type FilterTab = 'all' | 'active' | 'completed' | 'cancelled';
 @Component({
   selector: 'app-my-sessions-page',
   standalone: true,
-  imports: [CommonModule, MatProgressSpinnerModule, SessionCardComponent],
+  imports: [CommonModule, SessionCardComponent],
   template: `
-    <div class="page">
+    <div class="max-w-7xl mx-auto space-y-10 animate-fade-in pb-20 px-2 lg:px-4">
 
-      <!-- Header -->
-      <div class="page-header">
-        <div>
-          <h1>My Sessions</h1>
-          <p>Track and manage your learning sessions</p>
+      <!-- Header Section -->
+      <div class="flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <div class="space-y-2">
+          <h1 class="text-4xl font-extrabold tracking-tight text-slate-900">My <span class="text-primary-600">Learning</span> Sessions</h1>
+          <p class="text-slate-500 font-medium text-lg">Track your progress and upcoming mentorship meetings.</p>
         </div>
-        <button class="btn-book" (click)="router.navigate(['/mentors'])">
-          <span class="material-icons">add</span>
-          Book Session
+        <button 
+          (click)="router.navigate(['/mentors'])"
+          class="bg-primary-600 text-white rounded-2xl px-8 py-4 font-bold shadow-xl shadow-primary-200 hover:bg-primary-700 hover:-translate-y-1 active:scale-95 transition-all flex items-center justify-center gap-2">
+          <span class="material-icons text-xl">add_circle</span>
+          Book New Session
         </button>
       </div>
 
-      @if (sessionStore.loading()) {
-        <div class="loading-center"><mat-spinner diameter="48" /></div>
-      } @else {
-
-        <!-- Summary Cards -->
-        <div class="summary-row">
-          <div class="summary-card" [class.active-card]="activeTab() === 'all'" (click)="activeTab.set('all')">
-            <span class="summary-num">{{ sessionStore.learnerSessions().length }}</span>
-            <span class="summary-lbl">Total</span>
-          </div>
-          <div class="summary-card" [class.active-card]="activeTab() === 'active'" (click)="activeTab.set('active')">
-            <span class="summary-num blue">{{ activeSessions().length }}</span>
-            <span class="summary-lbl">Active</span>
-          </div>
-          <div class="summary-card" [class.active-card]="activeTab() === 'completed'" (click)="activeTab.set('completed')">
-            <span class="summary-num green">{{ completedSessions().length }}</span>
-            <span class="summary-lbl">Completed</span>
-          </div>
-          <div class="summary-card" [class.active-card]="activeTab() === 'cancelled'" (click)="activeTab.set('cancelled')">
-            <span class="summary-num red">{{ cancelledSessions().length }}</span>
-            <span class="summary-lbl">Cancelled</span>
+      <!-- Stats Grid -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+        <div (click)="activeTab.set('all')" 
+             [class.ring-2]="activeTab() === 'all'"
+             class="glass-card p-6 cursor-pointer hover:shadow-2xl transition-all duration-300 ring-primary-500 ring-offset-2">
+          <div class="flex items-center gap-4">
+            <div class="w-12 h-12 bg-slate-100 rounded-xl flex items-center justify-center text-slate-500">
+              <span class="material-icons">event</span>
+            </div>
+            <div>
+              <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Total</p>
+              <p class="text-2xl font-extrabold text-slate-800 tracking-tight">{{ sessionStore.learnerSessions().length }}</p>
+            </div>
           </div>
         </div>
+        <div (click)="activeTab.set('active')" 
+             [class.ring-2]="activeTab() === 'active'"
+             class="glass-card p-6 cursor-pointer hover:shadow-2xl transition-all duration-300 ring-blue-500 ring-offset-2">
+          <div class="flex items-center gap-4">
+            <div class="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center text-blue-500">
+              <span class="material-icons">bolt</span>
+            </div>
+            <div>
+              <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Active</p>
+              <p class="text-2xl font-extrabold text-blue-600 tracking-tight">{{ activeCount() }}</p>
+            </div>
+          </div>
+        </div>
+        <div (click)="activeTab.set('completed')" 
+             [class.ring-2]="activeTab() === 'completed'"
+             class="glass-card p-6 cursor-pointer hover:shadow-2xl transition-all duration-300 ring-emerald-500 ring-offset-2">
+          <div class="flex items-center gap-4">
+            <div class="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-500">
+              <span class="material-icons">check_circle</span>
+            </div>
+            <div>
+              <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Done</p>
+              <p class="text-2xl font-extrabold text-emerald-600 tracking-tight">{{ completedCount() }}</p>
+            </div>
+          </div>
+        </div>
+        <div (click)="activeTab.set('cancelled')" 
+             [class.ring-2]="activeTab() === 'cancelled'"
+             class="glass-card p-6 cursor-pointer hover:shadow-2xl transition-all duration-300 ring-red-500 ring-offset-2">
+          <div class="flex items-center gap-4">
+            <div class="w-12 h-12 bg-red-50 rounded-xl flex items-center justify-center text-red-500">
+              <span class="material-icons">cancel</span>
+            </div>
+            <div>
+              <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Cancelled</p>
+              <p class="text-2xl font-extrabold text-red-600 tracking-tight">{{ cancelledCount() }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
 
-        <!-- Filter Tabs -->
-        <div class="filter-tabs">
+      <!-- Main Content Area -->
+      <div class="space-y-6">
+        
+        <!-- Filter Bar -->
+        <div class="flex items-center gap-2 p-1.5 bg-slate-100/50 rounded-2xl w-fit">
           @for (tab of tabs; track tab.key) {
-            <button class="filter-tab" [class.active]="activeTab() === tab.key"
-                    (click)="activeTab.set(tab.key)">
+            <button 
+              (click)="activeTab.set(tab.key)"
+              [class.bg-white]="activeTab() === tab.key"
+              [class.shadow-md]="activeTab() === tab.key"
+              [class.text-primary-600]="activeTab() === tab.key"
+              [class.text-slate-500]="activeTab() !== tab.key"
+              class="px-6 py-2.5 rounded-xl text-sm font-bold transition-all active:scale-95 whitespace-nowrap">
               {{ tab.label }}
-              @if (countFor(tab.key) > 0) {
-                <span class="tab-count" [class.active]="activeTab() === tab.key">
-                  {{ countFor(tab.key) }}
-                </span>
-              }
             </button>
           }
         </div>
 
-        <!-- Sessions Grid -->
-        <div class="sessions-grid">
-          @for (s of filteredSessions(); track s.id) {
-            <app-session-card [session]="s"
-              (view)="router.navigate(['/sessions', $event])"
-              (cancel)="sessionStore.cancel($event)"
-              (pay)="router.navigate(['/payment'], { queryParams: { sessionId: $event } })" />
-          }
-          @empty {
-            <div class="empty-state">
-              <div class="empty-icon">
-                <span class="material-icons">{{ emptyIcon() }}</span>
+        <!-- Session List / Grid -->
+        @if (sessionStore.loading()) {
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            @for (i of [1,2,3]; track i) {
+              <div class="h-64 bg-slate-100 rounded-[2.5rem] animate-pulse"></div>
+            }
+          </div>
+        } @else {
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            @for (s of filteredSessions(); track s.id) {
+              <app-session-card 
+                [session]="s"
+                (view)="router.navigate(['/sessions', $event])"
+                (cancel)="sessionStore.cancel($event)"
+                (pay)="router.navigate(['/payment'], { queryParams: { sessionId: $event } })" />
+            }
+            @empty {
+              <div class="col-span-full py-20 flex flex-col items-center justify-center text-center animate-drop-in">
+                <div class="w-24 h-24 bg-slate-50 rounded-[2rem] flex items-center justify-center text-slate-200 mb-6">
+                  <span class="material-icons text-6xl">{{ emptyIcon() }}</span>
+                </div>
+                <h3 class="text-2xl font-bold text-slate-800">{{ emptyTitle() }}</h3>
+                <p class="text-slate-500 max-w-sm mt-2 font-medium">{{ emptyDesc() }}</p>
+                @if (activeTab() === 'all') {
+                  <button (click)="router.navigate(['/mentors'])" class="mt-8 px-8 py-3 bg-primary-600 text-white rounded-2xl text-sm font-bold hover:shadow-lg transition-all active:scale-95">Find Your First Mentor</button>
+                }
               </div>
-              <h3>{{ emptyTitle() }}</h3>
-              <p>{{ emptyDesc() }}</p>
-              @if (activeTab() === 'all') {
-                <button class="btn-book-empty" (click)="router.navigate(['/mentors'])">
-                  <span class="material-icons">search</span>
-                  Find a Mentor
-                </button>
-              }
-            </div>
-          }
-        </div>
+            }
+          </div>
+        }
 
-      }
+      </div>
     </div>
-  `,
-  styles: [`
-    .page { max-width: 1100px; margin: 0 auto; }
-
-    /* Header */
-    .page-header {
-      display: flex; justify-content: space-between; align-items: flex-start;
-      margin-bottom: 24px; flex-wrap: wrap; gap: 12px;
-    }
-    .page-header h1 { font-size: 28px; font-weight: 800; color: #111827; margin: 0 0 4px; }
-    .page-header p { color: #6b7280; font-size: 14px; margin: 0; }
-    .btn-book {
-      display: flex; align-items: center; gap: 6px;
-      height: 44px; padding: 0 20px; border-radius: 12px;
-      background: linear-gradient(135deg, #4f46e5, #7c3aed);
-      color: white; border: none; font-size: 14px; font-weight: 600;
-      cursor: pointer; box-shadow: 0 4px 12px rgba(79,70,229,0.3); transition: opacity 0.2s;
-    }
-    .btn-book:hover { opacity: 0.9; }
-    .btn-book .material-icons { font-size: 18px; }
-
-    .loading-center { display: flex; justify-content: center; padding: 80px; }
-
-    /* Summary Cards */
-    .summary-row {
-      display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
-      margin-bottom: 20px;
-    }
-    @media (max-width: 600px) { .summary-row { grid-template-columns: repeat(2, 1fr); } }
-
-    .summary-card {
-      background: white; border-radius: 14px; border: 2px solid #e5e7eb;
-      padding: 16px; text-align: center; cursor: pointer;
-      transition: border-color 0.15s, box-shadow 0.15s;
-    }
-    .summary-card:hover { border-color: #c7d2fe; }
-    .summary-card.active-card { border-color: #4f46e5; box-shadow: 0 0 0 3px rgba(79,70,229,0.1); }
-    .summary-num {
-      display: block; font-size: 28px; font-weight: 800; color: #111827; line-height: 1;
-    }
-    .summary-num.blue { color: #2563eb; }
-    .summary-num.green { color: #16a34a; }
-    .summary-num.red { color: #dc2626; }
-    .summary-lbl { display: block; font-size: 12px; color: #6b7280; margin-top: 4px; font-weight: 500; }
-
-    /* Filter Tabs */
-    .filter-tabs {
-      display: flex; gap: 4px; background: #f3f4f6;
-      border-radius: 12px; padding: 4px; margin-bottom: 20px;
-      overflow-x: auto; flex-wrap: nowrap;
-    }
-    .filter-tab {
-      display: flex; align-items: center; gap: 6px;
-      height: 36px; padding: 0 14px; border-radius: 9px;
-      border: none; background: none; color: #6b7280;
-      font-size: 13px; font-weight: 600; cursor: pointer;
-      white-space: nowrap; transition: background 0.15s, color 0.15s;
-    }
-    .filter-tab:hover { color: #111827; }
-    .filter-tab.active { background: white; color: #4f46e5; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
-    .tab-count {
-      background: #e5e7eb; color: #6b7280;
-      font-size: 11px; font-weight: 700;
-      min-width: 18px; height: 18px; border-radius: 9px; padding: 0 4px;
-      display: flex; align-items: center; justify-content: center;
-    }
-    .tab-count.active { background: #e0e7ff; color: #4f46e5; }
-
-    /* Grid */
-    .sessions-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-      gap: 16px;
-    }
-    @media (max-width: 480px) { .sessions-grid { grid-template-columns: 1fr; } }
-
-    /* Empty State */
-    .empty-state {
-      grid-column: 1/-1; display: flex; flex-direction: column;
-      align-items: center; gap: 12px; padding: 72px 20px; text-align: center;
-    }
-    .empty-icon {
-      width: 72px; height: 72px; border-radius: 20px;
-      background: #f3f4f6; display: flex; align-items: center; justify-content: center;
-    }
-    .empty-icon .material-icons { font-size: 36px; color: #9ca3af; }
-    .empty-state h3 { font-size: 18px; font-weight: 700; color: #111827; margin: 0; }
-    .empty-state p { font-size: 14px; color: #6b7280; margin: 0; max-width: 300px; }
-    .btn-book-empty {
-      display: flex; align-items: center; gap: 6px;
-      height: 44px; padding: 0 20px; border-radius: 12px;
-      background: #4f46e5; color: white; border: none;
-      font-size: 14px; font-weight: 600; cursor: pointer; margin-top: 4px;
-    }
-    .btn-book-empty .material-icons { font-size: 18px; }
-  `]
+  `
 })
 export class MySessionsPage implements OnInit {
   readonly sessionStore = inject(SessionStore) as any;
@@ -199,11 +146,11 @@ export class MySessionsPage implements OnInit {
 
   readonly activeTab = signal<FilterTab>('all');
 
-  readonly tabs = [
-    { key: 'all' as FilterTab,       label: 'All Sessions' },
-    { key: 'active' as FilterTab,    label: 'Active' },
-    { key: 'completed' as FilterTab, label: 'Completed' },
-    { key: 'cancelled' as FilterTab, label: 'Cancelled' },
+  readonly tabs: { key: FilterTab; label: string }[] = [
+    { key: 'all',       label: 'All Sessions' },
+    { key: 'active',    label: 'Active' },
+    { key: 'completed', label: 'Completed' },
+    { key: 'cancelled', label: 'Cancelled' },
   ];
 
   ngOnInit(): void { 
@@ -213,45 +160,37 @@ export class MySessionsPage implements OnInit {
     }
   }
 
-  activeSessions()   { return (this.sessionStore.learnerSessions() as SessionDto[]).filter((s: SessionDto) => ['REQUESTED','ACCEPTED','CONFIRMED'].includes(s.status)); }
-  completedSessions(){ return (this.sessionStore.learnerSessions() as SessionDto[]).filter((s: SessionDto) => s.status === 'CONFIRMED'); }
-  cancelledSessions(){ return (this.sessionStore.learnerSessions() as SessionDto[]).filter((s: SessionDto) => ['CANCELLED','REJECTED','PAYMENT_FAILED'].includes(s.status)); }
+  // Computed counts for better performance
+  activeCount = computed(() => (this.sessionStore.learnerSessions() as SessionDto[]).filter(s => ['REQUESTED','ACCEPTED','CONFIRMED'].includes(s.status)).length);
+  completedCount = computed(() => (this.sessionStore.learnerSessions() as SessionDto[]).filter(s => s.status === 'CONFIRMED').length);
+  cancelledCount = computed(() => (this.sessionStore.learnerSessions() as SessionDto[]).filter(s => ['CANCELLED','REJECTED','PAYMENT_FAILED'].includes(s.status)).length);
 
   filteredSessions(): SessionDto[] {
-    const all = this.sessionStore.learnerSessions();
+    const all = this.sessionStore.learnerSessions() as SessionDto[];
     switch (this.activeTab()) {
-      case 'active':    return this.activeSessions();
-      case 'completed': return this.completedSessions();
-      case 'cancelled': return this.cancelledSessions();
+      case 'active':    return all.filter(s => ['REQUESTED','ACCEPTED','CONFIRMED'].includes(s.status));
+      case 'completed': return all.filter(s => s.status === 'CONFIRMED');
+      case 'cancelled': return all.filter(s => ['CANCELLED','REJECTED','PAYMENT_FAILED'].includes(s.status));
       default:          return all;
     }
   }
 
-  countFor(tab: FilterTab): number {
-    switch (tab) {
-      case 'active':    return this.activeSessions().length;
-      case 'completed': return this.completedSessions().length;
-      case 'cancelled': return this.cancelledSessions().length;
-      default:          return this.sessionStore.learnerSessions().length;
-    }
-  }
-
   emptyIcon(): string {
-    const icons: Record<FilterTab, string> = { all: 'event_note', active: 'event_busy', completed: 'task_alt', cancelled: 'cancel' };
+    const icons: Record<FilterTab, string> = { all: 'event_note', active: 'auto_fix_off', completed: 'assignment_turned_in', cancelled: 'event_busy' };
     return icons[this.activeTab()];
   }
 
   emptyTitle(): string {
-    const titles: Record<FilterTab, string> = { all: 'No sessions yet', active: 'No active sessions', completed: 'No completed sessions', cancelled: 'No cancelled sessions' };
+    const titles: Record<FilterTab, string> = { all: 'No sessions recorded', active: 'No ongoing sessions', completed: 'No completed goals', cancelled: 'No cancelled sessions' };
     return titles[this.activeTab()];
   }
 
   emptyDesc(): string {
     const descs: Record<FilterTab, string> = {
-      all: 'Book your first session with a mentor to get started.',
-      active: 'You have no ongoing sessions right now.',
-      completed: 'Completed sessions will appear here.',
-      cancelled: 'Cancelled or rejected sessions will appear here.'
+      all: 'Your journey starts here. Book a session with a top-tier mentor to accelerate your growth.',
+      active: 'You are all caught up! Browse upcoming slots or reach out to mentors.',
+      completed: 'Once you finish your first session, it will appear here for review.',
+      cancelled: 'Good news! You have no cancelled or rejected sessions.'
     };
     return descs[this.activeTab()];
   }

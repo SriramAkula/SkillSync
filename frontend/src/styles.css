@@ -1,6 +1,48 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-html, body { height: 100%; }
-body { margin: 0; font-family: Inter, Roboto, "Helvetica Neue", sans-serif; }
+:root {
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.2);
+  --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+}
+
+body {
+  @apply bg-slate-50 text-slate-900 font-sans antialiased;
+  margin: 0;
+}
+
+/* Premium Glassmorphism Utility */
+.glass-effect {
+  @apply backdrop-blur-md bg-white/70 border border-white/20 shadow-lg;
+}
+
+.glass-card {
+  @apply backdrop-blur-md bg-white/70 border border-white/20 shadow-xl rounded-2xl overflow-hidden;
+}
+
+/* Custom Scrollbar for Premium Feel */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-slate-300 rounded-full hover:bg-slate-400 transition-colors;
+}
+
+/* Animation Utilities */
+.page-transition {
+  @apply transition-all duration-300 ease-out;
+}
+
+.hover-lift {
+  @apply transition-transform duration-200 hover:-translate-y-1;
+}

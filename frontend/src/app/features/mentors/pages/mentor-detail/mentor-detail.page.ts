@@ -1,7 +1,6 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, inject, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute, Router } from '@angular/router';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { MentorStore } from '../../../../core/auth/mentor.store';
 import { AuthStore } from '../../../../core/auth/auth.store';
 import { ReviewService } from '../../../../core/services/review.service';
@@ -10,184 +9,182 @@ import { ReviewDto, MentorRatingDto } from '../../../../shared/models';
 @Component({
   selector: 'app-mentor-detail-page',
   standalone: true,
-  imports: [CommonModule, MatProgressSpinnerModule],
+  imports: [CommonModule, RouterModule],
   template: `
-    <div class="page">
-      <button class="back-btn" (click)="router.navigate(['/mentors'])">
-        <span class="material-icons">arrow_back</span> All Mentors
+    <div class="max-w-6xl mx-auto space-y-8 animate-fade-in pb-24 px-2 lg:px-4">
+      
+      <!-- Top Navigation -->
+      <button (click)="router.navigate(['/mentors'])" class="flex items-center gap-2 text-slate-400 font-bold text-xs uppercase tracking-widest hover:text-primary-600 transition-colors">
+        <span class="material-icons text-sm">arrow_back</span>
+        Back to Expert Directory
       </button>
 
       @if (mentorStore.loading()) {
-        <div class="loading-center"><mat-spinner diameter="48" /></div>
+        <div class="h-[600px] glass-card flex flex-col items-center justify-center gap-4 text-slate-400">
+           <div class="w-12 h-12 border-4 border-slate-100 border-t-primary-600 rounded-full animate-spin"></div>
+           <p class="text-[10px] font-bold uppercase tracking-[0.2em]">Assembling Profile...</p>
+        </div>
       }
 
       @if (mentorStore.selected(); as mentor) {
-        <div class="layout">
-
-          <!-- Left: Profile -->
-          <div class="profile-col">
-            <div class="profile-card">
-              <div class="avatar-xl">{{ initials(mentor.specialization) }}</div>
-              <h2>{{ mentor.specialization }}</h2>
-              <p class="exp-text">{{ mentor.yearsOfExperience }} years of experience</p>
-
-              <div class="avail-badge" [class]="'avail-' + mentor.availabilityStatus.toLowerCase()">
-                <span class="dot"></span>{{ mentor.availabilityStatus }}
-              </div>
-
-              <div class="stats-grid">
-                <div class="stat-box">
-                  <span class="stat-val">{{ mentor.rating | number:'1.1-1' }}</span>
-                  <span class="stat-lbl">⭐ Rating</span>
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          
+          <!-- Left: Sticky Profile Card -->
+          <div class="lg:col-span-4 sticky top-24">
+            <div class="glass-card p-10 flex flex-col items-center text-center space-y-6 border border-white/40 shadow-2xl">
+              
+              <!-- Large Avatar -->
+              <div class="relative group active:scale-105 transition-transform">
+                <div class="w-32 h-32 bg-gradient-to-br from-primary-500 to-indigo-600 rounded-[2.5rem] p-1 shadow-2xl shadow-primary-200">
+                  <div class="w-full h-full bg-white rounded-[2.3rem] flex items-center justify-center overflow-hidden">
+                    @if (mentor.profileImageUrl) {
+                      <img [src]="mentor.profileImageUrl" class="w-full h-full object-cover">
+                    } @else {
+                      <span class="text-4xl font-extrabold text-primary-600">{{ initials(mentor.specialization) }}</span>
+                    }
+                  </div>
                 </div>
-                <div class="stat-box">
-                  <span class="stat-val">{{ mentor.totalStudents }}</span>
-                  <span class="stat-lbl">👥 Students</span>
-                </div>
-                <div class="stat-box">
-                  <span class="stat-val">₹{{ mentor.hourlyRate }}</span>
-                  <span class="stat-lbl">💰 Per Hour</span>
+                <div class="absolute -bottom-2 -right-2 bg-white p-2 rounded-2xl shadow-xl flex items-center gap-1.5 border border-slate-50">
+                  <span class="material-icons text-emerald-500 text-sm">verified</span>
+                  <span class="text-[10px] font-bold text-slate-700 uppercase tracking-widest">Verified</span>
                 </div>
               </div>
 
+              <!-- Main Info -->
+              <div class="space-y-1 pt-2">
+                <h2 class="text-2xl font-extrabold text-slate-900 tracking-tight leading-none truncate w-full">{{ mentor.username || mentor.specialization }}</h2>
+                <p class="text-sm font-bold text-primary-600 uppercase tracking-widest">{{ mentor.specialization || 'Technical Instructor' }}</p>
+                <div class="flex items-center justify-center gap-1.5 pt-2">
+                    <div class="flex items-center gap-1 px-3 py-1 bg-amber-50 text-amber-600 rounded-full text-[10px] font-bold uppercase tracking-widest">
+                        <span class="material-icons text-xs">star</span>
+                        {{ mentor.rating | number:'1.1-1' }}
+                    </div>
+                    <div class="flex items-center gap-1 px-3 py-1 bg-slate-50 text-slate-500 rounded-full text-[10px] font-bold uppercase tracking-widest">
+                        <span class="material-icons text-xs">groups</span>
+                        {{ mentor.totalStudents }} Learners
+                    </div>
+                </div>
+              </div>
+
+              <!-- Pricing Highlight -->
+              <div class="w-full py-6 px-4 bg-slate-50/50 rounded-[2rem] border border-slate-100 flex flex-col items-center gap-1">
+                 <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Invest in yourself</p>
+                 <p class="text-3xl font-extrabold text-slate-900">₹{{ mentor.hourlyRate }} <span class="text-sm font-medium text-slate-400">/hr</span></p>
+              </div>
+
+              <!-- CTA -->
               @if (isOwnProfile(mentor.userId)) {
-                <div class="own-profile-note">
-                  <span class="material-icons">info</span>
-                  This is your mentor profile
+                <div class="w-full space-y-3">
+                   <div class="p-4 bg-primary-50 rounded-2xl flex items-center gap-3">
+                      <span class="material-icons text-primary-600">info</span>
+                      <p class="text-[10px] font-bold text-primary-700 uppercase text-left leading-tight">This is how your profile appears to learners.</p>
+                   </div>
+                   <button (click)="router.navigate(['/mentor-dashboard'])" class="w-full bg-slate-900 text-white rounded-2xl py-4 font-bold shadow-xl shadow-slate-200 hover:bg-black transition-all active:scale-95 flex items-center justify-center gap-2">
+                      <span class="material-icons text-xl">tune</span>
+                      Manage Dashboard
+                   </button>
                 </div>
-                <button class="btn-dashboard" (click)="router.navigate(['/mentor-dashboard'])">
-                  <span class="material-icons">dashboard</span>
-                  Go to Dashboard
-                </button>
               } @else {
-                <button class="book-btn" [disabled]="mentor.availabilityStatus !== 'AVAILABLE'" (click)="bookSession(mentor.userId)">
-                  <span class="material-icons">event</span>
+                <button 
+                  [disabled]="mentor.availabilityStatus !== 'AVAILABLE'"
+                  (click)="bookSession(mentor.userId)"
+                  class="w-full bg-primary-600 text-white rounded-2xl py-4 font-bold shadow-xl shadow-primary-200 hover:bg-primary-700 hover:-translate-y-1 active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed">
+                  <span class="material-icons text-xl">event_available</span>
                   Book a Session
                 </button>
+                <button class="w-full bg-white border border-slate-200 text-slate-700 rounded-2xl py-4 font-bold hover:bg-slate-50 transition-all active:scale-95 flex items-center justify-center gap-2 text-sm uppercase tracking-widest">
+                  <span class="material-icons-outlined text-lg">chat_bubble_outline</span>
+                  Direct Message
+                </button>
               }
+
+              <!-- Availability Status -->
+              <div class="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em]" [ngClass]="statusClasses(mentor.availabilityStatus).text">
+                 <div class="w-2 h-2 rounded-full" [ngClass]="statusClasses(mentor.availabilityStatus).bg"></div>
+                 {{ mentor.availabilityStatus }}
+              </div>
+
             </div>
           </div>
 
-          <!-- Right: Reviews -->
-          <div class="reviews-col">
-            <div class="reviews-header">
-              <h3>Reviews</h3>
-              @if (rating()) {
-                <div class="rating-pill">
-                  <span class="material-icons">star</span>
-                  {{ rating()!.averageRating | number:'1.1-1' }}
-                  <span class="review-count">({{ rating()!.totalReviews }})</span>
+          <!-- Right: Details & Professional Content -->
+          <div class="lg:col-span-8 space-y-8">
+            
+            <!-- Bio Section -->
+            <div class="glass-card p-10 border border-slate-100 shadow-sm animate-drop-in space-y-6" style="animation-delay: 0.1s">
+              <div class="flex items-center gap-3 border-b border-slate-50 pb-5">
+                <span class="material-icons text-primary-600">history_edu</span>
+                <h3 class="text-sm font-bold uppercase tracking-widest text-slate-800">Professional Background</h3>
+              </div>
+              <p class="text-slate-600 leading-relaxed font-medium text-lg whitespace-pre-line">{{ mentor.bio || 'This expert is still crafting their story. Check back soon for full details on their career journey and mentorship approach.' }}</p>
+              
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
+                <div class="bg-slate-50/50 p-6 rounded-[1.5rem] border border-slate-100">
+                    <h5 class="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-2">Teaching Experience</h5>
+                    <p class="text-xl font-extrabold text-slate-800 tracking-tight">{{ mentor.yearsOfExperience }}+ Years</p>
                 </div>
-              }
+                <div class="bg-slate-50/50 p-6 rounded-[1.5rem] border border-slate-100">
+                    <h5 class="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-2">Mentorship Style</h5>
+                    <p class="text-xl font-extrabold text-slate-800 tracking-tight">Direct & Practical</p>
+                </div>
+              </div>
             </div>
 
-            @for (r of reviews(); track r.id) {
-              <div class="review-card">
-                <div class="review-top">
-                  <div class="reviewer-avatar">{{ 'L' }}</div>
-                  <div>
-                    <div class="stars">{{ starString(r.rating) }}</div>
-                    <div class="review-date">{{ r.createdAt | date:'mediumDate' }}</div>
-                  </div>
+            <!-- Reviews Section -->
+            <div class="space-y-6">
+              <div class="flex items-center justify-between px-2">
+                <div class="flex items-center gap-3">
+                    <span class="material-icons text-primary-600">reviews</span>
+                    <h3 class="text-sm font-bold uppercase tracking-widest text-slate-800">Learner Success Stories</h3>
                 </div>
-                <p class="review-text">{{ r.comment }}</p>
+                @if (rating()) {
+                    <div class="flex items-center gap-1.5 px-4 py-2 bg-white rounded-2xl shadow-sm border border-slate-100">
+                        <span class="material-icons text-amber-500 text-lg">star</span>
+                        <span class="text-sm font-extrabold text-slate-800">{{ rating()!.averageRating | number:'1.1-1' }}</span>
+                        <span class="text-xs font-medium text-slate-400">/ 5.0</span>
+                    </div>
+                }
               </div>
-            }
-            @empty {
-              <div class="no-reviews">
-                <span class="material-icons">rate_review</span>
-                <p>No reviews yet. Be the first!</p>
+
+              <div class="grid grid-cols-1 gap-4">
+                @for (r of reviews(); track r.id) {
+                    <div class="glass-card p-8 border border-white/40 shadow-sm animate-drop-in hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+                        <div class="flex justify-between items-start mb-6">
+                            <div class="flex gap-4">
+                                <div class="w-12 h-12 bg-slate-100 rounded-xl flex items-center justify-center text-slate-400 font-bold">L</div>
+                                <div class="space-y-1">
+                                    <div class="flex gap-0.5 text-amber-400">
+                                        @for (star of [1,2,3,4,5]; track star) {
+                                            <span class="material-icons text-base">{{ star <= r.rating ? 'star' : 'star_border' }}</span>
+                                        }
+                                    </div>
+                                    <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">{{ r.username || 'Verified Learner' }}</p>
+                                </div>
+                            </div>
+                            <span class="text-[10px] font-bold text-slate-300 uppercase tracking-widest pt-2">{{ r.createdAt | date:'MMM d, y' }}</span>
+                        </div>
+                        <p class="text-slate-600 font-medium leading-relaxed italic">"{{ r.comment }}"</p>
+                    </div>
+                }
+                @empty {
+                  <div class="py-20 flex flex-col items-center justify-center text-center space-y-4 bg-slate-50/50 rounded-[2.5rem] border border-dashed border-slate-200">
+                    <div class="w-16 h-16 bg-white rounded-full flex items-center justify-center text-slate-200 shadow-sm">
+                        <span class="material-icons text-3xl">rate_review</span>
+                    </div>
+                    <div>
+                        <h4 class="text-slate-800 font-bold">No sessions yet for this mentor</h4>
+                        <p class="text-slate-500 text-sm font-medium mt-1">Be the first learner to share your experience!</p>
+                    </div>
+                  </div>
+                }
               </div>
-            }
+            </div>
+
           </div>
         </div>
       }
     </div>
-  `,
-  styles: [`
-    .page { max-width: 1100px; margin: 0 auto; }
-    .back-btn { display: inline-flex; align-items: center; gap: 6px; background: none; border: none; color: #6b7280; font-size: 14px; font-weight: 500; cursor: pointer; padding: 8px 0; margin-bottom: 24px; transition: color 0.15s; }
-    .back-btn:hover { color: #4f46e5; }
-    .back-btn .material-icons { font-size: 18px; }
-    .loading-center { display: flex; justify-content: center; padding: 80px; }
-
-    .layout { display: grid; grid-template-columns: 300px 1fr; gap: 24px; }
-    @media (max-width: 768px) { .layout { grid-template-columns: 1fr; } }
-
-    .profile-card {
-      background: white; border-radius: 20px; border: 1px solid #e5e7eb;
-      padding: 28px; display: flex; flex-direction: column; align-items: center; gap: 14px;
-      position: sticky; top: 88px;
-    }
-    .avatar-xl {
-      width: 88px; height: 88px; border-radius: 24px;
-      background: linear-gradient(135deg, #4f46e5, #7c3aed);
-      color: white; font-size: 32px; font-weight: 800;
-      display: flex; align-items: center; justify-content: center;
-    }
-    .profile-card h2 { font-size: 20px; font-weight: 800; color: #111827; margin: 0; text-align: center; }
-    .exp-text { font-size: 13px; color: #6b7280; margin: 0; }
-
-    .avail-badge { display: flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
-    .dot { width: 7px; height: 7px; border-radius: 50%; }
-    .avail-available { background: #dcfce7; color: #16a34a; }
-    .avail-available .dot { background: #16a34a; }
-    .avail-busy { background: #fef3c7; color: #d97706; }
-    .avail-busy .dot { background: #d97706; }
-    .avail-unavailable { background: #fee2e2; color: #dc2626; }
-    .avail-unavailable .dot { background: #dc2626; }
-
-    .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; width: 100%; }
-    .stat-box { background: #f9fafb; border-radius: 12px; padding: 12px 8px; text-align: center; border: 1px solid #e5e7eb; }
-    .stat-val { display: block; font-size: 18px; font-weight: 800; color: #4f46e5; }
-    .stat-lbl { font-size: 11px; color: #6b7280; margin-top: 2px; display: block; }
-
-    .book-btn {
-      width: 100%; height: 48px; border-radius: 12px;
-      background: linear-gradient(135deg, #4f46e5, #7c3aed);
-      color: white; border: none; font-size: 15px; font-weight: 600;
-      cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
-      box-shadow: 0 4px 15px rgba(79,70,229,0.3); transition: opacity 0.2s, transform 0.1s;
-    }
-    .book-btn:hover:not(:disabled) { opacity: 0.9; transform: translateY(-1px); }
-    .book-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-    .book-btn .material-icons { font-size: 20px; }
-
-    .own-profile-note {
-      display: flex; align-items: center; gap: 6px;
-      background: #eef2ff; color: #4f46e5;
-      padding: 10px 14px; border-radius: 10px;
-      font-size: 13px; font-weight: 500; width: 100%;
-    }
-    .own-profile-note .material-icons { font-size: 16px; }
-    .btn-dashboard {
-      width: 100%; height: 48px; border-radius: 12px;
-      background: linear-gradient(135deg, #4f46e5, #7c3aed);
-      color: white; border: none; font-size: 15px; font-weight: 600;
-      cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
-      box-shadow: 0 4px 15px rgba(79,70,229,0.3); transition: opacity 0.2s;
-    }
-    .btn-dashboard:hover { opacity: 0.9; }
-    .btn-dashboard .material-icons { font-size: 20px; }
-
-    .reviews-col { display: flex; flex-direction: column; gap: 16px; }
-    .reviews-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
-    .reviews-header h3 { font-size: 20px; font-weight: 800; color: #111827; margin: 0; }
-    .rating-pill { display: flex; align-items: center; gap: 4px; background: #fef3c7; color: #d97706; padding: 4px 12px; border-radius: 20px; font-size: 14px; font-weight: 700; }
-    .rating-pill .material-icons { font-size: 16px; }
-    .review-count { font-weight: 400; color: #92400e; font-size: 13px; }
-
-    .review-card { background: white; border-radius: 14px; border: 1px solid #e5e7eb; padding: 18px; }
-    .review-top { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 10px; }
-    .reviewer-avatar { width: 36px; height: 36px; border-radius: 10px; background: #e0e7ff; color: #4f46e5; font-weight: 700; font-size: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-    .stars { color: #f59e0b; font-size: 16px; letter-spacing: 1px; }
-    .review-date { font-size: 12px; color: #9ca3af; margin-top: 2px; }
-    .review-text { font-size: 14px; color: #374151; margin: 0; line-height: 1.6; }
-
-    .no-reviews { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 48px; color: #9ca3af; background: white; border-radius: 14px; border: 1px solid #e5e7eb; }
-    .no-reviews .material-icons { font-size: 40px; }
-    .no-reviews p { margin: 0; font-size: 14px; }
-  `]
+  `
 })
 export class MentorDetailPage implements OnInit {
   readonly mentorStore = inject(MentorStore);
@@ -195,14 +192,13 @@ export class MentorDetailPage implements OnInit {
   private readonly route = inject(ActivatedRoute);
   readonly router = inject(Router);
   private readonly reviewService = inject(ReviewService);
+  
   readonly reviews = signal<ReviewDto[]>([]);
   readonly rating = signal<MentorRatingDto | null>(null);
 
   ngOnInit(): void {
-    const id = Number(this.route.snapshot.paramMap.get('id')); // This is now the userId passed from the list
+    const id = Number(this.route.snapshot.paramMap.get('id')); 
     this.mentorStore.loadById(id);
-    
-    // We fetch reviews and ratings by the same ID (which is now the userId)
     this.reviewService.getMentorReviews(id).subscribe(r => this.reviews.set(r.data));
     this.reviewService.getMentorRating(id).subscribe(r => this.rating.set(r.data));
   }
@@ -212,7 +208,15 @@ export class MentorDetailPage implements OnInit {
     return myId !== null && Number(myId) === Number(mentorUserId);
   }
 
+  statusClasses(status: string) {
+    const map: Record<string, any> = {
+      'AVAILABLE': { bg: 'bg-emerald-500 shadow-emerald-50', text: 'text-emerald-600' },
+      'BUSY': { bg: 'bg-amber-500 shadow-amber-50', text: 'text-amber-600' },
+      'UNAVAILABLE': { bg: 'bg-slate-300', text: 'text-slate-400' }
+    };
+    return map[status] || map['UNAVAILABLE'];
+  }
+
   bookSession(mentorId: number): void { this.router.navigate(['/sessions/request'], { queryParams: { mentorId } }); }
-  initials(s: string): string { return s.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase(); }
-  starString(r: number): string { return '★'.repeat(r) + '☆'.repeat(5 - r); }
+  initials(s: string): string { return (s || 'M').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase(); }
 }

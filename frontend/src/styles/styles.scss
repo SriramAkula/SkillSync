@@ -1,115 +1,58 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-html {
-  color-scheme: light;
-  &.dark-theme { color-scheme: dark; }
-}
-
-// ── CSS Variables (Standardized) ──────────────────────────────────────────────
 :root {
-  --bg-color: #f9fafb;
-  --text-primary: #111827;
-  --text-secondary: #6b7280;
-  --card-bg: #ffffff;
-  --border-color: #e5e7eb;
-  
-  --primary: #5c6bc0;
-  --primary-dark: #3949ab;
-  --accent: #ff4081;
-  --radius: 12px;
-  --shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-
-  // Semantic Aliases
-  --bg-page: var(--bg-color);
-  --bg-card: var(--card-bg);
-  --text-main: var(--text-primary);
-  --text-muted: var(--text-secondary);
-  --border-main: var(--border-color);
-  --card-shadow: var(--shadow);
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.2);
+  --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
 }
 
-.dark-theme {
-  --bg-color: #111827;
-  --text-primary: #f9fafb;
-  --text-secondary: #9ca3af;
-  --card-bg: #1f2937;
-  --border-color: #374151;
-  
-  --shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
-  
-  --bg-page: var(--bg-color);
-  --bg-card: var(--card-bg);
-  --text-main: var(--text-primary);
-  --text-muted: var(--text-secondary);
-  --border-main: var(--border-color);
-  --card-shadow: var(--shadow);
-}
-
-// ── Transitions & Resets ──────────────────────────────────────────────────────
-* {
-  box-sizing: border-box;
-  transition: background 0.3s ease, color 0.3s ease, border-color 0.3s ease;
-}
-
-html, body {
-  height: 100%;
+body {
+  @apply bg-slate-50 text-slate-900 font-sans antialiased;
   margin: 0;
-  font-family: 'Roboto', 'Segoe UI', sans-serif;
-  background: var(--bg-color);
-  color: var(--text-primary);
-  -webkit-font-smoothing: antialiased;
 }
 
-// ── Global Input Styles ───────────────────────────────────────────────────────
-input, textarea, select {
-  background: var(--card-bg);
-  color: var(--text-primary);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  padding: 8px 12px;
-  outline: none;
-  
-  &::placeholder {
-    color: var(--text-secondary);
-    opacity: 0.7;
-  }
-  
-  &:focus {
-    border-color: var(--primary);
-  }
+/* Premium Glassmorphism Utility */
+.glass-effect {
+  @apply backdrop-blur-md bg-white/70 border border-white/20 shadow-lg;
 }
 
-label {
-  color: var(--text-secondary);
-  font-weight: 500;
+.glass-card {
+  @apply backdrop-blur-md bg-white/70 border border-white/20 shadow-xl rounded-2xl overflow-hidden;
 }
 
-// ── Scrollbar ─────────────────────────────────────────────────────────────────
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { 
-  background: #bdbdbd; 
-  border-radius: 3px; 
-  .dark-theme & { background: #475569; }
+/* Custom Scrollbar for Premium Feel */
+::-webkit-scrollbar {
+  width: 6px;
 }
 
-// ── Utility ───────────────────────────────────────────────────────────────────
-.full-width { width: 100%; }
-.text-center { text-align: center; }
-.flex-center { display: flex; align-items: center; justify-content: center; }
-
-// ── Custom Toasts ─────────────────────────────────────────────────────────────
-.toast-success .mdc-snackbar__surface {
-  background: #10B981 !important;
-  color: #fff !important;
-  border-radius: 16px !important;
-  padding: 8px 16px !important;
+::-webkit-scrollbar-track {
+  @apply bg-transparent;
 }
 
-.toast-error .mdc-snackbar__surface {
-  background: #EF4444 !important;
-  color: #fff !important;
-  border-radius: 16px !important;
-  padding: 8px 16px !important;
+::-webkit-scrollbar-thumb {
+  @apply bg-slate-300 rounded-full hover:bg-slate-400 transition-colors;
 }
 
-.mat-mdc-snack-bar-label { font-weight: 600 !important; font-size: 14px !important; }
+/* Animation Utilities */
+.page-transition {
+  @apply transition-all duration-300 ease-out;
+}
+
+.hover-lift {
+  @apply transition-transform duration-200 hover:-translate-y-1;
+}
+
+/* Material Overrides */
+.mat-mdc-snack-bar-container {
+  border-radius: 1rem !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  background: white !important;
+}
+
+.mat-mdc-snack-bar-label {
+  font-weight: 700 !important;
+  letter-spacing: 0.025em !important;
+}

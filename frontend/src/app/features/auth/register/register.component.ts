@@ -19,7 +19,7 @@ export class RegisterComponent {
   auth = inject(AuthService);
 
   step: 'email' | 'otp' | 'details' = 'email';
-  
+
   email = '';
   otp = '';
   username = '';
@@ -44,7 +44,7 @@ export class RegisterComponent {
           message: err.message,
           errorBody: err.error
         });
-        
+
         // Handle potential Parser Error for 200 OK (CORS body blocking issue)
         if (err.status === 200 || err.status === 0) {
           this.toast.success('OTP sent successfully (Body obscured by CORS)');

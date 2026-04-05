@@ -1,0 +1,234 @@
+import { Component, inject } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { Router, RouterModule } from '@angular/router';
+import { AuthStore } from '../../../../core/auth/auth.store';
+
+@Component({
+  selector: 'app-home-page',
+  standalone: true,
+  imports: [CommonModule, RouterModule],
+  template: `
+    <div class="min-h-screen bg-slate-50 flex flex-col font-sans selection:bg-primary-100 selection:text-primary-900">
+      
+      <!-- Premium Nav (Guest) -->
+      <nav class="sticky top-0 z-[100] glass-effect h-20 px-6 lg:px-10 flex items-center justify-between border-b border-white/20">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 bg-primary-600 rounded-xl flex items-center justify-center shadow-lg shadow-primary-200">
+            <span class="material-icons text-white">auto_awesome</span>
+          </div>
+          <span class="text-2xl font-bold tracking-tight text-slate-800">SkillSync</span>
+        </div>
+        
+        <div class="flex items-center gap-4">
+          <a routerLink="/auth/login" class="hidden sm:block text-sm font-bold text-slate-600 hover:text-primary-600 transition-colors px-4 py-2">Sign In</a>
+          <a routerLink="/auth/register" class="bg-primary-600 text-white rounded-xl px-6 py-2.5 text-sm font-bold shadow-xl shadow-primary-100 hover:bg-primary-700 transition-all active:scale-95">Get Started</a>
+        </div>
+      </nav>
+
+      <!-- Hero Section -->
+      <section class="relative pt-20 pb-32 overflow-hidden">
+        <!-- Abstract Background Blobs -->
+        <div class="absolute top-0 right-0 -translate-y-1/2 translate-x-1/4 w-[800px] h-[800px] bg-primary-400/5 rounded-full blur-[120px]"></div>
+        <div class="absolute bottom-0 left-0 translate-y-1/2 -translate-x-1/4 w-[600px] h-[600px] bg-violet-400/5 rounded-full blur-[100px]"></div>
+
+        <div class="max-w-7xl mx-auto px-6 lg:px-8 text-center relative z-10">
+          <div class="inline-flex items-center gap-2 bg-white border border-slate-200 rounded-full px-4 py-2 mb-8 animate-drop-in">
+            <span class="flex h-2 w-2 rounded-full bg-primary-500 animate-pulse"></span>
+            <span class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">Expert Learning Platform</span>
+          </div>
+          
+          <h1 class="text-5xl lg:text-7xl font-bold tracking-tight text-slate-900 mb-8 max-w-4xl mx-auto leading-[1.1]">
+            Unlock your Potential with <span class="text-transparent bg-clip-text bg-gradient-to-r from-primary-600 to-violet-600">Expert Mentorship</span>
+          </h1>
+          
+          <p class="text-lg text-slate-500 mb-12 max-w-2xl mx-auto leading-relaxed">
+            Connect with industry-leading experts for personalized coaching, session bookings, and career growth. Join thousands of learners accelerating their careers today.
+          </p>
+
+          <div class="flex flex-col sm:flex-row items-center justify-center gap-6">
+            <a routerLink="/auth/register" class="w-full sm:w-auto bg-primary-600 text-white px-10 py-5 rounded-2xl text-lg font-bold shadow-2xl shadow-primary-200 hover:bg-primary-700 transition-all hover-lift active:scale-95">
+              Explore Best Mentors
+            </a>
+            <div class="flex items-center gap-4 text-slate-600 font-medium">
+              <div class="flex -space-x-3">
+                <img src="https://i.pravatar.cc/100?u=1" class="w-10 h-10 rounded-full border-2 border-white" alt="User">
+                <img src="https://i.pravatar.cc/100?u=2" class="w-10 h-10 rounded-full border-2 border-white" alt="User">
+                <img src="https://i.pravatar.cc/100?u=3" class="w-10 h-10 rounded-full border-2 border-white" alt="User">
+              </div>
+              <span>Trusted by 10k+ learners</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Featured Categories Grid (Mobile First) -->
+        <div class="max-w-7xl mx-auto px-6 mt-32">
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4 lg:gap-8 animate-fade-in delay-200">
+            @for (cat of categories; track cat.name) {
+              <div class="glass-card p-6 flex flex-col items-center justify-center gap-4 group hover:bg-white transition-all hover:scale-105 border-white/50">
+                <div class="w-14 h-14 rounded-2xl flex items-center justify-center bg-slate-50 group-hover:bg-primary-50 transition-colors">
+                  <span class="material-icons-outlined text-slate-400 group-hover:text-primary-600 transition-colors">{{ cat.icon }}</span>
+                </div>
+                <span class="text-xs font-bold uppercase tracking-widest text-slate-500 group-hover:text-slate-800 transition-colors">{{ cat.name }}</span>
+              </div>
+            }
+          </div>
+        </div>
+      </section>
+
+      <!-- Features Split Layout -->
+      <section class="bg-white py-32 border-y border-slate-100">
+        <div class="max-w-7xl mx-auto px-6 lg:px-8">
+          <div class="grid lg:grid-cols-2 gap-20 items-center">
+            
+            <div class="space-y-10">
+              <h2 class="text-3xl lg:text-5xl font-bold text-slate-900 leading-tight">Everything you need to <br/> <span class="text-primary-600">succeed professionally</span></h2>
+              
+              <div class="space-y-8">
+                <div class="flex gap-6">
+                  <div class="w-12 h-12 rounded-xl bg-violet-100 flex items-center justify-center shrink-0">
+                    <span class="material-icons-outlined text-violet-600">video_call</span>
+                  </div>
+                  <div>
+                    <h3 class="font-bold text-slate-800 text-lg mb-1">Live 1:1 Sessions</h3>
+                    <p class="text-slate-500 leading-relaxed text-sm">Schedule high-impact video calls directly with experts in your field.</p>
+                  </div>
+                </div>
+
+                <div class="flex gap-6">
+                  <div class="w-12 h-12 rounded-xl bg-emerald-100 flex items-center justify-center shrink-0">
+                    <span class="material-icons-outlined text-emerald-600">payments</span>
+                  </div>
+                  <div>
+                    <h3 class="font-bold text-slate-800 text-lg mb-1">Secure Payments</h3>
+                    <p class="text-slate-500 leading-relaxed text-sm">Transparent, secure transactions with Razorpay integration and automated payouts.</p>
+                  </div>
+                </div>
+
+                <div class="flex gap-6">
+                  <div class="w-12 h-12 rounded-xl bg-orange-100 flex items-center justify-center shrink-0">
+                    <span class="material-icons-outlined text-orange-600">stars</span>
+                  </div>
+                  <div>
+                    <h3 class="font-bold text-slate-800 text-lg mb-1">Monetize Expertise</h3>
+                    <p class="text-slate-500 leading-relaxed text-sm">Are you an expert? Apply to become a mentor and earn by sharing your wisdom.</p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="pt-6">
+                <a routerLink="/auth/register" class="inline-flex items-center gap-2 group text-primary-600 font-bold tracking-wide uppercase text-sm">
+                  Find your domain 
+                  <span class="material-icons group-hover:translate-x-1 transition-transform">arrow_forward</span>
+                </a>
+              </div>
+            </div>
+
+            <div class="relative">
+              <div class="absolute -inset-4 bg-primary-100/50 rounded-[40px] blur-2xl"></div>
+              <img src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&q=80&w=1200" 
+                   class="relative rounded-[32px] shadow-2xl border-4 border-white"
+                   alt="Learning together">
+              
+              <!-- Floating UI Elements -->
+              <div class="absolute -bottom-10 -left-10 glass-card p-6 border-white animate-bounce-slow">
+                <div class="flex items-center gap-4">
+                  <div class="w-12 h-12 rounded-full bg-emerald-500 flex items-center justify-center">
+                    <span class="material-icons text-white">check</span>
+                  </div>
+                  <div>
+                    <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">Growth</p>
+                    <p class="text-sm font-bold text-slate-800">+85% Skill Match</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      <!-- Footer (Premium) -->
+      <footer class="bg-slate-900 py-20 px-6 mt-auto">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start gap-12 border-b border-white/10 pb-16">
+          <div class="space-y-6 max-w-xs">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 bg-primary-500 rounded-xl flex items-center justify-center">
+                <span class="material-icons text-white">auto_awesome</span>
+              </div>
+              <span class="text-2xl font-bold text-white tracking-tight">SkillSync</span>
+            </div>
+            <p class="text-slate-400 text-sm leading-relaxed">
+              Leading the next generation of online learning through human-to-human connection.
+            </p>
+          </div>
+
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-12 lg:gap-24">
+            <div class="space-y-4">
+              <h4 class="text-xs font-bold uppercase tracking-widest text-slate-100">Platform</h4>
+              <nav class="flex flex-col gap-3 text-sm text-slate-400">
+                <a href="#" class="hover:text-primary-400 transition-colors">Mentors</a>
+                <a href="#" class="hover:text-primary-400 transition-colors">Skills</a>
+                <a href="#" class="hover:text-primary-400 transition-colors">Pricing</a>
+              </nav>
+            </div>
+            <div class="space-y-4">
+              <h4 class="text-xs font-bold uppercase tracking-widest text-slate-100">Company</h4>
+              <nav class="flex flex-col gap-3 text-sm text-slate-400">
+                <a href="#" class="hover:text-primary-400 transition-colors">About</a>
+                <a href="#" class="hover:text-primary-400 transition-colors">Careers</a>
+                <a href="#" class="hover:text-primary-400 transition-colors">Support</a>
+              </nav>
+            </div>
+            <div class="space-y-4">
+              <h4 class="text-xs font-bold uppercase tracking-widest text-slate-100">Legal</h4>
+              <nav class="flex flex-col gap-3 text-sm text-slate-400">
+                <a href="#" class="hover:text-primary-400 transition-colors">Privacy</a>
+                <a href="#" class="hover:text-primary-400 transition-colors">Terms</a>
+              </nav>
+            </div>
+          </div>
+        </div>
+        <div class="max-w-7xl mx-auto pt-10 flex flex-col md:flex-row justify-between items-center gap-6">
+          <p class="text-xs font-medium text-slate-500">© 2026 SkillSync Platform. All rights reserved.</p>
+          <div class="flex gap-6">
+            <span class="text-slate-400 hover:text-white transition-colors cursor-pointer material-icons text-xl">facebook</span>
+            <span class="text-slate-400 hover:text-white transition-colors cursor-pointer material-icons text-xl">camera_alt</span>
+            <span class="text-slate-400 hover:text-white transition-colors cursor-pointer material-icons text-xl">share</span>
+          </div>
+        </div>
+      </footer>
+      
+    </div>
+  `,
+  styles: [`
+    @keyframes bounce-slow {
+      0%, 100% { transform: translateY(-5%); animation-timing-function: cubic-bezier(0.8, 0, 1, 1); }
+      50% { transform: translateY(0); animation-timing-function: cubic-bezier(0, 0, 0.2, 1); }
+    }
+    .animate-bounce-slow {
+      animation: bounce-slow 4s infinite;
+    }
+  `]
+})
+export class HomePage {
+  private readonly authStore = inject(AuthStore);
+  private readonly router = inject(Router);
+
+  readonly categories = [
+    { name: 'Frontend', icon: 'code' },
+    { name: 'Backend', icon: 'storage' },
+    { name: 'Design', icon: 'palette' },
+    { name: 'Marketing', icon: 'insights' },
+    { name: 'Mobile', icon: 'smartphone' },
+    { name: 'AI / ML', icon: 'psychology' },
+    { name: 'Business', icon: 'business_center' },
+    { name: 'Writing', icon: 'edit_note' },
+  ];
+
+  constructor() {
+    // Auto-redirect if already logged in
+    if (this.authStore.isAuthenticated()) {
+      this.router.navigate(['/mentors']);
+    }
+  }
+}

@@ -2,7 +2,11 @@ import { Routes } from '@angular/router';
 import { authGuard, roleGuard } from './core/guards/auth.guard';
 
 export const routes: Routes = [
-  { path: '', redirectTo: 'mentors', pathMatch: 'full' },
+  { 
+    path: '', 
+    pathMatch: 'full',
+    loadComponent: () => import('./features/public/pages/home/home.page').then(m => m.HomePage) 
+  },
 
   // ── Public ─────────────────────────────────────────────────────────────────
   {

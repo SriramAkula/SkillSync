@@ -92,7 +92,7 @@ public class AuthServiceImpl implements AuthService {
         }
 
         User user = new User(
-            request.email(),
+            request.email().toLowerCase(),
             passwordEncoder.encode(request.password()),
             generatedUsername,
             "ROLE_LEARNER"

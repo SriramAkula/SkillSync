@@ -1,10 +1,8 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, inject, OnInit, signal, computed } from '@angular/core';
 import { patchState } from '@ngrx/signals';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { SessionStore } from '../../../../core/auth/session.store';
 import { MentorStore } from '../../../../core/auth/mentor.store';
 import { SkillStore } from '../../../../core/auth/skill.store';
@@ -12,344 +10,180 @@ import { SkillStore } from '../../../../core/auth/skill.store';
 @Component({
   selector: 'app-request-session-page',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, MatProgressSpinnerModule, MatSnackBarModule],
+  imports: [CommonModule, ReactiveFormsModule, RouterModule],
   template: `
-    <div class="page">
-      <button class="back-btn" (click)="back()">
-        <span class="material-icons">arrow_back</span> Back to Mentors
-      </button>
+    <div class="max-w-5xl mx-auto space-y-10 animate-fade-in pb-20 px-2 lg:px-4">
+      
+      <!-- Premium Header -->
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div class="space-y-1">
+          <button (click)="back()" class="flex items-center gap-2 text-primary-600 font-bold text-xs uppercase tracking-widest hover:text-primary-700 transition-colors mb-2">
+            <span class="material-icons text-sm">arrow_back</span>
+            Back to Catalog
+          </button>
+          <h1 class="text-4xl font-extrabold tracking-tight text-slate-900">Book <span class="text-primary-600">Expert</span> Session</h1>
+          <p class="text-slate-500 font-medium italic">Your personalized learning path starts with a single request.</p>
+        </div>
+      </div>
 
-      <div class="layout">
-
-        <!-- Left: Mentor Preview -->
-        <div class="mentor-col">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
+        
+        <!-- Left: Mentor & Context -->
+        <div class="lg:col-span-4 space-y-6 lg:sticky lg:top-24">
           @if (mentorStore.selected(); as mentor) {
-            <div class="mentor-card">
-              <div class="mentor-avatar">{{ mentorInitials() }}</div>
-              <h3>{{ mentor.name || mentor.username }}</h3>
-              <p class="mentor-specialization">{{ mentor.specialization }}</p>
-              <p class="mentor-exp">{{ mentor.yearsOfExperience }} years experience</p>
-              <div class="mentor-stats">
-                <div class="stat"><span class="material-icons">star</span>{{ mentor.rating | number:'1.1-1' }}</div>
-                <div class="stat"><span class="material-icons">payments</span>₹{{ mentor.hourlyRate }}/hr</div>
+            <div class="glass-card p-8 border border-white/40 shadow-2xl space-y-8 animate-drop-in">
+              <div class="flex flex-col items-center text-center space-y-4">
+                 <div class="w-24 h-24 bg-gradient-to-br from-primary-500 to-indigo-600 rounded-[2.5rem] p-1 shadow-xl">
+                    <div class="w-full h-full bg-white rounded-[2.3rem] flex items-center justify-center overflow-hidden">
+                       @if (mentor.profileImageUrl) {
+                         <img [src]="mentor.profileImageUrl" class="w-full h-full object-cover">
+                       } @else {
+                         <span class="text-3xl font-extrabold text-primary-600">{{ mentorInitials() }}</span>
+                       }
+                    </div>
+                 </div>
+                 <div>
+                    <h3 class="text-xl font-extrabold text-slate-900 tracking-tight">{{ mentor.name || mentor.username }}</h3>
+                    <p class="text-xs font-bold text-primary-600 uppercase tracking-widest mt-1">{{ mentor.specialization }}</p>
+                 </div>
               </div>
-              <div class="avail-badge" [class]="'avail-' + mentor.availabilityStatus.toLowerCase()">
-                <span class="dot"></span>{{ mentor.availabilityStatus }}
-              </div>
-            </div>
 
-            <!-- Cost Estimator -->
-            <div class="cost-card">
-              <h4>Cost Estimate</h4>
-              <div class="cost-row">
-                <span>Duration</span>
-                <span>{{ form.value.durationMinutes }} min</span>
+              <div class="space-y-4 pt-4 border-t border-slate-50">
+                 <div class="flex justify-between items-center text-sm">
+                    <span class="font-bold text-slate-400 uppercase tracking-widest text-[10px]">Hourly Rate</span>
+                    <span class="font-extrabold text-slate-800">₹{{ mentor.hourlyRate }}</span>
+                 </div>
+                 <div class="flex justify-between items-center text-sm">
+                    <span class="font-bold text-slate-400 uppercase tracking-widest text-[10px]">Duration</span>
+                    <span class="font-extrabold text-slate-800">{{ form.value.durationMinutes }} Minutes</span>
+                 </div>
+                 <div class="pt-4 border-t border-slate-50 flex justify-between items-center">
+                    <span class="font-extrabold text-slate-900 text-sm uppercase tracking-widest">Total Estimate</span>
+                    <span class="text-2xl font-black text-primary-600 tracking-tighter">₹{{ estimatedCost(mentor.hourlyRate) | number:'1.0-0' }}</span>
+                 </div>
               </div>
-              <div class="cost-row">
-                <span>Rate</span>
-                <span>₹{{ mentor.hourlyRate }}/hr</span>
-              </div>
-              <div class="cost-divider"></div>
-              <div class="cost-row total">
-                <span>Total</span>
-                <span>₹{{ estimatedCost(mentor.hourlyRate) | number:'1.2-2' }}</span>
+
+              <div class="p-4 bg-emerald-50 rounded-2xl flex items-center gap-3">
+                 <span class="material-icons text-emerald-500 text-sm">security</span>
+                 <p class="text-[9px] font-bold text-emerald-700 uppercase tracking-[0.15em] leading-tight">Secure Payment: You'll only be charged after the mentor accepts the session.</p>
               </div>
             </div>
           } @else {
-            <div class="mentor-card skeleton">
-              <div class="skeleton-avatar"></div>
-              <div class="skeleton-line w60"></div>
-              <div class="skeleton-line w40"></div>
+            <div class="glass-card p-10 h-80 flex flex-col items-center justify-center gap-4 animate-pulse">
+               <div class="w-20 h-20 bg-slate-100 rounded-[2.5rem]"></div>
+               <div class="w-32 h-4 bg-slate-100 rounded-full"></div>
             </div>
           }
         </div>
 
-        <!-- Right: Booking Form -->
-        <div class="form-col">
-          <div class="form-card">
-            <h2>Book a Session</h2>
-            <p class="form-subtitle">Fill in the details to request your session</p>
-
-            <form [formGroup]="form" (ngSubmit)="submit()" class="form">
-
-              <!-- Skill ID -->
-              <div class="input-group">
-                <label class="input-label">Skill ID <span class="required">*</span></label>
-                <div class="input-wrapper" [class.focused]="focused() === 'skill'"
-                     [class.error]="form.get('skillId')?.invalid && form.get('skillId')?.touched">
-                  <span class="material-icons input-icon">auto_stories</span>
-                  <select formControlName="skillId" class="skill-select">
-                    <option [ngValue]="null" disabled>Select a skill to focus on...</option>
-                    @for (cat of skillStore.groupedByCategory(); track cat.category) {
-                      <optgroup [label]="cat.category">
-                        @for (s of cat.skills; track s.id) {
-                          <option [ngValue]="s.id">{{ s.name }}</option>
-                        }
-                      </optgroup>
-                    }
-                  </select>
-                </div>
-                @if (form.get('skillId')?.invalid && form.get('skillId')?.touched) {
-                  <span class="field-error">Valid skill ID is required</span>
-                }
-              </div>
-
-              <!-- Date + Time row -->
-              <div class="date-time-row">
-                <div class="input-group">
-                  <label class="input-label">Date <span class="required">*</span></label>
-                  <div class="input-wrapper" [class.focused]="focused() === 'date'">
-                    <span class="material-icons input-icon">calendar_today</span>
-                    <input type="date" formControlName="scheduledDate"
-                      [min]="today"
-                      (focus)="focused.set('date')" (blur)="focused.set('')" />
-                  </div>
+        <!-- Right: Form Area -->
+        <div class="lg:col-span-8">
+          <div class="glass-card p-8 md:p-12 border border-slate-100 shadow-sm animate-drop-in" style="animation-delay: 0.1s">
+            <form [formGroup]="form" (ngSubmit)="submit()" class="space-y-10">
+              
+              <!-- Section: Topic -->
+              <div class="space-y-6">
+                <div class="flex items-center gap-3 border-b border-slate-50 pb-4">
+                  <span class="material-icons text-primary-600">tips_and_updates</span>
+                  <h3 class="text-sm font-bold uppercase tracking-widest text-slate-800">Focus Area</h3>
                 </div>
 
-                <div class="input-group">
-                  <label class="input-label">Time <span class="required">*</span></label>
-                  <div class="input-wrapper" [class.focused]="focused() === 'time'">
-                    <span class="material-icons input-icon">schedule</span>
-                    <input type="time" formControlName="scheduledTime"
-                      (focus)="focused.set('time')" (blur)="focused.set('')" />
+                <div class="space-y-1.5">
+                  <label class="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">What do you want to learn? <span class="text-red-400">*</span></label>
+                  <div class="relative group">
+                    <span class="material-icons-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-primary-500 transition-colors">auto_stories</span>
+                    <select formControlName="skillId" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-3.5 pl-12 pr-4 text-sm focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500/50 outline-none transition-all font-bold text-slate-700 cursor-pointer appearance-none">
+                      <option [ngValue]="null" disabled>Select Specific Expertise...</option>
+                      @for (cat of skillStore.groupedByCategory(); track cat.category) {
+                        <optgroup [label]="cat.category">
+                          @for (s of cat.skills; track s.id) {
+                            <option [ngValue]="s.id">{{ s.name }}</option>
+                          }
+                        </optgroup>
+                      }
+                    </select>
                   </div>
                 </div>
               </div>
 
-              <!-- Duration -->
-              <div class="input-group">
-                <label class="input-label">Duration <span class="required">*</span></label>
-                <div class="duration-grid">
+              <!-- Section: Schedule -->
+              <div class="space-y-6">
+                <div class="flex items-center gap-3 border-b border-slate-50 pb-4">
+                  <span class="material-icons text-primary-600">event</span>
+                  <h3 class="text-sm font-bold uppercase tracking-widest text-slate-800">Pick a Time</h3>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div class="space-y-1.5">
+                    <label class="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Date</label>
+                    <div class="relative group">
+                      <span class="material-icons-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 transition-colors">calendar_month</span>
+                      <input type="date" formControlName="scheduledDate" [min]="today" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-3.5 pl-12 pr-4 text-sm focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500/50 outline-none transition-all font-bold text-slate-700 cursor-pointer">
+                    </div>
+                  </div>
+                  <div class="space-y-1.5">
+                    <label class="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Time (IST)</label>
+                    <div class="relative group">
+                      <span class="material-icons-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 transition-colors">schedule</span>
+                      <input type="time" formControlName="scheduledTime" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-3.5 pl-12 pr-4 text-sm focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500/50 outline-none transition-all font-bold text-slate-700 cursor-pointer">
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Section: Duration -->
+              <div class="space-y-6">
+                <div class="flex items-center gap-3 border-b border-slate-50 pb-4">
+                  <span class="material-icons text-primary-600">av_timer</span>
+                  <h3 class="text-sm font-bold uppercase tracking-widest text-slate-800">Session Length</h3>
+                </div>
+
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   @for (d of durations; track d.value) {
-                    <button type="button" class="duration-btn"
-                      [class.active]="form.value.durationMinutes === d.value"
-                      (click)="form.patchValue({ durationMinutes: d.value })">
-                      <span class="d-label">{{ d.label }}</span>
-                      <span class="d-sub">{{ d.sub }}</span>
+                    <button type="button" 
+                      (click)="form.patchValue({ durationMinutes: d.value })"
+                      [class.bg-primary-600]="form.value.durationMinutes === d.value"
+                      [class.text-white]="form.value.durationMinutes === d.value"
+                      [class.shadow-xl]="form.value.durationMinutes === d.value"
+                      [class.shadow-primary-200]="form.value.durationMinutes === d.value"
+                      [class.bg-slate-50]="form.value.durationMinutes !== d.value"
+                      [class.text-slate-500]="form.value.durationMinutes !== d.value"
+                      class="flex flex-col items-center justify-center p-5 rounded-2xl border border-slate-100 transition-all duration-300 active:scale-95 space-y-1 group">
+                      <span class="text-sm font-black">{{ d.label }}</span>
+                      <span class="text-[9px] font-bold uppercase tracking-widest opacity-60 group-hover:opacity-100">{{ d.sub }}</span>
                     </button>
                   }
                 </div>
               </div>
 
-              <!-- Selected date/time summary -->
-              @if (form.value.scheduledDate && form.value.scheduledTime) {
-                <div class="summary-banner">
-                  <span class="material-icons">event_available</span>
-                  <span>
-                    <strong>{{ formatDate(form.value.scheduledDate) }}</strong>
-                    at <strong>{{ formatTime(form.value.scheduledTime) }}</strong>
-                    · {{ form.value.durationMinutes }} min
-                  </span>
-                </div>
-              }
-
-              @if (sessionStore.error()) {
-                <div class="error-banner">
-                  <span class="material-icons">error_outline</span>
-                  {{ sessionStore.error() }}
-                </div>
-              }
-
-              <div class="form-actions">
-                <button type="button" class="btn-cancel" (click)="back()">Cancel</button>
-                <button type="submit" class="btn-submit"
-                        [disabled]="form.invalid || sessionStore.loading()">
-                  @if (sessionStore.loading()) {
-                    <mat-spinner diameter="20" />
-                    <span>Requesting...</span>
-                  } @else {
-                    <span class="material-icons">event</span>
-                    <span>Request Session</span>
-                  }
-                </button>
+              <!-- Submit Footer -->
+              <div class="pt-10 border-t border-slate-50 flex flex-col md:flex-row items-center justify-between gap-6">
+                 <div class="flex items-center gap-4 text-slate-400">
+                    <span class="material-icons">help_outline</span>
+                    <p class="text-[10px] font-bold uppercase tracking-widest max-w-[200px]">Mentor will have 24 hours to accept or decline.</p>
+                 </div>
+                 
+                 <div class="flex gap-4 w-full md:w-auto">
+                    <button type="button" (click)="back()" class="flex-1 md:flex-none px-8 py-4 text-sm font-bold text-slate-400 uppercase tracking-widest hover:text-slate-600 transition-colors">Cancel</button>
+                    <button type="submit" [disabled]="form.invalid || sessionStore.loading()" 
+                            class="flex-1 md:flex-none bg-primary-600 text-white rounded-2xl px-12 py-4 font-bold shadow-2xl shadow-primary-200 hover:bg-primary-700 hover:-translate-y-1 active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed">
+                       @if (sessionStore.loading()) {
+                         <div class="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                       } @else {
+                         <span class="material-icons text-base">send</span>
+                         <span>Request Session</span>
+                       }
+                    </button>
+                 </div>
               </div>
 
             </form>
           </div>
         </div>
+
       </div>
     </div>
-  `,
-  styles: [`
-    .page { max-width: 1000px; margin: 0 auto; }
-
-    .back-btn {
-      display: inline-flex; align-items: center; gap: 6px;
-      background: none; border: none; color: #6b7280;
-      font-size: 14px; font-weight: 500; cursor: pointer;
-      padding: 8px 0; margin-bottom: 24px; transition: color 0.15s;
-    }
-    .back-btn:hover { color: #4f46e5; }
-    .back-btn .material-icons { font-size: 18px; }
-
-    /* Layout */
-    .layout { display: grid; grid-template-columns: 280px 1fr; gap: 24px; }
-    @media (max-width: 768px) { .layout { grid-template-columns: 1fr; } }
-
-    /* Mentor Card */
-    .mentor-col { display: flex; flex-direction: column; gap: 16px; }
-    .mentor-card {
-      background: white; border-radius: 20px; border: 1px solid #e5e7eb;
-      padding: 24px; display: flex; flex-direction: column;
-      align-items: center; gap: 10px; text-align: center;
-    }
-    .mentor-avatar {
-      width: 72px; height: 72px; border-radius: 20px;
-      background: linear-gradient(135deg, #4f46e5, #7c3aed);
-      color: white; font-size: 26px; font-weight: 800;
-      display: flex; align-items: center; justify-content: center;
-    }
-    .mentor-card h3 { font-size: 18px; font-weight: 800; color: #111827; margin: 0 0 2px; }
-    .mentor-specialization { font-size: 14px; font-weight: 600; color: #4f46e5; margin: 0 0 4px; }
-    .mentor-exp { font-size: 13px; color: #6b7280; margin: 0; }
-    .mentor-stats { display: flex; gap: 16px; }
-    .stat { display: flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 600; color: #374151; }
-    .stat .material-icons { font-size: 15px; color: #9ca3af; }
-    .avail-badge { display: flex; align-items: center; gap: 5px; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 600; }
-    .dot { width: 6px; height: 6px; border-radius: 50%; }
-    .avail-available { background: #dcfce7; color: #16a34a; } .avail-available .dot { background: #16a34a; }
-    .avail-busy { background: #fef3c7; color: #d97706; } .avail-busy .dot { background: #d97706; }
-
-    /* Cost Card */
-    .cost-card { background: #f9fafb; border-radius: 16px; border: 1px solid #e5e7eb; padding: 18px; }
-    .cost-card h4 { font-size: 14px; font-weight: 700; color: #111827; margin: 0 0 12px; }
-    .cost-row { display: flex; justify-content: space-between; font-size: 13px; color: #6b7280; margin-bottom: 8px; }
-    .cost-divider { height: 1px; background: #e5e7eb; margin: 8px 0; }
-    .cost-row.total { font-size: 15px; font-weight: 700; color: #111827; }
-    .cost-row.total span:last-child { color: #4f46e5; }
-
-    /* Skeleton */
-    .skeleton .skeleton-avatar { width: 72px; height: 72px; border-radius: 20px; background: #e5e7eb; }
-    .skeleton-line { height: 14px; border-radius: 7px; background: #e5e7eb; margin: 6px 0; }
-    .w60 { width: 60%; } .w40 { width: 40%; }
-
-    /* Form Card */
-    .form-card { background: white; border-radius: 20px; border: 1px solid #e5e7eb; padding: 28px; }
-    .form-card h2 { font-size: 22px; font-weight: 800; color: #111827; margin: 0 0 4px; }
-    .form-subtitle { font-size: 14px; color: #6b7280; margin: 0 0 24px; }
-    .form { display: flex; flex-direction: column; gap: 18px; }
-
-    /* Input Groups */
-    .input-group { display: flex; flex-direction: column; gap: 6px; }
-    .input-label { font-size: 13px; font-weight: 600; color: #374151; }
-    .required { color: #ef4444; }
-
-    .input-wrapper {
-      display: flex; align-items: center;
-      background: #f9fafb; border: 1.5px solid #e5e7eb;
-      border-radius: 12px; padding: 0 14px; height: 52px;
-      transition: border-color 0.2s, box-shadow 0.2s;
-    }
-    .input-wrapper.focused {
-      border-color: #4f46e5;
-      box-shadow: 0 0 0 3px rgba(79,70,229,0.1);
-      background: white;
-    }
-    .input-wrapper.error { border-color: #ef4444; }
-    .input-icon { font-size: 18px; color: #9ca3af; margin-right: 10px; flex-shrink: 0; }
-    .input-wrapper.focused .input-icon { color: #4f46e5; }
-
-    .input-wrapper input, .skill-select {
-      flex: 1; border: none; outline: none;
-      font-size: 15px; color: #111827;
-      background: transparent; font-family: inherit;
-      min-width: 0;
-    }
-    .skill-select { cursor: pointer; appearance: none; }
-    .input-wrapper input::placeholder { color: #9ca3af; }
-
-    /* Native date/time inputs */
-    .input-wrapper input[type="date"],
-    .input-wrapper input[type="time"] {
-      cursor: pointer;
-      color-scheme: light;
-    }
-    .input-wrapper input[type="date"]::-webkit-calendar-picker-indicator,
-    .input-wrapper input[type="time"]::-webkit-calendar-picker-indicator {
-      cursor: pointer;
-      opacity: 0.6;
-      filter: invert(40%) sepia(100%) saturate(500%) hue-rotate(210deg);
-    }
-
-    .field-error { font-size: 12px; color: #ef4444; }
-
-    /* Date + Time side by side */
-    .date-time-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 14px;
-    }
-    @media (max-width: 480px) {
-      .date-time-row { grid-template-columns: 1fr; }
-    }
-
-    /* Duration Grid */
-    .duration-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 8px;
-    }
-    @media (max-width: 480px) {
-      .duration-grid { grid-template-columns: repeat(2, 1fr); }
-    }
-
-    .duration-btn {
-      height: 56px; border-radius: 12px;
-      border: 1.5px solid #e5e7eb;
-      background: white; color: #374151;
-      font-size: 13px; font-weight: 600;
-      cursor: pointer; transition: all 0.15s;
-      display: flex; flex-direction: column;
-      align-items: center; justify-content: center; gap: 2px;
-    }
-    .duration-btn:hover { border-color: #4f46e5; color: #4f46e5; background: #f5f3ff; }
-    .duration-btn.active { background: #eef2ff; border-color: #4f46e5; color: #4f46e5; }
-    .d-label { font-size: 14px; font-weight: 700; }
-    .d-sub { font-size: 11px; opacity: 0.7; }
-
-    /* Summary Banner */
-    .summary-banner {
-      display: flex; align-items: center; gap: 10px;
-      background: #eef2ff; border: 1px solid #c7d2fe;
-      border-radius: 12px; padding: 12px 16px;
-      font-size: 14px; color: #4338ca;
-    }
-    .summary-banner .material-icons { font-size: 20px; color: #4f46e5; flex-shrink: 0; }
-
-    /* Error Banner */
-    .error-banner {
-      display: flex; align-items: center; gap: 8px;
-      background: #fef2f2; color: #dc2626;
-      border: 1px solid #fecaca;
-      padding: 12px 14px; border-radius: 10px; font-size: 14px;
-    }
-    .error-banner .material-icons { font-size: 18px; }
-
-    /* Actions */
-    .form-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 4px; }
-    @media (max-width: 480px) {
-      .form-actions { flex-direction: column-reverse; }
-      .btn-cancel, .btn-submit { width: 100%; justify-content: center; }
-    }
-
-    .btn-cancel {
-      height: 48px; padding: 0 20px; border-radius: 12px;
-      background: #f3f4f6; color: #374151; border: none;
-      font-size: 14px; font-weight: 600; cursor: pointer; transition: background 0.15s;
-    }
-    .btn-cancel:hover { background: #e5e7eb; }
-
-    .btn-submit {
-      height: 48px; padding: 0 24px; border-radius: 12px;
-      background: linear-gradient(135deg, #4f46e5, #7c3aed);
-      color: white; border: none; font-size: 14px; font-weight: 600;
-      cursor: pointer; display: flex; align-items: center; gap: 8px;
-      box-shadow: 0 4px 12px rgba(79,70,229,0.3); transition: opacity 0.2s;
-    }
-    .btn-submit:hover:not(:disabled) { opacity: 0.9; }
-    .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; }
-    .btn-submit .material-icons { font-size: 18px; }
-  `]
+  `
 })
 export class RequestSessionPage implements OnInit {
   readonly sessionStore = inject(SessionStore) as any;
@@ -357,19 +191,15 @@ export class RequestSessionPage implements OnInit {
   readonly skillStore = inject(SkillStore) as any;
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
-  private readonly snack = inject(MatSnackBar);
   private readonly fb = inject(FormBuilder);
 
-  readonly focused = signal('');
-
-  // Min date = today
   readonly today = new Date().toISOString().split('T')[0];
 
   readonly durations = [
-    { label: '30 min', value: 30,  sub: '₹ × 0.5' },
-    { label: '1 hr',   value: 60,  sub: '₹ × 1.0' },
-    { label: '1.5 hr', value: 90,  sub: '₹ × 1.5' },
-    { label: '2 hr',   value: 120, sub: '₹ × 2.0' },
+    { label: '30m', value: 30,  sub: '₹ × 0.5' },
+    { label: '60m', value: 60,  sub: '₹ × 1.0' },
+    { label: '90m', value: 90,  sub: '₹ × 1.5' },
+    { label: '2hr', value: 120, sub: '₹ × 2.0' },
   ];
 
   readonly form = this.fb.group({
@@ -393,24 +223,10 @@ export class RequestSessionPage implements OnInit {
     return (hourlyRate / 60) * mins;
   }
 
-  formatDate(d: string): string {
-    if (!d) return '';
-    return new Date(d + 'T00:00:00').toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
-  }
-
-  formatTime(t: string): string {
-    if (!t) return '';
-    const [h, m] = t.split(':').map(Number);
-    const ampm = h >= 12 ? 'PM' : 'AM';
-    const h12 = h % 12 || 12;
-    return `${h12}:${m.toString().padStart(2, '0')} ${ampm}`;
-  }
-
   submit(): void {
     if (this.form.invalid) return;
     const mentorId = Number(this.route.snapshot.queryParamMap.get('mentorId'));
     const { skillId, scheduledDate, scheduledTime, durationMinutes } = this.form.getRawValue();
-
     const date = new Date(`${scheduledDate}T${scheduledTime}:00`);
 
     this.sessionStore.requestSession({
@@ -422,10 +238,9 @@ export class RequestSessionPage implements OnInit {
 
     setTimeout(() => {
       if (!this.sessionStore.error()) {
-        this.snack.open('Session requested successfully!', 'OK', { duration: 3000 });
         this.router.navigate(['/sessions']);
       }
-    }, 800);
+    }, 1000);
   }
 
   back(): void { this.router.navigate(['/mentors']); }

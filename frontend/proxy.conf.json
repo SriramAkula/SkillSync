@@ -1,6 +1,6 @@
 {
   "/api": {
-    "target": "http://api.20.197.18.249.nip.io",
+    "target": "http://api.20.197.18.249.nip.io:9090",
     "secure": false,
     "changeOrigin": true,
     "logLevel": "debug"

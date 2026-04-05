@@ -1,108 +1,102 @@
-import { Component, signal } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { Component, signal, inject, HostListener } from '@angular/core';
+import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { NavbarComponent } from '../navbar/navbar.component';
 import { SidebarComponent } from '../sidebar/sidebar.component';
+import { AuthStore } from '../../core/auth/auth.store';
 
 @Component({
   selector: 'app-shell',
   standalone: true,
-  imports: [RouterOutlet, CommonModule, NavbarComponent, SidebarComponent],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, CommonModule, NavbarComponent, SidebarComponent],
   template: `
-    <div class="shell">
-      <app-navbar (menuToggle)="toggleSidebar()" />
+    <div class="flex h-screen overflow-hidden bg-slate-50 font-sans">
+      
+      <!-- Desktop Sidebar -->
+      <aside 
+        class="hidden lg:flex w-72 flex-col bg-white border-r border-slate-200 transition-all duration-300 ease-in-out"
+        [class.w-20]="isCollapsed()">
+        <app-sidebar [isCollapsed]="isCollapsed()" />
+      </aside>
 
-      <div class="body">
-        <!-- Sidebar -->
-        <aside class="sidebar-wrap" [class.open]="sidebarOpen()" [class.closed]="!sidebarOpen()">
-          <app-sidebar (navClick)="closeOnMobile()" />
-        </aside>
+      <!-- Main Content Area -->
+      <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
+        
+        <!-- Navbar -->
+        <app-navbar (toggleSidebar)="toggleSidebar()" />
 
-        <!-- Mobile overlay -->
-        @if (sidebarOpen() && isMobile()) {
-          <div class="overlay" (click)="sidebarOpen.set(false)"></div>
-        }
-
-        <!-- Main content -->
-        <main class="main-content">
-          <router-outlet />
+        <!-- Router Content -->
+        <main class="flex-1 overflow-y-auto px-4 py-6 md:px-8 lg:px-10 pb-24 lg:pb-10">
+          <div class="max-w-7xl mx-auto">
+            <router-outlet />
+          </div>
         </main>
+
+        <!-- Mobile Bottom Nav -->
+        <nav class="lg:hidden fixed bottom-0 left-0 right-0 glass-effect border-t border-white/20 px-6 py-3 z-50 flex justify-between items-center rounded-t-3xl shadow-2xl">
+          <a routerLink="/mentors" routerLinkActive="text-primary-600" class="flex flex-col items-center gap-1 transition-colors hover:text-primary-500 text-slate-400">
+            <span class="material-icons-outlined">search</span>
+            <span class="text-[10px] font-medium uppercase tracking-wider">Explore</span>
+          </a>
+          <a routerLink="/sessions" routerLinkActive="text-primary-600" class="flex flex-col items-center gap-1 transition-colors hover:text-primary-500 text-slate-400">
+            <span class="material-icons-outlined">calendar_today</span>
+            <span class="text-[10px] font-medium uppercase tracking-wider">Sessions</span>
+          </a>
+          <div class="relative -top-6">
+            <a routerLink="/groups" routerLinkActive="bg-primary-700 shadow-primary-200" class="flex items-center justify-center w-14 h-14 bg-primary-600 text-white rounded-2xl shadow-xl shadow-primary-100 transition-transform active:scale-95">
+              <span class="material-icons">group</span>
+            </a>
+          </div>
+          <a routerLink="/notifications" routerLinkActive="text-primary-600" class="flex flex-col items-center gap-1 transition-colors hover:text-primary-500 text-slate-400">
+            <span class="material-icons-outlined">notifications</span>
+            <span class="text-[10px] font-medium uppercase tracking-wider">Alerts</span>
+          </a>
+          <a routerLink="/profile" routerLinkActive="text-primary-600" class="flex flex-col items-center gap-1 transition-colors hover:text-primary-500 text-slate-400">
+            <span class="material-icons-outlined">person</span>
+            <span class="text-[10px] font-medium uppercase tracking-wider">Profile</span>
+          </a>
+        </nav>
+
       </div>
+
+      <!-- Mobile Sidebar Overlay (optional drawer) -->
+      @if (mobileMenuOpen()) {
+        <div class="lg:hidden fixed inset-0 z-[60] bg-slate-900/40 backdrop-blur-sm" (click)="mobileMenuOpen.set(false)">
+          <aside class="w-72 h-full bg-white shadow-2xl animate-slide-in" (click)="$event.stopPropagation()">
+             <app-sidebar (navClick)="mobileMenuOpen.set(false)" />
+          </aside>
+        </div>
+      }
     </div>
   `,
   styles: [`
-    .shell { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
-
-    .body { display: flex; flex: 1; overflow: hidden; }
-
-    /* Sidebar — desktop */
-    .sidebar-wrap {
-      width: 240px; flex-shrink: 0;
-      background: var(--card-bg); border-right: 1px solid var(--border-color);
-      overflow-y: auto; z-index: 50;
-      transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1), background 0.3s ease;
-      margin-left: 0;
+    @keyframes slide-in {
+      from { transform: translateX(-100%); }
+      to { transform: translateX(0); }
     }
-    
-    /* Desktop Closed state */
-    .sidebar-wrap.closed { margin-left: -240px; }
-
-    /* Main content */
-    .main-content {
-      flex: 1; overflow-y: auto;
-      padding: 24px; background: var(--bg-color);
-      color: var(--text-primary);
-    }
-
-    /* Mobile overlay */
-    .overlay {
-      display: none;
-      position: fixed; inset: 0;
-      background: rgba(0,0,0,0.4);
-      z-index: 49;
-    }
-
-    /* ── Mobile ── */
-    @media (max-width: 768px) {
-      .sidebar-wrap {
-        position: fixed; top: 64px; left: 0; bottom: 0;
-        margin-left: -240px; /* Hidden by default on mobile */
-        box-shadow: 4px 0 20px rgba(0,0,0,0.1);
-      }
-      /* Mobile Open state */
-      .sidebar-wrap.open { margin-left: 0; }
-      .overlay { display: block; top: 64px; }
-      .main-content { padding: 16px; }
-    }
-
-    @media (max-width: 480px) {
-      .main-content { padding: 12px; }
+    .animate-slide-in {
+      animation: slide-in 0.3s cubic-bezier(0, 0, 0.2, 1);
     }
   `]
 })
 export class ShellComponent {
-  readonly isMobile = signal(window.innerWidth <= 768);
-  // On desktop, it's open by default. On mobile, it's closed by default.
-  readonly sidebarOpen = signal(!this.isMobile());
+  readonly isCollapsed = signal(false);
+  readonly mobileMenuOpen = signal(false);
+  private lastWidth = window.innerWidth;
 
-  constructor() {
-    window.addEventListener('resize', () => {
-      const mobile = window.innerWidth <= 768;
-      if (mobile !== this.isMobile()) {
-        this.isMobile.set(mobile);
-        this.sidebarOpen.set(!mobile);
-      }
-    });
+  @HostListener('window:resize', ['$event'])
+  onResize(event: any) {
+    if (window.innerWidth >= 1024 && this.lastWidth < 1024) {
+      this.mobileMenuOpen.set(false);
+    }
+    this.lastWidth = window.innerWidth;
   }
 
   toggleSidebar(): void {
-    this.sidebarOpen.set(!this.sidebarOpen());
-  }
-
-  closeOnMobile(): void {
-    if (this.isMobile()) {
-      this.sidebarOpen.set(false);
+    if (window.innerWidth >= 1024) {
+      this.isCollapsed.set(!this.isCollapsed());
+    } else {
+      this.mobileMenuOpen.set(!this.mobileMenuOpen());
     }
   }
 }
-
