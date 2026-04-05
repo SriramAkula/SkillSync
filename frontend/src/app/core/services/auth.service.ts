@@ -11,6 +11,28 @@ import {
 export class AuthService {
   private readonly http = inject(HttpClient);
   private readonly base = `${environment.apiUrl}/auth`;
+  private tempEmail: string | null = null;
+
+  setTempEmail(email: string): void {
+    this.tempEmail = email;
+  }
+
+  getTempEmail(): string | null {
+    return this.tempEmail;
+  }
+
+  setToken(token: string): void {
+    localStorage.setItem('token', token);
+  }
+
+  getToken(): string | null {
+    return localStorage.getItem('token');
+  }
+
+  logout(): void {
+    localStorage.removeItem('token');
+    this.tempEmail = null;
+  }
 
   sendOtp(email: string): Observable<ApiResponse<void>> {
     return this.http.post<ApiResponse<void>>(`${this.base}/send-otp`, { email });

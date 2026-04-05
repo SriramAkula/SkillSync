@@ -17,17 +17,17 @@ public class CorsConfig {
 
         // Allow Angular dev server + production origins
         config.setAllowedOrigins(List.of(
-            "http://localhost:4200",
-            "http://localhost:4201",
-            "http://127.0.0.1:4200"
-        ));
+                "http://localhost:4200",
+                "http://localhost:4201",
+                "http://127.0.0.1:4200",
+                "https://skillssync.me",
+                "https://www.skillssync.me"));
 
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
 
         config.setAllowedHeaders(List.of(
-            "Authorization", "Content-Type", "X-Requested-With",
-            "Accept", "Origin", "X-Gateway-Request"
-        ));
+                "Authorization", "Content-Type", "X-Requested-With",
+                "Accept", "Origin", "X-Gateway-Request"));
 
         config.setExposedHeaders(List.of("Authorization"));
         config.setAllowCredentials(true);

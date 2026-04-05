@@ -1,5 +1,5 @@
 export const environment = {
   production: true,
-  apiUrl: '/api',
+  apiUrl: 'https://api.skillssync.me/api',
   pollIntervalMs: 30000
 };
