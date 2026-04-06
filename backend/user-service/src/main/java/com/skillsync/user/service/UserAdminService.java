@@ -33,6 +33,7 @@ public class UserAdminService {
 
 	private final UserProfileRepository userProfileRepository;
 	private final UserProfileMapper userProfileMapper;
+	private final com.skillsync.user.client.AuthClient authClient;
 
 	/**
 	 * Get all users with pagination (admin-only, returns blocking info)
@@ -85,6 +86,14 @@ public class UserAdminService {
 		UserProfile saved = userProfileRepository.save(user);
 		log.info("User {} successfully blocked by admin {}", userId, adminId);
 		
+		// ── Sync status with Auth Service ──
+		try {
+			authClient.updateUserStatus(userId, false);
+			log.info("Successfully synced block status to Auth Service for user {}", userId);
+		} catch (Exception e) {
+			log.error("Failed to sync block status to Auth Service for user {}: {}", userId, e.getMessage());
+		}
+		
 		return userProfileMapper.toAdminDto(saved);
 	}
 
@@ -113,6 +122,14 @@ public class UserAdminService {
 
 		UserProfile saved = userProfileRepository.save(user);
 		log.info("User {} successfully unblocked by admin {}", userId, adminId);
+
+		// ── Sync status with Auth Service ──
+		try {
+			authClient.updateUserStatus(userId, true);
+			log.info("Successfully synced unblock status to Auth Service for user {}", userId);
+		} catch (Exception e) {
+			log.error("Failed to sync unblock status to Auth Service for user {}: {}", userId, e.getMessage());
+		}
 		
 		return userProfileMapper.toAdminDto(saved);
 	}

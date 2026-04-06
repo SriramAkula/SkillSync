@@ -26,6 +26,7 @@ public class UserProfileResponseDto {
 	private Double rating;
 	private Integer totalReviews;
 	private Boolean isProfileComplete;
+	private Boolean isBlocked;
 	private LocalDateTime createdAt;
 	private LocalDateTime updatedAt;
 }

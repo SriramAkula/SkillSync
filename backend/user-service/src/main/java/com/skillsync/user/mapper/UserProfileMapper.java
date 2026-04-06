@@ -73,6 +73,7 @@ public class UserProfileMapper {
         dto.setRating(profile.getRating());
         dto.setTotalReviews(profile.getTotalReviews());
         dto.setIsProfileComplete(profile.getProfileComplete());
+        dto.setIsBlocked(profile.getIsBlocked());
         dto.setCreatedAt(profile.getCreatedAt());
         dto.setUpdatedAt(profile.getUpdatedAt());
         

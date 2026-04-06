@@ -82,6 +82,10 @@ public class OAuthService {
     // Handle existing user - block if LOCAL, allow if GOOGLE
     // ─────────────────────────────────────────────────────────────
     private User handleExistingUser(User user, String providerId) {
+        if (Boolean.FALSE.equals(user.getIsActive())) {
+            throw new RuntimeException("Your account has been deactivated. Please contact support.");
+        }
+
         if (user.getAuthProvider() == AuthProvider.LOCAL) {
             throw new RuntimeException(
                 "This email is already registered with password login. " +

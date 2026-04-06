@@ -36,6 +36,7 @@ public class SessionServiceImpl implements SessionService {
     @Autowired private SessionRepository sessionRepository;
     @Autowired private SessionEventPublisher eventPublisher;
     @Autowired private SessionMapper sessionMapper;
+    @Autowired private com.skillsync.session.client.UserClient userClient;
 
     @Override
     @Transactional
@@ -43,6 +44,19 @@ public class SessionServiceImpl implements SessionService {
     public SessionResponseDto requestSession(Long learnerId, RequestSessionRequestDto request) {
         log.info("Requesting session: learnerId={}, mentorId={}, skillId={}, scheduledAt={}",
                 learnerId, request.getMentorId(), request.getSkillId(), request.getScheduledAt());
+
+        // ── Auth Check: Is learner blocked? ──
+        try {
+            com.skillsync.session.dto.ApiResponse<com.skillsync.session.dto.response.UserProfileResponseDto> userResponse = 
+                userClient.getUserProfile(learnerId);
+            if (userResponse != null && userResponse.getData() != null && Boolean.TRUE.equals(userResponse.getData().getIsBlocked())) {
+                log.warn("Blocked user {} attempted to book a session", learnerId);
+                throw new com.skillsync.session.exception.SessionConflictException("Your account is blocked. You cannot book sessions.");
+            }
+        } catch (Exception e) {
+            log.warn("Could not verify blocked status for user {}: {}. Proceeding with caution.", learnerId, e.getMessage());
+            // In a production environment, we might want to fail-closed, but for now we'll allow if service is down
+        }
 
         List<Session> conflicts = sessionRepository.findSessionsInTimeRange(
                 request.getMentorId(),
@@ -127,9 +141,12 @@ public class SessionServiceImpl implements SessionService {
     public SessionResponseDto cancelSession(Long sessionId) {
         Session session = sessionRepository.findById(sessionId)
                 .orElseThrow(() -> new SessionNotFoundException("Session not found"));
-        if (!SessionStatus.ACCEPTED.equals(session.getStatus())) {
-            throw new SessionConflictException("Only ACCEPTED sessions can be cancelled. Current status: " + session.getStatus());
+        
+        // Allow cancelling if ACCEPTED or REQUESTED (withdrawing request)
+        if (!SessionStatus.ACCEPTED.equals(session.getStatus()) && !SessionStatus.REQUESTED.equals(session.getStatus())) {
+            throw new SessionConflictException("Only REQUESTED or ACCEPTED sessions can be cancelled. Current status: " + session.getStatus());
         }
+        
         session.setStatus(SessionStatus.CANCELLED);
         Session saved = sessionRepository.save(session);
         eventPublisher.publishSessionCancelled(new SessionCancelledEvent(

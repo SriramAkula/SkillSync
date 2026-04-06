@@ -127,4 +127,35 @@ public class InternalUserController {
         logger.info("   Retrieved roles for user {}: {}", userId, roles);
         return ResponseEntity.ok(roles);
     }
+
+    /**
+     * Update user active status in Auth Service
+     * Called by User Service when a user is blocked/unblocked
+     * 
+     * @param userId User ID
+     * @param isActive New active status
+     */
+    @PutMapping("/{userId}/status")
+    public ResponseEntity<Void> updateUserStatus(
+            @PathVariable Long userId,
+            @RequestParam boolean isActive,
+            @RequestHeader(value = "X-Internal-Service", required = false) String internalService,
+            @RequestHeader(value = "X-Service-Auth", required = false) String serviceAuth) {
+        
+        logger.info("Received status update from: {} for userId: {}, isActive: {}", 
+                internalService != null ? internalService : "unknown service", userId, isActive);
+        
+        Optional<User> userOpt = userRepository.findById(userId);
+        if (userOpt.isEmpty()) {
+            logger.warn("User not found in Auth Service: userId={}", userId);
+            return ResponseEntity.notFound().build();
+        }
+
+        User user = userOpt.get();
+        user.setIsActive(isActive);
+        userRepository.save(user);
+        
+        logger.info("User {} status updated to isActive={} in Auth Service", userId, isActive);
+        return ResponseEntity.ok().build();
+    }
 }
