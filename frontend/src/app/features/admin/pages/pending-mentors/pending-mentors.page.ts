@@ -210,7 +210,9 @@ type AdminTab = 'mentors' | 'skills';
 
     .page-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
     .page-header h1 { font-size: 28px; font-weight: 800; color: #111827; margin: 0 0 4px; }
+    :host-context(.dark) .page-header h1 { color: #f3f4f6; }
     .page-header p { color: #6b7280; font-size: 14px; margin: 0; }
+    :host-context(.dark) .page-header p { color: #d1d5db; }
     .stat-pill { display: flex; align-items: center; gap: 6px; background: #fef3c7; color: #d97706; padding: 8px 16px; border-radius: 12px; font-size: 14px; font-weight: 600; }
     .stat-pill .material-icons { font-size: 18px; }
 

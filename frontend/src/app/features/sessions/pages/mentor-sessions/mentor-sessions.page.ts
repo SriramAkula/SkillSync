@@ -1,4 +1,3 @@
-import 'tslib';
 import { Component, inject, OnInit, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -26,9 +25,9 @@ type DashTab = 'pending' | 'upcoming' | 'all';
           <div class="flex items-center gap-3 text-primary-600 font-bold text-xs uppercase tracking-[0.2em] mb-2">
              <span class="material-icons text-sm">verified_user</span>
              Verified Expert Dashboard
-          </div>
-          <h1 class="text-4xl lg:text-5xl font-black tracking-tighter text-slate-900">Manage Your <span class="text-primary-600">Impact</span></h1>
-          <p class="text-slate-500 font-medium text-lg lg:text-xl">Accept requests, track upcoming meetings, and grow your student base.</p>
+          <div class="space-y-4">
+          <h1 class="text-4xl lg:text-5xl font-black tracking-tighter text-slate-900 dark:text-white">Manage Your <span class="text-primary-600">Impact</span></h1>
+          <p class="text-slate-500 dark:text-slate-400 font-medium text-lg leading-relaxed max-w-2xl">Review collaboration requests and manage your upcoming schedule.</p>
         </div>
 
         <div class="flex items-center gap-4">
@@ -38,15 +37,15 @@ type DashTab = 'pending' | 'upcoming' | 'all';
           
           <!-- Availability Toggle (Premium) -->
           <button (click)="toggleAvailability()" 
-                  class="bg-white border-2 border-slate-100 rounded-3xl px-6 py-3.5 flex items-center gap-4 hover:border-primary-200 transition-all active:scale-95 shadow-sm group">
+                  class="bg-white dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-3xl px-6 py-3.5 flex items-center gap-4 hover:border-primary-200 dark:hover:border-primary-400 transition-all active:scale-95 shadow-sm group">
             <div class="relative">
-              <div class="w-3 h-3 rounded-full shadow-sm" [ngClass]="mentorStore.isAvailable() ? 'bg-emerald-500 shadow-emerald-200 animate-pulse' : 'bg-slate-300'"></div>
+              <div class="w-3 h-3 rounded-full shadow-sm" [ngClass]="mentorStore.isAvailable() ? 'bg-emerald-500 shadow-emerald-200 animate-pulse' : 'bg-slate-300 dark:bg-slate-600'"></div>
             </div>
             <div class="text-left">
-              <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-1">My Status</p>
-              <p class="text-xs font-black text-slate-800 uppercase tracking-wider leading-none">{{ mentorStore.isAvailable() ? 'Available' : 'Unavailable' }}</p>
+              <p class="text-[9px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-widest leading-none mb-1">My Status</p>
+              <p class="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider leading-none">{{ mentorStore.isAvailable() ? 'Available' : 'Unavailable' }}</p>
             </div>
-            <span class="material-icons text-slate-300 group-hover:text-primary-600 transition-colors">swap_horiz</span>
+            <span class="material-icons text-slate-400 dark:text-slate-500 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">swap_horiz</span>
           </button>
         </div>
       </div>
@@ -55,57 +54,57 @@ type DashTab = 'pending' | 'upcoming' | 'all';
       <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
         <div (click)="activeTab.set('pending')" 
              [class.ring-2]="activeTab() === 'pending'"
-             class="glass-card p-6 cursor-pointer hover:shadow-2xl transition-all duration-300 ring-amber-500/50 ring-offset-2 relative overflow-hidden group">
+             class="glass-card dark:bg-amber-950/50 p-6 cursor-pointer hover:shadow-2xl transition-all duration-300 ring-amber-500/50 ring-offset-2 dark:ring-offset-slate-950 relative overflow-hidden group border border-amber-500/10">
           <div class="flex items-center gap-4 relative z-10">
-            <div class="w-12 h-12 bg-amber-50 rounded-xl flex items-center justify-center text-amber-500 group-hover:bg-amber-100 transition-colors">
+            <div class="w-12 h-12 bg-amber-100 dark:bg-amber-900/30 rounded-xl flex items-center justify-center text-amber-600 dark:text-amber-400 group-hover:bg-amber-200 dark:group-hover:bg-amber-900/50 transition-colors shadow-sm">
               <span class="material-icons">pending_actions</span>
             </div>
             <div>
-              <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Action Required</p>
-              <p class="text-2xl font-black text-slate-800 tracking-tight">{{ pendingSessions().length }}</p>
+              <p class="text-[10px] font-bold uppercase tracking-widest text-amber-600 dark:text-amber-300">Action Required</p>
+              <p class="text-2xl font-black text-amber-600 dark:text-amber-200 tracking-tight">{{ pendingSessions().length }}</p>
             </div>
           </div>
           @if (pendingSessions().length > 0) {
-            <span class="absolute -top-2 -right-2 bg-amber-500 text-white text-[9px] font-bold px-3 py-1 rounded-bl-xl uppercase tracking-widest shadow-lg">New Inbound</span>
+            <span class="absolute -top-2 -right-2 bg-amber-500 text-white dark:text-white text-[9px] font-black px-3 py-1 rounded-bl-xl uppercase tracking-[0.2em] shadow-lg">New Inbound</span>
           }
         </div>
 
         <div (click)="activeTab.set('upcoming')" 
              [class.ring-2]="activeTab() === 'upcoming'"
-             class="glass-card p-6 cursor-pointer hover:shadow-2xl transition-all duration-300 ring-blue-500/50 ring-offset-2 group">
+             class="glass-card dark:bg-blue-950/50 p-6 cursor-pointer hover:shadow-2xl transition-all duration-300 ring-blue-500/50 ring-offset-2 dark:ring-offset-slate-950 relative overflow-hidden group border border-blue-500/10">
           <div class="flex items-center gap-4">
-            <div class="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center text-blue-500 group-hover:bg-blue-100 transition-colors">
+            <div class="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center text-blue-600 dark:text-blue-400 group-hover:bg-blue-200 dark:group-hover:bg-blue-900/50 transition-colors shadow-sm">
               <span class="material-icons">event_available</span>
             </div>
             <div>
-              <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Confirmed</p>
-              <p class="text-2xl font-black text-slate-800 tracking-tight">{{ upcomingSessions().length }}</p>
+              <p class="text-[10px] font-bold uppercase tracking-widest text-blue-600 dark:text-blue-300">Confirmed</p>
+              <p class="text-2xl font-black text-blue-600 dark:text-blue-200 tracking-tight">{{ upcomingSessions().length }}</p>
             </div>
           </div>
         </div>
 
         <div (click)="activeTab.set('all')" 
              [class.ring-2]="activeTab() === 'all'"
-             class="glass-card p-6 cursor-pointer hover:shadow-2xl transition-all duration-300 ring-violet-500/50 ring-offset-2 group">
+             class="glass-card dark:bg-violet-950/50 p-6 cursor-pointer hover:shadow-2xl transition-all duration-300 ring-violet-500/50 ring-offset-2 dark:ring-offset-slate-950 relative overflow-hidden group border border-violet-500/10">
           <div class="flex items-center gap-4">
-            <div class="w-12 h-12 bg-violet-50 rounded-xl flex items-center justify-center text-violet-500 group-hover:bg-violet-100 transition-colors">
+            <div class="w-12 h-12 bg-violet-100 dark:bg-violet-900/30 rounded-xl flex items-center justify-center text-violet-600 dark:text-violet-400 group-hover:bg-violet-200 dark:group-hover:bg-violet-900/50 transition-colors shadow-sm">
               <span class="material-icons">history</span>
             </div>
             <div>
-              <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Lifetime</p>
-              <p class="text-2xl font-black text-slate-800 tracking-tight">{{ sessionStore.mentorSessions().length }}</p>
+              <p class="text-[10px] font-bold uppercase tracking-widest text-violet-600 dark:text-violet-300">Lifetime</p>
+              <p class="text-2xl font-black text-violet-600 dark:text-violet-200 tracking-tight">{{ sessionStore.mentorSessions().length }}</p>
             </div>
           </div>
         </div>
 
-        <div class="glass-card p-6 border-emerald-100 bg-emerald-50/5 relative overflow-hidden">
+        <div class="glass-card dark:bg-emerald-950/50 p-6 cursor-pointer hover:shadow-2xl transition-all duration-300 ring-emerald-500/50 ring-offset-2 dark:ring-offset-slate-950 relative overflow-hidden group border border-emerald-500/10">
           <div class="flex items-center gap-4">
-            <div class="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-500">
+            <div class="w-12 h-12 bg-emerald-100 dark:bg-emerald-900/30 rounded-xl flex items-center justify-center text-emerald-600 dark:text-emerald-400 group-hover:bg-emerald-200 dark:group-hover:bg-emerald-900/50 transition-colors shadow-sm">
               <span class="material-icons">account_balance_wallet</span>
             </div>
             <div>
-              <p class="text-[10px] font-bold uppercase tracking-widest text-emerald-600">Total Confirmed</p>
-              <p class="text-2xl font-black text-emerald-700 tracking-tight">{{ confirmedSessions().length }}</p>
+              <p class="text-[10px] font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-300">Total Confirmed</p>
+              <p class="text-2xl font-black text-emerald-600 dark:text-emerald-200 tracking-tight">{{ confirmedSessions().length }}</p>
             </div>
           </div>
           <div class="absolute -right-4 -bottom-4 opacity-5 pointer-events-none">
@@ -118,14 +117,17 @@ type DashTab = 'pending' | 'upcoming' | 'all';
       <div class="space-y-8">
         
         <!-- Tab Switches (Premium Pill) -->
-        <div class="flex items-center gap-2 p-1.5 bg-slate-100/50 rounded-2xl w-fit">
+        <div class="flex items-center gap-2 p-1.5 bg-slate-100/50 dark:bg-slate-800/50 rounded-2xl w-fit">
           @for (tab of tabs; track tab.key) {
             <button 
               (click)="activeTab.set(tab.key)"
               [class.bg-white]="activeTab() === tab.key"
+              [class.dark:bg-slate-700]="activeTab() === tab.key"
               [class.shadow-md]="activeTab() === tab.key"
               [class.text-primary-600]="activeTab() === tab.key"
+              [class.dark:text-primary-300]="activeTab() === tab.key"
               [class.text-slate-500]="activeTab() !== tab.key"
+              [class.dark:text-slate-400]="activeTab() !== tab.key"
               class="px-8 py-3 rounded-xl text-xs font-bold uppercase tracking-widest transition-all active:scale-95 whitespace-nowrap">
               {{ tab.label }}
             </button>
@@ -174,12 +176,12 @@ type DashTab = 'pending' | 'upcoming' | 'all';
                   </div>
                 </div>
               } @empty {
-                <div class="py-24 glass-card border border-dashed border-slate-200 flex flex-col items-center text-center space-y-4">
-                   <div class="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center text-slate-200">
+                <div class="py-24 glass-card dark:bg-slate-800/30 border border-dashed border-slate-200 dark:border-slate-700 flex flex-col items-center text-center space-y-4">
+                   <div class="w-16 h-16 bg-slate-100 dark:bg-slate-700/50 rounded-full flex items-center justify-center text-slate-300 dark:text-slate-400">
                       <span class="material-icons text-3xl">inbox</span>
                    </div>
-                   <h3 class="text-xl font-bold text-slate-800">No pending requests</h3>
-                   <p class="text-slate-500 text-sm max-w-xs font-medium">When learners book sessions with you, they'll appear here for your approval.</p>
+                   <h3 class="text-xl font-bold text-slate-800 dark:text-slate-100">No pending requests</h3>
+                   <p class="text-slate-600 dark:text-slate-300 text-sm max-w-xs font-medium">When learners book sessions with you, they'll appear here for your approval.</p>
                 </div>
               }
             </div>
@@ -193,7 +195,7 @@ type DashTab = 'pending' | 'upcoming' | 'all';
                   (cancel)="cancelSession($event)"
                   (pay)="noop()" />
               } @empty {
-                <div class="col-span-full py-24 flex flex-col items-center text-center space-y-4 text-slate-300">
+                <div class="col-span-full py-24 flex flex-col items-center text-center space-y-4 text-slate-500 dark:text-slate-400">
                    <span class="material-icons text-6xl">event_busy</span>
                    <p class="text-sm font-bold uppercase tracking-widest">No matching activities found.</p>
                 </div>

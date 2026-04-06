@@ -10,11 +10,12 @@ import { AuthStore } from '../../core/auth/auth.store';
   standalone: true,
   imports: [RouterOutlet, RouterLink, RouterLinkActive, CommonModule, NavbarComponent, SidebarComponent],
   template: `
-    <div class="flex h-screen overflow-hidden bg-slate-50 font-sans">
+    <div class="flex h-screen overflow-hidden bg-slate-50 dark:bg-slate-950 font-sans transition-colors duration-500">
       
       <!-- Desktop Sidebar -->
       <aside 
-        class="hidden lg:flex w-72 flex-col bg-white border-r border-slate-200 transition-all duration-300 ease-in-out"
+        class="hidden lg:flex flex-col bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 transition-all duration-500 ease-in-out overflow-hidden"
+        [class.w-72]="!isCollapsed()"
         [class.w-20]="isCollapsed()">
         <app-sidebar [isCollapsed]="isCollapsed()" />
       </aside>
@@ -23,7 +24,7 @@ import { AuthStore } from '../../core/auth/auth.store';
       <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
         
         <!-- Navbar -->
-        <app-navbar (toggleSidebar)="toggleSidebar()" />
+        <app-navbar (toggleSidebar)="toggleSidebar()" [isCollapsed]="isCollapsed()" />
 
         <!-- Router Content -->
         <main class="flex-1 overflow-y-auto px-4 py-6 md:px-8 lg:px-10 pb-24 lg:pb-10">

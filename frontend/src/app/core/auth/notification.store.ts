@@ -2,7 +2,7 @@ import { computed, inject, OnDestroy } from '@angular/core';
 import { signalStore, withState, withMethods, withComputed, patchState } from '@ngrx/signals';
 import { rxMethod } from '@ngrx/signals/rxjs-interop';
 import { tapResponse } from '@ngrx/operators';
-import { pipe, switchMap, tap, interval, Subscription } from 'rxjs';
+import { pipe, switchMap, mergeMap, tap, interval, Subscription } from 'rxjs';
 import { NotificationService } from '../services/notification.service';
 import { NotificationDto } from '../../shared/models';
 import { environment } from '../../../environments/environment';
@@ -61,7 +61,7 @@ export const NotificationStore = signalStore(
 
       markRead: rxMethod<number>(
         pipe(
-          switchMap(id =>
+          mergeMap((id: number) =>
             svc.markAsRead(id).pipe(
               tapResponse({
                 next: () => {

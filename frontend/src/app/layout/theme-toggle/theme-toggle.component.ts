@@ -21,8 +21,8 @@ import { ThemeService } from '../../core/services/theme.service';
     .theme-toggle-btn {
       width: 44px;
       height: 44px;
-      border-radius: 50%;
-      border: 1px solid var(--border-main);
+      border-radius: 11px;
+      border: 1px solid;
       background: var(--bg-card);
       color: var(--text-main);
       cursor: pointer;
@@ -34,10 +34,40 @@ import { ThemeService } from '../../core/services/theme.service';
       padding: 0;
       box-shadow: var(--card-shadow);
 
-      &:hover {
-        transform: scale(1.1);
-        border-color: var(--primary);
-        color: var(--primary);
+      /* Light mode styling */
+      @media (prefers-color-scheme: light) {
+        border-color: #e2e8f0;
+        background: #f8fafc;
+        color: #64748b;
+
+        &:hover {
+          transform: scale(1.05);
+          border-color: var(--primary, #2563eb);
+          color: var(--primary, #2563eb);
+          background: #f1f5f9;
+        }
+
+        &:active {
+          transform: scale(0.95);
+        }
+      }
+
+      /* Dark mode styling - IMPROVED VISIBILITY */
+      @media (prefers-color-scheme: dark) {
+        border-color: #475569;
+        background: #1e293b;
+        color: #fbbf24;
+
+        &:hover {
+          transform: scale(1.05);
+          border-color: #fbbf24;
+          color: #fcd34d;
+          background: #334155;
+        }
+
+        &:active {
+          transform: scale(0.95);
+        }
       }
     }
 
@@ -50,6 +80,7 @@ import { ThemeService } from '../../core/services/theme.service';
 
     .material-icons {
       font-size: 22px;
+      font-weight: bold;
     }
 
     @keyframes slide-up {

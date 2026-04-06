@@ -24,11 +24,11 @@ import { AuthStore } from '../../../../core/auth/auth.store';
         <div class="stats">
           <div class="stat">
             <span class="material-icons stat-icon">star</span>
-            <span class="stat-val">{{ mentor.rating | number:'1.1-1' }}</span>
+            <span class="stat-val">{{ overrideRating !== undefined ? (overrideRating | number:'1.1-1') : (mentor.rating | number:'1.1-1') }}</span>
           </div>
           <div class="stat">
             <span class="material-icons stat-icon">people</span>
-            <span class="stat-val">{{ mentor.totalStudents }}</span>
+            <span class="stat-val">{{ overrideLearnersCount !== undefined ? overrideLearnersCount : mentor.totalStudents }}</span>
           </div>
           <div class="stat">
             <span class="material-icons stat-icon">payments</span>
@@ -128,6 +128,8 @@ import { AuthStore } from '../../../../core/auth/auth.store';
 })
 export class MentorCardComponent {
   @Input({ required: true }) mentor!: MentorProfileDto;
+  @Input() overrideRating?: number; // Pass loaded rating for current user
+  @Input() overrideLearnersCount?: number; // Pass learners count for current user
   @Output() view = new EventEmitter<number>();
   @Output() book = new EventEmitter<number>();
 

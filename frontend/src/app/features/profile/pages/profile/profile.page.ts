@@ -1,7 +1,8 @@
-import { Component, inject, OnInit, signal, effect, computed, HostListener } from '@angular/core';
+import { Component, inject, OnInit, OnDestroy, signal, effect, computed, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink, NavigationEnd } from '@angular/router';
+import { filter } from 'rxjs';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { UserService } from '../../../../core/services/user.service';
@@ -11,12 +12,15 @@ import { UserProfileDto, NotificationDto } from '../../../../shared/models';
 import { ToastService } from '../../../../core/services/toast.service';
 import { ProfileCompletionService } from '../../../../core/services/profile-completion.service';
 import { NotificationService } from '../../../../core/services/notification.service';
+import { ThemeService } from '../../../../core/services/theme.service';
 
 interface UserActivity {
   id: string;
   icon: string;
   colorClass: string;
   text: string;
+  status: string;
+  statusClass: string;
   timestamp: number;
 }
 
@@ -25,394 +29,329 @@ interface UserActivity {
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, RouterLink, MatProgressSpinnerModule, MatSnackBarModule],
   template: `
-    <!-- CONFETTI CANVAS -->
-    @if (showConfetti()) {
-      <div class="confetti-container">
-        @for (c of confettiDrops; track $index) {
-           <div class="confetti" [style.left.%]="c.x" [style.animationDelay.s]="c.delay" [style.backgroundColor]="c.color"></div>
-        }
-      </div>
-    }
-
-    <div class="page-container" [class.edit-mode]="isEditing()">
-      <!-- Profile Completion Banner -->
-      <div class="completion-banner" [class.complete]="completionPercentage() === 100">
-        <div class="banner-top">
-          <div class="banner-info">
-            <h3 class="banner-title">
-              @if (completionPercentage() === 100) {
-                🎉 Profile Complete!
-              } @else {
-                Profile {{ completionPercentage() }}% complete — Level: {{ profileLevel() }}
-              }
-            </h3>
-            <p class="banner-hint">
-              @if (completionPercentage() === 100) {
-                You are all set to connect with mentors and peers!
-              } @else {
-                Complete your profile to reach 'Pro' status and get better matches.
-              }
-            </p>
+    <div class="min-h-screen bg-slate-50 dark:bg-slate-950 selection:bg-indigo-100 dark:selection:bg-indigo-500/30 selection:text-indigo-900 dark:selection:text-indigo-100 transition-colors duration-500" [class.edit-mode]="isEditing()">
+      
+      <!-- Theme-Aware Nav Sync -->
+      <nav class="fixed top-0 left-0 right-0 z-[50] bg-white dark:bg-slate-950 h-20 px-6 lg:px-10 flex items-center justify-between border-b border-slate-200 dark:border-slate-800 transition-colors">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-100 dark:shadow-none">
+            <span class="material-icons text-white">auto_awesome</span>
           </div>
-          @if (completionPercentage() < 100) {
-            <button class="expand-hints-btn" (click)="toggleHints()">
-              {{ hintsExpanded() ? 'Hide Details' : 'Show Details' }}
-            </button>
-          }
+          <span class="text-2xl font-bold tracking-tight text-slate-800 dark:text-slate-100">SkillSync</span>
         </div>
         
-        <div class="progress-section" title="Complete profile to get better mentor matches">
-          <div class="progress-track">
-            <div class="progress-fill" 
-                 [style.width.%]="completionPercentage()"
-                 [class.low]="completionPercentage() < 40"
-                 [class.mid]="completionPercentage() >= 40 && completionPercentage() < 80"
-                 [class.high]="completionPercentage() >= 80">
-            </div>
-          </div>
-        </div>
-
-        <!-- Smart Hints Dropdown -->
-        @if (hintsExpanded() && completionPercentage() < 100) {
-           <div class="hints-dropdown">
-             <ul class="hints-list">
-               @for (f of completionService.getMissingFields(profile()); track f.key) {
-                 <li class="hint-item missing" (click)="editField(f.key)"><span class="material-icons">close</span> Missing {{ f.label }}</li>
-               }
-               <!-- Mock showing completed fields for 'why' breakdown -->
-               <li class="hint-item complete"><span class="material-icons">check</span> Username</li>
-               <li class="hint-item complete"><span class="material-icons">check</span> Email</li>
-             </ul>
+        <div class="flex items-center gap-4">
+           <div class="hidden sm:flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-full shadow-sm cursor-pointer hover:border-indigo-500 transition-all font-bold text-xs" 
+                (click)="toggleVisibility()">
+              <span class="material-icons text-indigo-500 text-sm">{{ isPrivate() ? 'lock' : 'public' }}</span>
+              <span class="uppercase tracking-widest text-slate-600 dark:text-slate-400">{{ isPrivate() ? 'Private' : 'Public' }}</span>
            </div>
-        }
-      </div>
-
-      <!-- Header Area -->
-      <div class="header-section">
-        <div class="header-content">
-          <h1>My Profile</h1>
-          <p>Manage your account settings and profile information</p>
+           <button class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-xl text-sm font-bold shadow-xl shadow-indigo-100 dark:shadow-none transition-all active:scale-95 flex items-center gap-2" (click)="logout()">
+             <span class="material-icons text-sm">logout</span>
+             <span>Sign Out</span>
+           </button>
         </div>
-        <div class="header-actions">
-           <!-- Visibility Toggle (UI only) -->
-           <div class="visibility-toggle" (click)="toggleVisibility()" title="Toggle Profile Visibility">
-              <span class="material-icons">{{ isPrivate() ? 'lock' : 'public' }}</span>
-              <span>{{ isPrivate() ? 'Private' : 'Public' }}</span>
-           </div>
-          <button class="logout-btn" (click)="logout()">
-            <span class="material-icons">logout</span>
-            <span>Sign Out</span>
-          </button>
-        </div>
-      </div>
+      </nav>
 
-      <!-- Loading State (Skeleton) -->
-      @if (loading()) {
-        <div class="profile-layout">
-          <div class="profile-sidebar skeleton-box sidebar-skeleton">
-            <div class="skeleton-avatar"></div>
-            <div class="skeleton-text w-60"></div>
-            <div class="skeleton-text w-40"></div>
-          </div>
-          <div class="profile-main skeleton-box main-skeleton">
-            <div class="skeleton-title w-30"></div>
-            <div class="skeleton-text w-100 h-line"></div>
-            <div class="skeleton-text w-100 h-line"></div>
-            <div class="skeleton-text w-80 h-line"></div>
-          </div>
-        </div>
-      }
-
-      <!-- Profile Content -->
-      @if (profile() && !loading()) {
-        <div class="profile-layout">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-20 sm:pb-32">
+        
+        <!-- Header Section -->
+        <div class="text-center mb-8 sm:mb-16 relative">
+          <div class="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] sm:w-[600px] h-[150px] sm:h-[300px] bg-indigo-400/5 dark:bg-indigo-500/10 rounded-full blur-[80px] sm:blur-[100px] pointer-events-none"></div>
           
-          <!-- Sidebar -->
-          <div class="profile-sidebar">
-            <div class="user-card">
-              <div class="user-avatar-wrap" 
-                   [class.drag-over]="isDragOver()"
-                   (dragover)="onDragOver($event)" 
-                   (dragleave)="onDragLeave($event)" 
-                   (drop)="onDrop($event)">
-                
-                <input type="file" #fileInput (change)="onFileSelected($event)" accept="image/png, image/jpeg" hidden />
-                
-                <div class="user-avatar">
-                  @if (avatarUrl()) {
-                    <img [src]="avatarUrl()!" alt="Avatar" class="avatar-img" />
-                  } @else {
-                    {{ initials() }}
+          <div class="inline-flex items-center gap-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-full px-3 sm:px-4 py-2 mb-4 sm:mb-6 shadow-sm transition-colors">
+            <span class="flex h-2 w-2 rounded-full bg-indigo-500 animate-pulse"></span>
+            <span class="text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.15em] sm:tracking-[0.2em] text-slate-500 dark:text-slate-400">Account Dashboard</span>
+          </div>
+          <h1 class="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-extrabold tracking-tight text-slate-900 dark:text-white mb-3 sm:mb-6 leading-tight transition-colors">
+             My <span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-violet-600 dark:from-indigo-400 dark:to-violet-400 font-black">Profile Settings</span>
+          </h1>
+          <p class="text-sm sm:text-base lg:text-lg text-slate-500 dark:text-slate-400 max-w-2xl mx-auto leading-relaxed transition-colors font-medium px-2">
+            Personalize your professional identity, showcase your expertise, and manage your account preferences.
+          </p>
+        </div>
+
+        <!-- Main Content Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 lg:gap-12 items-start">
+          
+          <!-- SIDEBAR -->
+          <div class="lg:col-span-4 lg:sticky lg:top-24 space-y-6 sm:space-y-8">
+            <div class="bg-white/80 dark:bg-slate-900/50 backdrop-blur-xl border border-white dark:border-slate-800 rounded-2xl sm:rounded-[32px] p-6 sm:p-8 shadow-2xl shadow-slate-200/50 dark:shadow-none relative overflow-hidden group transition-all">
+              <div class="absolute -top-10 -right-10 w-24 sm:w-32 h-24 sm:h-32 bg-indigo-400/10 dark:bg-indigo-500/5 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-1000"></div>
+              
+              <div class="relative flex flex-col items-center text-center">
+                <div class="relative mb-6 sm:mb-8">
+                  <div class="w-24 sm:w-36 h-24 sm:h-36 rounded-full p-1 sm:p-1.5 bg-gradient-to-tr from-indigo-600 to-violet-600 dark:from-indigo-500 dark:to-violet-500 shadow-2xl shadow-indigo-100 dark:shadow-none"
+                       [class.animate-pulse]="isDragOver()"
+                       (dragover)="onDragOver($event)" (dragleave)="onDragLeave($event)" (drop)="onDrop($event)">
+                    <div class="w-full h-full rounded-full bg-white dark:bg-slate-900 flex items-center justify-center text-3xl sm:text-5xl font-black text-indigo-600 dark:text-indigo-400 overflow-hidden transition-colors">
+                      @if (avatarUrl()) {
+                        <img [src]="avatarUrl()!" alt="Avatar" class="w-full h-full object-cover" />
+                      } @else {
+                        {{ initials() }}
+                      }
+                    </div>
+                  </div>
+                  <button (click)="fileInput.click()" class="absolute bottom-0 right-0 w-8 sm:w-10 h-8 sm:h-10 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-full shadow-lg flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:scale-110 transition-all">
+                    <span class="material-icons text-lg sm:text-xl">photo_camera</span>
+                  </button>
+                  <input type="file" #fileInput (change)="onFileSelected($event)" accept="image/*" hidden />
+                </div>
+
+                <h2 class="text-xl sm:text-3xl font-bold text-slate-900 dark:text-white mb-1 tracking-tight transition-colors">{{ fullName() }}</h2>
+                <div class="text-indigo-600 dark:text-indigo-400 font-bold text-xs sm:text-sm mb-4 sm:mb-6 flex items-center gap-1.5 transition-colors justify-center">
+                   <span>&#64;{{ displayUsername() }}</span>
+                   <span class="material-icons text-[9px] cursor-pointer opacity-50 hover:opacity-100" (click)="copyToClipboard(displayUsername())">content_copy</span>
+                </div>
+
+                <div class="flex flex-wrap justify-center gap-2 sm:gap-3 mb-6 sm:mb-8">
+                  <span class="px-3 sm:px-4 py-1 sm:py-1.5 rounded-full text-[10px] sm:text-[11px] font-black uppercase tracking-widest border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 text-slate-600 dark:text-slate-400">
+                    {{ displayRole() }}
+                  </span>
+                  @if (showBadge()) {
+                    <span class="px-3 sm:px-4 py-1 sm:py-1.5 bg-gradient-to-r from-amber-400 to-orange-500 text-white rounded-full text-[10px] sm:text-[11px] font-black uppercase tracking-widest shadow-lg shadow-orange-100 dark:shadow-none">
+                      Elite Member 🥇
+                    </span>
                   }
                 </div>
-                
-                <div class="avatar-overlay" (click)="fileInput.click()">
-                  <span class="material-icons">photo_camera</span>
-                  <span style="font-size: 11px;">Change Photo</span>
-                </div>
 
-                <div class="add-avatar-btn" (click)="fileInput.click()" title="Upload Photo">
-                  <span class="material-icons">add</span>
+                <div class="w-full p-4 sm:p-6 bg-slate-50 dark:bg-slate-800/50 rounded-2xl sm:rounded-3xl border border-slate-100 dark:border-slate-800 transition-colors">
+                   <div class="flex justify-between items-end mb-3">
+                     <span class="text-[9px] sm:text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Strength Score</span>
+                     <span class="text-base sm:text-lg font-black text-slate-900 dark:text-slate-100">{{ completionPercentage() }}%</span>
+                   </div>
+                   <div class="h-2 sm:h-2.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                     <div class="h-full bg-gradient-to-r from-indigo-600 to-violet-600 dark:from-indigo-400 dark:to-violet-400 transition-all duration-1000 ease-out" [style.width.%]="completionPercentage()"></div>
+                   </div>
+                   <div class="mt-3 sm:mt-4 text-[9px] sm:text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-widest">{{ profileLevel() }} Level Reached</div>
                 </div>
               </div>
+            </div>
 
-              <h2 class="user-name">{{ fullName() }}</h2>
-              <div class="user-email">
-                 {{ displayEmail() }}
-                 <span class="material-icons copy-icon" (click)="copyToClipboard(displayEmail())" title="Copy Email">content_copy</span>
-              </div>
-              <div class="user-handle">
-                 &#64;{{ displayUsername() }}
-                 <span class="material-icons copy-icon" (click)="copyToClipboard(displayUsername())" title="Copy Username">content_copy</span>
-              </div>
-              
-              <div class="badge-row">
-                <span class="role-pill" [ngClass]="displayRole().toLowerCase()">
-                  <span class="pulse"></span> {{ displayRole() }}
-                </span>
-                @if (showBadge()) {
-                  <span class="complete-badge">100% Complete</span>
-                }
-              </div>
-
-              @if (profile()!.createdAt) {
-                <div class="joined-date">
-                  <span class="material-icons">event</span>
-                  Joined {{ profile()!.createdAt | date:'mediumDate' }}
-                </div>
-              }
+            <div class="grid grid-cols-2 gap-3 sm:gap-4">
+               <div class="bg-white dark:bg-slate-900 p-3 sm:p-5 rounded-2xl sm:rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col items-center gap-1 transition-colors">
+                 <span class="text-slate-400 dark:text-slate-500 text-[9px] sm:text-[10px] font-black uppercase tracking-widest">Joined</span>
+                 <span class="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200 transition-colors text-center">{{ profile()?.createdAt | date:'MMM yyyy' }}</span>
+               </div>
+               <div class="bg-white dark:bg-slate-900 p-3 sm:p-5 rounded-2xl sm:rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col items-center gap-1 transition-colors">
+                 <span class="text-slate-400 dark:text-slate-500 text-[9px] sm:text-[10px] font-black uppercase tracking-widest">Visibility</span>
+                 <span class="text-xs sm:text-sm font-bold transition-colors" [class.text-indigo-600]="!isPrivate()" [class.text-indigo-400]="!isPrivate() && themeService.isDark()">{{ isPrivate() ? 'Private' : 'Public' }}</span>
+               </div>
             </div>
           </div>
 
-          <!-- Main Content Area -->
-          <div class="profile-main">
-            <div class="content-card">
-              <div class="card-header">
-                <h3>Account Details <span class="header-shortcut-hint" *ngIf="isEditing()">[ Esc to cancel, Ctrl+S to save ]</span></h3>
-                
-                <!-- Preview / Edit Toggle -->
-                <div class="mode-toggle" (click)="toggleEdit()">
-                  <div class="toggle-track">
-                     <div class="toggle-pill" [class.right]="isEditing()"></div>
-                     <div class="toggle-opt" [class.active]="!isEditing()">
-                        <span class="material-icons">visibility</span> Preview
-                     </div>
-                     <div class="toggle-opt" [class.active]="isEditing()">
-                        <span class="material-icons">edit_note</span> Edit Mode
-                     </div>
+          <!-- MAIN CONTENT AREA -->
+          <div class="lg:col-span-8 space-y-8 sm:space-y-12">
+            
+            <!-- Edit Button (shown when not editing) -->
+            @if (!isEditing()) {
+              <button type="button" (click)="toggleEdit()" class="bg-gradient-to-r from-indigo-600 to-violet-600 text-white px-6 sm:px-8 py-3 sm:py-3.5 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-bold hover:opacity-90 transition-all active:scale-95 shadow-lg shadow-indigo-200 dark:shadow-none flex items-center gap-2">
+                <span class="material-icons text-base sm:text-lg">edit</span>
+                Edit Profile
+              </button>
+            }
+            
+            <form [formGroup]="form" (ngSubmit)="save()" class="space-y-12 pb-32 sm:pb-12">
+              
+              <div class="space-y-6">
+                <div class="flex items-center gap-4">
+                  <div class="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center transition-colors shrink-0">
+                    <span class="material-icons text-indigo-600 dark:text-indigo-400 text-sm">person</span>
+                  </div>
+                  <h3 class="text-lg sm:text-xl font-bold text-slate-900 dark:text-white transition-colors">Personal Information</h3>
+                  <div class="h-px bg-slate-100 dark:bg-slate-800 flex-1 ml-2 transition-colors"></div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 md:gap-x-8 md:gap-y-6">
+                  <div class="space-y-2">
+                    <label class="text-[9px] sm:text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Global Handle</label>
+                    <div class="relative group">
+                       <input type="text" formControlName="username" 
+                              class="w-full px-4 sm:px-5 py-2.5 sm:py-3.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl sm:rounded-2xl outline-none focus:border-indigo-600 dark:focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50 dark:focus:ring-indigo-500/10 transition-all font-bold text-sm sm:text-base text-slate-800 dark:text-slate-100"
+                              [readonly]="!isEditing()" />
+                       @if (!isEditing()) { <div class="absolute inset-0 z-10 cursor-pointer" (click)="toggleEdit()"></div> }
+                    </div>
+                  </div>
+
+                  <div class="space-y-2 opacity-60">
+                    <label class="text-[9px] sm:text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Registered Email</label>
+                    <div class="w-full px-4 sm:px-5 py-2.5 sm:py-3.5 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-800 rounded-xl sm:rounded-2xl font-bold text-sm sm:text-base text-slate-500 dark:text-slate-400 flex items-center justify-between transition-colors">
+                       <span class="truncate">{{ displayEmail() }}</span>
+                       <span class="material-icons text-sm shrink-0 ml-2">lock</span>
+                    </div>
+                  </div>
+
+                  <div class="space-y-2">
+                    <label class="text-[9px] sm:text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">First Name</label>
+                    <div class="relative group">
+                       <input type="text" formControlName="firstName" 
+                              class="w-full px-4 sm:px-5 py-2.5 sm:py-3.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl sm:rounded-2xl outline-none focus:border-indigo-600 dark:focus:border-indigo-400 transition-all font-bold text-sm sm:text-base text-slate-800 dark:text-slate-100"
+                              [readonly]="!isEditing()" />
+                       @if (!isEditing()) { <div class="absolute inset-0 z-10 cursor-pointer" (click)="toggleEdit()"></div> }
+                    </div>
+                  </div>
+
+                  <div class="space-y-2">
+                    <label class="text-[9px] sm:text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Last Name</label>
+                    <div class="relative group">
+                       <input type="text" formControlName="lastName" 
+                              class="w-full px-4 sm:px-5 py-2.5 sm:py-3.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl sm:rounded-2xl outline-none focus:border-indigo-600 dark:focus:border-indigo-400 transition-all font-bold text-sm sm:text-base text-slate-800 dark:text-slate-100"
+                              [readonly]="!isEditing()" />
+                       @if (!isEditing()) { <div class="absolute inset-0 z-10 cursor-pointer" (click)="toggleEdit()"></div> }
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <form [formGroup]="form" (ngSubmit)="save()" class="notion-form">
-                
-                <!-- Section: Personal Info -->
-                <div class="form-section">
-                  <div class="section-header" (click)="toggleSection('personal')">
-                     <span class="material-icons section-carat" [class.open]="sectionsExpanded().personal">expand_more</span>
-                     <h4 class="section-title">Personal Information</h4>
+              <div class="space-y-6">
+                 <div class="flex items-center gap-4">
+                  <div class="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center transition-colors shrink-0">
+                    <span class="material-icons text-indigo-600 dark:text-indigo-400 text-sm">business_center</span>
                   </div>
-                  
-                  @if (sectionsExpanded().personal) {
-                     <div class="form-grid">
-                        <div class="form-group span-2 inline-field" [class.editing]="isEditing()" [class.missing-field]="isFieldMissing('username')">
-                          <label>Username</label>
-                          @if (isEditing()) {
-                             <input type="text" formControlName="username" placeholder="Enter username" />
-                             @if (form.get('username')?.invalid && (form.get('username')?.dirty || form.get('username')?.touched)) {
-                               <div class="validation-msg">
-                                 @if (form.get('username')?.hasError('required')) { <span>Username is required</span> }
-                                 @if (form.get('username')?.hasError('minlength')) { <span>Must be at least 2 characters</span> }
-                               </div>
-                             }
-                          } @else {
-                             <div class="inline-value" (click)="editField('username')">&#64;{{ form.get('username')?.value || 'Not set' }} <span class="material-icons edit-icon">edit</span></div>
-                          }
-                        </div>
-                       
-                       <div class="form-group inline-field" [class.editing]="isEditing()" [class.missing-field]="isFieldMissing('firstName')">
-                         <label>First Name</label>
-                         @if (isEditing()) {
-                            <input type="text" formControlName="firstName" placeholder="First name" />
-                         } @else {
-                            <div class="inline-value" (click)="editField('firstName')">{{ form.get('firstName')?.value || 'Not set' }} <span class="material-icons edit-icon">edit</span></div>
-                         }
-                       </div>
-                       
-                       <div class="form-group inline-field" [class.editing]="isEditing()" [class.missing-field]="isFieldMissing('lastName')">
-                         <label>Last Name</label>
-                         @if (isEditing()) {
-                            <input type="text" formControlName="lastName" placeholder="Last name" />
-                         } @else {
-                            <div class="inline-value" (click)="editField('lastName')">{{ form.get('lastName')?.value || 'Not set' }} <span class="material-icons edit-icon">edit</span></div>
-                         }
-                       </div>
-                     </div>
-                  }
+                  <h3 class="text-lg sm:text-xl font-bold text-slate-900 dark:text-white transition-colors">Career & Contact</h3>
+                  <div class="h-px bg-slate-100 dark:bg-slate-800 flex-1 ml-2 transition-colors"></div>
                 </div>
 
-                <!-- Section: Contact Details -->
-                <div class="form-section">
-                  <div class="section-header" (click)="toggleSection('contact')">
-                     <span class="material-icons section-carat" [class.open]="sectionsExpanded().contact">expand_more</span>
-                     <h4 class="section-title">Contact Details</h4>
-                  </div>
-                  @if (sectionsExpanded().contact) {
-                     <div class="form-grid">
-                        <div class="form-group inline-field">
-                          <label>Email Address</label>
-                          <div class="inline-value locked">
-                            {{ displayEmail() }} <span class="material-icons lock-icon" title="Cannot be changed">lock</span>
-                          </div>
-                        </div>
-                       <div class="form-group inline-field" [class.editing]="isEditing()" [class.missing-field]="isFieldMissing('phoneNumber')">
-                         <label>Phone Number</label>
-                         @if (isEditing()) {
-                            <input type="text" formControlName="phoneNumber" placeholder="10-digit number" maxlength="10" />
-                            @if (form.get('phoneNumber')?.invalid && (form.get('phoneNumber')?.dirty || form.get('phoneNumber')?.touched)) {
-                               <div class="validation-msg">
-                                 @if (form.get('phoneNumber')?.hasError('pattern')) { <span>Only numbers are allowed</span> }
-                                 @if (form.get('phoneNumber')?.hasError('minlength')) { <span>Number must be 10 digits</span> }
-                                 @if (form.get('phoneNumber')?.hasError('maxlength')) { <span>Number must be exactly 10 digits</span> }
-                               </div>
-                            }
-                         } @else {
-                            <div class="inline-value" (click)="editField('phoneNumber')">{{ form.get('phoneNumber')?.value || 'Not provided' }} <span class="material-icons edit-icon" >edit</span></div>
-                         }
-                       </div>
-                     </div>
-                  }
-                </div>
-
-                <!-- Section: About Me -->
-                <div class="form-section">
-                  <div class="section-header" (click)="toggleSection('about')">
-                     <span class="material-icons section-carat" [class.open]="sectionsExpanded().about">expand_more</span>
-                     <h4 class="section-title">About Me</h4>
-                  </div>
-                  @if (sectionsExpanded().about) {
-                     <div class="form-group inline-field span-2" [class.editing]="isEditing()" [class.missing-field]="isFieldMissing('bio')">
-                       @if (isEditing()) {
-                          <textarea formControlName="bio" rows="3" placeholder="Tell us about yourself..."></textarea>
-                       } @else {
-                          @if (form.get('bio')?.value) {
-                             <div class="inline-value bio-text" (click)="editField('bio')">{{ form.get('bio')?.value }} <span class="material-icons edit-icon">edit</span></div>
-                          } @else {
-                             <div class="smart-suggestion" (click)="editField('bio')">
-                                <span class="material-icons">info</span> 
-                                <span>⚠ Add a short bio to let others know you better.</span>
-                             </div>
-                          }
-                       }
-                     </div>
-                  }
-                </div>
-
-                <!-- Section: Skills -->
-                <div class="form-section">
-                  <div class="section-header" (click)="toggleSection('skills')">
-                     <span class="material-icons section-carat" [class.open]="sectionsExpanded().skills">expand_more</span>
-                     <h4 class="section-title">Professional Skills</h4>
-                  </div>
-                  @if (sectionsExpanded().skills) {
-                     <div class="form-group inline-field span-2" [class.editing]="isEditing()" [class.missing-field]="isFieldMissing('skills')">
-                       @if (isEditing()) {
-                          <div class="interactive-skills">
-                            <div class="skill-tags">
-                              @for (skill of selectedSkills(); track skill) {
-                                <span class="tag editable">
-                                   {{ skill }} <span class="material-icons remove-tag" (click)="removeSkill(skill)">close</span>
-                                </span>
-                              }
-                            </div>
-                            <div class="custom-dropdown" (click)="toggleSkillDropdown()">
-                              <div class="dropdown-display">
-                                <span class="placeholder">+ Add skills</span>
-                                <span class="material-icons arrow" [class.open]="isSkillDropdownOpen()">expand_more</span>
-                              </div>
-                              @if (isSkillDropdownOpen()) {
-                                <div class="dropdown-menu">
-                                  @for (skill of allSkillOptions(); track skill) {
-                                    <div class="dropdown-item" (click)="toggleSkill(skill, $event)" [class.selected]="selectedSkills().includes(skill)">
-                                      {{ skill }}
-                                      @if (selectedSkills().includes(skill)) { <span class="material-icons check">check</span> }
-                                    </div>
-                                  }
-                                </div>
-                              }
-                            </div>
-                          </div>
-                       } @else {
-                          @if (selectedSkills().length > 0) {
-                             <div class="skill-tags">
-                                @for (skill of selectedSkills(); track skill) {
-                                  <span class="tag view-only">{{ skill }}</span>
-                                }
-                                <span class="material-icons edit-icon" (click)="editField('skills')" style="cursor: pointer; opacity: 0.5; margin-left: 8px;">edit</span>
-                             </div>
-                          } @else {
-                             <div class="smart-suggestion" (click)="editField('skills')">
-                                <span class="material-icons">lightbulb</span> 
-                                <span>⚠ Add skills to improve mentor matches.</span>
-                             </div>
-                          }
-                       }
-                     </div>
-                  }
-                </div>
-
-                <!-- Sticky Save Bar -->
-                @if (isEditing()) {
-                  <div class="sticky-save-bar form-actions">
-                     <span class="unsaved-text">You have unsaved changes. <span class="hint">Press Ctrl+S</span></span>
-                     <div class="action-btns">
-                       <button type="button" class="btn-cancel" (click)="cancelEdit()" [disabled]="saving()">Cancel</button>
-                       <button type="submit" class="btn-submit" [disabled]="saving() || form.invalid">
-                         @if (saving()) {
-                           <mat-progress-spinner diameter="18" mode="indeterminate" style="display:inline-block; vertical-align: middle; margin-right: 8px;"></mat-progress-spinner>
-                           Saving...
-                         } @else {
-                           Save Changes
-                         }
-                       </button>
-                     </div>
-                  </div>
-                }
-              </form>
-            </div>
-
-            <!-- Activity Timeline Component -->
-            <div class="activity-card">
-              <h3 class="activity-title">Recent Activity</h3>
-              <div class="timeline">
-                 @for (act of activities(); track act.id) {
-                   <div class="timeline-item">
-                      <div class="tl-icon" [ngClass]="act.colorClass"><span class="material-icons">{{ act.icon }}</span></div>
-                      <div class="tl-content">
-                         <p class="tl-text">{{ act.text }}</p>
-                         <p class="tl-time">{{ formatTime(act.timestamp) }}</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 md:gap-8">
+                   <div class="space-y-2">
+                      <label class="text-[9px] sm:text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Mobile Number</label>
+                      <div class="relative group">
+                         <input type="text" formControlName="phoneNumber" maxlength="10" placeholder="10-digit number"
+                                class="w-full px-4 sm:px-5 py-2.5 sm:py-3.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl sm:rounded-2xl outline-none focus:border-indigo-600 dark:focus:border-indigo-400 transition-all font-bold text-sm sm:text-base text-slate-800 dark:text-slate-100"
+                                [readonly]="!isEditing()" />
+                         @if (!isEditing()) { <div class="absolute inset-0 z-10 cursor-pointer" (click)="toggleEdit()"></div> }
                       </div>
                    </div>
-                 } @empty {
-                   <p style="color: var(--text-secondary); font-size: 13px;">No recent activity.</p>
-                 }
+                   <div class="space-y-2">
+                      <label class="text-[9px] sm:text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Professional Bio</label>
+                      <div class="relative group">
+                         <textarea formControlName="bio" rows="1" placeholder="Lead Software Engineer..." 
+                                   class="w-full px-4 sm:px-5 py-2.5 sm:py-3.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl sm:rounded-2xl outline-none focus:border-indigo-600 dark:focus:border-indigo-400 transition-all font-bold text-sm sm:text-base text-slate-800 dark:text-slate-100 resize-none"
+                                   [readonly]="!isEditing()"></textarea>
+                         @if (!isEditing()) { <div class="absolute inset-0 z-10 cursor-pointer" (click)="toggleEdit()"></div> }
+                      </div>
+                   </div>
+                </div>
               </div>
+
+              <div class="space-y-6">
+                 <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-4">
+                      <div class="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center transition-colors shrink-0">
+                        <span class="material-icons text-indigo-600 dark:text-indigo-400 text-sm">verified</span>
+                      </div>
+                      <h3 class="text-lg sm:text-xl font-bold text-slate-900 dark:text-white transition-colors">Core Expertise</h3>
+                    </div>
+                    @if (isEditing()) {
+                       <div class="relative custom-dropdown">
+                          <button type="button" (click)="toggleSkillDropdown()" class="text-[9px] sm:text-xs font-black uppercase tracking-widest text-indigo-600 dark:text-indigo-400 transition-colors flex items-center gap-1 shrink-0">
+                             <span class="material-icons text-sm">add</span> Manage Skills
+                          </button>
+                          @if (isSkillDropdownOpen()) {
+                             <div class="absolute right-0 mt-3 w-48 sm:w-56 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl sm:rounded-2xl shadow-2xl z-50 max-h-64 overflow-y-auto p-2 space-y-1 transition-colors">
+                               @for (skill of allSkillOptions(); track skill) {
+                                  <div class="px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-bold flex items-center justify-between cursor-pointer transition-colors"
+                                       (click)="toggleSkill(skill, $event)">
+                                     <span [class.text-indigo-600]="selectedSkills().includes(skill)">{{ skill }}</span>
+                                     @if (selectedSkills().includes(skill)) { <span class="material-icons text-sm text-indigo-600">check</span> }
+                                  </div>
+                               }
+                             </div>
+                          }
+                       </div>
+                    }
+                 </div>
+                 <div class="flex flex-wrap gap-2 sm:gap-3">
+                    @for (skill of selectedSkills(); track skill) {
+                       <div class="group inline-flex items-center gap-2 px-4 sm:px-6 py-1.5 sm:py-2.5 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-full font-bold text-xs sm:text-sm text-slate-700 dark:text-slate-200 shadow-sm transition-all">
+                          <div class="w-2 h-2 rounded-full bg-indigo-500 shrink-0"></div>
+                          {{ skill }}
+                          @if (isEditing()) { <span (click)="removeSkill(skill)" class="material-icons text-xs text-slate-400 ml-1 cursor-pointer hover:text-rose-500 shrink-0">close</span> }
+                       </div>
+                    } @empty {
+                       <p class="text-slate-400 text-xs sm:text-sm italic font-medium">Add professional certifications and skills.</p>
+                    }
+                 </div>
+              </div>
+
+              @if (isEditing()) {
+                 <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 animate-in slide-in-from-bottom-10 duration-500">
+                    <button type="button" class="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200 dark:border-slate-800 px-6 sm:px-8 py-3 sm:py-4 rounded-xl sm:rounded-3xl text-xs sm:text-sm font-black text-slate-500 uppercase tracking-widest shadow-lg sm:shadow-2xl transition-all flex-1 sm:flex-none" (click)="cancelEdit()">Cancel</button>
+                    <button type="submit" class="bg-gradient-to-r from-indigo-600 to-violet-600 text-white px-6 sm:px-10 py-3 sm:py-4 rounded-xl sm:rounded-3xl text-xs sm:text-sm font-black uppercase tracking-widest shadow-lg sm:shadow-2xl flex items-center justify-center gap-3 flex-1">
+                        @if (saving()) { <mat-progress-spinner diameter="18" mode="indeterminate" class="white-spinner"></mat-progress-spinner> <span class="hidden sm:inline">Saving...</span> } @else { <span>Submit</span><span class="hidden sm:inline"> Changes</span> }
+                    </button>
+                 </div>
+              }
+            </form>
+
+            <div class="h-px bg-slate-100 dark:bg-slate-800 w-full my-12 sm:my-20 transition-colors"></div>
+
+            <div class="space-y-6 sm:space-y-8">
+               <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div class="flex items-center gap-4">
+                    <div class="w-2 h-2 rounded-full bg-indigo-500 shadow-[0_0_12px_rgba(79,70,229,0.4)] shrink-0"></div>
+                    <h3 class="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight transition-colors">Collaboration Feed</h3>
+                  </div>
+                  <span class="text-[9px] sm:text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest flex items-center gap-2 transition-colors">
+                     <span class="w-1.5 h-1.5 rounded-full bg-slate-200 dark:bg-slate-800 transition-colors animate-pulse"></span> Live Updates
+                  </span>
+               </div>
+
+               <div class="space-y-3 sm:space-y-4">
+                  @for (act of activities(); track act.id) {
+                    <div class="group flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6 p-4 sm:p-6 bg-white dark:bg-slate-900/40 border border-slate-100 dark:border-slate-800 rounded-2xl sm:rounded-[2rem] transition-all hover:border-indigo-200 dark:hover:border-indigo-500/30">
+                       <div class="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0" [ngClass]="getActivityIconClass(act)">
+                          <span class="material-icons text-lg sm:text-xl" [ngClass]="getActivityTextClass(act)">{{ act.icon }}</span>
+                       </div>
+                       <div class="flex-1 min-w-0">
+                          <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-1">
+                             <span class="text-[9px] sm:text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md border border-slate-50 w-fit" [ngClass]="getActivityStatusClass(act)">
+                                {{ act.status }}
+                             </span>
+                             <span class="text-[10px] sm:text-[11px] font-medium text-slate-400 dark:text-slate-500 transition-colors">{{ formatTime(act.timestamp) }}</span>
+                          </div>
+                          <p class="text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-300 leading-snug transition-colors">{{ act.text }}</p>
+                       </div>
+                    </div>
+                  } @empty {
+                     <div class="py-16 sm:py-20 flex flex-col items-center justify-center border-2 border-dashed border-slate-100 dark:border-slate-800 rounded-2xl sm:rounded-[2.5rem] opacity-40">
+                        <span class="material-icons text-3xl sm:text-4xl mb-2 sm:mb-3 text-slate-400">inbox</span>
+                        <p class="text-xs sm:text-sm font-bold text-slate-400">No history found.</p>
+                     </div>
+                  }
+               </div>
             </div>
           </div>
         </div>
-      }
+      </div>
+
+      <footer class="bg-white dark:bg-slate-950 py-12 sm:py-20 px-4 sm:px-6 border-t border-slate-200 dark:border-slate-800 transition-colors">
+          <div class="max-w-7xl mx-auto flex flex-col items-center gap-6 sm:gap-8">
+             <div class="flex items-center gap-2 sm:gap-3">
+                <div class="w-7 sm:w-8 h-7 sm:h-8 bg-indigo-600 rounded-lg flex items-center justify-center shadow-lg">
+                   <span class="material-icons text-white text-sm">auto_awesome</span>
+                </div>
+                <span class="text-lg sm:text-xl font-bold tracking-tight text-slate-800 dark:text-slate-100">SkillSync</span>
+             </div>
+             <p class="text-[9px] sm:text-xs font-black text-slate-400 uppercase tracking-widest text-center">© 2026 SkillSync • Professional Empowerment</p>
+          </div>
+      </footer>
     </div>
   `,
   styleUrls: ['./profile.page.scss']
 })
-export class ProfilePage implements OnInit {
+export class ProfilePage implements OnInit, OnDestroy {
   private readonly userService = inject(UserService);
   private readonly toast = inject(ToastService);
   private readonly fb = inject(FormBuilder);
+  private readonly notificationService = inject(NotificationService);
+  private readonly router = inject(Router);
   readonly completionService = inject(ProfileCompletionService);
   readonly authStore = inject(AuthStore);
   readonly skillStore = inject(SkillStore);
-  private readonly notificationService = inject(NotificationService);
+  readonly themeService = inject(ThemeService);
+
+  private routerSub: any;
 
   readonly profile = signal<UserProfileDto | null>(null);
   readonly loading = signal(true);
@@ -421,422 +360,166 @@ export class ProfilePage implements OnInit {
   readonly showBadge = signal(false);
   readonly avatarUrl = signal<string | null>(null);
   readonly isSkillDropdownOpen = signal(false);
-  readonly hintsExpanded = signal(false);
   readonly isPrivate = signal(false);
   readonly showConfetti = signal(false);
   readonly isDragOver = signal(false);
   readonly activities = signal<UserActivity[]>([]);
 
-  readonly sectionsExpanded = signal({
-    personal: true,
-    contact: true,
-    about: true,
-    skills: true
-  });
-
   confettiDrops: any[] = [];
-
-  private readonly SOFT_SKILLS = [
-    'Problem Solving', 'Adaptability', 'Communication', 'Teamwork', 
-    'Leadership', 'Time Management', 'Creativity', 'Critical Thinking'
-  ];
 
   readonly allSkillOptions = computed(() => {
     const backend = this.skillStore.skillNames();
-    return [...new Set([...backend, ...this.SOFT_SKILLS])].sort();
+    const SOFT_SKILLS = ['Problem Solving', 'Communication', 'Teamwork', 'Leadership', 'Time Management', 'Creativity'];
+    return [...new Set([...backend, ...SOFT_SKILLS])].sort();
   });
 
   readonly form = this.fb.group({
-    username:    ['', [Validators.required, Validators.minLength(2)]],
+    username:    ['', [Validators.required]],
     firstName:   ['', [Validators.required]],
     lastName:    [''],
-    bio:         ['', [Validators.maxLength(500)]],
+    bio:         [''],
     phoneNumber: ['', [Validators.pattern('^[0-9]*$'), Validators.minLength(10), Validators.maxLength(10)]],
     skills:      [[] as string[]]
   });
 
   constructor() {
     effect(() => {
-      const percentage = this.completionPercentage();
-      if (percentage === 100 && !this.showBadge() && this.profile()) { 
-        this.showBadge.set(true);
-        localStorage.setItem('profileBadge', 'true');
-        this.triggerConfetti();
+      if (this.completionPercentage() === 100 && !this.showBadge() && this.profile()) { 
+        this.showBadge.set(true); localStorage.setItem('profileBadge', 'true'); this.triggerConfetti();
       }
     }, { allowSignalWrites: true });
   }
 
-  // Computed properties
   readonly completionPercentage = computed(() => this.completionService.calculateCompletion(this.profile()));
-  readonly missingFields = computed(() => this.completionService.getMissingFields(this.profile()));
-  
-  readonly profileLevel = computed(() => {
-    const p = this.completionPercentage();
-    if (p < 40) return 'Beginner 🥉';
-    if (p < 80) return 'Intermediate 🥈';
-    return 'Pro 🥇';
-  });
-
-  readonly displayRole = computed(() => {
-    if (this.authStore.isAdmin()) return 'Admin';
-    if (this.authStore.isMentor()) return 'Mentor';
-    return 'Learner';
-  });
-
+  readonly profileLevel = computed(() => this.completionPercentage() < 40 ? 'Beginner 🥉' : (this.completionPercentage() < 80 ? 'Intermediate 🥈' : 'Pro 🥇'));
+  readonly displayRole = computed(() => this.authStore.isAdmin() ? 'Admin' : (this.authStore.isMentor() ? 'Mentor' : 'Learner'));
   readonly displayEmail = computed(() => this.authStore.email() || this.profile()?.email || '');
-
-  readonly displayUsername = computed(() => {
-    const p = this.profile();
-    if (p?.username && p.username.trim()) return p.username;
-    const authEmail = this.authStore.email();
-    if (authEmail) return authEmail.split('@')[0];
-    return p?.email?.split('@')[0] || '';
-  });
-
-  selectedSkills(): string[] {
-    return (this.form.get('skills')?.value || []) as string[];
-  }
+  readonly displayUsername = computed(() => this.profile()?.username || this.authStore.email()?.split('@')[0] || 'User');
+  selectedSkills(): string[] { return (this.form.get('skills')?.value || []) as string[]; }
 
   ngOnInit(): void {
-    const savedAvatar = localStorage.getItem('userAvatar');
-    if (savedAvatar) this.avatarUrl.set(savedAvatar);
-
-    const savedBadge = localStorage.getItem('profileBadge');
-    if (savedBadge === 'true') this.showBadge.set(true);
-
-    this.loadActivities();
+    const savedAvatar = localStorage.getItem('userAvatar'); if (savedAvatar) this.avatarUrl.set(savedAvatar);
+    if (localStorage.getItem('profileBadge') === 'true') this.showBadge.set(true);
+    this.refreshProfile(); 
+    this.loadActivities(); 
     this.skillStore.loadAll(undefined);
-    this.refreshProfile();
+
+    // Auto-refresh profile when navigating to this page
+    this.routerSub = this.router.events
+      .pipe(filter(event => event instanceof NavigationEnd))
+      .subscribe((event: any) => {
+        const url = event.urlAfterRedirects || event.url;
+        // Refresh profile when on /profile page
+        if (url === '/profile' || url.startsWith('/profile?')) {
+          console.log('🔄 Profile page detected, refreshing...', url);
+          this.refreshProfile();
+        }
+      });
+  }
+
+  ngOnDestroy(): void {
+    if (this.routerSub) {
+      this.routerSub.unsubscribe();
+    }
   }
 
   loadActivities() {
     this.notificationService.getAll().subscribe({
       next: (res) => {
-        const backendActivities = (res.data || []).map(n => this.mapNotificationToActivity(n));
-        const localData = localStorage.getItem('userActivities');
-        const localActivities = localData ? JSON.parse(localData) : [];
-        
-        // Merge and sort by timestamp
-        const combined = [...backendActivities, ...localActivities]
-          .sort((a, b) => b.timestamp - a.timestamp)
-          .slice(0, 15);
-        
+        const backend = (res.data || []).map(n => this.mapNotificationToActivity(n));
+        const combined = backend.sort((a, b) => b.timestamp - a.timestamp).slice(0, 10);
         this.activities.set(combined);
-      },
-      error: () => {
-        const saved = localStorage.getItem('userActivities');
-        if (saved) this.activities.set(JSON.parse(saved));
       }
     });
   }
 
   private mapNotificationToActivity(n: NotificationDto): UserActivity {
-    let icon = 'notifications';
-    let colorClass = 'bg-gray';
-    let text = n.message;
-
-    switch (n.type) {
-      case 'MENTOR_APPLICATION_SUBMITTED':
-      case 'MENTOR_REQUEST':
-        icon = 'assignment_ind';
-        colorClass = 'bg-blue';
-        break;
-      case 'MENTOR_APPLICATION_APPROVED':
-      case 'MENTOR_APPROVED':
-        icon = 'verified_user';
-        colorClass = 'bg-green';
-        break;
-      case 'MENTOR_APPLICATION_REJECTED':
-      case 'MENTOR_REJECTED':
-        icon = 'cancel';
-        colorClass = 'bg-red';
-        break;
-      case 'SESSION_BOOKED':
-      case 'SESSION_REQUESTED':
-        icon = 'event_available';
-        colorClass = 'bg-purple';
-        break;
-      case 'SESSION_ACCEPTED':
-        icon = 'check_circle';
-        colorClass = 'bg-indigo';
-        break;
-      case 'PAYMENT_COMPLETED':
-      case 'PAYMENT_SUCCESS':
-        icon = 'payments';
-        colorClass = 'bg-emerald';
-        break;
-    }
-
-    return {
-      id: `nf-${n.id}`,
-      icon,
-      colorClass,
-      text,
-      timestamp: new Date(n.createdAt).getTime()
-    };
+    let icon = 'notifications'; let colorClass = 'bg-blue-500';
+    if (n.type.includes('SESSION')) { icon = 'check_circle'; colorClass = 'bg-indigo-500'; }
+    if (n.type.includes('PAYMENT')) { icon = 'payments'; colorClass = 'bg-emerald-500'; }
+    const timestamp = n.createdAt ? new Date(n.createdAt).getTime() : Date.now();
+    return { id: n.id.toString(), icon, colorClass, text: n.message, status: 'Update', statusClass: 'text-blue-700', timestamp };
   }
 
-  addActivity(icon: string, colorClass: string, text: string) {
-    const act: UserActivity = {
-      id: Date.now().toString() + Math.random().toString(36).substring(2, 9),
-      icon, colorClass, text, timestamp: Date.now()
-    };
-    const updated = [act, ...this.activities()].slice(0, 15);
-    this.activities.set(updated);
-    localStorage.setItem('userActivities', JSON.stringify(updated.filter(a => !a.id.startsWith('nf-'))));
+  getActivityIconClass(act: UserActivity): string {
+    const color = act.colorClass.replace('bg-', '').replace('-500', '');
+    return this.themeService.isDark() ? `bg-${color}-500/20` : `bg-${color}-50`;
+  }
+  getActivityTextClass(act: UserActivity): string {
+    const color = act.colorClass.replace('bg-', '').replace('-500', '');
+    return this.themeService.isDark() ? `text-${color}-400` : `text-${color}-600`;
+  }
+  getActivityStatusClass(act: UserActivity): string {
+    if (act.colorClass.includes('indigo')) return this.themeService.isDark() ? 'text-indigo-400' : 'text-indigo-700';
+    if (act.colorClass.includes('emerald')) return this.themeService.isDark() ? 'text-emerald-400' : 'text-emerald-700';
+    return this.themeService.isDark() ? 'text-slate-400' : 'text-slate-600';
   }
 
   formatTime(ts: number): string {
-    const diffMs = Date.now() - ts;
-    const diffMins = Math.floor(diffMs / 60000);
-    if (diffMins < 1) return 'Just now';
-    if (diffMins < 60) return `${diffMins} min${diffMins > 1 ? 's' : ''} ago`;
-    const diffHours = Math.floor(diffMins / 60);
-    if (diffHours < 24) return `${diffHours} hr${diffHours > 1 ? 's' : ''} ago`;
-    const diffDays = Math.floor(diffHours / 24);
-    if (diffDays === 1) return 'Yesterday';
-    return `${diffDays} days ago`;
+    if (!ts || isNaN(ts)) return 'Just now';
+    const diff = Math.floor((Date.now() - ts) / 60000);
+    return diff < 1 ? 'Just now' : (diff < 60 ? `${diff}m ago` : (diff < 1440 ? `${Math.floor(diff/60)}h ago` : `${Math.floor(diff/1440)}d ago`));
   }
 
   triggerConfetti() {
-    this.confettiDrops = Array.from({ length: 50 }).map((_, i) => ({
-      x: Math.random() * 100,
-      delay: Math.random() * 3,
-      color: ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'][Math.floor(Math.random()*6)]
-    }));
-    this.showConfetti.set(true);
-    setTimeout(() => this.showConfetti.set(false), 5000);
+    this.confettiDrops = Array.from({ length: 30 }).map(() => ({ x: Math.random() * 100, delay: Math.random() * 2, color: '#6366f1' }));
+    this.showConfetti.set(true); setTimeout(() => this.showConfetti.set(false), 4000);
   }
 
-  toggleVisibility() {
-    this.isPrivate.set(!this.isPrivate());
-    const status = this.isPrivate() ? "Private" : "Public";
-    this.toast.success(`Profile visibility set to ${status}`);
-  }
-
-  copyToClipboard(text: string) {
-    navigator.clipboard.writeText(text).then(() => {
-      this.toast.success("Copied to clipboard 📋");
-    });
-  }
-
-  toggleHints() {
-    this.hintsExpanded.update(v => !v);
-  }
-
-  toggleSection(section: 'personal' | 'contact' | 'about' | 'skills') {
-    this.sectionsExpanded.update(s => ({ ...s, [section]: !s[section] }));
-  }
-
-  toggleEdit(): void {
-    if (!this.profile()) return;
-    this.isEditing.update(v => !v);
-    if (!this.isEditing()) {
-       this.patchFormValues(this.profile()!);
-    }
-  }
-
-  editField(fieldName: string) {
-    if (!this.isEditing()) {
-      this.isEditing.set(true);
-    }
-    const sec = this.sectionsExpanded();
-    if (['firstName', 'lastName', 'username'].includes(fieldName) && !sec.personal) this.toggleSection('personal');
-    if (fieldName === 'phoneNumber' && !sec.contact) this.toggleSection('contact');
-    if (fieldName === 'bio' && !sec.about) this.toggleSection('about');
-    if (fieldName === 'skills' && !sec.skills) this.toggleSection('skills');
-    
-    setTimeout(() => {
-      const el = document.querySelector(`[formControlName="${fieldName}"]`) as HTMLElement;
-      if (el) el.focus();
-    }, 100);
-  }
-
-  cancelEdit() {
-    this.isEditing.set(false);
-    if (this.profile()) {
-      this.patchFormValues(this.profile()!);
-    }
-  }
+  toggleVisibility() { this.isPrivate.set(!this.isPrivate()); this.toast.success('Visibility Updated'); }
+  copyToClipboard(text: string) { navigator.clipboard.writeText(text).then(() => this.toast.success("Copied!")); }
+  toggleEdit(): void { if (!this.profile()) return; this.isEditing.update(v => !v); if (!this.isEditing()) this.patchFormValues(this.profile()!); }
+  cancelEdit() { this.isEditing.set(false); if (this.profile()) this.patchFormValues(this.profile()!); }
 
   patchFormValues(p: UserProfileDto) {
-    let parsedSkills: string[] = [];
-    if (p.skills) {
-      parsedSkills = p.skills.split(',').map(s => s.trim()).filter(s => s.length > 0);
-    }
-
     this.form.patchValue({
-      username: p.username || p.email.split('@')[0],
-      firstName: p.firstName || '',
-      lastName: p.lastName || '',
-      bio: p.bio || '',
-      phoneNumber: p.phoneNumber || '',
-      skills: parsedSkills as any
+      username: p.username || '', firstName: p.firstName || '', lastName: p.lastName || '',
+      bio: p.bio || '', phoneNumber: p.phoneNumber || '',
+      skills: (p.skills ? p.skills.split(',').map(s => s.trim()) : []) as any
     });
   }
 
   refreshProfile(): void {
     this.loading.set(true);
     this.userService.getMyProfile().subscribe({
-      next: (res) => {
-        const p = res.data;
-        this.profile.set(p);
-        this.userService.setUser(p);
-        this.patchFormValues(p);
-        setTimeout(() => this.loading.set(false), 800);
-      },
+      next: (res) => { this.profile.set(res.data); this.patchFormValues(res.data); this.loading.set(false); },
       error: () => this.loading.set(false)
     });
   }
 
   save(): void {
-    if (this.form.invalid) {
-      this.form.markAllAsTouched();
-      this.toast.error("Please fill required fields correctly.");
-      return;
-    }
+    if (this.form.invalid) return;
     this.saving.set(true);
-    
-    const oldSkills = this.profile()?.skills || '';
-    
     const val = this.form.getRawValue();
-    const newSkillsStr = Array.isArray(val.skills) ? val.skills.join(',') : (val.skills || '');
-    const combinedName = `${val.firstName ?? ''} ${val.lastName ?? ''}`.trim();
-
     this.userService.updateProfile({
-      username: val.username || undefined,
-      name: combinedName || undefined,
-      bio: val.bio || undefined,
-      phoneNumber: val.phoneNumber || undefined,
-      skills: newSkillsStr || undefined
+      username: val.username || undefined, name: `${val.firstName} ${val.lastName}`.trim(),
+      bio: val.bio || undefined, phoneNumber: val.phoneNumber || undefined,
+      skills: (Array.isArray(val.skills) ? val.skills.join(',') : '') || undefined
     }).subscribe({
-      next: (res) => {
-        const updated = res.data;
-        this.profile.set(updated);
-        this.userService.updateUser(updated);
-        this.authStore.updateUser(updated.name, updated.username);
-        this.saving.set(false);
-        this.isEditing.set(false);
-        this.toast.success("Profile updated ✅");
-        
-        this.addActivity('edit', 'bg-blue', 'Updated profile details');
-        
-        if (oldSkills !== newSkillsStr && newSkillsStr.length > oldSkills.length) {
-          this.addActivity('star', 'bg-indigo', 'Added new skills');
-        }
-        
-        this.patchFormValues(updated);
-      },
-      error: (err) => {
-        this.saving.set(false);
-        this.toast.error("Failed to update profile.");
-      }
+      next: (res) => { this.profile.set(res.data); this.patchFormValues(res.data); this.saving.set(false); this.isEditing.set(false); this.toast.success("Saved ✅"); },
+      error: () => { this.saving.set(false); this.toast.error("Error"); }
     });
   }
 
   logout(): void { this.authStore.logout(); }
-
-
-
-  initials(): string {
-    const p = this.profile();
-    if (!p) return '?';
-    const name = p.name || this.displayUsername() || '';
-    return name.charAt(0).toUpperCase();
-  }
-
-  fullName(): string {
-    const p = this.profile();
-    if (!p) return '';
-    return p.name || this.displayUsername();
-  }
-
-  isFieldMissing(key: string): boolean {
-    if (key === 'username') return !this.form.get('username')?.value;
-    if (key === 'firstName') return !this.form.get('firstName')?.value;
-    if (key === 'lastName') return false; 
-    return this.missingFields().some(f => f.key === key);
-  }
-
-  onDragOver(event: DragEvent) {
-    event.preventDefault();
-    this.isDragOver.set(true);
-  }
-  onDragLeave(event: DragEvent) {
-    event.preventDefault();
-    this.isDragOver.set(false);
-  }
-  onDrop(event: DragEvent) {
-    event.preventDefault();
-    this.isDragOver.set(false);
-    const files = event.dataTransfer?.files;
-    if (files && files.length > 0) {
-      this.handleFile(files[0]);
-    }
-  }
-  onFileSelected(event: Event): void {
-    const target = event.target as HTMLInputElement;
-    if (target.files && target.files.length > 0) {
-      this.handleFile(target.files[0]);
-      target.value = '';
-    }
-  }
+  initials(): string { return (this.profile()?.name || '?').charAt(0).toUpperCase(); }
+  fullName(): string { return this.profile()?.name || this.profile()?.username || 'Guest'; }
+  onDragOver(e: DragEvent) { e.preventDefault(); this.isDragOver.set(true); }
+  onDragLeave(e: DragEvent) { e.preventDefault(); this.isDragOver.set(false); }
+  onDrop(e: DragEvent) { e.preventDefault(); this.isDragOver.set(false); if (e.dataTransfer?.files[0]) this.handleFile(e.dataTransfer.files[0]); }
+  onFileSelected(e: Event): void { const files = (e.target as HTMLInputElement).files; if (files?.[0]) this.handleFile(files[0]); }
   private handleFile(file: File) {
-    if (!file.type.startsWith('image/')) {
-      this.toast.error("Only image files are allowed.");
-      return;
-    }
-    if (file.size > 2 * 1024 * 1024) {
-      this.toast.error("File size must be under 2MB.");
-      return;
-    }
+    if (!file.type.startsWith('image/')) return;
     const reader = new FileReader();
-    reader.onload = () => {
-      const base64 = reader.result as string;
-      this.avatarUrl.set(base64);
-      localStorage.setItem('userAvatar', base64);
-      this.addActivity('photo_camera', 'bg-indigo', 'Updated profile picture');
-      this.toast.success("Avatar uploaded ✅");
-    };
+    reader.onload = () => { const base = reader.result as string; this.avatarUrl.set(base); localStorage.setItem('userAvatar', base); };
     reader.readAsDataURL(file);
   }
-
-  toggleSkillDropdown(): void {
-    this.isSkillDropdownOpen.update(v => !v);
+  toggleSkillDropdown(): void { this.isSkillDropdownOpen.update(v => !v); }
+  toggleSkill(skill: string, e: Event): void {
+    e.stopPropagation(); const curr = this.selectedSkills();
+    this.form.patchValue({ skills: (curr.includes(skill) ? curr.filter(s => s !== skill) : [...curr, skill]) as any });
   }
-
-  toggleSkill(skill: string, event: Event): void {
-    event.stopPropagation();
-    const curr = this.selectedSkills();
-    if (curr.includes(skill)) {
-      this.form.patchValue({ skills: curr.filter(s => s !== skill) as any });
-    } else {
-      this.form.patchValue({ skills: [...curr, skill] as any });
-    }
-  }
-  removeSkill(skill: string) {
-    const curr = this.selectedSkills();
-    this.form.patchValue({ skills: curr.filter(s => s !== skill) as any });
-  }
-
-  @HostListener('document:keydown', ['$event'])
-  onKeydown(event: KeyboardEvent) {
-    if (this.isEditing()) {
-      if (event.key === 'Escape') {
-        this.cancelEdit();
-      }
-      if ((event.ctrlKey || event.metaKey) && event.key === 's') {
-        event.preventDefault();
-        this.save();
-      }
-    }
-  }
-
-  @HostListener('document:click', ['$event'])
-  onDocumentClick(event: MouseEvent) {
-    const target = event.target as HTMLElement;
-    if (!target.closest('.custom-dropdown') && !target.closest('.interactive-skills')) {
-      this.isSkillDropdownOpen.set(false);
-    }
-  }
+  removeSkill(skill: string) { this.form.patchValue({ skills: this.selectedSkills().filter(s => s !== skill) as any }); }
+  @HostListener('document:keydown', ['$event']) onKeydown(e: KeyboardEvent) { if (this.isEditing() && e.key === 'Escape') this.cancelEdit(); }
+  @HostListener('document:click', ['$event']) onDocumentClick(e: MouseEvent) { if (!(e.target as HTMLElement).closest('.custom-dropdown')) this.isSkillDropdownOpen.set(false); }
 }

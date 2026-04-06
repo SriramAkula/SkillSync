@@ -133,6 +133,7 @@ import { ReviewDto, MentorRatingDto } from '../../../../shared/models';
 
     .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 28px; flex-wrap: wrap; gap: 16px; }
     .page-header h1 { font-size: 28px; font-weight: 800; color: #111827; margin: 0; }
+    :host-context(.dark) .page-header h1 { color: #f3f4f6; }
     .rating-summary { display: flex; align-items: center; gap: 16px; background: #fef3c7; padding: 12px 20px; border-radius: 14px; }
     .big-rating { font-size: 36px; font-weight: 800; color: #d97706; }
     .stars-row { color: #f59e0b; font-size: 18px; letter-spacing: 2px; }

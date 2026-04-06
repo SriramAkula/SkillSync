@@ -35,9 +35,12 @@ export class ThemeService {
   }
 
   private applyTheme(): void {
-    const body = document.body;
-    body.classList.remove('light-theme', 'dark-theme');
-    body.classList.add(this.theme());
+    const html = document.documentElement;
+    if (this.isDark()) {
+      html.classList.add('dark');
+    } else {
+      html.classList.remove('dark');
+    }
   }
 
   isDark(): boolean {

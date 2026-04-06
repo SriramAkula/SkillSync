@@ -11,7 +11,7 @@ import { AuthStore } from '../../../../core/auth/auth.store';
     <div class="min-h-screen bg-slate-50 flex flex-col font-sans selection:bg-primary-100 selection:text-primary-900">
       
       <!-- Premium Nav (Guest) -->
-      <nav class="sticky top-0 z-[100] glass-effect h-20 px-6 lg:px-10 flex items-center justify-between border-b border-white/20">
+      <nav class="sticky top-0 z-[50] glass-effect h-20 px-6 lg:px-10 flex items-center justify-between border-b border-white/20">
         <div class="flex items-center gap-3">
           <div class="w-10 h-10 bg-primary-600 rounded-xl flex items-center justify-center shadow-lg shadow-primary-200">
             <span class="material-icons text-white">auto_awesome</span>

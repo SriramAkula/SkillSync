@@ -1,4 +1,3 @@
-import 'tslib';
 import { Component, inject, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
@@ -14,90 +13,103 @@ type FilterTab = 'all' | 'active' | 'completed' | 'cancelled';
   standalone: true,
   imports: [CommonModule, SessionCardComponent],
   template: `
-    <div class="max-w-7xl mx-auto space-y-10 animate-fade-in pb-20 px-2 lg:px-4">
+    <div class="max-w-7xl mx-auto space-y-6 sm:space-y-8 lg:space-y-10 animate-fade-in pb-12 sm:pb-20 px-4 sm:px-6 lg:px-8">
 
       <!-- Header Section -->
-      <div class="flex flex-col md:flex-row md:items-end justify-between gap-6">
-        <div class="space-y-2">
-          <h1 class="text-4xl font-extrabold tracking-tight text-slate-900">My <span class="text-primary-600">Learning</span> Sessions</h1>
-          <p class="text-slate-500 font-medium text-lg">Track your progress and upcoming mentorship meetings.</p>
+      <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 sm:gap-6">
+        <div class="space-y-2 sm:space-y-3">
+          <h1 class="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+            My <span class="bg-gradient-to-r from-primary-600 to-indigo-600 bg-clip-text text-transparent">Learning</span> Sessions
+          </h1>
+          <p class="text-sm sm:text-base text-slate-500 dark:text-slate-300 font-medium leading-relaxed">Track your progress and upcoming mentorship meetings.</p>
         </div>
         <button 
           (click)="router.navigate(['/mentors'])"
-          class="bg-primary-600 text-white rounded-2xl px-8 py-4 font-bold shadow-xl shadow-primary-200 hover:bg-primary-700 hover:-translate-y-1 active:scale-95 transition-all flex items-center justify-center gap-2">
-          <span class="material-icons text-xl">add_circle</span>
-          Book New Session
+          class="bg-gradient-to-r from-primary-600 to-indigo-600 text-white rounded-lg sm:rounded-2xl px-4 sm:px-8 py-2.5 sm:py-4 text-sm sm:text-base font-bold shadow-lg shadow-primary-600/20 hover:from-primary-500 hover:to-indigo-500 hover:-translate-y-1 active:scale-95 transition-all flex items-center justify-center gap-2 group whitespace-nowrap">
+          <span class="material-icons text-lg sm:text-xl group-hover:rotate-90 transition-transform">add_circle</span>
+          <span class="hidden sm:inline">Book New Session</span>
+          <span class="sm:hidden">Book</span>
         </button>
       </div>
 
       <!-- Stats Grid -->
-      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
+        <!-- Total -->
         <div (click)="activeTab.set('all')" 
              [class.ring-2]="activeTab() === 'all'"
-             class="glass-card p-6 cursor-pointer hover:shadow-2xl transition-all duration-300 ring-primary-500 ring-offset-2">
-          <div class="flex items-center gap-4">
-            <div class="w-12 h-12 bg-slate-100 rounded-xl flex items-center justify-center text-slate-500">
-              <span class="material-icons">event</span>
+             class="relative group glass-card dark:bg-indigo-950/50 p-3 sm:p-4 lg:p-6 cursor-pointer hover:shadow-lg sm:hover:shadow-2xl transition-all duration-300 ring-primary-500 ring-offset-2 dark:ring-offset-slate-950 overflow-hidden border border-indigo-500/10">
+          <div class="absolute inset-0 bg-indigo-500/10 group-hover:bg-indigo-500/20 transition-colors"></div>
+          <div class="flex items-center gap-2 sm:gap-4 relative z-10">
+            <div class="w-8 sm:w-12 h-8 sm:h-12 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg sm:rounded-xl flex items-center justify-center text-indigo-600 dark:text-indigo-400 shadow-sm shrink-0">
+              <span class="material-icons text-base sm:text-lg">event</span>
             </div>
-            <div>
-              <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Total</p>
-              <p class="text-2xl font-extrabold text-slate-800 tracking-tight">{{ sessionStore.learnerSessions().length }}</p>
+            <div class="min-w-0">
+              <p class="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-indigo-600 dark:text-indigo-300">Total</p>
+              <p class="text-lg sm:text-2xl font-extrabold text-indigo-600 dark:text-indigo-200 tracking-tight">{{ sessionStore.learnerSessions().length }}</p>
             </div>
           </div>
         </div>
+        <!-- Active -->
         <div (click)="activeTab.set('active')" 
              [class.ring-2]="activeTab() === 'active'"
-             class="glass-card p-6 cursor-pointer hover:shadow-2xl transition-all duration-300 ring-blue-500 ring-offset-2">
-          <div class="flex items-center gap-4">
-            <div class="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center text-blue-500">
-              <span class="material-icons">bolt</span>
+             class="relative group glass-card dark:bg-blue-950/50 p-3 sm:p-4 lg:p-6 cursor-pointer hover:shadow-lg sm:hover:shadow-2xl transition-all duration-300 ring-blue-500 ring-offset-2 dark:ring-offset-slate-950 overflow-hidden border border-blue-500/10">
+          <div class="absolute inset-0 bg-blue-500/10 group-hover:bg-blue-500/20 transition-colors"></div>
+          <div class="flex items-center gap-2 sm:gap-4 relative z-10">
+            <div class="w-8 sm:w-12 h-8 sm:h-12 bg-blue-100 dark:bg-blue-900/30 rounded-lg sm:rounded-xl flex items-center justify-center text-blue-600 dark:text-blue-400 shadow-sm shrink-0">
+              <span class="material-icons text-base sm:text-lg">bolt</span>
             </div>
-            <div>
-              <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Active</p>
-              <p class="text-2xl font-extrabold text-blue-600 tracking-tight">{{ activeCount() }}</p>
+            <div class="min-w-0">
+              <p class="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-blue-600 dark:text-blue-300">Active</p>
+              <p class="text-lg sm:text-2xl font-extrabold text-blue-600 dark:text-blue-200 tracking-tight">{{ activeCount() }}</p>
             </div>
           </div>
         </div>
+        <!-- Completed -->
         <div (click)="activeTab.set('completed')" 
              [class.ring-2]="activeTab() === 'completed'"
-             class="glass-card p-6 cursor-pointer hover:shadow-2xl transition-all duration-300 ring-emerald-500 ring-offset-2">
-          <div class="flex items-center gap-4">
-            <div class="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-500">
-              <span class="material-icons">check_circle</span>
+             class="relative group glass-card dark:bg-emerald-950/50 p-3 sm:p-4 lg:p-6 cursor-pointer hover:shadow-lg sm:hover:shadow-2xl transition-all duration-300 ring-emerald-500 ring-offset-2 dark:ring-offset-slate-950 overflow-hidden border border-emerald-500/10">
+          <div class="absolute inset-0 bg-emerald-500/10 group-hover:bg-emerald-500/20 transition-colors"></div>
+          <div class="flex items-center gap-2 sm:gap-4 relative z-10">
+            <div class="w-8 sm:w-12 h-8 sm:h-12 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg sm:rounded-xl flex items-center justify-center text-emerald-600 dark:text-emerald-400 shadow-sm shrink-0">
+              <span class="material-icons text-base sm:text-lg">check_circle</span>
             </div>
-            <div>
-              <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Done</p>
-              <p class="text-2xl font-extrabold text-emerald-600 tracking-tight">{{ completedCount() }}</p>
+            <div class="min-w-0">
+              <p class="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-300">Done</p>
+              <p class="text-lg sm:text-2xl font-extrabold text-emerald-600 dark:text-emerald-200 tracking-tight">{{ completedCount() }}</p>
             </div>
           </div>
         </div>
+        <!-- Cancelled -->
         <div (click)="activeTab.set('cancelled')" 
              [class.ring-2]="activeTab() === 'cancelled'"
-             class="glass-card p-6 cursor-pointer hover:shadow-2xl transition-all duration-300 ring-red-500 ring-offset-2">
-          <div class="flex items-center gap-4">
-            <div class="w-12 h-12 bg-red-50 rounded-xl flex items-center justify-center text-red-500">
-              <span class="material-icons">cancel</span>
+             class="relative group glass-card dark:bg-rose-950/50 p-3 sm:p-4 lg:p-6 cursor-pointer hover:shadow-lg sm:hover:shadow-2xl transition-all duration-300 ring-rose-500 ring-offset-2 dark:ring-offset-slate-950 overflow-hidden border border-rose-500/10">
+          <div class="absolute inset-0 bg-rose-500/10 group-hover:bg-rose-500/20 transition-colors"></div>
+          <div class="flex items-center gap-2 sm:gap-4 relative z-10">
+            <div class="w-8 sm:w-12 h-8 sm:h-12 bg-rose-100 dark:bg-rose-900/30 rounded-lg sm:rounded-xl flex items-center justify-center text-rose-600 dark:text-rose-400 shadow-sm shrink-0">
+              <span class="material-icons text-base sm:text-lg">cancel</span>
             </div>
-            <div>
-              <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Cancelled</p>
-              <p class="text-2xl font-extrabold text-red-600 tracking-tight">{{ cancelledCount() }}</p>
+            <div class="min-w-0">
+              <p class="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-rose-600 dark:text-rose-300">Cancelled</p>
+              <p class="text-lg sm:text-2xl font-extrabold text-rose-600 dark:text-rose-200 tracking-tight">{{ cancelledCount() }}</p>
             </div>
           </div>
         </div>
       </div>
 
       <!-- Main Content Area -->
-      <div class="space-y-6">
+      <div class="space-y-4 sm:space-y-6">
         
         <!-- Filter Bar -->
-        <div class="flex items-center gap-2 p-1.5 bg-slate-100/50 rounded-2xl w-fit">
+        <div class="flex items-center gap-2 p-1.5 bg-slate-100/50 dark:bg-slate-800/50 rounded-2xl w-fit">
           @for (tab of tabs; track tab.key) {
             <button 
               (click)="activeTab.set(tab.key)"
               [class.bg-white]="activeTab() === tab.key"
+              [class.dark:bg-slate-800]="activeTab() === tab.key"
               [class.shadow-md]="activeTab() === tab.key"
               [class.text-primary-600]="activeTab() === tab.key"
               [class.text-slate-500]="activeTab() !== tab.key"
+              [class.dark:text-slate-400]="activeTab() !== tab.key"
               class="px-6 py-2.5 rounded-xl text-sm font-bold transition-all active:scale-95 whitespace-nowrap">
               {{ tab.label }}
             </button>
@@ -125,8 +137,8 @@ type FilterTab = 'all' | 'active' | 'completed' | 'cancelled';
                 <div class="w-24 h-24 bg-slate-50 rounded-[2rem] flex items-center justify-center text-slate-200 mb-6">
                   <span class="material-icons text-6xl">{{ emptyIcon() }}</span>
                 </div>
-                <h3 class="text-2xl font-bold text-slate-800">{{ emptyTitle() }}</h3>
-                <p class="text-slate-500 max-w-sm mt-2 font-medium">{{ emptyDesc() }}</p>
+                <h3 class="text-2xl font-bold text-slate-900 dark:text-white">{{ emptyTitle() }}</h3>
+                <p class="text-slate-500 dark:text-slate-400 max-w-sm mt-2 font-medium">{{ emptyDesc() }}</p>
                 @if (activeTab() === 'all') {
                   <button (click)="router.navigate(['/mentors'])" class="mt-8 px-8 py-3 bg-primary-600 text-white rounded-2xl text-sm font-bold hover:shadow-lg transition-all active:scale-95">Find Your First Mentor</button>
                 }

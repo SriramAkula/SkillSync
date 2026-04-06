@@ -57,11 +57,11 @@ import { ReviewDto, MentorRatingDto } from '../../../../shared/models';
                 <div class="flex items-center justify-center gap-1.5 pt-2">
                     <div class="flex items-center gap-1 px-3 py-1 bg-amber-50 text-amber-600 rounded-full text-[10px] font-bold uppercase tracking-widest">
                         <span class="material-icons text-xs">star</span>
-                        {{ mentor.rating | number:'1.1-1' }}
+                        {{ rating()?.averageRating ? (rating()!.averageRating | number:'1.1-1') : (mentor.rating | number:'1.1-1') }}
                     </div>
-                    <div class="flex items-center gap-1 px-3 py-1 bg-slate-50 text-slate-500 rounded-full text-[10px] font-bold uppercase tracking-widest">
+                    <div class="flex items-center gap-1 px-3 py-1 bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200 rounded-full text-[10px] font-bold uppercase tracking-widest">
                         <span class="material-icons text-xs">groups</span>
-                        {{ mentor.totalStudents }} Learners
+                        {{ reviews().length > 0 ? reviews().length : mentor.totalStudents }} Learners
                     </div>
                 </div>
               </div>

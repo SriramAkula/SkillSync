@@ -14,24 +14,30 @@ interface NavItem { label: string; icon: string; route: string; roles?: string[]
       
       <!-- Brand Logo -->
       <div class="flex items-center gap-3 px-2 mb-10 overflow-hidden">
-        <div class="w-10 h-10 bg-primary-600 rounded-xl flex items-center justify-center shrink-0 shadow-lg shadow-primary-200">
+        <div class="w-10 h-10 bg-primary-600 rounded-xl flex items-center justify-center shrink-0 shadow-sm">
           <span class="material-icons text-white">auto_awesome</span>
         </div>
         @if (!isCollapsed) {
-          <span class="text-xl font-bold tracking-tight text-slate-800 transition-opacity duration-300">SkillSync</span>
+          <span class="text-xl font-bold tracking-tight text-slate-800 dark:text-white transition-all duration-500 whitespace-nowrap opacity-100">SkillSync</span>
+        } @else {
+          <span class="opacity-0 w-0 overflow-hidden transition-all duration-500 whitespace-nowrap">SkillSync</span>
         }
       </div>
 
       <!-- Nav Items -->
       <nav class="flex-1 space-y-1">
         @for (item of visibleItems(); track item.route) {
-          <a class="group flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 hover:bg-slate-100 hover:text-primary-600 active:scale-[0.98]"
-             [routerLink]="item.route" routerLinkActive="bg-primary-50 text-primary-600 ring-1 ring-primary-100/50"
+          <a class="group flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-primary-600 active:scale-[0.98]"
+             [routerLink]="item.route" routerLinkActive="bg-primary-50 dark:bg-primary-900/20 text-primary-600 ring-1 ring-primary-100/50 dark:ring-primary-900/30"
              (click)="navClick.emit()">
-            <span class="material-icons-outlined shrink-0 group-hover:scale-110 transition-transform">{{ item.icon }}</span>
-            @if (!isCollapsed) {
-              <span class="font-medium text-sm tracking-wide">{{ item.label }}</span>
-            }
+            <span class="material-icons-outlined shrink-0 group-hover:scale-110 transition-transform text-slate-400 dark:text-slate-500">{{ item.icon }}</span>
+            <span class="font-medium text-sm tracking-wide text-slate-600 dark:text-slate-400 transition-all duration-500 overflow-hidden whitespace-nowrap"
+                  [class.opacity-100]="!isCollapsed"
+                  [class.w-auto]="!isCollapsed"
+                  [class.opacity-0]="isCollapsed"
+                  [class.w-0]="isCollapsed">
+              {{ item.label }}
+            </span>
           </a>
         }
       </nav>
@@ -39,11 +45,15 @@ interface NavItem { label: string; icon: string; route: string; roles?: string[]
       <!-- Logout (Optional in Sidebar) -->
       <button 
         (click)="logout()"
-        class="mt-auto group flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 hover:bg-red-50 hover:text-red-600 active:scale-[0.98]">
-        <span class="material-icons-outlined shrink-0 group-hover:rotate-12 transition-transform text-slate-400 group-hover:text-red-500">logout</span>
-        @if (!isCollapsed) {
-          <span class="font-medium text-sm tracking-wide text-slate-500 group-hover:text-red-600">Logout</span>
-        }
+        class="mt-auto group flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 active:scale-[0.98]">
+        <span class="material-icons-outlined shrink-0 group-hover:rotate-12 transition-transform text-slate-400 dark:text-slate-500 group-hover:text-red-500">logout</span>
+        <span class="font-medium text-sm tracking-wide text-slate-500 dark:text-slate-400 group-hover:text-red-600 transition-all duration-500 overflow-hidden whitespace-nowrap"
+              [class.opacity-100]="!isCollapsed"
+              [class.w-auto]="!isCollapsed"
+              [class.opacity-0]="isCollapsed"
+              [class.w-0]="isCollapsed">
+          Logout
+        </span>
       </button>
     </div>
   `
