@@ -8,7 +8,7 @@ import { SkillService } from '../../../../core/services/skill.service';
 import { SkillDto, CreateSkillRequest } from '../../../../shared/models/skill.models';
 import { FormsModule } from '@angular/forms';
 
-type AdminTab = 'mentors' | 'skills';
+type AdminTab = 'mentors' | 'skills' | 'users';
 
 @Component({
   selector: 'app-pending-mentors-page',
@@ -21,7 +21,7 @@ type AdminTab = 'mentors' | 'skills';
       <div class="page-header">
         <div>
           <h1>Admin Panel</h1>
-          <p>Manage mentor applications and skills</p>
+          <p>Manage mentors, users, and skills</p>
         </div>
         <div class="header-stats">
           <div class="stat-pill">
@@ -39,6 +39,10 @@ type AdminTab = 'mentors' | 'skills';
           @if (mentorStore.pendingCount() > 0) {
             <span class="tab-badge">{{ mentorStore.pendingCount() }}</span>
           }
+        </button>
+        <button class="admin-tab" [class.active]="tab() === 'users'" (click)="tab.set('users')">
+          <span class="material-icons">people</span>
+          <a [routerLink]="['/admin/users']" style="color: inherit; text-decoration: none;">User Management</a>
         </button>
         <button class="admin-tab" [class.active]="tab() === 'skills'" (click)="tab.set('skills'); loadSkills()">
           <span class="material-icons">auto_stories</span>

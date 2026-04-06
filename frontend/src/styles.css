@@ -56,3 +56,54 @@ body {
 .hover-lift {
   @apply transition-transform duration-200 hover:-translate-y-1;
 }
+
+/* Material Dialog Centering - Custom Modal Styles */
+.custom-modal-backdrop {
+  background-color: rgba(0, 0, 0, 0.5) !important;
+}
+
+.custom-modal-dialog {
+  /* Center the dialog */
+  position: fixed !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  
+  /* Ensure it's on top */
+  z-index: 1000 !important;
+}
+
+/* Material Dialog Container Overrides */
+.mat-mdc-dialog-container {
+  border-radius: 12px !important;
+  padding: 0 !important;
+  max-height: 90vh !important;
+  overflow: auto !important;
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.2) !important;
+}
+
+.mat-mdc-dialog-container .mat-mdc-dialog-title {
+  padding: 0 !important;
+}
+
+/* Ensure backdrop covers full screen */
+.cdk-overlay-backdrop {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  z-index: 999 !important;
+}
+
+/* Media queries for responsive dialogs */
+@media (max-width: 600px) {
+  .custom-modal-dialog {
+    width: calc(100vw - 32px) !important;
+    max-width: calc(100vw - 32px) !important;
+  }
+  
+  .mat-mdc-dialog-container {
+    max-height: calc(100vh - 64px) !important;
+  }
+}

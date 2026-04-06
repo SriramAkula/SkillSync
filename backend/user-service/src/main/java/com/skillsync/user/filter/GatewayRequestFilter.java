@@ -37,11 +37,16 @@ public class GatewayRequestFilter extends OncePerRequestFilter {
         }
 
         String gatewayHeader = request.getHeader("X-Gateway-Request");
+        String authHeader = request.getHeader("Authorization");
 
-        if (gatewayHeader == null) {
+        // Allow if either X-Gateway-Request header is present OR Authorization header is present
+        boolean hasGatewayHeader = gatewayHeader != null;
+        boolean hasValidAuth = authHeader != null && authHeader.startsWith("Bearer ");
+
+        if (!hasGatewayHeader && !hasValidAuth) {
             response.setStatus(HttpServletResponse.SC_FORBIDDEN);
             response.setContentType("text/plain");
-            response.getWriter().write("Access Denied: Use API Gateway");
+            response.getWriter().write("Access Denied: Request must come through API Gateway with X-Gateway-Request header or valid JWT token");
             response.getWriter().flush(); 
             response.getWriter().close();
             return;

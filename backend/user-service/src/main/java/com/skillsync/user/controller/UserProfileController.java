@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -14,10 +15,13 @@ import org.springframework.web.server.ResponseStatusException;
 import jakarta.servlet.http.HttpServletRequest;
 
 import com.skillsync.user.dto.request.UpdateProfileRequestDto;
+import com.skillsync.user.dto.request.BlockUserRequest;
 import com.skillsync.user.dto.response.ApiResponse;
 import com.skillsync.user.dto.response.UserProfileResponseDto;
+import com.skillsync.user.dto.response.UserProfileAdminResponseDto;
 import com.skillsync.user.entity.UserProfile;
 import com.skillsync.user.service.UserProfileService;
+import com.skillsync.user.service.UserAdminService;
 import com.skillsync.user.util.SecurityContextUtil;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -272,4 +276,162 @@ public class UserProfileController {
 						200));
 	}
 
+	// ─────────────────────────────────────────────────────────────
+	// ──── ADMIN ENDPOINTS ────────────────────────────────────────
+	// ─────────────────────────────────────────────────────────────
+
+	private final UserAdminService userAdminService;
+
+	/**
+	 * GET /api/user/admin/all?page=0&size=20
+	 * Get all users with pagination (Admin only)
+	 */
+	@GetMapping("/admin/all")
+	@Operation(summary = "Get all users", description = "Retrieve list of all users (Admin only)")
+	@ApiResponses(value = {
+			@io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Users fetched successfully"),
+			@io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Only admins can access this"),
+	})
+	public ResponseEntity<ApiResponse<Object>> getAllUsers(
+			@Parameter(hidden = true) @RequestHeader(value = "roles", required = false) String roles,
+			@RequestParam(defaultValue = "0") int page,
+			@RequestParam(defaultValue = "20") int size) {
+
+		if (roles == null || !roles.contains("ROLE_ADMIN")) {
+			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only admins can access this endpoint");
+		}
+
+		log.info("Admin: Fetching all users - page: {}, size: {}", page, size);
+		Object response = userAdminService.getAllUsers(page, size);
+
+		return ResponseEntity
+				.ok(new ApiResponse<>(
+						true,
+						"Users fetched successfully",
+						response,
+						200));
+	}
+
+	/**
+	 * GET /api/user/admin/blocked
+	 * Get all blocked users (Admin only)
+	 */
+	@GetMapping("/admin/blocked")
+	@Operation(summary = "Get blocked users", description = "Retrieve list of all blocked users (Admin only)")
+	@ApiResponses(value = {
+			@io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Blocked users fetched successfully"),
+			@io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Only admins can access this"),
+	})
+	public ResponseEntity<ApiResponse<Object>> getBlockedUsers(
+			@Parameter(hidden = true) @RequestHeader(value = "roles", required = false) String roles) {
+
+		if (roles == null || !roles.contains("ROLE_ADMIN")) {
+			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only admins can access this endpoint");
+		}
+
+		log.info("Admin: Fetching blocked users");
+		Object response = userAdminService.getBlockedUsers();
+
+		return ResponseEntity
+				.ok(new ApiResponse<>(
+						true,
+						"Blocked users fetched successfully",
+						response,
+						200));
+	}
+
+	/**
+	 * PUT /api/user/admin/{userId}/block
+	 * Block a user (Admin only)
+	 */
+	@PutMapping("/admin/{userId}/block")
+	@Operation(summary = "Block user", description = "Block a user account (Admin only)")
+	@ApiResponses(value = {
+			@io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "User blocked successfully"),
+			@io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Only admins can access this"),
+			@io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "User not found"),
+	})
+	public ResponseEntity<ApiResponse<UserProfileAdminResponseDto>> blockUser(
+			@PathVariable Long userId,
+			@Parameter(hidden = true) @RequestHeader(value = "roles", required = false) String roles,
+			@Parameter(hidden = true) @RequestHeader("X-User-Id") Long adminId,
+			@RequestBody BlockUserRequest request) {
+
+		if (roles == null || !roles.contains("ROLE_ADMIN")) {
+			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only admins can block users");
+		}
+
+		log.info("Admin {} blocking user {}", adminId, userId);
+		UserProfileAdminResponseDto response = userAdminService.blockUser(userId, request.getReason(), adminId);
+
+		return ResponseEntity
+				.ok(new ApiResponse<>(
+						true,
+						"User blocked successfully",
+						response,
+						200));
+	}
+
+	/**
+	 * PUT /api/user/admin/{userId}/unblock
+	 * Unblock a user (Admin only)
+	 */
+	@PutMapping("/admin/{userId}/unblock")
+	@Operation(summary = "Unblock user", description = "Unblock a user account (Admin only)")
+	@ApiResponses(value = {
+			@io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "User unblocked successfully"),
+			@io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Only admins can access this"),
+			@io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "User not found"),
+	})
+	public ResponseEntity<ApiResponse<UserProfileAdminResponseDto>> unblockUser(
+			@PathVariable Long userId,
+			@Parameter(hidden = true) @RequestHeader(value = "roles", required = false) String roles,
+			@Parameter(hidden = true) @RequestHeader("X-User-Id") Long adminId) {
+
+		if (roles == null || !roles.contains("ROLE_ADMIN")) {
+			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only admins can unblock users");
+		}
+
+		log.info("Admin {} unblocking user {}", adminId, userId);
+		UserProfileAdminResponseDto response = userAdminService.unblockUser(userId, adminId);
+
+		return ResponseEntity
+				.ok(new ApiResponse<>(
+						true,
+						"User unblocked successfully",
+						response,
+						200));
+	}
+
+	/**
+	 * GET /api/user/admin/{userId}/details
+	 * Get user details (Admin only)
+	 */
+	@GetMapping("/admin/{userId}/details")
+	@Operation(summary = "Get user details", description = "Get detailed information about a user (Admin only)")
+	@ApiResponses(value = {
+			@io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "User details fetched successfully"),
+			@io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Only admins can access this"),
+			@io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "User not found"),
+	})
+	public ResponseEntity<ApiResponse<UserProfileAdminResponseDto>> getUserDetails(
+			@PathVariable Long userId,
+			@Parameter(hidden = true) @RequestHeader(value = "roles", required = false) String roles) {
+
+		if (roles == null || !roles.contains("ROLE_ADMIN")) {
+			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only admins can access this endpoint");
+		}
+
+		log.info("Admin: Fetching user details for userId: {}", userId);
+		UserProfileAdminResponseDto response = userAdminService.getUserDetails(userId);
+
+		return ResponseEntity
+				.ok(new ApiResponse<>(
+						true,
+						"User details fetched successfully",
+						response,
+						200));
+	}
+
 }
+

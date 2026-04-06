@@ -73,11 +73,7 @@ public class UserProfileServiceImpl implements UserProfileService {
 		if (requestDto.getUsername() != null && !requestDto.getUsername().equals(oldUsername)) {
 			try {
 				log.info("Syncing username change to Auth Service: {} -> {}", oldUsername, requestDto.getUsername());
-				authClient.updateUserProfile(
-					userId, 
-					new com.skillsync.user.dto.internal.AuthProfileUpdateDTO(requestDto.getUsername()),
-					"user-service"
-				);
+				authClient.updateUserProfile(userId, new com.skillsync.user.dto.internal.AuthProfileUpdateDTO(requestDto.getUsername()));
 			} catch (Exception e) {
 				log.error("Failed to sync username with Auth Service for userId {}: {}", userId, e.getMessage());
 				// We don't fail the whole transaction here to avoid breaking core profile updates if auth-service is down

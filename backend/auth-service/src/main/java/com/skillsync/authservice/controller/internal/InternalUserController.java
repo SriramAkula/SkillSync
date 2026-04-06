@@ -10,6 +10,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Optional;
+import java.util.Set;
+import java.util.HashSet;
+import java.util.Arrays;
 
 /**
  * Internal controller for User Service to update auth user information
@@ -90,5 +93,38 @@ public class InternalUserController {
             logger.info("   User {} already has role {}", userId, role);
         }
         return ResponseEntity.ok().build();
+    }
+
+    /**
+     * Get user roles from Auth Service
+     * Called by User Service to retrieve roles for admin panel
+     * 
+     * @param userId User ID
+     * @return Set of role names (e.g., ROLE_USER, ROLE_MENTOR, ROLE_ADMIN)
+     */
+    @GetMapping("/{userId}/roles")
+    public ResponseEntity<Set<String>> getUserRoles(
+            @PathVariable Long userId,
+            @RequestHeader(value = "X-Internal-Service", required = false) String internalService,
+            @RequestHeader(value = "X-Service-Auth", required = false) String serviceAuth) {
+        
+        logger.info("Fetching roles for userId: {} (requested by: {})", userId, internalService != null ? internalService : "unknown service");
+        
+        Optional<User> userOpt = userRepository.findById(userId);
+        if (userOpt.isEmpty()) {
+            logger.warn("User not found in Auth Service: userId={}", userId);
+            return ResponseEntity.notFound().build();
+        }
+
+        User user = userOpt.get();
+        // Parse comma-separated roles string into a Set
+        Set<String> roles = new HashSet<>();
+        if (user.getRole() != null && !user.getRole().isEmpty()) {
+            String[] roleArray = user.getRole().split(",");
+            roles.addAll(Arrays.asList(roleArray));
+        }
+        
+        logger.info("   Retrieved roles for user {}: {}", userId, roles);
+        return ResponseEntity.ok(roles);
     }
 }

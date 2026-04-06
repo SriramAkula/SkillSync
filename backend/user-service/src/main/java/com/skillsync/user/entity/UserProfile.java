@@ -67,6 +67,20 @@ public class UserProfile extends Auditable {
 	@Column(nullable = false)
 	private Boolean profileComplete = false;
 
+	// ─── Admin Fields ───────────────────────────────────────────
+	@Column(nullable = false)
+	private Boolean isBlocked = false;
+
+	@Column(length = 500)
+	private String blockReason;
+
+	@Column
+	private LocalDateTime blockDate;
+
+	@Column
+	private Long blockedBy;
+	// ─────────────────────────────────────────────────────────────
+
 	@Column(nullable = false, updatable = false)
 	private LocalDateTime createdAt;
 
