@@ -19,8 +19,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheConfig;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.Optional;
@@ -65,33 +67,36 @@ public class GroupServiceImpl implements GroupService {
         Group savedGroup = groupRepository.save(group);
         groupMemberRepository.save(groupMapper.toMemberEntity(savedGroup.getId(), creatorId, MemberRole.CREATOR));
         log.info("Group {} created with ID {}", request.getName(), savedGroup.getId());
-        return groupMapper.toDto(savedGroup, 1);
+        return groupMapper.toDto(savedGroup, 1, true);
     }
 
     @Override
-    @Cacheable(key = "#groupId")
-    public GroupResponseDto getGroupDetails(Long groupId) {
-        log.info("Cache MISS - fetching groupId={} from DB", groupId);
+    @Cacheable(key = "#groupId + '_' + (#currentUserId != null ? #currentUserId : 'anon')")
+    public GroupResponseDto getGroupDetails(Long groupId, Long currentUserId) {
+        log.info("Cache MISS - fetching groupId={} (user={}) from DB", groupId, currentUserId);
         Group group = groupRepository.findById(groupId)
                 .orElseThrow(() -> new GroupNotFoundException("Group not found with ID: " + groupId));
-        return groupMapper.toDto(group, groupMemberRepository.countByGroupId(groupId));
+        boolean joined = currentUserId != null && groupMemberRepository.findByGroupIdAndUserId(groupId, currentUserId).isPresent();
+        return groupMapper.toDto(group, groupMemberRepository.countByGroupId(groupId), joined);
     }
 
     @Override
-    @Cacheable(key = "'skill_' + #skillId")
-    public List<GroupResponseDto> getGroupsBySkill(Long skillId) {
-        log.info("Cache MISS - fetching groups for skillId={} from DB", skillId);
+    @Cacheable(key = "'skill_' + #skillId + '_' + (#currentUserId != null ? #currentUserId : 'anon')")
+    public List<GroupResponseDto> getGroupsBySkill(Long skillId, Long currentUserId) {
+        log.info("Cache MISS - fetching groups for skillId={} (user={}) from DB", skillId, currentUserId);
         return groupRepository.findBySkillId(skillId).stream()
-                .map(g -> groupMapper.toDto(g, groupMemberRepository.countByGroupId(g.getId())))
+                .map(g -> groupMapper.toDto(g, groupMemberRepository.countByGroupId(g.getId()), 
+                        currentUserId != null && groupMemberRepository.findByGroupIdAndUserId(g.getId(), currentUserId).isPresent()))
                 .collect(Collectors.toList());
     }
 
     @Override
-    @Cacheable(key = "'creator_' + #creatorId")
-    public List<GroupResponseDto> getGroupsByCreator(Long creatorId) {
-        log.info("Cache MISS - fetching groups for creatorId={} from DB", creatorId);
+    @Cacheable(key = "'creator_' + #creatorId + '_' + (#currentUserId != null ? #currentUserId : 'anon')")
+    public List<GroupResponseDto> getGroupsByCreator(Long creatorId, Long currentUserId) {
+        log.info("Cache MISS - fetching groups for creatorId={} (user={}) from DB", creatorId, currentUserId);
         return groupRepository.findByCreatorId(creatorId).stream()
-                .map(g -> groupMapper.toDto(g, groupMemberRepository.countByGroupId(g.getId())))
+                .map(g -> groupMapper.toDto(g, groupMemberRepository.countByGroupId(g.getId()), 
+                        currentUserId != null && groupMemberRepository.findByGroupIdAndUserId(g.getId(), currentUserId).isPresent()))
                 .collect(Collectors.toList());
     }
 
@@ -121,7 +126,7 @@ public class GroupServiceImpl implements GroupService {
         }
         groupMemberRepository.save(groupMapper.toMemberEntity(groupId, userId, MemberRole.MEMBER));
         log.info("User {} joined group {}", userId, groupId);
-        return groupMapper.toDto(group, currentMembers + 1);
+        return groupMapper.toDto(group, currentMembers + 1, true);
     }
 
     @Override
@@ -133,16 +138,21 @@ public class GroupServiceImpl implements GroupService {
                 .orElseThrow(() -> new GroupNotFoundException("Group not found"));
         GroupMember member = groupMemberRepository.findByGroupIdAndUserId(groupId, userId)
                 .orElseThrow(() -> new GroupNotFoundException("User is not a member of this group"));
+        
+        if (member.getRole() == MemberRole.CREATOR) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Creator cannot leave the group. You must delete the group instead.");
+        }
+
         groupMemberRepository.delete(member);
         Integer memberCount = groupMemberRepository.countByGroupId(groupId);
         log.info("User {} left group {}", userId, groupId);
-        return groupMapper.toDto(group, memberCount);
+        return groupMapper.toDto(group, memberCount, false);
     }
 
     @Override
     @Transactional
     @CacheEvict(allEntries = true)
-    public GroupResponseDto deleteGroup(Long groupId, Long creatorId) {
+    public void deleteGroup(Long groupId, Long creatorId) {
         log.info("Deleting group {} by creator {}", groupId, creatorId);
         Group group = groupRepository.findById(groupId)
                 .orElseThrow(() -> new GroupNotFoundException("Group not found"));
@@ -150,17 +160,18 @@ public class GroupServiceImpl implements GroupService {
             throw new GroupNotFoundException("Only creator can delete the group");
         }
         group.setIsActive(false);
-        Group updated = groupRepository.save(group);
+        groupRepository.save(group);
         groupMemberRepository.deleteAll(groupMemberRepository.findByGroupId(groupId));
         log.info("Group {} deleted", groupId);
-        return groupMapper.toDto(updated, 0);
     }
 
     @Override
-    public List<GroupResponseDto> getRandomGroups(int limit) {
-        log.info("Fetching {} random groups", limit);
+    @Cacheable(key = "'random_' + #limit + '_' + (#currentUserId != null ? #currentUserId : 'anon')")
+    public List<GroupResponseDto> getRandomGroups(int limit, Long currentUserId) {
+        log.info("Fetching {} random groups (user={})", limit, currentUserId);
         return groupRepository.findRandomGroups(limit).stream()
-                .map(g -> groupMapper.toDto(g, groupMemberRepository.countByGroupId(g.getId())))
+                .map(g -> groupMapper.toDto(g, groupMemberRepository.countByGroupId(g.getId()), 
+                        currentUserId != null && groupMemberRepository.findByGroupIdAndUserId(g.getId(), currentUserId).isPresent()))
                 .collect(Collectors.toList());
     }
 }

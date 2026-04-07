@@ -6,11 +6,11 @@ import java.util.List;
 
 public interface GroupService {
     GroupResponseDto createGroup(Long creatorId, CreateGroupRequestDto request);
-    GroupResponseDto getGroupDetails(Long groupId);
-    List<GroupResponseDto> getGroupsBySkill(Long skillId);
-    List<GroupResponseDto> getGroupsByCreator(Long creatorId);
+    GroupResponseDto getGroupDetails(Long groupId, Long currentUserId);
+    List<GroupResponseDto> getGroupsBySkill(Long skillId, Long currentUserId);
+    List<GroupResponseDto> getGroupsByCreator(Long creatorId, Long currentUserId);
+    void deleteGroup(Long groupId, Long currentUserId);
     GroupResponseDto joinGroup(Long groupId, Long userId);
     GroupResponseDto leaveGroup(Long groupId, Long userId);
-    GroupResponseDto deleteGroup(Long groupId, Long creatorId);
-    List<GroupResponseDto> getRandomGroups(int limit);
+    List<GroupResponseDto> getRandomGroups(int limit, Long currentUserId);
 }

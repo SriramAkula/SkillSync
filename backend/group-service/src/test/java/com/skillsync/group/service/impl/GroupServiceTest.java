@@ -67,7 +67,7 @@ class GroupServiceTest {
         when(groupMapper.toEntity(100L, createRequest)).thenReturn(group);
         when(groupRepository.save(group)).thenReturn(group);
         when(groupMapper.toMemberEntity(eq(1L), eq(100L), eq(MemberRole.CREATOR))).thenReturn(new GroupMember());
-        when(groupMapper.toDto(group, 1)).thenReturn(groupResponse);
+        when(groupMapper.toDto(group, 1, true)).thenReturn(groupResponse);
 
         GroupResponseDto response = groupService.createGroup(100L, createRequest);
 
@@ -86,7 +86,7 @@ class GroupServiceTest {
         when(groupMemberRepository.findByGroupIdAndUserId(1L, 101L)).thenReturn(Optional.empty());
         when(groupMemberRepository.countByGroupId(1L)).thenReturn(2);
         when(groupMapper.toMemberEntity(eq(1L), eq(101L), eq(MemberRole.MEMBER))).thenReturn(new GroupMember());
-        when(groupMapper.toDto(group, 3)).thenReturn(joinedResponse);
+        when(groupMapper.toDto(group, 3, true)).thenReturn(joinedResponse);
 
         GroupResponseDto response = groupService.joinGroup(1L, 101L);
 
@@ -122,7 +122,7 @@ class GroupServiceTest {
         when(groupRepository.findById(1L)).thenReturn(Optional.of(group));
         when(groupMemberRepository.findByGroupIdAndUserId(1L, 101L)).thenReturn(Optional.of(member));
         when(groupMemberRepository.countByGroupId(1L)).thenReturn(1);
-        when(groupMapper.toDto(group, 1)).thenReturn(leaveResponse);
+        when(groupMapper.toDto(group, 1, false)).thenReturn(leaveResponse);
 
         groupService.leaveGroup(1L, 101L);
 
@@ -138,7 +138,7 @@ class GroupServiceTest {
         when(groupRepository.findById(1L)).thenReturn(Optional.of(group));
         when(groupRepository.save(group)).thenReturn(group);
         when(groupMemberRepository.findByGroupId(1L)).thenReturn(List.of());
-        when(groupMapper.toDto(group, 0)).thenReturn(deletedResponse);
+        // No call to toDto in deleteGroup anymore, return type changed to void
 
         groupService.deleteGroup(1L, 100L);
 

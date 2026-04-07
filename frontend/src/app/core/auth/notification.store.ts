@@ -81,11 +81,14 @@ export const NotificationStore = signalStore(
 
       deleteNotification: rxMethod<number>(
         pipe(
-          switchMap(id =>
+          mergeMap(id =>
             svc.delete(id).pipe(
               tapResponse({
                 next: () => patchState(store, {
-                  notifications: store.notifications().filter(n => n.id !== id)
+                  notifications: store.notifications().filter(n => n.id !== id),
+                  unreadCount: store.notifications().find(n => n.id === id)?.isRead === false 
+                    ? Math.max(0, store.unreadCount() - 1) 
+                    : store.unreadCount()
                 }),
                 error: () => {}
               })
@@ -133,6 +136,25 @@ export const NotificationStore = signalStore(
           notifications: [notification, ...store.notifications()],
           unreadCount: store.unreadCount() + 1
         });
+      },
+
+      markAllRead(): void {
+        const unreadIds = store.notifications()
+          .filter(n => !n.isRead)
+          .map(n => n.id);
+        
+        if (unreadIds.length === 0) return;
+        
+        unreadIds.forEach(id => this.markRead(id));
+      },
+
+      deleteAll(): void {
+        const allIds = store.notifications().map(n => n.id);
+        if (allIds.length === 0) return;
+        
+        if (confirm(`Are you sure you want to delete all ${allIds.length} notifications?`)) {
+          allIds.forEach(id => this.deleteNotification(id));
+        }
       }
     };
   })

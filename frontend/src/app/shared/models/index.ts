@@ -150,6 +150,7 @@ export interface GroupDto {
   memberCount?: number;
   description?: string;
   isActive: boolean;
+  isJoined?: boolean;
   createdAt: string;
 }
 

@@ -112,7 +112,7 @@ class GroupControllerTest {
 
     @Test
     void getGroupDetails_shouldReturn200_whenGroupExists() throws Exception {
-        when(groupService.getGroupDetails(1L)).thenReturn(groupResponse);
+        when(groupService.getGroupDetails(eq(1L), any())).thenReturn(groupResponse);
 
         mockMvc.perform(get("/group/1"))
                 .andExpect(status().isOk())
@@ -121,7 +121,7 @@ class GroupControllerTest {
 
     @Test
     void getGroupDetails_shouldReturn404_whenGroupNotFound() throws Exception {
-        when(groupService.getGroupDetails(99L)).thenThrow(new GroupNotFoundException("Not found"));
+        when(groupService.getGroupDetails(eq(99L), any())).thenThrow(new GroupNotFoundException("Not found"));
 
         mockMvc.perform(get("/group/99"))
                 .andExpect(status().isNotFound());
@@ -131,7 +131,7 @@ class GroupControllerTest {
 
     @Test
     void getGroupsBySkill_shouldReturn200_withList() throws Exception {
-        when(groupService.getGroupsBySkill(5L)).thenReturn(List.of(groupResponse));
+        when(groupService.getGroupsBySkill(eq(5L), any())).thenReturn(List.of(groupResponse));
 
         mockMvc.perform(get("/group/skill/5"))
                 .andExpect(status().isOk())
@@ -140,7 +140,7 @@ class GroupControllerTest {
 
     @Test
     void getGroupsBySkill_shouldReturn200_withEmptyList() throws Exception {
-        when(groupService.getGroupsBySkill(99L)).thenReturn(List.of());
+        when(groupService.getGroupsBySkill(eq(99L), any())).thenReturn(List.of());
 
         mockMvc.perform(get("/group/skill/99"))
                 .andExpect(status().isOk())
@@ -223,7 +223,7 @@ class GroupControllerTest {
 
     @Test
     void deleteGroup_shouldReturn200_whenMentorRole() throws Exception {
-        when(groupService.deleteGroup(1L, 100L)).thenReturn(groupResponse);
+        doNothing().when(groupService).deleteGroup(1L, 100L);
 
         mockMvc.perform(delete("/group/1")
                         .header("X-User-Id", 100L)
@@ -242,7 +242,7 @@ class GroupControllerTest {
 
     @Test
     void deleteGroup_shouldReturn404_whenGroupNotFound() throws Exception {
-        when(groupService.deleteGroup(99L, 100L)).thenThrow(new GroupNotFoundException("Not found"));
+        doThrow(new GroupNotFoundException("Not found")).when(groupService).deleteGroup(99L, 100L);
 
         mockMvc.perform(delete("/group/99")
                         .header("X-User-Id", 100L)

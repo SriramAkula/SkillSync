@@ -87,28 +87,24 @@ import { GroupDto } from '../../../../shared/models';
                 </div>
               }
 
-              <!-- Join: any authenticated user, not creator, not full -->
-              @if (!isCreator(g) && spotsLeft(g) > 0) {
-                <button class="action-btn primary" (click)="join(g.id)">
-                  <span class="material-icons">group_add</span>
-                  Join Group
-                </button>
-              }
-
-              <!-- Full notice -->
-              @if (!isCreator(g) && spotsLeft(g) === 0) {
-                <div class="full-notice">
-                  <span class="material-icons">block</span>
-                  This group is full
-                </div>
-              }
-
-              <!-- Leave: any authenticated user, not creator -->
+              <!-- Joint/Leave Logic -->
               @if (!isCreator(g)) {
-                <button class="action-btn secondary" (click)="leave(g.id)">
-                  <span class="material-icons">exit_to_app</span>
-                  Leave Group
-                </button>
+                @if (g.isJoined) {
+                  <button class="action-btn secondary" (click)="leave(g.id)">
+                    <span class="material-icons">exit_to_app</span>
+                    Leave Group
+                  </button>
+                } @else if (spotsLeft(g) > 0) {
+                  <button class="action-btn primary" (click)="join(g.id)">
+                    <span class="material-icons">group_add</span>
+                    Join Group
+                  </button>
+                } @else {
+                  <div class="full-notice">
+                    <span class="material-icons">block</span>
+                    This group is full
+                  </div>
+                }
               }
 
               <!-- Delete: creator or admin -->

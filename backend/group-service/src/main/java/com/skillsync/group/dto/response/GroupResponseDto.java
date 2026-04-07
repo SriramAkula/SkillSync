@@ -15,6 +15,7 @@ public class GroupResponseDto {
     private Integer currentMembers;
     private String description;
     private Boolean isActive;
+    private Boolean isJoined;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

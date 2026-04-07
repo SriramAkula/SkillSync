@@ -32,7 +32,7 @@ public class GroupMapper {
     }
 
     // Group entity + memberCount -> GroupResponseDto
-    public GroupResponseDto toDto(Group group, Integer memberCount) {
+    public GroupResponseDto toDto(Group group, Integer memberCount, Boolean isJoined) {
         return GroupResponseDto.builder()
                 .id(group.getId())
                 .creatorId(group.getCreatorId())
@@ -42,6 +42,7 @@ public class GroupMapper {
                 .currentMembers(memberCount != null ? memberCount : 0)
                 .description(group.getDescription())
                 .isActive(group.getIsActive())
+                .isJoined(isJoined != null ? isJoined : false)
                 .createdAt(group.getCreatedAt())
                 .updatedAt(group.getUpdatedAt())
                 .build();

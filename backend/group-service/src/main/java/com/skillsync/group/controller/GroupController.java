@@ -71,9 +71,10 @@ public class GroupController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Group not found")
     })
     public ResponseEntity<ApiResponse<GroupResponseDto>> getGroupDetails(
-            @PathVariable Long groupId) {
-        log.info("GET /{} - Get group details", groupId);
-        GroupResponseDto response = groupService.getGroupDetails(groupId);
+            @PathVariable Long groupId,
+            @Parameter(hidden = true) @RequestHeader(value = "X-User-Id", required = false) Long userId) {
+        log.info("GET /{} - Get group details (user={})", groupId, userId);
+        GroupResponseDto response = groupService.getGroupDetails(groupId, userId);
         return ResponseEntity.ok(ApiResponse.<GroupResponseDto>builder()
                 .success(true)
                 .data(response)
@@ -89,9 +90,10 @@ public class GroupController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Skill not found")
     })
     public ResponseEntity<ApiResponse<List<GroupResponseDto>>> getGroupsBySkill(
-            @PathVariable Long skillId) {
-        log.info("GET /skill/{} - Get groups by skill", skillId);
-        List<GroupResponseDto> response = groupService.getGroupsBySkill(skillId);
+            @PathVariable Long skillId,
+            @Parameter(hidden = true) @RequestHeader(value = "X-User-Id", required = false) Long userId) {
+        log.info("GET /skill/{} - Get groups by skill (user={})", skillId, userId);
+        List<GroupResponseDto> response = groupService.getGroupsBySkill(skillId, userId);
         return ResponseEntity.ok(ApiResponse.<List<GroupResponseDto>>builder()
                 .success(true)
                 .data(response)
@@ -169,10 +171,9 @@ public class GroupController {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Access denied.");
         }
         log.info("DELETE /{} - Creator {} deleting group", groupId, creatorId);
-        GroupResponseDto response = groupService.deleteGroup(groupId, creatorId);
+        groupService.deleteGroup(groupId, creatorId);
         return ResponseEntity.ok(ApiResponse.<GroupResponseDto>builder()
                 .success(true)
-                .data(response)
                 .message("Group deleted successfully")
                 .statusCode(200)
                 .build());
@@ -184,9 +185,10 @@ public class GroupController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Random groups retrieved successfully")
     })
     public ResponseEntity<ApiResponse<List<GroupResponseDto>>> getRandomGroups(
-            @org.springframework.web.bind.annotation.RequestParam(defaultValue = "10") int limit) {
-        log.info("GET /random?limit={} - Get random groups", limit);
-        List<GroupResponseDto> response = groupService.getRandomGroups(limit);
+            @org.springframework.web.bind.annotation.RequestParam(defaultValue = "10") int limit,
+            @Parameter(hidden = true) @RequestHeader(value = "X-User-Id", required = false) Long userId) {
+        log.info("GET /random?limit={} - Get random groups (user={})", limit, userId);
+        List<GroupResponseDto> response = groupService.getRandomGroups(limit, userId);
         return ResponseEntity.ok(ApiResponse.<List<GroupResponseDto>>builder()
                 .success(true)
                 .data(response)

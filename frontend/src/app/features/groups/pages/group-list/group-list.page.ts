@@ -54,6 +54,10 @@ import { forkJoin } from 'rxjs';
           <button class="btn-search" (click)="loadGroups()" [disabled]="!selectedSkillId() || loading()">
             @if (loading()) { <mat-spinner diameter="18" /> } @else { Find Groups }
           </button>
+
+          <button class="btn-clear" (click)="clearFilters()" *ngIf="searched() || selectedCategory()" [disabled]="loading()">
+            <span class="material-icons">refresh</span> Clear
+          </button>
           
           @if (!authStore.isAdmin() && (authStore.isLearner() || authStore.isMentor())) {
             <button class="btn-create" (click)="openCreate()">
@@ -100,13 +104,24 @@ import { forkJoin } from 'rxjs';
               </div>
 
               <div class="group-actions" (click)="$event.stopPropagation()">
-                <!-- Join: any user, not creator, not full -->
+                <!-- Join/Leave/Full Logic -->
                 @if (!isCreator(g)) {
-                  <button class="btn-join" (click)="join(g.id)"
-                          [disabled]="members(g) >= g.maxMembers">
-                    <span class="material-icons">group_add</span>
-                    {{ members(g) >= g.maxMembers ? 'Full' : 'Join' }}
-                  </button>
+                  @if (g.isJoined) {
+                    <button class="btn-leave" (click)="leave(g.id)">
+                      <span class="material-icons">exit_to_app</span>
+                      Leave
+                    </button>
+                  } @else if (members(g) >= g.maxMembers) {
+                    <button class="btn-join" disabled>
+                      <span class="material-icons">group_off</span>
+                      Full
+                    </button>
+                  } @else {
+                    <button class="btn-join" (click)="join(g.id)">
+                      <span class="material-icons">group_add</span>
+                      Join
+                    </button>
+                  }
                 }
 
                 <!-- Creator badge -->
@@ -249,19 +264,19 @@ import { forkJoin } from 'rxjs';
     .search-bar { display: flex; align-items: center; gap: 0.75rem; background: white; border-radius: 0.875rem; border: 1px solid #e5e7eb; padding: 0.5rem 1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.04); flex-wrap: wrap; }
     @media (min-width: 640px) { .search-bar { flex-wrap: nowrap; padding: 0.75rem 1rem; } }
     
-    .dropdown-wrap { flex: 1; min-w-[150px]; display: flex; align-items: center; gap: 0.625rem; border-right: 1px solid #f3f4f6; padding-right: 0.75rem; }
-    @media (min-width: 640px) { .dropdown-wrap { min-w-auto; } }
+    .dropdown-wrap { flex: 1; min-width: 150px; display: flex; align-items: center; gap: 0.625rem; border-right: 1px solid #f3f4f6; padding-right: 0.75rem; }
+    @media (min-width: 640px) { .dropdown-wrap { min-width: auto; } }
 
     .dropdown-wrap:last-of-type { border-right: none; }
     .dropdown-wrap.disabled { opacity: 0.5; }
     .select-icon { color: #9ca3af; font-size: 1.125rem; }
-    .search-select { flex: 1; border: none; outline: none; background: transparent; font-size: 0.875rem; color: #111827; height: 2rem; cursor: pointer; min-w-[120px]; }
+    .search-select { flex: 1; border: none; outline: none; background: transparent; font-size: 0.875rem; color: #111827; height: 2rem; cursor: pointer; min-width: 120px; }
     @media (min-width: 640px) { .search-select { font-size: 0.875rem; } }
 
     .search-select:disabled { cursor: not-allowed; }
 
     .loading-text { flex: 1; font-size: 0.875rem; color: #9ca3af; font-style: italic; }
-    .search-input { flex: 1; border: none; outline: none; font-size: 0.875rem; color: #111827; background: transparent; min-w-[100px]; }
+    .search-input { flex: 1; border: none; outline: none; font-size: 0.875rem; color: #111827; background: transparent; min-width: 100px; }
     @media (min-width: 640px) { .search-input { font-size: 0.9375rem; } }
 
     .search-input::placeholder { color: #9ca3af; }
@@ -269,6 +284,11 @@ import { forkJoin } from 'rxjs';
     @media (min-width: 640px) { .btn-search { height: 2.5rem; padding: 0 1.25rem; font-size: 0.875rem; } }
 
     .btn-search:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .btn-clear { height: 2.5rem; padding: 0 1rem; border-radius: 0.625rem; background: #f3f4f6; color: #4b5563; border: 1px solid #e5e7eb; font-size: 0.875rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 0.375rem; transition: background 0.15s; }
+    .btn-clear:hover:not(:disabled) { background: #e5e7eb; }
+    .btn-clear:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-clear .material-icons { font-size: 1.125rem; }
 
     .cat-chips { display: flex; gap: 0.5rem; flex-wrap: wrap; }
     .cat-chip { height: 2rem; padding: 0 0.875rem; border-radius: 1.25rem; border: 1.5px solid #e5e7eb; background: white; color: #6b7280; font-size: 0.75rem; font-weight: 500; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
@@ -323,6 +343,9 @@ import { forkJoin } from 'rxjs';
     .btn-delete { margin-left: auto; width: 34px; height: 34px; border-radius: 8px; background: #fee2e2; color: #dc2626; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.15s; }
     .btn-delete:hover { background: #fecaca; }
     .btn-delete .material-icons { font-size: 1rem; }
+    .btn-leave { display: flex; align-items: center; gap: 5px; height: 34px; padding: 0 14px; border-radius: 8px; background: #fff1f2; color: #e11d48; border: none; font-size: 13px; font-weight: 600; cursor: pointer; transition: background 0.15s; }
+    .btn-leave:hover { background: #ffe4e6; }
+    .btn-leave .material-icons { font-size: 15px; }
 
     .empty-state, .hint-state { display: flex; flex-direction: column; align-items: center; gap: 0.75rem; padding: 3rem 1.25rem; text-align: center; }
     @media (min-width: 640px) { .empty-state, .hint-state { padding: 5rem 1.25rem; } }
@@ -484,6 +507,13 @@ export class GroupListPage implements OnInit {
     });
   }
 
+  clearFilters(): void {
+    this.selectedCategory.set('');
+    this.selectedSkillId.set(null);
+    this.searched.set(false);
+    this.loadRandomGroups();
+  }
+
   // ── 7-Day Auto-Cleanup Logic ──
   private cleanupOldGroups(list: GroupDto[]): void {
     const myId = Number(this.authStore.userId());
@@ -523,6 +553,13 @@ export class GroupListPage implements OnInit {
     this.groupService.joinGroup(id).subscribe({
       next: (r) => { this.groups.update(list => list.map(g => g.id === id ? r.data : g)); this.snack.open('Joined group!', 'OK', { duration: 3000 }); },
       error: (e) => this.snack.open(e.error?.message ?? 'Failed to join', 'OK', { duration: 3000 })
+    });
+  }
+
+  leave(id: number): void {
+    this.groupService.leaveGroup(id).subscribe({
+      next: (r) => { this.groups.update(list => list.map(g => g.id === id ? r.data : g)); this.snack.open('Left group.', 'OK', { duration: 3000 }); },
+      error: (e) => this.snack.open(e.error?.message ?? 'Failed to leave', 'OK', { duration: 3000 })
     });
   }
 
