@@ -65,6 +65,10 @@ import { forkJoin } from 'rxjs';
 
       <!-- Groups Grid -->
       @if (groups().length > 0) {
+        <div class="section-header" *ngIf="!searched()">
+          <span class="material-icons">explore</span>
+          <h2>Recommended for You</h2>
+        </div>
         <div class="groups-grid">
           @for (g of groups(); track g.id) {
             <div class="group-card" (click)="router.navigate(['/groups', g.id])">
@@ -129,11 +133,11 @@ import { forkJoin } from 'rxjs';
           <h3>No groups found</h3>
           <p>No groups exist for this skill yet. Be the first to create one!</p>
         </div>
-      } @else if (!searched()) {
-        <div class="hint-state">
-          <div class="hint-icon"><span class="material-icons">group_work</span></div>
-          <h3>Find your learning community</h3>
-          <p>Select a skill above to discover groups</p>
+      } @else if (!searched() && !loading()) {
+        <div class="empty-state">
+          <div class="empty-icon"><span class="material-icons">group_work</span></div>
+          <h3>Welcome to Groups</h3>
+          <p>No groups available yet. Create one to get started!</p>
         </div>
       }
 
@@ -225,14 +229,14 @@ import { forkJoin } from 'rxjs';
     @media (min-width: 640px) { .page { padding: 0 1.5rem; } }
     @media (min-width: 1024px) { .page { padding: 0 2rem; } }
 
-    .page-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; }
-    .page-header h1 { font-size: 1.75rem; font-weight: 800; color: #111827; margin: 0 0 0.25rem; }
-    @media (min-width: 640px) { .page-header h1 { font-size: 1.875rem; } }
-    @media (min-width: 1024px) { .page-header h1 { font-size: 1.75rem; } }
-
     :host-context(.dark) .page-header h1 { color: #f3f4f6; }
     .page-header p { color: #6b7280; font-size: 0.875rem; margin: 0; }
     @media (min-width: 640px) { .page-header p { font-size: 0.875rem; } }
+
+    .section-header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1.25rem; color: #4f46e5; }
+    .section-header .material-icons { font-size: 1.25rem; }
+    .section-header h2 { font-size: 1.125rem; font-weight: 700; margin: 0; }
+    :host-context(.dark) .section-header { color: #818cf8; }
 
     :host-context(.dark) .page-header p { color: #d1d5db; }
     .btn-create { display: flex; align-items: center; gap: 0.375rem; height: 2.75rem; padding: 0 1.25rem; border-radius: 0.75rem; background: linear-gradient(135deg, #4f46e5, #7c3aed); color: white; border: none; font-size: 0.875rem; font-weight: 600; cursor: pointer; box-shadow: 0 4px 12px rgba(79,70,229,0.3); transition: opacity 0.2s; }
@@ -417,7 +421,24 @@ export class GroupListPage implements OnInit {
     return this.skillStore.skills().filter(s => s.category === cat);
   }
 
-  ngOnInit(): void { this.skillStore.loadAll(undefined); }
+  ngOnInit(): void { 
+    this.skillStore.loadAll(undefined); 
+    this.loadRandomGroups();
+  }
+
+  loadRandomGroups(): void {
+    this.loading.set(true);
+    this.groupService.getRandomGroups(10).subscribe({
+      next: (res) => {
+        this.groups.set(res.data ?? []);
+        this.loading.set(false);
+      },
+      error: () => { 
+        this.groups.set([]); 
+        this.loading.set(false); 
+      }
+    });
+  }
 
   onCategoryChange(cat: string): void {
     this.selectedCategory.set(cat);

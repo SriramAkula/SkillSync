@@ -56,6 +56,19 @@ class JwtUtilTest {
     }
 
     @Test
+    void generateRefreshToken_shouldReturnTokenWithTypeRefresh() {
+        String token = jwtUtil.generateRefreshToken(1L, "test@example.com", List.of("ROLE_LEARNER"));
+        assertThat(token).isNotNull().isNotBlank();
+        assertThat(jwtUtil.validateRefreshToken(token)).isTrue();
+    }
+
+    @Test
+    void validateRefreshToken_shouldReturnFalse_forAccessToken() {
+        String accessToken = jwtUtil.generateToken(1L, "test@example.com", List.of("ROLE_LEARNER"));
+        assertThat(jwtUtil.validateRefreshToken(accessToken)).isFalse();
+    }
+
+    @Test
     void isTokenExpired_shouldReturnFalse_forFreshToken() {
         String token = jwtUtil.generateToken(1L, "test@example.com", List.of("ROLE_LEARNER"));
         assertThat(jwtUtil.isTokenExpired(token)).isFalse();

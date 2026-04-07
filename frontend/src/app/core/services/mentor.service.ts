@@ -34,7 +34,7 @@ export class MentorService {
     if (filters.maxExperience != null) params.maxExperience = filters.maxExperience;
     if (filters.maxRate != null) params.maxRate = filters.maxRate;
     if (filters.minRating != null) params.minRating = filters.minRating;
-    
+
     return this.http.get<ApiResponse<MentorProfileDto[]>>(`${this.base}/search`, { params });
   }
 
@@ -75,7 +75,7 @@ export class MentorService {
     const mentors = res.data || [];
     if (mentors.length === 0) return of(res);
 
-    const userRequests = mentors.map(m => 
+    const userRequests = mentors.map(m =>
       this.userService.getProfile(m.userId).pipe(
         map((uRes: ApiResponse<UserProfileDto>) => ({ mentorId: m.id, user: uRes.data })),
         // Silently handle errors for individual profile fetches

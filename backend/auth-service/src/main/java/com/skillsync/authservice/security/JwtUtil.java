@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 
 import com.skillsync.authservice.config.JwtConfig;
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
@@ -23,14 +24,27 @@ public class JwtUtil {
         this.key = Keys.hmacShaKeyFor(jwtConfig.getSecret().getBytes());
     }
 
-    // generate token
+    // generate access token (short-lived: 1 hour)
     public String generateToken(Long userId, String email, List<String> roles) {
         return Jwts.builder()
                 .subject(email)
                 .claim("userId", userId)
-                .claim("roles", roles) 
+                .claim("roles", roles)
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + jwtConfig.getExpiration()))
+                .signWith(key)
+                .compact();
+    }
+
+    // generate refresh token (long-lived: 7 days)
+    public String generateRefreshToken(Long userId, String email, List<String> roles) {
+        return Jwts.builder()
+                .subject(email)
+                .claim("userId", userId)
+                .claim("roles", roles)
+                .claim("type", "refresh")
+                .issuedAt(new Date())
+                .expiration(new Date(System.currentTimeMillis() + jwtConfig.getRefreshExpiration()))
                 .signWith(key)
                 .compact();
     }
@@ -42,6 +56,15 @@ public class JwtUtil {
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();
+    }
+
+    // extract email — works even if token is expired (used for refresh)
+    public String extractEmailIgnoreExpiry(String token) {
+        try {
+            return extractClaims(token).getSubject();
+        } catch (ExpiredJwtException e) {
+            return e.getClaims().getSubject();
+        }
     }
 
     // extract email
@@ -68,6 +91,18 @@ public class JwtUtil {
     public boolean isTokenValid(String token) {
         try {
             return !isTokenExpired(token);
+        } catch (JwtException e) {
+            return false;
+        }
+    }
+
+    // validate refresh token (checks expiry AND type claim)
+    public boolean validateRefreshToken(String token) {
+        try {
+            Claims claims = extractClaims(token);
+            boolean isExpired = claims.getExpiration().before(new Date());
+            String type = claims.get("type", String.class);
+            return !isExpired && "refresh".equals(type);
         } catch (JwtException e) {
             return false;
         }

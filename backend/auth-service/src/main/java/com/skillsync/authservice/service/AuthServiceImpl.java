@@ -127,7 +127,8 @@ public class AuthServiceImpl implements AuthService {
 
         List<String> roles = Arrays.asList(user.getRole().split(","));
         String token = jwtUtil.generateToken(user.getId(), user.getEmail(), roles);
-        return new AuthResponse(token, roles, user.getUsername(), user.getId(), user.getEmail());
+        String refreshToken = jwtUtil.generateRefreshToken(user.getId(), user.getEmail(), roles);
+        return new AuthResponse(token, refreshToken, roles, user.getUsername(), user.getId(), user.getEmail());
     }
 
     @Override
@@ -153,13 +154,15 @@ public class AuthServiceImpl implements AuthService {
 
         List<String> roles = Arrays.asList(user.getRole().split(","));
         String token = jwtUtil.generateToken(user.getId(), user.getEmail(), roles);
+        String refreshToken = jwtUtil.generateRefreshToken(user.getId(), user.getEmail(), roles);
         auditService.log("User", user.getId(), "LOGIN", user.getId().toString(), "email=" + user.getEmail());
-        return new AuthResponse(token, roles, user.getUsername(), user.getId(), user.getEmail());
+        return new AuthResponse(token, refreshToken, roles, user.getUsername(), user.getId(), user.getEmail());
     }
 
     @Override
     public AuthResponse refreshToken(String token) {
-        String email = jwtUtil.extractEmail(token);
+        // extractEmailIgnoreExpiry allows refresh even when access token is expired
+        String email = jwtUtil.extractEmailIgnoreExpiry(token);
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
@@ -168,8 +171,9 @@ public class AuthServiceImpl implements AuthService {
         }
 
         List<String> roles = Arrays.asList(user.getRole().split(","));
-        String newToken = jwtUtil.generateToken(user.getId(), email, roles);
-        return new AuthResponse(newToken, roles, user.getUsername(), user.getId(), user.getEmail());
+        String newAccessToken = jwtUtil.generateToken(user.getId(), email, roles);
+        String newRefreshToken = jwtUtil.generateRefreshToken(user.getId(), email, roles);
+        return new AuthResponse(newAccessToken, newRefreshToken, roles, user.getUsername(), user.getId(), user.getEmail());
     }
 
     // ─────────────────────────────────────────────────────────────

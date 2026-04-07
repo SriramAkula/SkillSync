@@ -177,4 +177,21 @@ public class GroupController {
                 .statusCode(200)
                 .build());
     }
+
+    @GetMapping("/random")
+    @Operation(summary = "Get random groups", description = "Retrieve a list of random active groups")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Random groups retrieved successfully")
+    })
+    public ResponseEntity<ApiResponse<List<GroupResponseDto>>> getRandomGroups(
+            @org.springframework.web.bind.annotation.RequestParam(defaultValue = "10") int limit) {
+        log.info("GET /random?limit={} - Get random groups", limit);
+        List<GroupResponseDto> response = groupService.getRandomGroups(limit);
+        return ResponseEntity.ok(ApiResponse.<List<GroupResponseDto>>builder()
+                .success(true)
+                .data(response)
+                .message("Random groups retrieved successfully")
+                .statusCode(200)
+                .build());
+    }
 }

@@ -12,4 +12,5 @@ public interface GroupService {
     GroupResponseDto joinGroup(Long groupId, Long userId);
     GroupResponseDto leaveGroup(Long groupId, Long userId);
     GroupResponseDto deleteGroup(Long groupId, Long creatorId);
+    List<GroupResponseDto> getRandomGroups(int limit);
 }

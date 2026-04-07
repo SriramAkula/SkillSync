@@ -29,9 +29,11 @@ export class AuthService {
     return localStorage.getItem('token');
   }
 
-  logout(): void {
+  logout(): Observable<ApiResponse<void>> {
     localStorage.removeItem('token');
+    localStorage.removeItem('refreshToken');
     this.tempEmail = null;
+    return this.http.post<ApiResponse<void>>(`${this.base}/logout`, null, { withCredentials: true });
   }
 
   sendOtp(email: string): Observable<ApiResponse<void>> {
@@ -43,17 +45,15 @@ export class AuthService {
   }
 
   register(req: RegisterRequest): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>(`${this.base}/register`, req);
+    return this.http.post<AuthResponse>(`${this.base}/register`, req, { withCredentials: true });
   }
 
   login(req: LoginRequest): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>(`${this.base}/login`, req);
+    return this.http.post<AuthResponse>(`${this.base}/login`, req, { withCredentials: true });
   }
 
-  refreshToken(token: string): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>(`${this.base}/refresh`, null, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
+  refreshToken(): Observable<AuthResponse> {
+    return this.http.post<AuthResponse>(`${this.base}/refresh`, null, { withCredentials: true });
   }
 
   sendForgotPasswordOtp(email: string): Observable<ApiResponse<void>> {
@@ -69,6 +69,6 @@ export class AuthService {
   }
 
   googleLogin(idToken: string): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>(`${this.base}/oauth/google`, { idToken });
+    return this.http.post<AuthResponse>(`${this.base}/oauth/google`, { idToken }, { withCredentials: true });
   }
 }

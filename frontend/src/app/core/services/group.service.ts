@@ -32,4 +32,8 @@ export class GroupService {
   deleteGroup(id: number): Observable<ApiResponse<GroupDto>> {
     return this.http.delete<ApiResponse<GroupDto>>(`${this.base}/${id}`);
   }
+
+  getRandomGroups(limit: number = 10): Observable<ApiResponse<GroupDto[]>> {
+    return this.http.get<ApiResponse<GroupDto[]>>(`${this.base}/random?limit=${limit}`);
+  }
 }

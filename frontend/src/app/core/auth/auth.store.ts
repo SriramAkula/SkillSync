@@ -174,10 +174,8 @@ export const AuthStore = signalStore(
 
     refreshToken: rxMethod<void>(
       pipe(
-        switchMap(() => {
-          const token = store.token();
-          if (!token) return [];
-          return authService.refreshToken(token).pipe(
+        switchMap(() =>
+          authService.refreshToken().pipe(
             tapResponse({
               next: (res) => {
                 persistAuth(res);
@@ -196,15 +194,19 @@ export const AuthStore = signalStore(
                 router.navigate(['/auth/login']);
               }
             })
-          );
-        })
+          )
+        )
       )
     ),
 
     logout(): void {
-      clearAuth();
-      patchState(store, { ...initialState, token: null, userId: null, roles: [], email: null, username: null });
-      router.navigate(['/auth/login']);
+      authService.logout().subscribe({
+        complete: () => {
+          clearAuth();
+          patchState(store, { ...initialState, token: null, userId: null, roles: [], email: null, username: null });
+          router.navigate(['/auth/login']);
+        }
+      });
     },
 
     addRole(role: string): void {
@@ -235,6 +237,7 @@ export const AuthStore = signalStore(
 function persistAuth(res: AuthResponse): void {
   const claims = decodeJwt(res.token);
   localStorage.setItem('token', res.token);
+  // refreshToken is now in HttpOnly cookie - NO LONGER in localStorage
   localStorage.setItem('userId', String(claims.userId ?? res.userId ?? ''));
   localStorage.setItem('email', claims.sub ?? res.email ?? '');
   localStorage.setItem('username', res.username ?? claims.sub ?? '');

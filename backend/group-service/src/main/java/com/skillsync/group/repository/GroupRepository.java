@@ -17,4 +17,7 @@ public interface GroupRepository extends JpaRepository<Group, Long> {
     
     @Query("SELECT g FROM Group g WHERE g.isActive = true ORDER BY g.createdAt DESC")
     List<Group> findAllActiveGroups();
+
+    @Query(value = "SELECT * FROM learning_groups WHERE is_active = true ORDER BY RAND() LIMIT :limit", nativeQuery = true)
+    List<Group> findRandomGroups(@org.springframework.data.repository.query.Param("limit") int limit);
 }

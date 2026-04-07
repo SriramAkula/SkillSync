@@ -51,18 +51,12 @@ function handle401(
 
   isRefreshing = true;
   refreshSubject.next(null);
-  const currentToken = localStorage.getItem('token');
 
-  if (!currentToken) {
-    isRefreshing = false;
-    router.navigate(['/auth/login']);
-    return throwError(() => new Error('No token'));
-  }
-
-  return authService.refreshToken(currentToken).pipe(
+  return authService.refreshToken().pipe(
     switchMap(res => {
       isRefreshing = false;
       localStorage.setItem('token', res.token);
+      // refreshToken is automatically handled by HttpOnly cookie
       refreshSubject.next(res.token);
       return next(addToken(req, res.token));
     }),

@@ -155,4 +155,12 @@ public class GroupServiceImpl implements GroupService {
         log.info("Group {} deleted", groupId);
         return groupMapper.toDto(updated, 0);
     }
+
+    @Override
+    public List<GroupResponseDto> getRandomGroups(int limit) {
+        log.info("Fetching {} random groups", limit);
+        return groupRepository.findRandomGroups(limit).stream()
+                .map(g -> groupMapper.toDto(g, groupMemberRepository.countByGroupId(g.getId())))
+                .collect(Collectors.toList());
+    }
 }

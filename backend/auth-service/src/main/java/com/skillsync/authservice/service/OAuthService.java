@@ -70,12 +70,13 @@ public class OAuthService {
 
         List<String> roles = Arrays.asList(user.getRole().split(","));
         String token = jwtUtil.generateToken(user.getId(), user.getEmail(), roles);
+        String refreshToken = jwtUtil.generateRefreshToken(user.getId(), user.getEmail(), roles);
 
         auditService.log("User", user.getId(), "OAUTH_LOGIN_GOOGLE",
                 user.getId().toString(), "email=" + email);
         log.info("Google OAuth login successful for email={}", email);
 
-        return new AuthResponse(token, roles, user.getUsername(), user.getId(), user.getEmail());
+        return new AuthResponse(token, refreshToken, roles, user.getUsername(), user.getId(), user.getEmail());
     }
 
     // ─────────────────────────────────────────────────────────────

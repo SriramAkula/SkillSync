@@ -9,6 +9,7 @@ export interface ApiResponse<T> {
 // ─── Auth ──────────────────────────────────────────────────────────────────
 export interface AuthResponse {
   token: string;
+  refreshToken?: string;
   roles: string[];
   userId?: number;
   email?: string;
