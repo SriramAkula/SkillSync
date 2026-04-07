@@ -200,13 +200,13 @@ export const AuthStore = signalStore(
     ),
 
     logout(): void {
-      authService.logout().subscribe({
-        complete: () => {
-          clearAuth();
-          patchState(store, { ...initialState, token: null, userId: null, roles: [], email: null, username: null });
-          router.navigate(['/auth/login']);
-        }
-      });
+      // Clear state immediately and navigate
+      clearAuth();
+      patchState(store, { ...initialState, token: null, userId: null, roles: [], email: null, username: null });
+      router.navigate(['/auth/login']);
+      
+      // Fire and forget backend call
+      authService.logout().subscribe();
     },
 
     addRole(role: string): void {

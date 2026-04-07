@@ -131,10 +131,6 @@ class GroupServiceTest {
 
     @Test
     void deleteGroup_ShouldDeactivateGroup() {
-        GroupResponseDto deletedResponse = GroupResponseDto.builder()
-                .id(1L).creatorId(100L).name("Java Group").skillId(10L)
-                .maxMembers(5).currentMembers(0).isActive(false)
-                .createdAt(LocalDateTime.now()).updatedAt(LocalDateTime.now()).build();
         when(groupRepository.findById(1L)).thenReturn(Optional.of(group));
         when(groupRepository.save(group)).thenReturn(group);
         when(groupMemberRepository.findByGroupId(1L)).thenReturn(List.of());

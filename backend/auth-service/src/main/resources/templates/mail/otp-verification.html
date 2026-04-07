@@ -1,0 +1,7 @@
+<div th:fragment="content" xmlns:th="http://www.thymeleaf.org">
+    <h2>Verify Your Email</h2>
+    <p>Welcome to <span class="highlight">SkillSync</span>! To complete your registration, please use the following verification code:</p>
+    <div class="otp-box" th:text="${otp}">123456</div>
+    <p>This code is valid for <span th:text="${ttl}">5</span> minutes. If you did not request this code, you can safely ignore this email.</p>
+    <p>Happy learning,<br>The SkillSync Team</p>
+</div>

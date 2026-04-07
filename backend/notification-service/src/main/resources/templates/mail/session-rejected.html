@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+    <div th:fragment="content">
+        <h2 style="color: #ef4444; font-weight: 700;">Your Session Request Was Rejected</h2>
+        <p>Hello <span class="highlight" th:text="${learnerName}">Learner</span>,</p>
+        <p>Unfortunately, your session request has been rejected.</p>
+        <div style="background-color: #fef2f2; padding: 20px; border-radius: 8px; border: 1px solid #fee2e2; margin: 20px 0;">
+            <p style="margin: 0;"><strong>Rejection Reason:</strong></p>
+            <p style="margin: 10px 0 0 0; color: #b91c1c; font-style: italic;" th:text="${reason}">Reason not specified.</p>
+        </div>
+        <p>You can browse other sessions or mentors available on SkillSync.</p>
+        <a href="http://localhost:3000/mentors" class="button" style="background-color: #ef4444;">Browse Mentors</a>
+    </div>
+</body>
+</html>

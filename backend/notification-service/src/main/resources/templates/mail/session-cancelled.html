@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+    <div th:fragment="content">
+        <h2 style="color: #ef4444; font-weight: 700;">A Scheduled Session Has Been Cancelled</h2>
+        <p>Hello <span class="highlight" th:text="${userName}">User</span>,</p>
+        <p>We're writing to inform you that the scheduled session has been cancelled.</p>
+        <div style="background-color: #fef2f2; padding: 20px; border-radius: 8px; border: 1px solid #fee2e2; margin: 20px 0;">
+            <p style="margin: 0;"><strong>Cancellation Notice:</strong></p>
+            <p style="margin: 10px 0 0 0; color: #b91c1c;">Your scheduled session has been cancelled.</p>
+        </div>
+        <p>If you have any questions, please contact our support team.</p>
+        <a href="http://localhost:3000/support" class="button" style="background-color: #ef4444;">Contact Support</a>
+    </div>
+</body>
+</html>

@@ -4,10 +4,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
+import org.thymeleaf.context.Context;
+import org.thymeleaf.spring6.SpringTemplateEngine;
 
+import jakarta.mail.MessagingException;
+import jakarta.mail.internet.MimeMessage;
 import java.security.SecureRandom;
 import java.util.concurrent.TimeUnit;
 
@@ -30,25 +34,30 @@ public class OtpService {
     @Value("${otp.pwd-reset.ttl.minutes:10}")
     private long pwdResetTtlMinutes;
 
+    @Value("${spring.mail.username}")
+    private String fromEmail;
+
     private final RedisTemplate<String, String> redisTemplate;
     private final JavaMailSender mailSender;
+    private final SpringTemplateEngine templateEngine;
 
-    public OtpService(RedisTemplate<String, String> redisTemplate, JavaMailSender mailSender) {
+    public OtpService(RedisTemplate<String, String> redisTemplate, JavaMailSender mailSender, SpringTemplateEngine templateEngine) {
         this.redisTemplate = redisTemplate;
         this.mailSender = mailSender;
+        this.templateEngine = templateEngine;
     }
 
     public void sendOtp(String email) {
         String otp = String.format("%06d", new SecureRandom().nextInt(999999));
         redisTemplate.opsForValue().set(OTP_PREFIX + email, otp, otpTtlMinutes, TimeUnit.MINUTES);
 
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setTo(email);
-        message.setSubject("SkillSync - Email Verification OTP");
-        message.setText("Your OTP for SkillSync registration is: " + otp +
-                "\n\nThis OTP is valid for " + otpTtlMinutes + " minutes. Do not share it with anyone.");
-        mailSender.send(message);
-        log.info("OTP sent to email={}", email);
+        try {
+            sendHtmlEmail(email, "SkillSync - Email Verification OTP", "otp-verification", otp, otpTtlMinutes);
+            log.info("Registration OTP sent to email={}", email);
+        } catch (MessagingException e) {
+            log.error("Failed to send registration OTP to email={}: {}", email, e.getMessage());
+            throw new RuntimeException("Failed to send email. Please try again later.");
+        }
     }
 
     public boolean verifyOtp(String email, String otp) {
@@ -84,14 +93,13 @@ public class OtpService {
         String otp = String.format("%06d", new SecureRandom().nextInt(999999));
         redisTemplate.opsForValue().set(PWD_OTP_PREFIX + email, otp, otpTtlMinutes, TimeUnit.MINUTES);
 
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setTo(email);
-        message.setSubject("SkillSync - Password Reset OTP");
-        message.setText("Your OTP to reset your SkillSync password is: " + otp +
-                "\n\nThis OTP is valid for " + otpTtlMinutes + " minutes." +
-                "\nIf you did not request this, please ignore this email.");
-        mailSender.send(message);
-        log.info("Password reset OTP sent to email={}", email);
+        try {
+            sendHtmlEmail(email, "SkillSync - Password Reset OTP", "password-reset", otp, otpTtlMinutes);
+            log.info("Password reset OTP sent to email={}", email);
+        } catch (MessagingException e) {
+            log.error("Failed to send password reset OTP to email={}: {}", email, e.getMessage());
+            throw new RuntimeException("Failed to send email. Please try again later.");
+        }
     }
 
     public boolean verifyPasswordResetOtp(String email, String otp) {
@@ -121,5 +129,24 @@ public class OtpService {
 
     public void clearPasswordResetVerification(String email) {
         redisTemplate.delete(PWD_RESET_PREFIX + email);
+    }
+
+    private void sendHtmlEmail(String to, String subject, String templateName, String otp, long ttl) throws MessagingException {
+        MimeMessage mimeMessage = mailSender.createMimeMessage();
+        MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
+
+        Context context = new Context();
+        context.setVariable("template", templateName);
+        context.setVariable("otp", otp);
+        context.setVariable("ttl", ttl);
+
+        String htmlContent = templateEngine.process("base-layout", context);
+
+        helper.setFrom(fromEmail, "SkillSync Team");
+        helper.setTo(to);
+        helper.setSubject(subject);
+        helper.setText(htmlContent, true);
+
+        mailSender.send(mimeMessage);
     }
 }

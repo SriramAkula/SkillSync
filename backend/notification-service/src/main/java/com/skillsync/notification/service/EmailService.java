@@ -13,9 +13,14 @@ import com.skillsync.notification.event.ReviewSubmittedEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
+import org.thymeleaf.TemplateEngine;
+import org.thymeleaf.context.Context;
+
+import jakarta.mail.MessagingException;
+import jakarta.mail.internet.MimeMessage;
 
 @Service
 public class EmailService {
@@ -26,10 +31,33 @@ public class EmailService {
     private JavaMailSender mailSender;
     
     @Autowired
+    private TemplateEngine templateEngine;
+    
+    @Autowired
     private UserServiceClient userServiceClient;
     
     @Autowired
     private MentorServiceClient mentorServiceClient;
+
+    private void sendHtmlEmail(String to, String subject, String templateName, Context context) {
+        try {
+            MimeMessage mimeMessage = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
+            
+            // Set the main layout template and the content fragment
+            context.setVariable("template", templateName);
+            String htmlContent = templateEngine.process("base-layout", context);
+            
+            helper.setTo(to);
+            helper.setSubject(subject);
+            helper.setText(htmlContent, true);
+            
+            mailSender.send(mimeMessage);
+            log.info("HTML email '{}' sent successfully to {}", subject, to);
+        } catch (MessagingException e) {
+            log.error("Failed to send HTML email {}: {}", subject, e.getMessage());
+        }
+    }
     
     /**
      * Fetch email for a regular user (learner, admin, or any non-mentor context)
@@ -79,22 +107,16 @@ public class EmailService {
     
     public void sendSessionRequestEmail(SessionRequestedEvent event) {
         try {
-            // Use mentor service to fetch mentor email
             String mentorEmail = getEmailForMentor(event.getMentorId());
-            if (mentorEmail == null) {
-                log.warn("No email found for mentor {}", event.getMentorId());
-                return;
-            }
+            if (mentorEmail == null) return;
             
-            SimpleMailMessage message = new SimpleMailMessage();
-            message.setTo(mentorEmail);
-            message.setSubject("New Session Request");
-            message.setText("You have received a new session request scheduled for " + event.getScheduledAt() + 
-                           " for " + event.getDurationMinutes() + " minutes.");
+            Context context = new Context();
+            context.setVariable("mentorName", "Mentor"); // Could fetch actual name if needed
+            context.setVariable("learnerName", "a student");
+            context.setVariable("scheduledAt", event.getScheduledAt());
+            context.setVariable("durationMinutes", event.getDurationMinutes());
             
-            mailSender.send(message);
-            
-            log.info("Session request email sent to mentor {} ({})", event.getMentorId(), mentorEmail);
+            sendHtmlEmail(mentorEmail, "New Session Request - SkillSync", "session-request", context);
         } catch (Exception e) {
             log.error("Failed to send session request email: {}", e.getMessage());
         }
@@ -103,19 +125,12 @@ public class EmailService {
     public void sendMentorApprovedEmail(MentorApprovedEvent event) {
         try {
             String userEmail = getEmailForUser(event.getUserId());
-            if (userEmail == null) {
-                log.warn("No email found for user {}", event.getUserId());
-                return;
-            }
+            if (userEmail == null) return;
             
-            SimpleMailMessage message = new SimpleMailMessage();
-            message.setTo(userEmail);
-            message.setSubject("Mentor Application Approved");
-            message.setText("Congratulations! Your mentor application has been approved. You can now start accepting sessions.");
+            Context context = new Context();
+            context.setVariable("userName", "Mentor");
             
-            mailSender.send(message);
-            
-            log.info("Mentor approved email sent to user {} ({})", event.getUserId(), userEmail);
+            sendHtmlEmail(userEmail, "Your Mentor Application is Approved! - SkillSync", "mentor-approved", context);
         } catch (Exception e) {
             log.error("Failed to send mentor approved email: {}", e.getMessage());
         }
@@ -123,21 +138,15 @@ public class EmailService {
     
     public void sendReviewNotificationEmail(ReviewSubmittedEvent event) {
         try {
-            // Use mentor service to fetch mentor email
             String mentorEmail = getEmailForMentor(event.getMentorId());
-            if (mentorEmail == null) {
-                log.warn("No email found for mentor {}", event.getMentorId());
-                return;
-            }
+            if (mentorEmail == null) return;
             
-            SimpleMailMessage message = new SimpleMailMessage();
-            message.setTo(mentorEmail);
-            message.setSubject("New Review Received - " + event.getRating() + " Stars");
-            message.setText("You received a new " + event.getRating() + "-star review.\n\nComment: " + event.getComment());
+            Context context = new Context();
+            context.setVariable("mentorName", "Mentor");
+            context.setVariable("rating", event.getRating());
+            context.setVariable("comment", event.getComment());
             
-            mailSender.send(message);
-            
-            log.info("Review notification email sent to mentor {} ({})", event.getMentorId(), mentorEmail);
+            sendHtmlEmail(mentorEmail, "New Review Received - SkillSync", "review-notification", context);
         } catch (Exception e) {
             log.error("Failed to send review notification email: {}", e.getMessage());
         }
@@ -146,19 +155,12 @@ public class EmailService {
     public void sendSessionAcceptedEmail(SessionAcceptedEvent event) {
         try {
             String learnerEmail = getEmailForUser(event.getLearnerId());
-            if (learnerEmail == null) {
-                log.warn("No email found for learner {}", event.getLearnerId());
-                return;
-            }
+            if (learnerEmail == null) return;
             
-            SimpleMailMessage message = new SimpleMailMessage();
-            message.setTo(learnerEmail);
-            message.setSubject("Your Session Has Been Accepted!");
-            message.setText("Good news! The mentor has accepted your session request. Your session is now confirmed.");
+            Context context = new Context();
+            context.setVariable("learnerName", "Student");
             
-            mailSender.send(message);
-            
-            log.info("Session accepted email sent to learner {} ({})", event.getLearnerId(), learnerEmail);
+            sendHtmlEmail(learnerEmail, "Your Session has been Accepted! - SkillSync", "session-accepted", context);
         } catch (Exception e) {
             log.error("Failed to send session accepted email: {}", e.getMessage());
         }
@@ -167,20 +169,13 @@ public class EmailService {
     public void sendSessionRejectedEmail(SessionRejectedEvent event) {
         try {
             String learnerEmail = getEmailForUser(event.getLearnerId());
-            if (learnerEmail == null) {
-                log.warn("No email found for learner {}", event.getLearnerId());
-                return;
-            }
+            if (learnerEmail == null) return;
             
-            SimpleMailMessage message = new SimpleMailMessage();
-            message.setTo(learnerEmail);
-            message.setSubject("Your Session Request Was Rejected");
-            message.setText("Unfortunately, your session request was rejected.\n\nReason: " + event.getRejectionReason() + 
-                           "\n\nPlease try requesting another session with this or another mentor.");
+            Context context = new Context();
+            context.setVariable("learnerName", "Student");
+            context.setVariable("reason", event.getRejectionReason());
             
-            mailSender.send(message);
-            
-            log.info("Session rejected email sent to learner {} ({})", event.getLearnerId(), learnerEmail);
+            sendHtmlEmail(learnerEmail, "Update on Your Session Request - SkillSync", "session-rejected", context);
         } catch (Exception e) {
             log.error("Failed to send session rejected email: {}", e.getMessage());
         }
@@ -191,31 +186,18 @@ public class EmailService {
             String mentorEmail = getEmailForUser(event.getMentorId());
             String learnerEmail = getEmailForUser(event.getLearnerId());
             
-            if (mentorEmail == null && learnerEmail == null) {
-                log.warn("No emails found for mentor {} or learner {}", event.getMentorId(), event.getLearnerId());
-                return;
-            }
+            if (mentorEmail == null && learnerEmail == null) return;
             
-            // Email to mentor
+            Context context = new Context();
+
             if (mentorEmail != null) {
-                SimpleMailMessage mentorMessage = new SimpleMailMessage();
-                mentorMessage.setTo(mentorEmail);
-                mentorMessage.setSubject("A Scheduled Session Has Been Cancelled");
-                mentorMessage.setText("A session you agreed to has been cancelled.");
-                
-                mailSender.send(mentorMessage);
-                log.info("Session cancelled email sent to mentor {} ({})", event.getMentorId(), mentorEmail);
+                context.setVariable("userName", "Mentor");
+                sendHtmlEmail(mentorEmail, "Session Cancellation Notification - SkillSync", "session-cancelled", context);
             }
             
-            // Email to learner
             if (learnerEmail != null) {
-                SimpleMailMessage learnerMessage = new SimpleMailMessage();
-                learnerMessage.setTo(learnerEmail);
-                learnerMessage.setSubject("Your Session Has Been Cancelled");
-                learnerMessage.setText("Your scheduled session has been cancelled. Please book another session if needed.");
-                
-                mailSender.send(learnerMessage);
-                log.info("Session cancelled email sent to learner {} ({})", event.getLearnerId(), learnerEmail);
+                context.setVariable("userName", "Learner");
+                sendHtmlEmail(learnerEmail, "Session Cancellation Notification - SkillSync", "session-cancelled", context);
             }
         } catch (Exception e) {
             log.error("Failed to send session cancelled email: {}", e.getMessage());

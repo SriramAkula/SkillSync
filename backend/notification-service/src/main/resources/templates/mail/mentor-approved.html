@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+    <div th:fragment="content">
+        <h2 style="font-weight: 700;">Mentor Application Approved</h2>
+        <p>Congratulations, <span class="highlight" th:text="${userName}">User</span>!</p>
+        <p>Your application to become a mentor on SkillSync has been approved. You're now part of our exclusive community of experts.</p>
+        <div style="background-color: #f9fafb; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #4f46e5;">
+            <p style="margin: 0;"><strong>Start accepting sessions today!</strong></p>
+        </div>
+        <p>Please log in to your mentor dashboard to set up your profile and availability.</p>
+        <a href="http://localhost:3000/mentor/dashboard" class="button">Go to Dashboard</a>
+    </div>
+</body>
+</html>

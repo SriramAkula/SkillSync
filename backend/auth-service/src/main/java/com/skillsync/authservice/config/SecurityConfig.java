@@ -48,7 +48,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(authz -> authz
                 // Public endpoints - use /auth paths (API Gateway strips /api prefix)
                 .requestMatchers("/auth/register", "/auth/login", "/auth/refresh",
-                        "/auth/send-otp", "/auth/verify-otp",
+                        "/auth/logout", "/auth/send-otp", "/auth/verify-otp",
                         "/auth/forgot-password", "/auth/verify-forgot-password", "/auth/reset-password",
                         "/auth/oauth/google").permitAll()
                 .requestMatchers("/internal/**").permitAll()

@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+    <div th:fragment="content">
+        <h2 style="color: #059669; font-weight: 700;">Your Session Has Been Accepted!</h2>
+        <p>Hello <span class="highlight" th:text="${learnerName}">Learner</span>,</p>
+        <p>Good news! Your session request has been accepted by the mentor.</p>
+        <p>Please make sure to be available at the scheduled time. You can find the joining link and session details in your dashboard.</p>
+        <a href="http://localhost:3000/my-sessions" class="button" style="background-color: #059669;">View Sessions</a>
+    </div>
+</body>
+</html>

@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+    <div th:fragment="content">
+        <h2 style="font-weight: 700;">New Session Request</h2>
+        <p>Hello <span class="highlight" th:text="${mentorName}">Mentor</span>,</p>
+        <p>You have received a new session request from <span class="highlight" th:text="${learnerName}">Learner</span>.</p>
+        <div style="background-color: #f9fafb; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <p style="margin: 0;"><strong>Scheduled For:</strong> <span th:text="${scheduledAt}">Today</span></p>
+            <p style="margin: 10px 0 0 0;"><strong>Duration:</strong> <span th:text="${durationMinutes}">60</span> minutes</p>
+        </div>
+        <p>Please log in to your dashboard to accept or reject this request.</p>
+        <a href="http://localhost:3000/dashboard" class="button">View Dashboard</a>
+    </div>
+</body>
+</html>

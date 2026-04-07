@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+    <div th:fragment="content">
+        <h2 style="font-weight: 700;">New Review Received</h2>
+        <p>Hello <span class="highlight" th:text="${mentorName}">Mentor</span>,</p>
+        <p>A student has just submitted a review for your session.</p>
+        <div style="background-color: #f9fafb; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center;">
+            <p style="font-size: 24px; color: #fbbf24; margin: 0;">
+                <th:block th:each="i : ${#numbers.sequence(1, rating)}">★</th:block>
+            </p>
+            <p style="font-weight: 700; margin: 5px 0 0 0;"><span th:text="${rating}">5</span> Stars</p>
+        </div>
+        <p><strong>Comment:</strong></p>
+        <div style="font-style: italic; color: #4b5563; padding: 15px; background-color: #f3f4f6; border-radius: 8px; margin-bottom: 20px;">
+            <p th:text="${comment}">No comment provided.</p>
+        </div>
+        <p>Your feedback helps us maintain a high standard of quality on SkillSync.</p>
+        <a href="http://localhost:3000/profile" class="button">View My Reviews</a>
+    </div>
+</body>
+</html>

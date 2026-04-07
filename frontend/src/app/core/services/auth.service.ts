@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, finalize } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import {
   ApiResponse, AuthResponse, LoginRequest, RegisterRequest,
@@ -30,10 +30,14 @@ export class AuthService {
   }
 
   logout(): Observable<ApiResponse<void>> {
-    localStorage.removeItem('token');
-    localStorage.removeItem('refreshToken');
-    this.tempEmail = null;
-    return this.http.post<ApiResponse<void>>(`${this.base}/logout`, null, { withCredentials: true });
+    return this.http.post<ApiResponse<void>>(`${this.base}/logout`, null, { withCredentials: true })
+      .pipe(
+        finalize(() => {
+          localStorage.removeItem('token');
+          localStorage.removeItem('refreshToken');
+          this.tempEmail = null;
+        })
+      );
   }
 
   sendOtp(email: string): Observable<ApiResponse<void>> {
