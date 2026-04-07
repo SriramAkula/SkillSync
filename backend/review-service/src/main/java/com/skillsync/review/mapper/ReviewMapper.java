@@ -43,12 +43,13 @@ public class ReviewMapper {
                 .build();
     }
 
-    // avgRating + totalReviews -> MentorRatingDto
-    public MentorRatingDto toRatingDto(Long mentorId, Double avgRating, Integer totalReviews) {
+    // avgRating + totalReviews + totalLearners -> MentorRatingDto
+    public MentorRatingDto toRatingDto(Long mentorId, Double avgRating, Integer totalReviews, Integer totalLearners) {
         return MentorRatingDto.builder()
                 .mentorId(mentorId)
                 .averageRating(avgRating != null ? avgRating : 0.0)
                 .totalReviews(totalReviews != null ? totalReviews : 0)
+                .totalLearners(totalLearners != null ? totalLearners : 0)
                 .build();
     }
 }

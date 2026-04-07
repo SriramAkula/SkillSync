@@ -37,11 +37,15 @@ public class GatewayRequestFilter extends OncePerRequestFilter {
         }
 
         String gatewayHeader = request.getHeader("X-Gateway-Request");
+        String serviceAuth = request.getHeader("X-Service-Auth");
 
-        if (gatewayHeader == null) {
+        boolean isGatewayRequest = gatewayHeader != null;
+        boolean isInternalServiceRequest = "true".equals(serviceAuth);
+
+        if (!isGatewayRequest && !isInternalServiceRequest) {
             response.setStatus(HttpServletResponse.SC_FORBIDDEN);
             response.setContentType("text/plain");
-            response.getWriter().write("Access Denied: Use API Gateway");
+            response.getWriter().write("Access Denied: Request must come through API Gateway or be an authorized internal service call");
             response.getWriter().flush(); 
             response.getWriter().close();
             return;

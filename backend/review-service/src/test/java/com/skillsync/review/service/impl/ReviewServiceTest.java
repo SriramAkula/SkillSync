@@ -108,10 +108,11 @@ class ReviewServiceTest {
     @Test
     void getMentorRating_ShouldReturnCorrectStats() {
         MentorRatingDto ratingDto = MentorRatingDto.builder()
-                .mentorId(100L).averageRating(4.567).totalReviews(10).build();
+                .mentorId(100L).averageRating(4.567).totalReviews(10).totalLearners(5).build();
         when(reviewRepository.getAverageRating(100L)).thenReturn(4.567);
         when(reviewRepository.getTotalReviewCount(100L)).thenReturn(10);
-        when(reviewMapper.toRatingDto(100L, 4.567, 10)).thenReturn(ratingDto);
+        when(reviewRepository.getTotalLearnerCount(100L)).thenReturn(5);
+        when(reviewMapper.toRatingDto(100L, 4.567, 10, 5)).thenReturn(ratingDto);
 
         MentorRatingDto rating = reviewService.getMentorRating(100L);
 

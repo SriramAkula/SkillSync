@@ -43,10 +43,10 @@ public class MentorServiceImpl implements MentorService {
 
     @Autowired
     public MentorServiceImpl(MentorRepository mentorRepository,
-                             AuthServiceClient authServiceClient,
-                             MentorMapper mentorMapper,
-                             AuditService auditService,
-                             RabbitTemplate rabbitTemplate) {
+            AuthServiceClient authServiceClient,
+            MentorMapper mentorMapper,
+            AuditService auditService,
+            RabbitTemplate rabbitTemplate) {
         this.mentorRepository = mentorRepository;
         this.authServiceClient = authServiceClient;
         this.mentorMapper = mentorMapper;
@@ -76,7 +76,7 @@ public class MentorServiceImpl implements MentorService {
     @Cacheable(key = "#mentorId")
     public MentorProfileResponseDto getMentorProfile(Long mentorId) {
         log.info("Cache MISS - fetching mentorId={} from DB", mentorId);
-        
+
         // Try finding by primary key (Mentor Internal ID)
         MentorProfile profile = mentorRepository.findById(mentorId)
                 .orElseGet(() -> {
@@ -88,7 +88,7 @@ public class MentorServiceImpl implements MentorService {
         if (profile == null) {
             throw new MentorNotFoundException("Mentor not found with ID or UserID: " + mentorId);
         }
-        
+
         return mentorMapper.toDto(profile);
     }
 
@@ -126,8 +126,10 @@ public class MentorServiceImpl implements MentorService {
     }
 
     @Override
-    public List<MentorProfileResponseDto> searchMentorsWithFilters(String skill, Integer minExperience, Integer maxExperience, Double maxRate, Double minRating) {
-        log.info("Searching mentors by skill={}, exp={}-{}, rate={}, rating={}", skill, minExperience, maxExperience, maxRate, minRating);
+    public List<MentorProfileResponseDto> searchMentorsWithFilters(String skill, Integer minExperience,
+            Integer maxExperience, Double maxRate, Double minRating) {
+        log.info("Searching mentors by skill={}, exp={}-{}, rate={}, rating={}", skill, minExperience, maxExperience,
+                maxRate, minRating);
         return mentorRepository.searchMentorsWithFilters(skill, minExperience, maxExperience, maxRate, minRating)
                 .stream().map(mentorMapper::toDto).collect(Collectors.toList());
     }
@@ -146,7 +148,8 @@ public class MentorServiceImpl implements MentorService {
         profile.setApprovalDate(LocalDateTime.now());
 
         try {
-            // Headers (X-Service-Auth, X-Internal-Service) are automatically added by FeignConfig interceptor
+            // Headers (X-Service-Auth, X-Internal-Service) are automatically added by
+            // FeignConfig interceptor
             authServiceClient.addUserRole(profile.getUserId(), "ROLE_MENTOR");
         } catch (Exception e) {
             log.warn("Failed to update role via Feign for userId {}: {}", profile.getUserId(), e.getMessage());
@@ -156,7 +159,8 @@ public class MentorServiceImpl implements MentorService {
         auditService.log("MentorProfile", mentorId, "APPROVE", adminId.toString(), "approvedBy=" + adminId);
 
         try {
-            MentorApprovedEvent event = new MentorApprovedEvent(mentorId, profile.getUserId(), profile.getSpecialization());
+            MentorApprovedEvent event = new MentorApprovedEvent(mentorId, profile.getUserId(),
+                    profile.getSpecialization());
             rabbitTemplate.convertAndSend("mentor.exchange", "mentor.approved", event);
             log.info("Published MENTOR_APPROVED event for mentorId={} userId={}", mentorId, profile.getUserId());
         } catch (Exception e) {

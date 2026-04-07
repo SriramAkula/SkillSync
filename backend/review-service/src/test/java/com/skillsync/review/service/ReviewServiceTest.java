@@ -144,10 +144,11 @@ class ReviewServiceTest {
     @Test
     void getMentorRating_shouldReturnRating_whenReviewsExist() {
         MentorRatingDto ratingDto = MentorRatingDto.builder()
-                .mentorId(5L).averageRating(4.2).totalReviews(10).build();
+                .mentorId(5L).averageRating(4.2).totalReviews(10).totalLearners(3).build();
         when(reviewRepository.getAverageRating(5L)).thenReturn(4.2);
         when(reviewRepository.getTotalReviewCount(5L)).thenReturn(10);
-        when(reviewMapper.toRatingDto(5L, 4.2, 10)).thenReturn(ratingDto);
+        when(reviewRepository.getTotalLearnerCount(5L)).thenReturn(3);
+        when(reviewMapper.toRatingDto(5L, 4.2, 10, 3)).thenReturn(ratingDto);
 
         MentorRatingDto result = reviewService.getMentorRating(5L);
 
@@ -158,10 +159,11 @@ class ReviewServiceTest {
     @Test
     void getMentorRating_shouldReturnZero_whenNoReviews() {
         MentorRatingDto ratingDto = MentorRatingDto.builder()
-                .mentorId(5L).averageRating(0.0).totalReviews(0).build();
+                .mentorId(5L).averageRating(0.0).totalReviews(0).totalLearners(0).build();
         when(reviewRepository.getAverageRating(5L)).thenReturn(null);
         when(reviewRepository.getTotalReviewCount(5L)).thenReturn(0);
-        when(reviewMapper.toRatingDto(5L, null, 0)).thenReturn(ratingDto);
+        when(reviewRepository.getTotalLearnerCount(5L)).thenReturn(0);
+        when(reviewMapper.toRatingDto(5L, null, 0, 0)).thenReturn(ratingDto);
 
         MentorRatingDto result = reviewService.getMentorRating(5L);
 

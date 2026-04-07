@@ -32,8 +32,8 @@ public class ReviewServiceImpl implements ReviewService {
     private final ReviewMapper reviewMapper;
 
     public ReviewServiceImpl(ReviewRepository reviewRepository,
-                             MentorServiceClient mentorServiceClient,
-                             ReviewMapper reviewMapper) {
+            MentorServiceClient mentorServiceClient,
+            ReviewMapper reviewMapper) {
         this.reviewRepository = reviewRepository;
         this.mentorServiceClient = mentorServiceClient;
         this.reviewMapper = reviewMapper;
@@ -84,7 +84,8 @@ public class ReviewServiceImpl implements ReviewService {
         log.info("Cache MISS - fetching rating for mentorId={} from DB", mentorId);
         Double avgRating = reviewRepository.getAverageRating(mentorId);
         Integer totalReviews = reviewRepository.getTotalReviewCount(mentorId);
-        return reviewMapper.toRatingDto(mentorId, avgRating, totalReviews);
+        Integer totalLearners = reviewRepository.getTotalLearnerCount(mentorId);
+        return reviewMapper.toRatingDto(mentorId, avgRating, totalReviews, totalLearners);
     }
 
     @Override
