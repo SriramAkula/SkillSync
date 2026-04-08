@@ -9,6 +9,7 @@ TAG="latest"
 
 SERVICES=(
   "eureka-server"
+  "config-server"
   "api-gateway"
   "auth-service"
   "user-service"
