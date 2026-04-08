@@ -12,6 +12,7 @@ import org.thymeleaf.spring6.SpringTemplateEngine;
 
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
+import java.io.UnsupportedEncodingException;
 import java.security.SecureRandom;
 import java.util.concurrent.TimeUnit;
 
@@ -54,7 +55,7 @@ public class OtpService {
         try {
             sendHtmlEmail(email, "SkillSync - Email Verification OTP", "otp-verification", otp, otpTtlMinutes);
             log.info("Registration OTP sent to email={}", email);
-        } catch (MessagingException e) {
+        } catch (MessagingException | UnsupportedEncodingException e) {
             log.error("Failed to send registration OTP to email={}: {}", email, e.getMessage());
             throw new RuntimeException("Failed to send email. Please try again later.");
         }
@@ -96,7 +97,7 @@ public class OtpService {
         try {
             sendHtmlEmail(email, "SkillSync - Password Reset OTP", "password-reset", otp, otpTtlMinutes);
             log.info("Password reset OTP sent to email={}", email);
-        } catch (MessagingException e) {
+        } catch (MessagingException | UnsupportedEncodingException e) {
             log.error("Failed to send password reset OTP to email={}: {}", email, e.getMessage());
             throw new RuntimeException("Failed to send email. Please try again later.");
         }
@@ -131,7 +132,7 @@ public class OtpService {
         redisTemplate.delete(PWD_RESET_PREFIX + email);
     }
 
-    private void sendHtmlEmail(String to, String subject, String templateName, String otp, long ttl) throws MessagingException {
+    private void sendHtmlEmail(String to, String subject, String templateName, String otp, long ttl) throws MessagingException, UnsupportedEncodingException {
         MimeMessage mimeMessage = mailSender.createMimeMessage();
         MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
 
