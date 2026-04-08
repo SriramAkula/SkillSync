@@ -31,29 +31,7 @@ interface UserActivity {
   template: `
     <div class="min-h-screen bg-slate-50 dark:bg-slate-950 selection:bg-indigo-100 dark:selection:bg-indigo-500/30 selection:text-indigo-900 dark:selection:text-indigo-100 transition-colors duration-500" [class.edit-mode]="isEditing()">
       
-      <!-- Theme-Aware Nav Sync -->
-      <nav class="fixed top-0 left-0 right-0 z-[50] bg-white dark:bg-slate-950 h-20 px-6 lg:px-10 flex items-center justify-between border-b border-slate-200 dark:border-slate-800 transition-colors">
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-100 dark:shadow-none">
-            <span class="material-icons text-white">auto_awesome</span>
-          </div>
-          <span class="text-2xl font-bold tracking-tight text-slate-800 dark:text-slate-100">SkillSync</span>
-        </div>
-        
-        <div class="flex items-center gap-4">
-           <div class="hidden sm:flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-full shadow-sm cursor-pointer hover:border-indigo-500 transition-all font-bold text-xs" 
-                (click)="toggleVisibility()">
-              <span class="material-icons text-indigo-500 text-sm">{{ isPrivate() ? 'lock' : 'public' }}</span>
-              <span class="uppercase tracking-widest text-slate-600 dark:text-slate-400">{{ isPrivate() ? 'Private' : 'Public' }}</span>
-           </div>
-           <button class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-xl text-sm font-bold shadow-xl shadow-indigo-100 dark:shadow-none transition-all active:scale-95 flex items-center gap-2" (click)="logout()">
-             <span class="material-icons text-sm">logout</span>
-             <span>Sign Out</span>
-           </button>
-        </div>
-      </nav>
-
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-20 sm:pb-32">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20 sm:pb-32">
         
         <!-- Header Section -->
         <div class="text-center mb-8 sm:mb-16 relative">
@@ -128,14 +106,10 @@ interface UserActivity {
               </div>
             </div>
 
-            <div class="grid grid-cols-2 gap-3 sm:gap-4">
+            <div class="grid grid-cols-1 gap-3 sm:gap-4">
                <div class="bg-white dark:bg-slate-900 p-3 sm:p-5 rounded-2xl sm:rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col items-center gap-1 transition-colors">
                  <span class="text-slate-400 dark:text-slate-500 text-[9px] sm:text-[10px] font-black uppercase tracking-widest">Joined</span>
                  <span class="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200 transition-colors text-center">{{ profile()?.createdAt | date:'MMM yyyy' }}</span>
-               </div>
-               <div class="bg-white dark:bg-slate-900 p-3 sm:p-5 rounded-2xl sm:rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col items-center gap-1 transition-colors">
-                 <span class="text-slate-400 dark:text-slate-500 text-[9px] sm:text-[10px] font-black uppercase tracking-widest">Visibility</span>
-                 <span class="text-xs sm:text-sm font-bold transition-colors" [class.text-indigo-600]="!isPrivate()" [class.text-indigo-400]="!isPrivate() && themeService.isDark()">{{ isPrivate() ? 'Private' : 'Public' }}</span>
                </div>
             </div>
           </div>
