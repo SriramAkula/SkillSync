@@ -1,0 +1,36 @@
+<div class="pagination-container" *ngIf="totalPages > 1">
+  <div class="pagination-info">
+    Showing <span>{{ startItem }}</span> - <span>{{ endItem }}</span> of <span>{{ totalItems }}</span>
+  </div>
+  
+  <div class="pagination-controls">
+    <button 
+      class="nav-btn" 
+      [disabled]="currentPage === 0" 
+      (click)="changePage(currentPage - 1)"
+      aria-label="Previous page"
+    >
+      <span class="material-icons">chevron_left</span>
+    </button>
+
+    <div class="page-numbers">
+      <button 
+        *ngFor="let page of visiblePages" 
+        class="page-btn" 
+        [class.active]="page === currentPage"
+        (click)="changePage(page)"
+      >
+        {{ page + 1 }}
+      </button>
+    </div>
+
+    <button 
+      class="nav-btn" 
+      [disabled]="currentPage >= totalPages - 1" 
+      (click)="changePage(currentPage + 1)"
+      aria-label="Next page"
+    >
+      <span class="material-icons">chevron_right</span>
+    </button>
+  </div>
+</div>

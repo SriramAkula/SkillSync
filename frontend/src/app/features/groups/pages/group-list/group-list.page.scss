@@ -12,18 +12,27 @@
   }
 }
 
+.page-header {
+  margin-bottom: 2.5rem;
+  
+  h1 {
+    font-family: 'Outfit', sans-serif;
+    font-size: 2rem;
+    font-weight: 800;
+    color: #111827;
+    margin: 0;
+    letter-spacing: -0.025em;
+  }
+}
+
 :host-context(.dark) .page-header h1 {
-  color: #f3f4f6;
+  color: #f8fafc;
 }
 
 .page-header p {
-  color: #6b7280;
-  font-size: 0.875rem;
-  margin: 0;
-
-  @media (min-width: 640px) {
-    font-size: 0.875rem;
-  }
+  color: #64748b;
+  font-size: 0.9375rem;
+  margin-top: 0.5rem;
 }
 
 .section-header {

@@ -2,13 +2,14 @@ import { Component, inject, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NotificationStore } from '../../../../core/auth/notification.store';
 import { NotificationDto } from '../../../../shared/models';
+import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
 
 type NotifFilter = 'all' | 'unread';
 
 @Component({
   selector: 'app-notification-list',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, PaginationComponent],
   templateUrl: './notification-list.page.html',
   styleUrl: './notification-list.page.scss'
 })
@@ -24,11 +25,25 @@ export class NotificationListPage implements OnInit {
     return all;
   });
 
+  readonly currentPage = signal(0);
+  readonly pageSize = signal(15);
+
+  readonly pagedNotifications = computed(() => {
+    const list = this.filteredNotifications();
+    const start = this.currentPage() * this.pageSize();
+    return list.slice(start, start + this.pageSize());
+  });
+
   readonly activeTabPos = computed(() => {
     const f = this.filter();
     if (f === 'unread') return 50;
     return 0;
   });
+
+  updateFilter(f: NotifFilter) {
+    this.filter.set(f);
+    this.currentPage.set(0); // Reset to first page
+  }
 
   ngOnInit(): void { 
     if (this.notifStore.notifications().length === 0) {

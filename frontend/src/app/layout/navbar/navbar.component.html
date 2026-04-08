@@ -26,7 +26,7 @@
     
     <app-theme-toggle />
     
-    @if (authStore.canApplyToBeMentor()) {
+    @if (authStore.canApplyToBeMentor() && !authStore.isAdmin()) {
       <a routerLink="/mentors/apply" class="hidden sm:flex items-center bg-primary-600 text-white rounded-xl px-4 py-2 text-sm font-semibold hover:bg-primary-700 transition-all active:scale-95">
         <span class="material-icons-outlined text-base mr-2">verified_user</span>
         Become Mentor
@@ -109,18 +109,20 @@
           </div>
 
           <div class="px-2 space-y-0.5">
-            <a routerLink="/profile" (click)="dropdownOpen.set(false)" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-primary-600 dark:hover:text-primary-400 transition-colors">
-              <span class="material-icons-outlined text-base">account_circle</span>
-              Profile
-            </a>
-            <a routerLink="/sessions" (click)="dropdownOpen.set(false)" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-primary-600 dark:hover:text-primary-400 transition-colors">
-              <span class="material-icons-outlined text-base">calendar_view_day</span>
-              My Sessions
-            </a>
-            <a routerLink="/profile/edit" (click)="dropdownOpen.set(false)" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-primary-600 dark:hover:text-primary-400 transition-colors">
-              <span class="material-icons-outlined text-base">settings</span>
-              Settings
-            </a>
+            @if (!authStore.isAdmin()) {
+              <a routerLink="/profile" (click)="dropdownOpen.set(false)" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-primary-600 dark:hover:text-primary-400 transition-colors">
+                <span class="material-icons-outlined text-base">account_circle</span>
+                Profile
+              </a>
+              <a routerLink="/sessions" (click)="dropdownOpen.set(false)" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-primary-600 dark:hover:text-primary-400 transition-colors">
+                <span class="material-icons-outlined text-base">calendar_view_day</span>
+                My Sessions
+              </a>
+              <a routerLink="/profile/edit" (click)="dropdownOpen.set(false)" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-primary-600 dark:hover:text-primary-400 transition-colors">
+                <span class="material-icons-outlined text-base">settings</span>
+                Settings
+              </a>
+            }
           </div>
 
           <div class="border-t border-slate-200 dark:border-slate-700 mt-2 px-2 py-1">

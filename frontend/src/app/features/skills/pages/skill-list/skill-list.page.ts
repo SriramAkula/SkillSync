@@ -10,11 +10,12 @@ import { SkillStore } from '../../../../core/auth/skill.store';
 import { UserService } from '../../../../core/services/user.service';
 import { SkillDto, CreateSkillRequest } from '../../../../shared/models/skill.models';
 import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
+import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
 
 @Component({
   selector: 'app-skill-list-page',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatProgressSpinnerModule, MatSnackBarModule],
+  imports: [CommonModule, FormsModule, MatProgressSpinnerModule, MatSnackBarModule, PaginationComponent],
   templateUrl: './skill-list.page.html',
   styleUrl: './skill-list.page.scss'
 })
@@ -38,6 +39,8 @@ export class SkillListPage implements OnInit {
   readonly selectedSkills = signal<string[]>([]);
 
   searchQuery = '';
+  currentPage = signal(0);
+  pageSize = signal(12);
   formData: CreateSkillRequest = { skillName: '', description: '', category: '' };
 
   private readonly searchSubject = new Subject<string>();
@@ -82,8 +85,15 @@ export class SkillListPage implements OnInit {
     return list;
   }
 
+  pagedSkills(): SkillDto[] {
+    const list = this.filteredSkills();
+    const start = this.currentPage() * this.pageSize();
+    return list.slice(start, start + this.pageSize());
+  }
+
   onSearch(q: string): void {
     this.searchSubject.next(q);
+    this.currentPage.set(0); // Reset to first page on search
     // Also update categories from current store
     const cats = [...new Set(this.skillStore.skills().map(s => s.category).filter(Boolean) as string[])].sort();
     this.categories.set(cats);
@@ -92,11 +102,12 @@ export class SkillListPage implements OnInit {
   filterByCategory(cat: string, mySkills: boolean = false): void {
     this.showMySkills.set(mySkills);
     this.selectedCategory.set(cat);
+    this.currentPage.set(0); // Reset to first page on filter change
     // Categories act as local filter 
   }
 
-  clearSearch(): void { this.searchQuery = ''; }
-  clearAll(): void { this.searchQuery = ''; this.selectedCategory.set(''); this.showMySkills.set(false); }
+  clearSearch(): void { this.searchQuery = ''; this.currentPage.set(0); }
+  clearAll(): void { this.searchQuery = ''; this.selectedCategory.set(''); this.showMySkills.set(false); this.currentPage.set(0); }
 
   isSkillSelected(name: string): boolean {
     return this.selectedSkills().includes(name);

@@ -24,11 +24,11 @@
   <!-- Filter Tabs -->
   <nav class="filter-tabs">
     <div class="pill-track">
-      <div class="pill-active" [style.left.%]="activeTabPos"></div>
-      <button (click)="filter.set('all')" [class.active]="filter() === 'all'">
+      <div class="pill-active" [style.left.%]="activeTabPos()"></div>
+      <button (click)="updateFilter('all')" [class.active]="filter() === 'all'">
         All <span>{{ notifStore.notifications().length }}</span>
       </button>
-      <button (click)="filter.set('unread')" [class.active]="filter() === 'unread'">
+      <button (click)="updateFilter('unread')" [class.active]="filter() === 'unread'">
         Unread <span>{{ notifStore.unreadCount() }}</span>
       </button>
     </div>
@@ -36,8 +36,9 @@
 
   <!-- Notifications List -->
   <main class="notifications-list">
-    @for (n of filteredNotifications(); track n.id) {
+    @for (n of pagedNotifications(); track n.id) {
       <div class="notif-card" [class.unread]="!n.isRead">
+        <!-- ... card content ... -->
         <div class="notif-icon-wrap" [ngClass]="notifIcon(n.type).class">
           <span class="material-icons">{{ notifIcon(n.type).icon }}</span>
         </div>
@@ -71,5 +72,13 @@
         <p>You're all caught up! No notifications for your current filter.</p>
       </div>
     }
+
+    <!-- Pagination -->
+    <app-pagination
+      [totalItems]="filteredNotifications().length"
+      [pageSize]="pageSize()"
+      [currentPage]="currentPage()"
+      (pageChange)="currentPage.set($event)"
+    ></app-pagination>
   </main>
 </div>

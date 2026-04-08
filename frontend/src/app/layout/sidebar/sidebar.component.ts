@@ -3,7 +3,14 @@ import { CommonModule } from '@angular/common';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthStore } from '../../core/auth/auth.store';
 
-interface NavItem { label: string; icon: string; route: string; roles?: string[]; }
+interface NavItem { 
+  label: string; 
+  icon: string; 
+  route: string; 
+  roles?: string[]; 
+  excludeRoles?: string[];
+  exact?: boolean;
+}
 
 @Component({
   selector: 'app-sidebar',
@@ -17,20 +24,37 @@ export class SidebarComponent {
   private readonly authStore = inject(AuthStore);
 
   private readonly allItems: NavItem[] = [
-    { label: 'Mentors', icon: 'people', route: '/mentors' },
-    { label: 'Skills', icon: 'collections_bookmark', route: '/skills' },
+    // --- Learner / Mentor Discovery ---
+    { label: 'Mentors', icon: 'people', route: '/mentors', excludeRoles: ['ROLE_ADMIN'] },
+    { label: 'Skills', icon: 'collections_bookmark', route: '/skills', excludeRoles: ['ROLE_ADMIN'] },
+    { label: 'Groups', icon: 'groups', route: '/groups', excludeRoles: ['ROLE_ADMIN'] },
+    
+    // --- Personal / Interaction ---
     { label: 'My Sessions', icon: 'event_note', route: '/sessions', roles: ['ROLE_LEARNER'] },
-    { label: 'Groups', icon: 'groups', route: '/groups' },
     { label: 'Notifications', icon: 'notifications_none', route: '/notifications' },
-    { label: 'Profile', icon: 'person_outline', route: '/profile' },
+    { label: 'Profile', icon: 'person_outline', route: '/profile', excludeRoles: ['ROLE_ADMIN'] },
+    
+    // --- Mentor Specific ---
     { label: 'Dashboard', icon: 'dashboard_customize', route: '/mentor-dashboard', roles: ['ROLE_MENTOR'] },
-    { label: 'Admin', icon: 'admin_panel_settings', route: '/admin', roles: ['ROLE_ADMIN'] },
+    
+    // --- Administrative ---
+    { label: 'Approve Mentors', icon: 'verified_user', route: '/admin', roles: ['ROLE_ADMIN'], exact: true },
+    { label: 'User Management', icon: 'manage_accounts', route: '/admin/users', roles: ['ROLE_ADMIN'] },
+    { label: 'Skill Management', icon: 'settings_suggest', route: '/admin/skills', roles: ['ROLE_ADMIN'] },
   ];
 
   visibleItems() {
-    return this.allItems.filter(i =>
-      !i.roles || i.roles.some(r => this.authStore.roles().includes(r))
-    );
+    return this.allItems.filter(i => {
+      const userRoles = this.authStore.roles();
+      
+      // If item has excludeRoles, check if user has any of them
+      if (i.excludeRoles && i.excludeRoles.some(r => userRoles.includes(r))) {
+        return false;
+      }
+      
+      // Standard role check
+      return !i.roles || i.roles.some(r => userRoles.includes(r));
+    });
   }
 
   logout() {

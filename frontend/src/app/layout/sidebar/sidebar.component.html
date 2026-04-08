@@ -16,7 +16,8 @@
   <nav class="flex-1 space-y-1">
     @for (item of visibleItems(); track item.route) {
       <a class="group flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-primary-600 active:scale-[0.98]"
-         [routerLink]="item.route" routerLinkActive="bg-primary-50 dark:bg-primary-900/20 text-primary-600 ring-1 ring-primary-100/50 dark:ring-primary-900/30"
+         [routerLink]="item.route" [routerLinkActiveOptions]="{ exact: item.exact || false }"
+         routerLinkActive="bg-primary-50 dark:bg-primary-900/20 text-primary-600 ring-1 ring-primary-100/50 dark:ring-primary-900/30"
          (click)="navClick.emit()">
         <span class="material-icons-outlined shrink-0 group-hover:scale-110 transition-transform text-slate-400 dark:text-slate-500">{{ item.icon }}</span>
         <span class="font-medium text-sm tracking-wide text-slate-600 dark:text-slate-400 transition-all duration-500 overflow-hidden whitespace-nowrap"

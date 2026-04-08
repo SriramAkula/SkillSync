@@ -17,16 +17,18 @@
 
 .header-main {
   h1 {
-    font-size: 2.5rem;
-    font-weight: 900;
+    font-size: 2rem;
+    font-weight: 800;
     letter-spacing: -0.02em;
     margin: 0;
     background: linear-gradient(135deg, #1e293b, #475569);
+    background-clip: text;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
 
     :host-context(.dark) & {
       background: linear-gradient(135deg, #f8fafc, #cbd5e1);
+      background-clip: text;
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
     }

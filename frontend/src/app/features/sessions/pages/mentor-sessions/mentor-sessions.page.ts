@@ -9,13 +9,14 @@ import { SkillStore } from '../../../../core/auth/skill.store';
 import { SessionCardComponent } from '../../components/session-card/session-card.component';
 import { SessionDto } from '../../../../shared/models';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
 
 type DashTab = 'pending' | 'upcoming' | 'all';
 
 @Component({
   selector: 'app-mentor-sessions-page',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, SessionCardComponent, MatSnackBarModule],
+  imports: [CommonModule, FormsModule, RouterModule, SessionCardComponent, MatSnackBarModule, PaginationComponent],
   templateUrl: './mentor-sessions.page.html',
   styleUrl: './mentor-sessions.page.scss'
 })
@@ -37,6 +38,8 @@ export class MentorSessionsPage implements OnInit {
   }
 
   readonly activeTab = signal<DashTab>('pending');
+  readonly currentPage = signal(0);
+  readonly pageSize = signal(8); // High-density cards
   readonly rejectingSession = signal<SessionDto | null>(null);
   rejectReason = '';
 
@@ -65,6 +68,19 @@ export class MentorSessionsPage implements OnInit {
   readonly confirmedSessions = computed(() =>
     (this.sessionStore.mentorSessions() as SessionDto[]).filter(s => s.status === 'CONFIRMED')
   );
+
+  readonly currentSessions = computed(() => {
+    const tab = this.activeTab();
+    if (tab === 'pending') return this.pendingSessions();
+    if (tab === 'upcoming') return this.upcomingSessions();
+    return this.sessionStore.mentorSessions() as SessionDto[];
+  });
+
+  readonly pagedSessions = computed(() => {
+    const list = this.currentSessions();
+    const start = this.currentPage() * this.pageSize();
+    return list.slice(start, start + this.pageSize());
+  });
 
   ngOnInit(): void {
     this.refresh();
@@ -103,6 +119,11 @@ export class MentorSessionsPage implements OnInit {
     if (!s || !this.rejectReason.trim()) return;
     this.sessionStore.reject({ id: s.id, reason: this.rejectReason });
     this.rejectingSession.set(null);
+  }
+
+  changeTab(tab: DashTab): void {
+    this.activeTab.set(tab);
+    this.currentPage.set(0); // Reset page on tab switch
   }
 
   cancelSession(id: number): void {

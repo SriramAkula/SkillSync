@@ -3,7 +3,7 @@
   <!-- Header -->
   <div class="page-header">
     <div>
-      <h1>Skills</h1>
+      <h1>Skill Management</h1>
       <p>Browse and discover skills to learn</p>
     </div>
     @if (authStore.isAdmin()) {
@@ -30,11 +30,13 @@
       <button class="chip" [class.active]="selectedCategory() === '' && !showMySkills()"
               (click)="filterByCategory('', false)">All</button>
               
-      <button class="chip my-skills-chip" [class.active]="showMySkills()"
-              (click)="filterByCategory('', true)">
-        <span class="material-icons star-icon">star</span>
-        My Skills
-      </button>
+      @if (!authStore.isAdmin()) {
+        <button class="chip my-skills-chip" [class.active]="showMySkills()"
+                (click)="filterByCategory('', true)">
+          <span class="material-icons star-icon">star</span>
+          My Skills
+        </button>
+      }
       
       @for (cat of categories(); track cat) {
         <button class="chip" [class.active]="selectedCategory() === cat && !showMySkills()"
@@ -61,8 +63,9 @@
   <!-- Skills Grid -->
   @if (!loading()) {
     <div class="skills-grid">
-      @for (skill of filteredSkills(); track skill.id) {
+      @for (skill of pagedSkills(); track skill.id) {
         <div class="skill-card" (click)="selectSkill(skill)">
+          <!-- ... existing skill card content ... -->
           <div class="skill-top">
             <div class="skill-icon">{{ skill.skillName[0].toUpperCase() }}</div>
             <div class="tags-wrap">
@@ -94,13 +97,15 @@
                   </button>
                 </div>
               }
-              <button class="btn-add-skill" [class.added]="isSkillSelected(skill.skillName)" (click)="$event.stopPropagation(); toggleProfileSkill(skill.skillName)">
-                @if (isSkillSelected(skill.skillName)) {
-                  <span class="material-icons">check</span> Added
-                } @else {
-                  <span class="material-icons">add</span> Add
-                }
-              </button>
+              @if (!authStore.isAdmin()) {
+                <button class="btn-add-skill" [class.added]="isSkillSelected(skill.skillName)" (click)="$event.stopPropagation(); toggleProfileSkill(skill.skillName)">
+                  @if (isSkillSelected(skill.skillName)) {
+                    <span class="material-icons">check</span> Added
+                  } @else {
+                    <span class="material-icons">add</span> Add
+                  }
+                </button>
+              }
             </div>
           </div>
         </div>
@@ -121,6 +126,14 @@
         </div>
       }
     </div>
+
+    <!-- Pagination -->
+    <app-pagination
+      [totalItems]="filteredSkills().length"
+      [pageSize]="pageSize()"
+      [currentPage]="currentPage()"
+      (pageChange)="currentPage.set($event)"
+    ></app-pagination>
   }
 
   <!-- Skill Detail Drawer -->

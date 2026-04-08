@@ -33,7 +33,7 @@
 
   <!-- Stats Grid (Glassmorphic) -->
   <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-    <div (click)="activeTab.set('pending')" 
+    <div (click)="changeTab('pending')" 
          [class.ring-2]="activeTab() === 'pending'"
          class="glass-card dark:bg-amber-950/50 p-6 cursor-pointer hover:shadow-2xl transition-all duration-300 ring-amber-500/50 ring-offset-2 dark:ring-offset-slate-950 relative overflow-hidden group border border-amber-500/10">
       <div class="flex items-center gap-4 relative z-10">
@@ -50,7 +50,7 @@
       }
     </div>
 
-    <div (click)="activeTab.set('upcoming')" 
+    <div (click)="changeTab('upcoming')" 
          [class.ring-2]="activeTab() === 'upcoming'"
          class="glass-card dark:bg-blue-950/50 p-6 cursor-pointer hover:shadow-2xl transition-all duration-300 ring-blue-500/50 ring-offset-2 dark:ring-offset-slate-950 relative overflow-hidden group border border-blue-500/10">
       <div class="flex items-center gap-4">
@@ -64,7 +64,7 @@
       </div>
     </div>
 
-    <div (click)="activeTab.set('all')" 
+    <div (click)="changeTab('all')" 
          [class.ring-2]="activeTab() === 'all'"
          class="glass-card dark:bg-violet-950/50 p-6 cursor-pointer hover:shadow-2xl transition-all duration-300 ring-violet-500/50 ring-offset-2 dark:ring-offset-slate-950 relative overflow-hidden group border border-violet-500/10">
       <div class="flex items-center gap-4">
@@ -101,7 +101,7 @@
     <div class="flex items-center gap-2 p-1.5 bg-slate-100/50 dark:bg-slate-800/50 rounded-2xl w-fit">
       @for (tab of tabs; track tab.key) {
         <button 
-          (click)="activeTab.set(tab.key)"
+          (click)="changeTab(tab.key)"
           [class.bg-white]="activeTab() === tab.key"
           [class.dark:bg-slate-700]="activeTab() === tab.key"
           [class.shadow-md]="activeTab() === tab.key"
@@ -127,7 +127,7 @@
       <!-- Special View for Pending to emphasize action -->
       @if (activeTab() === 'pending') {
         <div class="space-y-4 animate-drop-in">
-          @for (s of pendingSessions(); track s.id) {
+          @for (s of pagedSessions(); track s.id) {
             <div class="glass-card p-6 md:p-8 flex flex-col md:flex-row md:items-center justify-between gap-8 border border-white/40 shadow-xl hover:shadow-2xl transition-all duration-300 group">
               <div class="flex items-center gap-6">
                 <div class="w-16 h-16 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-300 group-hover:bg-amber-50 group-hover:text-amber-500 transition-colors">
@@ -169,7 +169,7 @@
       } @else {
         <!-- Regular Grid for Other Tabs -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 animate-drop-in">
-          @for (s of (activeTab() === 'upcoming' ? upcomingSessions() : sessionStore.mentorSessions()); track s.id) {
+          @for (s of pagedSessions(); track s.id) {
             <app-session-card 
               [session]="s"
               (view)="router.navigate(['/sessions', $event])"
@@ -185,6 +185,14 @@
       }
 
     }
+
+    <!-- Pagination -->
+    <app-pagination
+      [totalItems]="currentSessions().length"
+      [pageSize]="pageSize()"
+      [currentPage]="currentPage()"
+      (pageChange)="currentPage.set($event)"
+    ></app-pagination>
 
   </div>
 </div>
