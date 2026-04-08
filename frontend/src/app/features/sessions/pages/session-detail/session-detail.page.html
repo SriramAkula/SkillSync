@@ -1,0 +1,130 @@
+<div class="page">
+  <button class="back-btn" (click)="router.navigate(['/sessions'])">
+    <span class="material-icons">arrow_back</span> My Sessions
+  </button>
+
+  @if (sessionStore.loading()) {
+    <div class="loading-center"><mat-spinner diameter="48" /></div>
+  }
+
+  @if (sessionStore.selected(); as s) {
+    <div class="layout">
+      <!-- Main Card -->
+      <div class="main-col">
+        <div class="detail-card">
+          <div class="detail-header" [style.background]="cfg(s.status).bg">
+            <div class="status-icon" [style.background]="cfg(s.status).color + '20'">
+              <span class="material-icons" [style.color]="cfg(s.status).color">{{ cfg(s.status).icon }}</span>
+            </div>
+            <div>
+              <h2>Session #{{ s.id }}</h2>
+              <div class="status-badge" [style.background]="cfg(s.status).color" style="color:white">
+                {{ s.status }}
+              </div>
+            </div>
+          </div>
+
+          <div class="detail-body">
+            <div class="info-grid">
+              <div class="info-item">
+                <span class="info-label">Scheduled</span>
+                <span class="info-value">{{ s.scheduledAt | date:'EEEE, MMM d, y' }}</span>
+                <span class="info-sub">{{ s.scheduledAt | date:'h:mm a' }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Duration</span>
+                <span class="info-value">{{ s.durationMinutes }} minutes</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Mentor ID</span>
+                <span class="info-value">#{{ s.mentorId }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Skill ID</span>
+                <span class="info-value">#{{ s.skillId }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Created</span>
+                <span class="info-value">{{ s.createdAt | date:'mediumDate' }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Last Updated</span>
+                <span class="info-value">{{ s.updatedAt | date:'mediumDate' }}</span>
+              </div>
+            </div>
+
+            @if (s.rejectionReason) {
+              <div class="rejection-box">
+                <span class="material-icons">info</span>
+                <div>
+                  <strong>Rejection Reason</strong>
+                  <p>{{ s.rejectionReason }}</p>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+
+      <!-- Actions Sidebar -->
+      <div class="actions-col">
+        <div class="actions-card">
+          <h3>Actions</h3>
+
+          @if (s.status === 'ACCEPTED' && isLearnerForThisSession) {
+            <button class="action-btn primary" (click)="router.navigate(['/payment'], { queryParams: { sessionId: s.id } })">
+              <span class="material-icons">payment</span>
+              Pay Now
+            </button>
+          }
+
+          @if (authStore.isMentor()) {
+            @if (s.status === 'REQUESTED') {
+              <button class="action-btn success" (click)="accept(s.id)">
+                <span class="material-icons">check_circle</span>
+                Accept Session
+              </button>
+              <button class="action-btn danger" (click)="showReject.set(true)">
+                <span class="material-icons">cancel</span>
+                Reject Session
+              </button>
+            }
+          }
+
+          @if (s.status === 'REQUESTED' || s.status === 'ACCEPTED') {
+            <button class="action-btn secondary" (click)="cancel(s.id)">
+              <span class="material-icons">block</span>
+              Cancel Session
+            </button>
+          }
+
+          @if (s.status === 'CONFIRMED') {
+            <button class="action-btn outline" (click)="router.navigate(['/reviews/mentor', s.mentorId])">
+              <span class="material-icons">rate_review</span>
+              Write a Review
+            </button>
+          }
+
+          <button class="action-btn outline" (click)="router.navigate(['/mentors', s.mentorId])">
+            <span class="material-icons">person</span>
+            View Mentor Profile
+          </button>
+        </div>
+
+        <!-- Reject Form -->
+        @if (showReject()) {
+          <div class="reject-card">
+            <h4>Reject Session</h4>
+            <div class="input-wrapper">
+              <input type="text" [(ngModel)]="rejectReason" placeholder="Reason for rejection..." />
+            </div>
+            <div class="reject-actions">
+              <button class="action-btn secondary" (click)="showReject.set(false)">Cancel</button>
+              <button class="action-btn danger" (click)="reject(s.id)" [disabled]="!rejectReason">Confirm</button>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  }
+</div>

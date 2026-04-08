@@ -1,0 +1,21 @@
+.otp-wrapper {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.otp-box {
+  width: 48px;
+  height: 56px;
+  text-align: center;
+  font-size: 22px;
+  font-weight: 600;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  outline: none;
+  transition: border-color 0.2s;
+
+  &:focus {
+    border-color: #5c6bc0;
+  }
+}

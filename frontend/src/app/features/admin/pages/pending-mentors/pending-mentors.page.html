@@ -1,0 +1,193 @@
+<div class="page">
+
+  <!-- Header -->
+  <div class="page-header">
+    <div>
+      <h1>Admin Panel</h1>
+      <p>Manage mentors, users, and skills</p>
+    </div>
+    <div class="header-stats">
+      <div class="stat-pill">
+        <span class="material-icons">pending_actions</span>
+        {{ mentorStore.pendingCount() }} pending
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="admin-tabs">
+    <button class="admin-tab" [class.active]="tab() === 'mentors'" (click)="tab.set('mentors')">
+      <span class="material-icons">how_to_reg</span>
+      Mentor Applications
+      @if (mentorStore.pendingCount() > 0) {
+        <span class="tab-badge">{{ mentorStore.pendingCount() }}</span>
+      }
+    </button>
+    <button class="admin-tab" [class.active]="tab() === 'users'" (click)="tab.set('users')">
+      <span class="material-icons">people</span>
+      <a [routerLink]="['/admin/users']" style="color: inherit; text-decoration: none;">User Management</a>
+    </button>
+    <button class="admin-tab" [class.active]="tab() === 'skills'" (click)="tab.set('skills'); loadSkills()">
+      <span class="material-icons">auto_stories</span>
+      Skills Management
+    </button>
+  </div>
+
+  <!-- ── Mentor Applications Tab ── -->
+  @if (tab() === 'mentors') {
+    @if (mentorStore.loading()) {
+      <div class="loading-center"><mat-spinner diameter="48" /></div>
+    } @else {
+      <div class="grid">
+        @for (m of mentorStore.pending(); track m.id) {
+          <div class="app-card">
+            <div class="card-header">
+              <div class="avatar">{{ m.specialization[0].toUpperCase() }}</div>
+              <div class="card-info">
+                <h3>{{ m.specialization }}</h3>
+                <p>User #{{ m.userId }}</p>
+              </div>
+              <div class="pending-chip">Pending</div>
+            </div>
+            <div class="card-details">
+              <div class="detail-item">
+                <span class="material-icons">workspace_premium</span>
+                {{ m.yearsOfExperience }} yrs experience
+              </div>
+              <div class="detail-item">
+                <span class="material-icons">payments</span>
+                ₹{{ m.hourlyRate }}/hr
+              </div>
+              <div class="detail-item">
+                <span class="material-icons">calendar_today</span>
+                Applied {{ m.createdAt | date:'mediumDate' }}
+              </div>
+            </div>
+            <div class="card-actions">
+              <button class="btn-approve" (click)="approve(m.id)">
+                <span class="material-icons">check_circle</span> Approve
+              </button>
+              <button class="btn-reject" (click)="reject(m.id)">
+                <span class="material-icons">cancel</span> Reject
+              </button>
+            </div>
+          </div>
+        }
+        @empty {
+          <div class="empty-state">
+            <div class="empty-icon"><span class="material-icons">how_to_reg</span></div>
+            <h3>No pending applications</h3>
+            <p>All applications have been reviewed.</p>
+          </div>
+        }
+      </div>
+    }
+  }
+
+  <!-- ── Skills Management Tab ── -->
+  @if (tab() === 'skills') {
+    <div class="skills-header">
+      <div class="search-bar">
+        <span class="material-icons">search</span>
+        <input [(ngModel)]="skillSearch" placeholder="Search skills..." class="search-input" />
+      </div>
+      <button class="btn-add-skill" (click)="openCreate()">
+        <span class="material-icons">add</span> Add Skill
+      </button>
+    </div>
+
+    @if (skillsLoading()) {
+      <div class="loading-center"><mat-spinner diameter="48" /></div>
+    } @else {
+      <div class="skills-table">
+        <div class="table-header">
+          <span>Skill</span>
+          <span>Category</span>
+          <span>Popularity</span>
+          <span>Status</span>
+          <span>Actions</span>
+        </div>
+        @for (s of filteredSkills(); track s.id) {
+          <div class="table-row">
+            <div class="skill-cell">
+              <div class="skill-dot">{{ s.skillName[0].toUpperCase() }}</div>
+              <div>
+                <strong>{{ s.skillName }}</strong>
+                @if (s.description) {
+                  <p>{{ s.description | slice:0:50 }}{{ s.description.length > 50 ? '...' : '' }}</p>
+                }
+              </div>
+            </div>
+            <span class="category-tag">{{ s.category || '—' }}</span>
+            <span class="popularity-val">{{ s.popularityScore }}</span>
+            <span class="status-badge" [class.active]="s.isActive" [class.inactive]="!s.isActive">
+              {{ s.isActive ? 'Active' : 'Inactive' }}
+            </span>
+            <div class="row-actions">
+              <button class="btn-edit" (click)="openEdit(s)">
+                <span class="material-icons">edit</span>
+              </button>
+              <button class="btn-delete" (click)="deleteSkill(s.id)">
+                <span class="material-icons">delete</span>
+              </button>
+            </div>
+          </div>
+        }
+        @empty {
+          <div class="empty-state" style="grid-column:1/-1">
+            <div class="empty-icon"><span class="material-icons">auto_stories</span></div>
+            <h3>No skills found</h3>
+            <p>Add your first skill to get started.</p>
+          </div>
+        }
+      </div>
+    }
+  }
+
+  <!-- Create / Edit Skill Modal -->
+  @if (showSkillForm()) {
+    <div class="modal-overlay" (click)="showSkillForm.set(false)">
+      <div class="modal-card" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3>{{ editingSkill() ? 'Edit Skill' : 'Add New Skill' }}</h3>
+          <button class="modal-close" (click)="showSkillForm.set(false)">
+            <span class="material-icons">close</span>
+          </button>
+        </div>
+        <div class="form">
+          <div class="input-group">
+            <label class="input-label">Skill Name <span class="required">*</span></label>
+            <div class="input-wrapper">
+              <span class="material-icons input-icon">auto_stories</span>
+              <input type="text" [(ngModel)]="skillForm.skillName" placeholder="e.g. Java, React, AWS" />
+            </div>
+          </div>
+          <div class="input-group">
+            <label class="input-label">Category</label>
+            <div class="input-wrapper">
+              <span class="material-icons input-icon">category</span>
+              <input type="text" [(ngModel)]="skillForm.category" placeholder="e.g. Programming, Design" />
+            </div>
+          </div>
+          <div class="input-group">
+            <label class="input-label">Description</label>
+            <div class="input-wrapper textarea-wrap">
+              <textarea [(ngModel)]="skillForm.description" placeholder="Brief description..." rows="3"></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button class="btn-modal-cancel" (click)="showSkillForm.set(false)">Cancel</button>
+          <button class="btn-modal-save" (click)="saveSkill()" [disabled]="!skillForm.skillName || skillSaving()">
+            @if (skillSaving()) { <mat-spinner diameter="18" /> }
+            @else {
+              <span class="material-icons">{{ editingSkill() ? 'save' : 'add' }}</span>
+              {{ editingSkill() ? 'Update' : 'Create' }}
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+</div>

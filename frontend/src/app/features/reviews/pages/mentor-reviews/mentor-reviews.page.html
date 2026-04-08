@@ -1,0 +1,111 @@
+<div class="page">
+  <button class="back-btn" (click)="router.navigate(['/mentors', mentorId()])">
+    <span class="material-icons">arrow_back</span> Mentor Profile
+  </button>
+
+  <div class="page-header">
+    <h1>Reviews</h1>
+    @if (rating(); as r) {
+      <div class="rating-summary">
+        <div class="big-rating">{{ r.averageRating | number:'1.1-1' }}</div>
+        <div class="rating-details">
+          <div class="stars-row">{{ starString(r.averageRating) }}</div>
+          <div class="review-count">{{ r.totalReviews }} reviews</div>
+        </div>
+      </div>
+    }
+  </div>
+
+  <!-- Submit Review Form (learners only) -->
+  @if (authStore.isLearner()) {
+    <div class="review-form-card">
+      <h3>Write a Review</h3>
+      <p>Share your experience with this mentor</p>
+
+      <div class="form">
+        <div class="input-group">
+          <label class="input-label">Session ID <span class="required">*</span></label>
+          <div class="input-wrapper">
+            <span class="material-icons input-icon">event</span>
+            <input type="number" [(ngModel)]="newReview.sessionId" placeholder="Your session ID" />
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label class="input-label">Rating <span class="required">*</span></label>
+          <div class="star-picker">
+            @for (i of [1,2,3,4,5]; track i) {
+              <button type="button" class="star-btn" [class.active]="newReview.rating >= i"
+                      (click)="newReview.rating = i" (mouseenter)="hoverRating.set(i)" (mouseleave)="hoverRating.set(0)">
+                <span class="material-icons">{{ (hoverRating() || newReview.rating) >= i ? 'star' : 'star_border' }}</span>
+              </button>
+            }
+            <span class="rating-label">{{ ratingLabel(hoverRating() || newReview.rating) }}</span>
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label class="input-label">Comment <span class="required">*</span></label>
+          <div class="input-wrapper textarea-wrap">
+            <textarea [(ngModel)]="newReview.comment" placeholder="Describe your experience..." rows="4"></textarea>
+          </div>
+        </div>
+
+        <button class="btn-submit" (click)="submitReview()"
+                [disabled]="!newReview.sessionId || !newReview.rating || !newReview.comment || submitting()">
+          @if (submitting()) { <mat-spinner diameter="20" /> }
+          @else { <span class="material-icons">rate_review</span> Submit Review }
+        </button>
+      </div>
+    </div>
+  }
+
+  <!-- Reviews List -->
+  @if (loading()) {
+    <div class="loading-center"><mat-spinner diameter="40" /></div>
+  } @else {
+    <div class="reviews-list">
+      @for (r of reviews(); track r.id) {
+        <div class="review-card">
+          <div class="review-top">
+            <div class="reviewer-avatar">L</div>
+            <div class="reviewer-info">
+              <div class="stars-row">{{ starString(r.rating) }}</div>
+              <div class="review-date">{{ r.createdAt | date:'MMM d, y' }}</div>
+            </div>
+            @if (r.learnerId === authStore.userId()) {
+              <div class="review-actions">
+                <button class="btn-edit" (click)="startEdit(r)">
+                  <span class="material-icons">edit</span>
+                </button>
+                <button class="btn-delete" (click)="deleteReview(r.id)">
+                  <span class="material-icons">delete</span>
+                </button>
+              </div>
+            }
+          </div>
+          @if (editingId() === r.id) {
+            <div class="edit-form">
+              <div class="input-wrapper textarea-wrap">
+                <textarea [(ngModel)]="editComment" rows="3"></textarea>
+              </div>
+              <div class="edit-actions">
+                <button class="btn-cancel-edit" (click)="editingId.set(null)">Cancel</button>
+                <button class="btn-save-edit" (click)="saveEdit(r)">Save</button>
+              </div>
+            </div>
+          } @else {
+            <p class="review-text">{{ r.comment }}</p>
+          }
+        </div>
+      }
+      @empty {
+        <div class="empty-state">
+          <div class="empty-icon"><span class="material-icons">rate_review</span></div>
+          <h3>No reviews yet</h3>
+          <p>Be the first to review this mentor!</p>
+        </div>
+      }
+    </div>
+  }
+</div>

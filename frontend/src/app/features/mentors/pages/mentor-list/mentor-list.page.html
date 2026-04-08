@@ -1,0 +1,121 @@
+<div class="page">
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-text">
+      <h1>Find Your Perfect Mentor</h1>
+      <p>Connect with industry experts and accelerate your career</p>
+    </div>
+    <form [formGroup]="filterForm">
+      <div class="search-bar">
+        <span class="material-icons search-icon">auto_stories</span>
+        <select formControlName="skill" class="search-input skill-select">
+          <option value="">All Skills / Specializations</option>
+          @for (cat of skillStore.groupedByCategory(); track cat.category) {
+            <optgroup [label]="cat.category">
+              @for (s of cat.skills; track s.id) {
+                <option [value]="s.name">{{ s.name }}</option>
+              }
+            </optgroup>
+          }
+        </select>
+        @if (filterForm.value.skill) {
+          <button type="button" class="icon-btn clear-btn" (click)="filterForm.patchValue({ skill: '' })">
+            <span class="material-icons">close</span>
+          </button>
+        }
+        <div class="divider-v"></div>
+        <button type="button" class="icon-btn filter-toggle" [class.active]="isFilterOpen()" (click)="isFilterOpen.set(!isFilterOpen())" title="Advanced Filters">
+          <span class="material-icons">tune</span>
+          <span class="filter-lbl">Filters</span>
+        </button>
+      </div>
+
+      @if (isFilterOpen()) {
+        <div class="advanced-filters">
+          <div class="filter-group">
+            <label>Experience (Years)</label>
+            <div class="range-inputs">
+              <input type="number" formControlName="minExperience" placeholder="Min" min="0" />
+              <span class="dash">-</span>
+              <input type="number" formControlName="maxExperience" placeholder="Max" min="0" />
+            </div>
+          </div>
+          
+          <div class="filter-group">
+            <label>Max Hourly Rate ($)</label>
+            <input type="number" formControlName="maxRate" placeholder="Any" min="0" />
+          </div>
+
+          <div class="filter-group">
+            <label>Minimum Rating</label>
+            <select formControlName="minRating" class="rating-select">
+              <option [ngValue]="null">Any</option>
+              <option [ngValue]="4.5">4.5+ ⭐</option>
+              <option [ngValue]="4.0">4.0+ ⭐</option>
+              <option [ngValue]="3.0">3.0+ ⭐</option>
+            </select>
+          </div>
+        </div>
+      }
+    </form>
+
+    <div class="filter-chips">
+      @for (f of filters; track f.value) {
+        <button class="chip" [class.active]="availFilter() === f.value" (click)="availFilter.set(f.value)">
+          {{ f.label }}
+        </button>
+      }
+    </div>
+  </div>
+
+  <!-- Stats Bar -->
+  <div class="stats-bar">
+    <div class="stat-item">
+      <span class="stat-num">{{ mentorStore.approvedCount() }}</span>
+      <span class="stat-lbl">Mentors</span>
+    </div>
+    <div class="divider-v"></div>
+    <div class="stat-item">
+      <span class="stat-num">{{ filteredMentors().length }}</span>
+      <span class="stat-lbl">Showing</span>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  @if (mentorStore.loading()) {
+    <div class="loading-center">
+      <mat-spinner diameter="48" />
+      <p>Finding mentors for you...</p>
+    </div>
+  }
+
+  <!-- Error -->
+  @if (mentorStore.error()) {
+    <div class="error-banner">
+      <span class="material-icons">error_outline</span>
+      {{ mentorStore.error() }}
+    </div>
+  }
+
+  <!-- Grid -->
+  @if (!mentorStore.loading()) {
+    <div class="mentor-grid">
+      @for (mentor of filteredMentors(); track mentor.id) {
+        <app-mentor-card 
+          [mentor]="mentor" 
+          [overrideRating]="mentor.userId === authStore.userId() ? myRating() : undefined"
+          [overrideLearnersCount]="mentor.userId === authStore.userId() ? myReviews().length : undefined"
+          (view)="goToDetail($event)" 
+          (book)="goToBook($event)" />
+      }
+      @empty {
+        <div class="empty-state">
+          <div class="empty-icon"><span class="material-icons">search_off</span></div>
+          <h3>No mentors found</h3>
+          <p>Try a different skill or remove filters</p>
+          <button class="btn-reset" (click)="reset()">Clear Search</button>
+        </div>
+      }
+    </div>
+  }
+</div>

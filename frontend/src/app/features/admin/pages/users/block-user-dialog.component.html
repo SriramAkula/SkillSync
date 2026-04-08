@@ -1,0 +1,61 @@
+<div class="block-dialog">
+  <!-- Header -->
+  <div class="dialog-header">
+    <h2>Block User</h2>
+    <button mat-icon-button (click)="cancel()" class="close-btn" aria-label="Close">
+      <span class="material-icons">close</span>
+    </button>
+  </div>
+
+  <!-- Content -->
+  <div class="dialog-content">
+    <!-- Warning Alert -->
+    <div class="warning-alert">
+      <span class="warning-icon">⚠️</span>
+      <div>
+        <p class="alert-title">Block Confirmation</p>
+        <p class="alert-text">You are about to block this user from the platform.</p>
+      </div>
+    </div>
+
+    <!-- User Card -->
+    <div class="user-card">
+      <div class="user-avatar">{{ getInitials(data.username) }}</div>
+      <div class="user-details">
+        <strong>{{ data.username }}</strong>
+        <p class="email">{{ data.email }}</p>
+      </div>
+    </div>
+
+    <!-- Reason Input -->
+    <div class="reason-group">
+      <label class="reason-label">⛔ Block Reason (Required)</label>
+      <textarea 
+        [(ngModel)]="reason" 
+        class="reason-textarea"
+        placeholder="Enter the reason for blocking this user..."
+        rows="4">
+      </textarea>
+      @if (!reason.trim()) {
+        <p class="error-message">Please provide a reason for blocking</p>
+      }
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="dialog-footer">
+    <button mat-stroked-button (click)="cancel()" class="btn-cancel">
+      <span class="material-icons">close</span>
+      Cancel
+    </button>
+    <button 
+      mat-raised-button 
+      color="warn" 
+      (click)="confirm()"
+      [disabled]="!reason.trim()"
+      class="btn-confirm">
+      <span class="material-icons">block</span>
+      Block User
+    </button>
+  </div>
+</div>

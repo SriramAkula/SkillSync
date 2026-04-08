@@ -1,0 +1,17 @@
+:host {
+  display: block;
+  height: 100%;
+}
+
+@keyframes bounce-subtle {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+.animate-bounce-subtle {
+  animation: bounce-subtle 2s infinite ease-in-out;
+}

@@ -1,0 +1,13 @@
+/* Apply Mentor Styles */
+/* Note: This component currently utilizes Tailwind CSS utility classes in the template. */
+
+:host {
+  display: block;
+}
+
+.scrollbar-none {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}

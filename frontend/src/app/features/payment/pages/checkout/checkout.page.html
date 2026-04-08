@@ -1,0 +1,99 @@
+<div class="page">
+  <div class="checkout-wrapper">
+    @if (paymentStore.loading() || (paymentStore.saga()?.status === 'INITIATED' && sessionStore.selected()?.status === 'ACCEPTED')) {
+      <div class="loading-center">
+        <mat-spinner diameter="48" />
+        <p style="margin-top: 16px; color: #6b7280; font-weight: 500;">Preparing your checkout...</p>
+      </div>
+    } @else {
+      @if (paymentStore.saga(); as saga) {
+        <div class="checkout-card">
+          <!-- Header -->
+          <div class="checkout-header">
+            <div class="payment-icon" [class]="'status-' + saga.status.toLowerCase()">
+              <span class="material-icons">{{ statusIcon(saga.status) }}</span>
+            </div>
+            <h2>{{ statusTitle(saga.status) }}</h2>
+            <p>Session #{{ saga.sessionId }}</p>
+          </div>
+
+          <!-- Amount -->
+          @if (saga.amount) {
+            <div class="amount-section">
+              <div class="amount-row">
+                <span class="amount-label">Session Duration</span>
+                <span class="amount-value-sm">{{ saga.durationMinutes }} min</span>
+              </div>
+              <div class="amount-row">
+                <span class="amount-label">Hourly Rate</span>
+                <span class="amount-value-sm">₹{{ saga.hourlyRate }}/hr</span>
+              </div>
+              <div class="amount-divider"></div>
+              <div class="amount-row total">
+                <span>Total Amount</span>
+                <span class="amount-big">₹{{ saga.amount | number:'1.2-2' }}</span>
+              </div>
+            </div>
+          }
+
+          <!-- Status Banners -->
+          @if (saga.status === 'COMPLETED') {
+            <div class="status-banner success">
+              <span class="material-icons">check_circle</span>
+              Payment successful! Your session is confirmed.
+            </div>
+          }
+          @if (saga.status === 'FAILED' || saga.status === 'COMPENSATION_FAILED') {
+            <div class="status-banner error">
+              <span class="material-icons">error</span>
+              {{ saga.failureReason ?? 'Payment failed. Please try again.' }}
+            </div>
+          }
+          @if (saga.status === 'REJECTED') {
+            <div class="status-banner error">
+              <span class="material-icons">cancel</span>
+              The mentor has declined this session request.
+            </div>
+          }
+
+          <!-- Actions -->
+          <div class="checkout-actions">
+            @if (saga.status === 'PAYMENT_PENDING' && saga.paymentReference) {
+              <button class="btn-pay" (click)="openRazorpay(saga)" [disabled]="paymentStore.loading()">
+                <span class="material-icons">payment</span>
+                Pay ₹{{ saga.amount | number:'1.2-2' }} via Razorpay
+              </button>
+            }
+            @if (saga.status === 'FAILED') {
+              <button class="btn-retry" (click)="retryPayment()" [disabled]="paymentStore.loading()">
+                <span class="material-icons">refresh</span>
+                Retry Payment
+              </button>
+            }
+            @if (saga.status === 'COMPLETED') {
+              <button class="btn-secondary" (click)="router.navigate(['/sessions'])">
+                <span class="material-icons">event</span> View My Sessions
+              </button>
+            }
+            <button class="btn-ghost" (click)="router.navigate(['/sessions'])">
+              Back to Sessions
+            </button>
+          </div>
+        </div>
+
+        <!-- Security Note -->
+        <div class="security-note">
+          <span class="material-icons">lock</span>
+          Secured by Razorpay · 256-bit SSL encryption
+        </div>
+      }
+    }
+
+    @if (paymentStore.error()) {
+      <div class="error-banner">
+        <span class="material-icons">error_outline</span>
+        {{ paymentStore.error() }}
+      </div>
+    }
+  </div>
+</div>

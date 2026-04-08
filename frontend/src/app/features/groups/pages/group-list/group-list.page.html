@@ -1,0 +1,224 @@
+<div class="page">
+  <div class="page-header">
+    <div>
+      <h1>Learning Groups</h1>
+      <p>Join skill-based groups and learn together</p>
+    </div>
+  </div>
+
+  <!-- Search by Category & Skill -->
+  <div class="search-section category-search">
+    <div class="search-bar">
+      <!-- Category Select -->
+      <div class="dropdown-wrap">
+        <span class="material-icons select-icon">category</span>
+        <select [ngModel]="selectedCategory()" (ngModelChange)="onCategoryChange($event)" class="search-select">
+          <option value="" disabled selected>Select Category...</option>
+          @for (cat of categories(); track cat) {
+            <option [value]="cat">{{ cat }}</option>
+          }
+        </select>
+      </div>
+
+      <!-- Skill Select (Dependent) -->
+      <div class="dropdown-wrap" [class.disabled]="!selectedCategory()">
+        <span class="material-icons select-icon">auto_stories</span>
+        <select [ngModel]="selectedSkillId()" (ngModelChange)="selectedSkillId.set($event)" 
+                class="search-select" [disabled]="!selectedCategory()">
+          <option [ngValue]="null" disabled selected>
+            {{ !selectedCategory() ? 'Select category first...' : 'Select Skill...' }}
+          </option>
+          @for (s of filteredSkills(); track s.id) {
+            <option [ngValue]="s.id">{{ s.skillName }}</option>
+          }
+        </select>
+      </div>
+
+      <button class="btn-search" (click)="loadGroups()" [disabled]="!selectedSkillId() || loading()">
+        @if (loading()) { <mat-spinner diameter="18" /> } @else { Find Groups }
+      </button>
+
+      <button class="btn-clear" (click)="clearFilters()" *ngIf="searched() || selectedCategory()" [disabled]="loading()">
+        <span class="material-icons">refresh</span> Clear
+      </button>
+      
+      @if (!authStore.isAdmin() && (authStore.isLearner() || authStore.isMentor())) {
+        <button class="btn-create" (click)="openCreate()">
+          <span class="material-icons">add</span> Create Group
+        </button>
+      }
+    </div>
+  </div>
+
+  <!-- Groups Grid -->
+  @if (groups().length > 0) {
+    <div class="section-header" *ngIf="!searched()">
+      <span class="material-icons">explore</span>
+      <h2>Recommended for You</h2>
+    </div>
+    <div class="groups-grid">
+      @for (g of groups(); track g.id) {
+        <div class="group-card" (click)="router.navigate(['/groups', g.id])">
+          <div class="group-top">
+            <div class="group-icon">{{ g.name[0].toUpperCase() }}</div>
+            <div class="group-info">
+              <h3>{{ g.name }}</h3>
+              <p>{{ skillName(g.skillId) }}</p>
+            </div>
+            <div class="member-badge" [class.full]="members(g) >= g.maxMembers">
+              <span class="material-icons">people</span>
+              {{ members(g) }}/{{ g.maxMembers }}
+            </div>
+          </div>
+
+          @if (g.description) {
+            <p class="group-desc">{{ g.description }}</p>
+          }
+
+          <div class="spots-row">
+            <div class="capacity-bar">
+              <div class="capacity-fill"
+                   [style.width]="capacityPct(g) + '%'"
+                   [class.full]="members(g) >= g.maxMembers"></div>
+            </div>
+            <span class="spots-text" [class.full]="members(g) >= g.maxMembers">
+              {{ members(g) >= g.maxMembers ? 'Full' : (g.maxMembers - members(g)) + ' spots left' }}
+            </span>
+          </div>
+
+          <div class="group-actions" (click)="$event.stopPropagation()">
+            <!-- Join/Leave/Full Logic -->
+            @if (!isCreator(g)) {
+              @if (g.isJoined) {
+                <button class="btn-leave" (click)="leave(g.id)">
+                  <span class="material-icons">exit_to_app</span>
+                  Leave
+                </button>
+              } @else if (members(g) >= g.maxMembers) {
+                <button class="btn-join" disabled>
+                  <span class="material-icons">group_off</span>
+                  Full
+                </button>
+              } @else {
+                <button class="btn-join" (click)="join(g.id)">
+                  <span class="material-icons">group_add</span>
+                  Join
+                </button>
+              }
+            }
+
+            <!-- Creator badge -->
+            @if (isCreator(g)) {
+              <span class="creator-badge">
+                <span class="material-icons">star</span> Creator
+              </span>
+            }
+
+            <!-- Delete: only creator or admin -->
+            @if (isCreator(g) || authStore.isAdmin()) {
+              <button class="btn-delete" (click)="deleteGroup(g.id)" 
+                      title="Only group creator or admin can delete">
+                <span class="material-icons">delete</span>
+              </button>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  } @else if (searched() && !loading()) {
+    <div class="empty-state">
+      <div class="empty-icon"><span class="material-icons">group_off</span></div>
+      <h3>No groups found</h3>
+      <p>No groups exist for this skill yet. Be the first to create one!</p>
+    </div>
+  } @else if (!searched() && !loading()) {
+    <div class="empty-state">
+      <div class="empty-icon"><span class="material-icons">group_work</span></div>
+      <h3>Welcome to Groups</h3>
+      <p>No groups available yet. Create one to get started!</p>
+    </div>
+  }
+
+  <!-- Create Group Modal -->
+  @if (showCreate()) {
+    <div class="modal-overlay" (click)="showCreate.set(false)">
+      <div class="modal-card" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3>Create Learning Group</h3>
+          <button class="modal-close" (click)="showCreate.set(false)">
+            <span class="material-icons">close</span>
+          </button>
+        </div>
+
+        <div class="form">
+          <div class="input-group">
+            <label class="input-label">Group Name <span class="required">*</span></label>
+            <div class="input-wrapper">
+              <span class="material-icons input-icon">group_work</span>
+              <input type="text" [(ngModel)]="newGroup.name" placeholder="e.g. Java Beginners" />
+            </div>
+          </div>
+
+          <div class="input-group">
+            <label class="input-label">Category <span class="required">*</span></label>
+            <div class="select-wrapper">
+              <span class="material-icons select-icon">category</span>
+              <select [(ngModel)]="newGroupCategory" class="skill-select-modal" 
+                      (change)="newGroup.skillId = null">
+                <option [value]="''" disabled>Select Category...</option>
+                @for (cat of categories(); track cat) {
+                  <option [value]="cat">{{ cat }}</option>
+                }
+              </select>
+              <span class="material-icons select-arrow">expand_more</span>
+            </div>
+          </div>
+
+          <div class="input-group">
+            <label class="input-label">Skill <span class="required">*</span></label>
+            <div class="select-wrapper" [class.disabled]="!newGroupCategory">
+              <span class="material-icons select-icon">auto_stories</span>
+              <select [(ngModel)]="newGroup.skillId" class="skill-select-modal" [disabled]="!newGroupCategory">
+                <option [ngValue]="null" disabled>
+                  {{ !newGroupCategory ? 'Select category first...' : 'Select Target Skill...' }}
+                </option>
+                @for (s of skillsInCategory(newGroupCategory); track s.id) {
+                  <option [ngValue]="s.id">{{ s.skillName }}</option>
+                }
+              </select>
+              <span class="material-icons select-arrow">expand_more</span>
+            </div>
+          </div>
+
+          <div class="input-group">
+            <label class="input-label">Max Members <span class="required">*</span></label>
+            <div class="input-wrapper">
+              <span class="material-icons input-icon">people</span>
+              <input type="number" [(ngModel)]="newGroup.maxMembers" placeholder="e.g. 20" min="2" max="100" />
+            </div>
+          </div>
+
+          <div class="input-group">
+            <label class="input-label">Description <span class="optional">(optional)</span></label>
+            <div class="input-wrapper textarea-wrap">
+              <textarea [(ngModel)]="newGroup.description"
+                        placeholder="What will this group focus on?" rows="3"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button class="btn-modal-cancel" (click)="showCreate.set(false)">Cancel</button>
+          <button class="btn-modal-create" (click)="createGroup()"
+                  [disabled]="creating()">
+            @if (creating()) {
+              <mat-spinner diameter="18" /><span>Creating...</span>
+            } @else {
+              <span class="material-icons">add</span> Create Group
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div>

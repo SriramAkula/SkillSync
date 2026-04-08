@@ -1,0 +1,75 @@
+<div class="notifications-container">
+  <!-- Header -->
+  <header class="page-header">
+    <div class="header-main">
+      <h1>Notifications</h1>
+      <p>Stay updated with your activities</p>
+    </div>
+    <div class="header-actions">
+      @if (notifStore.unreadCount() > 0) {
+        <button (click)="notifStore.markAllRead()" class="btn-action secondary">
+          <span class="material-icons">done_all</span>
+          Mark All Read
+        </button>
+      }
+       @if (notifStore.notifications().length > 0) {
+        <button (click)="notifStore.deleteAll()" class="btn-action danger">
+          <span class="material-icons">delete_sweep</span>
+          Delete All
+        </button>
+      }
+    </div>
+  </header>
+
+  <!-- Filter Tabs -->
+  <nav class="filter-tabs">
+    <div class="pill-track">
+      <div class="pill-active" [style.left.%]="activeTabPos"></div>
+      <button (click)="filter.set('all')" [class.active]="filter() === 'all'">
+        All <span>{{ notifStore.notifications().length }}</span>
+      </button>
+      <button (click)="filter.set('unread')" [class.active]="filter() === 'unread'">
+        Unread <span>{{ notifStore.unreadCount() }}</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- Notifications List -->
+  <main class="notifications-list">
+    @for (n of filteredNotifications(); track n.id) {
+      <div class="notif-card" [class.unread]="!n.isRead">
+        <div class="notif-icon-wrap" [ngClass]="notifIcon(n.type).class">
+          <span class="material-icons">{{ notifIcon(n.type).icon }}</span>
+        </div>
+        
+        <div class="notif-content">
+          <div class="notif-header">
+            <span class="notif-type">{{ n.type.replace('_', ' ') }}</span>
+            <span class="notif-time">{{ n.createdAt | date:'shortTime' }}</span>
+          </div>
+          <p class="notif-message">{{ n.message }}</p>
+          <span class="notif-date">{{ n.createdAt | date:'longDate' }}</span>
+        </div>
+
+        <div class="notif-actions">
+          @if (!n.isRead) {
+            <button (click)="notifStore.markRead(n.id)" title="Mark as read" class="btn-item-action read">
+              <span class="material-icons">done</span>
+            </button>
+          }
+          <button (click)="notifStore.deleteNotification(n.id)" title="Delete" class="btn-item-action delete">
+            <span class="material-icons">delete_outline</span>
+          </button>
+        </div>
+      </div>
+    } @empty {
+      <div class="empty-state">
+        <div class="empty-icon-ring">
+          <span class="material-icons">notifications_off</span>
+        </div>
+        <h3>Nothing here</h3>
+        <p>You're all caught up! No notifications for your current filter.</p>
+      </div>
+    }
+  </main>
+</div>

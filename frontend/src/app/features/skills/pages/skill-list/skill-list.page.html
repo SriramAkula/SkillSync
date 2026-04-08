@@ -1,0 +1,226 @@
+<div class="page">
+
+  <!-- Header -->
+  <div class="page-header">
+    <div>
+      <h1>Skills</h1>
+      <p>Browse and discover skills to learn</p>
+    </div>
+    @if (authStore.isAdmin()) {
+      <button class="btn-add" (click)="openCreate()">
+        <span class="material-icons">add</span> Add Skill
+      </button>
+    }
+  </div>
+
+  <!-- Search + Category Filter -->
+  <div class="toolbar">
+    <div class="search-bar">
+      <span class="material-icons">search</span>
+      <input [(ngModel)]="searchQuery" (ngModelChange)="onSearch($event)"
+             placeholder="Search skills..." class="search-input" />
+      @if (searchQuery) {
+        <button class="clear-btn" (click)="clearSearch()">
+          <span class="material-icons">close</span>
+        </button>
+      }
+    </div>
+
+    <div class="category-chips">
+      <button class="chip" [class.active]="selectedCategory() === '' && !showMySkills()"
+              (click)="filterByCategory('', false)">All</button>
+              
+      <button class="chip my-skills-chip" [class.active]="showMySkills()"
+              (click)="filterByCategory('', true)">
+        <span class="material-icons star-icon">star</span>
+        My Skills
+      </button>
+      
+      @for (cat of categories(); track cat) {
+        <button class="chip" [class.active]="selectedCategory() === cat && !showMySkills()"
+                (click)="filterByCategory(cat, false)">{{ cat }}</button>
+      }
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-bar">
+    <span class="stat-text">
+      <strong>{{ filteredSkills().length }}</strong> skills
+      @if (searchQuery) { matching "<em>{{ searchQuery }}</em>" }
+      @if (selectedCategory()) { in <em>{{ selectedCategory() }}</em> }
+      @if (showMySkills()) { inside your profile }
+    </span>
+  </div>
+
+  <!-- Loading -->
+  @if (loading()) {
+    <div class="loading-center"><mat-spinner diameter="48" /></div>
+  }
+
+  <!-- Skills Grid -->
+  @if (!loading()) {
+    <div class="skills-grid">
+      @for (skill of filteredSkills(); track skill.id) {
+        <div class="skill-card" (click)="selectSkill(skill)">
+          <div class="skill-top">
+            <div class="skill-icon">{{ skill.skillName[0].toUpperCase() }}</div>
+            <div class="tags-wrap">
+              @if (skill.popularityScore >= 50) {
+                <span class="popular-tag"><span class="material-icons">local_fire_department</span> Popular</span>
+              }
+              @if (skill.category) {
+                <span class="category-tag">{{ skill.category }}</span>
+              }
+            </div>
+          </div>
+          <h3 class="skill-name">{{ skill.skillName }}</h3>
+          @if (skill.description) {
+            <p class="skill-desc">{{ skill.description }}</p>
+          }
+          <div class="skill-footer">
+            <div class="popularity">
+              <span class="material-icons">trending_up</span>
+              {{ skill.popularityScore }} learners
+            </div>
+            <div class="action-wrap">
+              @if (authStore.isAdmin()) {
+                <div class="admin-actions">
+                  <button class="btn-edit" (click)="$event.stopPropagation(); openEdit(skill)">
+                    <span class="material-icons">edit</span>
+                  </button>
+                  <button class="btn-delete" (click)="$event.stopPropagation(); deleteSkill(skill.id)">
+                    <span class="material-icons">delete</span>
+                  </button>
+                </div>
+              }
+              <button class="btn-add-skill" [class.added]="isSkillSelected(skill.skillName)" (click)="$event.stopPropagation(); toggleProfileSkill(skill.skillName)">
+                @if (isSkillSelected(skill.skillName)) {
+                  <span class="material-icons">check</span> Added
+                } @else {
+                  <span class="material-icons">add</span> Add
+                }
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+      @empty {
+        <div class="empty-state">
+          <div class="empty-icon"><span class="material-icons">search_off</span></div>
+          <h3>No skills found</h3>
+          <p>
+            @if (searchQuery) { No results match "{{ searchQuery }}" }
+            @else if (selectedCategory()) { No skills found in this category }
+            @else if (showMySkills()) { You haven't added any skills to your profile yet! }
+            @else { No skills available. Please add skills in backend. }
+          </p>
+          @if (searchQuery || selectedCategory() || showMySkills()) {
+            <button class="btn-clear" (click)="clearAll()">Clear filters</button>
+          }
+        </div>
+      }
+    </div>
+  }
+
+  <!-- Skill Detail Drawer -->
+  @if (selectedSkill()) {
+    <div class="drawer-overlay" (click)="selectedSkill.set(null)">
+      <div class="drawer" (click)="$event.stopPropagation()">
+        <div class="drawer-header">
+          <div class="drawer-icon">{{ selectedSkill()!.skillName[0].toUpperCase() }}</div>
+          <div>
+            <h2>{{ selectedSkill()!.skillName }}</h2>
+            @if (selectedSkill()!.category) {
+              <span class="drawer-category">{{ selectedSkill()!.category }}</span>
+            }
+          </div>
+          <button class="drawer-close" (click)="selectedSkill.set(null)">
+            <span class="material-icons">close</span>
+          </button>
+        </div>
+
+        @if (selectedSkill()!.description) {
+          <p class="drawer-desc">{{ selectedSkill()!.description }}</p>
+        }
+
+        <div class="drawer-stats">
+          <div class="drawer-stat">
+            <span class="material-icons">trending_up</span>
+            <div>
+              <strong>{{ selectedSkill()!.popularityScore }}</strong>
+              <span>Learners</span>
+            </div>
+          </div>
+          <div class="drawer-stat">
+            <span class="material-icons">calendar_today</span>
+            <div>
+              <strong>{{ selectedSkill()!.createdAt | date:'mediumDate' }}</strong>
+              <span>Added</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="drawer-actions">
+          <button class="btn-find-mentors" (click)="findMentors(selectedSkill()!.skillName)">
+            <span class="material-icons">people</span>
+            Find Mentors for this Skill
+          </button>
+          <button class="btn-find-groups" (click)="findGroups(selectedSkill()!.id)">
+            <span class="material-icons">group_work</span>
+            Browse Learning Groups
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Create / Edit Modal -->
+  @if (showForm()) {
+    <div class="modal-overlay" (click)="showForm.set(false)">
+      <div class="modal-card" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3>{{ editingSkill() ? 'Edit Skill' : 'Add New Skill' }}</h3>
+          <button class="modal-close" (click)="showForm.set(false)">
+            <span class="material-icons">close</span>
+          </button>
+        </div>
+
+        <div class="form">
+          <div class="input-group">
+            <label class="input-label">Skill Name <span class="required">*</span></label>
+            <div class="input-wrapper">
+              <span class="material-icons input-icon">auto_stories</span>
+              <input type="text" [(ngModel)]="formData.skillName" placeholder="e.g. Java, React, AWS" />
+            </div>
+          </div>
+          <div class="input-group">
+            <label class="input-label">Category</label>
+            <div class="input-wrapper">
+              <span class="material-icons input-icon">category</span>
+              <input type="text" [(ngModel)]="formData.category" placeholder="e.g. Programming, Design, Data Science" />
+            </div>
+          </div>
+          <div class="input-group">
+            <label class="input-label">Description</label>
+            <div class="input-wrapper textarea-wrap">
+              <textarea [(ngModel)]="formData.description" placeholder="Brief description of this skill..." rows="3"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button class="btn-modal-cancel" (click)="showForm.set(false)">Cancel</button>
+          <button class="btn-modal-save" (click)="saveSkill()" [disabled]="!formData.skillName || saving()">
+            @if (saving()) { <mat-spinner diameter="18" /> }
+            @else {
+              <span class="material-icons">{{ editingSkill() ? 'save' : 'add' }}</span>
+              {{ editingSkill() ? 'Update Skill' : 'Create Skill' }}
+            }
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+</div>

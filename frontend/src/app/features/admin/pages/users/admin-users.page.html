@@ -1,0 +1,138 @@
+<div class="page">
+  <!-- Header -->
+  <div class="page-header">
+    <div>
+      <h1>User Management</h1>
+      <p>View and manage user accounts</p>
+    </div>
+    <div class="header-stats">
+      <div class="stat-pill">
+        <span class="material-icons">people</span>
+        {{ totalUsers }} users
+      </div>
+      <div class="stat-pill warning">
+        <span class="material-icons">block</span>
+        {{ blockedCount }} blocked
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="admin-tabs">
+    <button class="admin-tab" [class.active]="tab() === 'all'" (click)="tab.set('all'); loadAllUsers()">
+      <span class="material-icons">people</span>
+      All Users
+    </button>
+    <button class="admin-tab" [class.active]="tab() === 'blocked'" (click)="tab.set('blocked'); loadBlockedUsers()">
+      <span class="material-icons">block</span>
+      Blocked Users
+      @if (blockedCount > 0) {
+        <span class="tab-badge">{{ blockedCount }}</span>
+      }
+    </button>
+  </div>
+
+  <!-- ── All Users Tab ── -->
+  @if (tab() === 'all') {
+    <div class="search-bar">
+      <span class="material-icons">search</span>
+      <input [(ngModel)]="searchKeyword" placeholder="Search by name, email, username..." class="search-input" />
+    </div>
+
+    @if (loading()) {
+      <div class="loading-center"><mat-spinner diameter="48" /></div>
+    } @else {
+      <div class="users-table">
+        <div class="table-header">
+          <span>Username</span>
+          <span>Email</span>
+          <span>Name</span>
+          <span>Status</span>
+          <span>Joined</span>
+          <span>Actions</span>
+        </div>
+        @for (u of filteredUsers; track u.id) {
+          <div class="table-row">
+            <div class="user-cell">
+              <div class="avatar">{{ getInitials(u.username) }}</div>
+              <strong>{{ u.username }}</strong>
+            </div>
+            <span class="email-cell">{{ u.email }}</span>
+            <span>{{ u.name || '—' }}</span>
+            <span class="status-badge" [class.blocked]="u.isBlocked" [class.active]="!u.isBlocked">
+              {{ u.isBlocked ? 'Blocked' : 'Active' }}
+            </span>
+            <span class="date-cell">{{ u.createdAt | date:'short' }}</span>
+            <div class="row-actions">
+              @if (u.isBlocked) {
+                <button class="btn-unblock" (click)="openUnblockDialog(u)" title="Unblock user">
+                  <span class="material-icons">check_circle</span>
+                </button>
+              } @else {
+                <button class="btn-block" (click)="openBlockDialog(u)" title="Block user">
+                  <span class="material-icons">block</span>
+                </button>
+              }
+              <button class="btn-view" (click)="viewUserDetails(u.userId)">
+                <span class="material-icons">visibility</span>
+              </button>
+            </div>
+          </div>
+        }
+        @empty {
+          <div class="empty-state" style="grid-column:1/-1">
+            <span class="material-icons">people_outline</span>
+            <h3>No users found</h3>
+          </div>
+        }
+      </div>
+
+      <!-- Pagination -->
+      <div class="pagination">
+        <button [disabled]="!hasPreviousPage" (click)="previousPage()">← Previous</button>
+        <span>Page {{ currentPage + 1 }} of {{ totalPages }}</span>
+        <button [disabled]="!hasNextPage" (click)="nextPage()">Next →</button>
+      </div>
+    }
+  }
+
+  <!-- ── Blocked Users Tab ── -->
+  @if (tab() === 'blocked') {
+    @if (loading()) {
+      <div class="loading-center"><mat-spinner diameter="48" /></div>
+    } @else {
+      <div class="users-table">
+        <div class="table-header">
+          <span>Username</span>
+          <span>Email</span>
+          <span>Block Reason</span>
+          <span>Blocked Date</span>
+          <span>Actions</span>
+        </div>
+        @for (u of blockedUsers; track u.id) {
+          <div class="table-row blocked-row">
+            <div class="user-cell">
+              <div class="avatar">{{ getInitials(u.username) }}</div>
+              <strong>{{ u.username }}</strong>
+            </div>
+            <span class="email-cell">{{ u.email }}</span>
+            <span class="reason-cell" [title]="u.blockReason">{{ u.blockReason | slice:0:40 }}{{ u.blockReason && u.blockReason.length > 40 ? '...' : '' }}</span>
+            <span class="date-cell">{{ u.blockDate | date:'short' }}</span>
+            <div class="row-actions">
+              <button class="btn-unblock" (click)="openUnblockDialog(u)">
+                <span class="material-icons">check_circle</span> Unblock
+              </button>
+            </div>
+          </div>
+        }
+        @empty {
+          <div class="empty-state" style="grid-column:1/-1">
+            <span class="material-icons">done_all</span>
+            <h3>No blocked users</h3>
+            <p>All users are in good standing!</p>
+          </div>
+        }
+      </div>
+    }
+  }
+</div>

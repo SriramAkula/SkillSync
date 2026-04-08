@@ -1,0 +1,163 @@
+<div class="detail-page">
+  @if (loading()) {
+    <div class="loading-center">
+      <mat-spinner diameter="50" strokeWidth="4"></mat-spinner>
+    </div>
+  } @else if (user) {
+    <!-- Header Section -->
+    <div class="page-header">
+      <div class="header-content">
+        <button class="back-btn" (click)="goBack()" title="Go back">
+          <span class="material-icons">arrow_back</span>
+          Back
+        </button>
+        <div class="header-title">
+          <h1>{{ user.username }}</h1>
+          <p class="header-subtitle">User Profile Details</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        @if (user.isBlocked) {
+          <button class="btn btn-success" (click)="unblockUser()">
+            <span class="material-icons">check_circle</span>
+            Unblock User
+          </button>
+        } @else {
+          <button class="btn btn-danger" (click)="blockUser()">
+            <span class="material-icons">block</span>
+            Block User
+          </button>
+        }
+      </div>
+    </div>
+
+    <!-- Profile Section -->
+    <div class="profile-section">
+      <div class="profile-card" [class.blocked]="user.isBlocked">
+        <div class="profile-header">
+          <div class="avatar-large">{{ getInitials(user.username) }}</div>
+          <div class="profile-info">
+            <h2>{{ user.username }}</h2>
+            <span class="status-badge" [class.blocked]="user.isBlocked">
+              {{ user.isBlocked ? '🔒 Blocked' : '✓ Active' }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Info Grid -->
+        <div class="info-grid">
+          <!-- Email -->
+          <div class="info-block">
+            <span class="info-icon">📧</span>
+            <div class="info-content">
+              <span class="info-label">Email</span>
+              <span class="info-value">{{ user.email }}</span>
+              <button class="copy-btn" (click)="copyToClipboard(user.email)" title="Copy email">
+                <span class="material-icons">content_copy</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Full Name -->
+          <div class="info-block">
+            <span class="info-icon">👤</span>
+            <div class="info-content">
+              <span class="info-label">Full Name</span>
+              <span class="info-value">{{ user.name || '—' }}</span>
+            </div>
+          </div>
+
+          <!-- Roles -->
+          <div class="info-block">
+            <span class="info-icon">🔐</span>
+            <div class="info-content">
+              <span class="info-label">Roles</span>
+              <span class="info-value">
+                @if (user.roles && user.roles.length > 0) {
+                  <span class="roles-list">
+                    @for (role of user.roles; track role) {
+                      <span class="role-badge">{{ role }}</span>
+                    }
+                  </span>
+                } @else {
+                  —
+                }
+              </span>
+            </div>
+          </div>
+
+          <!-- Joined Date -->
+          <div class="info-block">
+            <span class="info-icon">📅</span>
+            <div class="info-content">
+              <span class="info-label">Joined</span>
+              <span class="info-value">{{ user.createdAt | date:'MMM d, y @ h:mm a' }}</span>
+            </div>
+          </div>
+
+          <!-- Profile Status -->
+          <div class="info-block">
+            <span class="info-icon">📋</span>
+            <div class="info-content">
+              <span class="info-label">Profile Status</span>
+              <span class="info-value">{{ user.isProfileComplete ? '✓ Complete' : 'Incomplete' }}</span>
+            </div>
+          </div>
+
+          <!-- Rating -->
+          <div class="info-block">
+            <span class="info-icon">⭐</span>
+            <div class="info-content">
+              <span class="info-label">Rating</span>
+              <span class="info-value">{{ user.rating != null ? user.rating.toFixed(1) : 'N/A' }}</span>
+            </div>
+          </div>
+
+          <!-- Total Reviews -->
+          <div class="info-block">
+            <span class="info-icon">💬</span>
+            <div class="info-content">
+              <span class="info-label">Total Reviews</span>
+              <span class="info-value">{{ user.totalReviews }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Block Info Section -->
+        @if (user.isBlocked) {
+          <div class="divider"></div>
+          <div class="block-info">
+            <div class="block-header">
+              <span class="material-icons warning">block</span>
+              <h3>Block Information</h3>
+            </div>
+            <div class="block-details">
+              <div class="block-detail-item">
+                <span class="label">Reason:</span>
+                <span class="value reason">{{ user.blockReason }}</span>
+              </div>
+              <div class="block-detail-item">
+                <span class="label">Blocked On:</span>
+                <span class="value">{{ user.blockDate | date:'MMM d, y @ h:mm a' }}</span>
+              </div>
+              <div class="block-detail-item">
+                <span class="label">Blocked By:</span>
+                <span class="value">Admin ID: {{ user.blockedBy }}</span>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  } @else {
+    <div class="empty-state">
+      <span class="material-icons">person_off</span>
+      <h3>User Not Found</h3>
+      <p>The user you're looking for doesn't exist or has been deleted.</p>
+      <button class="btn btn-primary" (click)="goBack()">
+        <span class="material-icons">arrow_back</span>
+        Go Back
+      </button>
+    </div>
+  }
+</div>

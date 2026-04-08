@@ -5,27 +5,8 @@ import { CommonModule } from '@angular/common';
   selector: 'app-otp-input',
   standalone: true,
   imports: [CommonModule],
-  template: `
-    <div class="otp-wrapper">
-      @for (i of indices; track i) {
-        <input #otpInput class="otp-box" type="text" maxlength="1" inputmode="numeric"
-          [value]="digits()[i]"
-          (input)="onInput($event, i)"
-          (keydown)="onKeydown($event, i)"
-          (paste)="onPaste($event)" />
-      }
-    </div>
-  `,
-  styles: [`
-    .otp-wrapper { display: flex; gap: 10px; justify-content: center; }
-    .otp-box {
-      width: 48px; height: 56px; text-align: center;
-      font-size: 22px; font-weight: 600;
-      border: 2px solid #e0e0e0; border-radius: 8px;
-      outline: none; transition: border-color 0.2s;
-    }
-    .otp-box:focus { border-color: #5c6bc0; }
-  `]
+  templateUrl: './otp-input.component.html',
+  styleUrl: './otp-input.component.scss'
 })
 export class OtpInputComponent {
   @Output() otpComplete = new EventEmitter<string>();

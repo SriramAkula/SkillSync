@@ -1,0 +1,31 @@
+<div class="confirm-dialog">
+  <!-- Header -->
+  <div class="dialog-header">
+    <h2>{{ data.title }}</h2>
+    <button mat-icon-button (click)="cancel()" class="close-btn" aria-label="Close">
+      <span class="material-icons">close</span>
+    </button>
+  </div>
+
+  <!-- Content -->
+  <div class="dialog-content">
+    <div class="alert-icon">⚠️</div>
+    <p class="message">{{ data.message }}</p>
+  </div>
+
+  <!-- Footer -->
+  <div class="dialog-footer">
+    <button mat-stroked-button (click)="cancel()" class="btn-cancel">
+      <span class="material-icons">close</span>
+      Cancel
+    </button>
+    <button 
+      mat-raised-button 
+      color="warn" 
+      (click)="confirm()"
+      class="btn-confirm">
+      <span class="material-icons">check</span>
+      {{ data.confirmText || 'Confirm' }}
+    </button>
+  </div>
+</div>

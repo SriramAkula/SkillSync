@@ -1,0 +1,122 @@
+<div @pageAnimation class="block-page-container">
+  <!-- Header -->
+  <div class="page-header">
+    <button class="back-button" (click)="goBack()">
+      <span class="material-icons">arrow_back</span>
+      Back
+    </button>
+  </div>
+
+  <!-- Main Content -->
+  <div class="page-content">
+    <div class="block-card">
+      <!-- Card Header -->
+      <div class="card-header">
+        <div class="header-icon danger">
+          <span class="material-icons">block</span>
+        </div>
+        <div class="header-text">
+          <h1>Block User</h1>
+          <p>Permanently block this user from accessing the platform</p>
+        </div>
+      </div>
+
+      <!-- User Info Section -->
+      <div class="user-section">
+        <div class="section-title">User Information</div>
+        <div class="user-card">
+          <div class="avatar-container">
+            <div class="avatar-large" [style.background]="getAvatarGradient(user.username)">
+              {{ getInitials(user.username) }}
+            </div>
+          </div>
+          <div class="user-details">
+            <div class="detail-row">
+              <span class="label">Username</span>
+              <span class="value">{{ user.username }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="label">Email</span>
+              <span class="value">{{ user.email }}</span>
+            </div>
+            <div class="detail-row" *ngIf="user.name">
+              <span class="label">Full Name</span>
+              <span class="value">{{ user.name }}</span>
+            </div>
+            <div class="detail-row">
+              <span class="label">Status</span>
+              <span class="value status-active">
+                <span class="material-icons">check_circle</span>
+                Active
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Warning Section -->
+      <div class="warning-section">
+        <div class="warning-icon">
+          <span class="material-icons">warning</span>
+        </div>
+        <div class="warning-content">
+          <h3>Important Notice</h3>
+          <p>
+            Once blocked, this user will:
+          </p>
+          <ul>
+            <li>Lose immediate access to all platform features</li>
+            <li>Not be able to log in to their account</li>
+            <li>Be unable to access any services or content</li>
+            <li>Have their active sessions terminated</li>
+          </ul>
+          <p class="warning-note">
+            This action is permanent unless you manually unblock the user later.
+          </p>
+        </div>
+      </div>
+
+      <!-- Block Reason Form -->
+      <div class="form-section">
+        <label for="blockReason" class="form-label">Reason for Blocking *</label>
+        <p class="form-description">
+          Please provide a clear reason for blocking this user. This information will be recorded for audit purposes.
+        </p>
+        <textarea
+          id="blockReason"
+          [(ngModel)]="blockReason"
+          placeholder="Example: Violation of terms of service, inappropriate behavior, spam activities..."
+          class="form-textarea"
+          rows="6"
+          (keyup.escape)="goBack()"
+        ></textarea>
+        @if (submitted() && !blockReason.trim()) {
+          <p class="form-error">
+            <span class="material-icons">error</span>
+            Reason is required
+          </p>
+        }
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="button-group">
+        <button class="btn btn-cancel" (click)="goBack()" [disabled]="isLoading()">
+          Cancel
+        </button>
+        <button
+          class="btn btn-danger"
+          (click)="confirmBlock()"
+          [disabled]="!blockReason.trim() || isLoading()"
+        >
+          @if (isLoading()) {
+            <mat-spinner diameter="20" />
+            <span>Blocking...</span>
+          } @else {
+            <span class="material-icons">block</span>
+            <span>Block User</span>
+          }
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

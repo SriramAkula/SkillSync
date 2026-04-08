@@ -1,0 +1,9 @@
+<div class="otp-wrapper">
+  @for (i of indices; track i) {
+    <input #otpInput class="otp-box" type="text" maxlength="1" inputmode="numeric"
+      [value]="digits()[i]"
+      (input)="onInput($event, i)"
+      (keydown)="onKeydown($event, i)"
+      (paste)="onPaste($event)" />
+  }
+</div>

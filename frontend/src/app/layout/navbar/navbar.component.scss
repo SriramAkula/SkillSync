@@ -1,0 +1,18 @@
+@keyframes drop-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-drop-in {
+  animation: drop-in 0.2s cubic-bezier(0, 0, 0.2, 1);
+}
+
+:host ::ng-deep .active {
+  color: #7c3aed !important;
+}

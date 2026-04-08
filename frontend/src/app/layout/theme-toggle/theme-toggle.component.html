@@ -1,0 +1,9 @@
+<button class="theme-toggle-btn" (click)="themeService.toggleTheme()" [title]="themeService.isDark() ? 'Switch to Light Mode' : 'Switch to Dark Mode'">
+  <div class="icon-container">
+    @if (themeService.isDark()) {
+      <span class="material-icons sun-icon">light_mode</span>
+    } @else {
+      <span class="material-icons moon-icon">dark_mode</span>
+    }
+  </div>
+</button>

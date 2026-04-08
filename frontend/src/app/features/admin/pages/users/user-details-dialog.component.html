@@ -1,0 +1,61 @@
+<div class="user-details-modal">
+  <!-- Header with close button -->
+  <div class="modal-header">
+    <h2>User Details</h2>
+    <button mat-icon-button (click)="close()" class="close-btn" aria-label="Close">
+      <span class="material-icons">close</span>
+    </button>
+  </div>
+  
+  <!-- Content -->
+  <div class="modal-content">
+    <!-- User Card Header -->
+    <div class="user-card-header" [class.blocked]="data.isBlocked">
+      <div class="avatar">{{ getInitials(data.username) }}</div>
+      <div class="user-info-header">
+        <h3>{{ data.username }}</h3>
+        <span class="status-badge" [class.blocked]="data.isBlocked">
+          {{ data.isBlocked ? '🔒 Blocked' : '✓ Active' }}
+        </span>
+      </div>
+    </div>
+
+    <!-- Info Grid -->
+    <div class="info-section">
+      <div class="info-row">
+        <span class="info-label">📧 Email</span>
+        <span class="info-value">{{ data.email }}</span>
+      </div>
+
+      <div class="info-row">
+        <span class="info-label">👤 Full Name</span>
+        <span class="info-value">{{ data.name || '—' }}</span>
+      </div>
+
+      <div class="info-row">
+        <span class="info-label">📅 Joined</span>
+        <span class="info-value">{{ data.createdAt | date:'MMM d, y @ h:mm a' }}</span>
+      </div>
+
+      @if (data.isBlocked) {
+        <div class="divider"></div>
+        <div class="info-row warning">
+          <span class="info-label">⛔ Block Reason</span>
+          <span class="info-value block-reason">{{ data.blockReason }}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">🔒 Blocked On</span>
+          <span class="info-value">{{ data.blockDate | date:'MMM d, y @ h:mm a' }}</span>
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="modal-footer">
+    <button mat-raised-button color="primary" (click)="close()">
+      <span class="material-icons">check</span>
+      Close
+    </button>
+  </div>
+</div>

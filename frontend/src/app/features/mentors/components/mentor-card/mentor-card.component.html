@@ -1,0 +1,48 @@
+<div class="card" (click)="view.emit(mentor.userId)">
+  <div class="card-top">
+    <div class="avatar">{{ initials() }}</div>
+    <div class="avail-badge" [class]="'avail-' + mentor.availabilityStatus.toLowerCase()">
+      <span class="dot"></span>{{ mentor.availabilityStatus }}
+    </div>
+  </div>
+
+  <div class="card-body">
+    <h3 class="mentor-name">{{ mentor.name || mentor.username }}</h3>
+    <p class="specialization">{{ mentor.specialization }}</p>
+    <p class="experience">{{ mentor.yearsOfExperience }} years of experience</p>
+
+    <div class="stats">
+      <div class="stat">
+        <span class="material-icons stat-icon">star</span>
+        <span class="stat-val">{{ overrideRating !== undefined ? (overrideRating | number:'1.1-1') : (mentor.rating | number:'1.1-1') }}</span>
+      </div>
+      <div class="stat">
+        <span class="material-icons stat-icon">people</span>
+        <span class="stat-val">{{ overrideLearnersCount !== undefined ? overrideLearnersCount : mentor.totalStudents }}</span>
+      </div>
+      <div class="stat">
+        <span class="material-icons stat-icon">payments</span>
+        <span class="stat-val">₹{{ mentor.hourlyRate }}/hr</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card-actions">
+    @if (isOwnProfile()) {
+      <!-- Own profile: single full-width manage button -->
+      <button class="btn-manage" (click)="$event.stopPropagation(); view.emit(mentor.userId)">
+        <span class="material-icons">settings</span> Manage Profile
+      </button>
+    } @else {
+      <!-- Other mentor: book + view -->
+      <button class="btn-book"
+              (click)="$event.stopPropagation(); book.emit(mentor.userId)"
+              [disabled]="mentor.availabilityStatus !== 'AVAILABLE'">
+        Book Session
+      </button>
+      <button class="btn-view" (click)="$event.stopPropagation(); view.emit(mentor.userId)">
+        View Profile
+      </button>
+    }
+  </div>
+</div>

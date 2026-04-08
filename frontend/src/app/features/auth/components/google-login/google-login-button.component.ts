@@ -7,12 +7,8 @@ declare const google: any;
 @Component({
   selector: 'app-google-login-button',
   standalone: true,
-  template: `<div id="google-btn-container"></div>`,
-  styles: [`
-    #google-btn-container {
-      display: flex; justify-content: center; width: 100%;
-    }
-  `]
+  templateUrl: './google-login-button.component.html',
+  styleUrl: './google-login-button.component.scss'
 })
 export class GoogleLoginButtonComponent implements OnInit {
   private readonly authStore = inject(AuthStore);
