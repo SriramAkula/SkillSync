@@ -72,6 +72,24 @@ jobs:
             ${{ secrets.ACR_LOGIN_SERVER }}/skillsync-${{ matrix.service }}:latest
             ${{ secrets.ACR_LOGIN_SERVER }}/skillsync-${{ matrix.service }}:${{ github.sha }}
 
+      - name: Cleanup Old ACR Tags
+        if: steps.filter.outputs.changed == 'true'
+        run: |
+          REPO="skillsync-${{ matrix.service }}"
+          echo "Cleaning up repository: $REPO"
+          
+          # Get all tags except the most recent 5 (tail -n +6 skips first 5)
+          TAGS_TO_DELETE=$(az acr repository show-tags -n ${{ secrets.ACR_LOGIN_SERVER_NAME }} --repository $REPO --orderby time_desc --output tsv | tail -n +6)
+          
+          if [ -z "$TAGS_TO_DELETE" ]; then
+            echo "No old tags to delete."
+          else
+            for tag in $TAGS_TO_DELETE; do
+              echo "Deleting old tag: $tag"
+              az acr repository delete -n ${{ secrets.ACR_LOGIN_SERVER_NAME }} --repository $REPO --tag $tag --yes
+            done
+          fi
+
   # ───────────────
   # JOB 2: DEPLOY
   # ───────────────
