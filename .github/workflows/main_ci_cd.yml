@@ -89,8 +89,8 @@ jobs:
             cd /home/azureuser/SkillSync
             
             # Ensure we have the latest .yml files
-            git fetch origin feature/pipeline
-            git reset --hard origin/feature/pipeline
+            git fetch origin ${{ github.ref_name }}
+            git reset --hard origin/${{ github.ref_name }}
             
             # Login to ACR on the VM
             echo "${{ secrets.ACR_PASSWORD }}" | docker login ${{ secrets.ACR_LOGIN_SERVER }} -u ${{ secrets.ACR_USERNAME }} --password-stdin
