@@ -46,11 +46,11 @@ jobs:
         id: filter
         uses: dorny/paths-filter@v3
         with:
-          # Using the 'Relative Comparison' approach as requested
+          # Restoring specific paths for high-speed builds
           base: ${{ github.event.before != '0000000000000000000000000000000000000000' && github.event.before || github.ref_name }}
           filters: |
             changed:
-              - '**'
+              - '${{ matrix.service == 'frontend' && 'frontend/**' || format('backend/{0}/**', matrix.service) }}'
 
       - name: Azure Login
         if: steps.filter.outputs.changed == 'true'
@@ -109,6 +109,9 @@ jobs:
           key: ${{ secrets.VM_SSH_KEY }}
           script: |
             cd /home/azureuser/SkillSync
+            
+            # Ensure the proxy network exists to prevent dependency errors
+            docker network create skillsync-proxy || true
             
             # Ensure we have the latest .yml files
             git fetch origin ${{ github.ref_name }}
