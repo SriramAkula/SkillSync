@@ -29,12 +29,14 @@ public class CorsConfig {
         config.setAllowedHeaders(List.of(
                 "Authorization", "Content-Type", "X-Requested-With",
                 "Accept", "Origin", "X-Gateway-Request",
-                "Cache-Control",
-                "Pragma"));
+                "X-Auth-Token", "x-auth-token",
+                "Cache-Control", "cache-control",
+                "Pragma", "pragma"));
 
         config.setExposedHeaders(List.of(
                 "Authorization",
-                "x-auth-token"));
+                "x-auth-token",
+                "X-Auth-Token"));
 
         config.setAllowCredentials(true);
         config.setMaxAge(3600L);
