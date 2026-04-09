@@ -45,6 +45,7 @@ jobs:
       - name: Check for Changes in Service
         id: filter
         uses: dorny/paths-filter@v3
+        with:
           # Using the 'Relative Comparison' approach as requested
           base: ${{ github.event.before != '0000000000000000000000000000000000000000' && github.event.before || github.ref_name }}
           filters: |
