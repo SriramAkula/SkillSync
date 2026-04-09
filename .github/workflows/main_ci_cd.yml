@@ -126,8 +126,9 @@ jobs:
             # Restart services
             docker-compose -f backend/docker-compose.infra.yml -f backend/docker-compose.monitoring.yml -f backend/docker-compose.services.yml -f frontend/docker-compose.yml up -d
             
-            # Force-recreate Nginx Proxy to clear persistent connection issues
+            # Re-pull and force-recreate Nginx Proxy to ensure it recovers from disk-full cleanups
             cd /home/azureuser/nginx-proxy
+            docker-compose pull
             docker-compose up -d --force-recreate
             
             # Print running containers for debugging
