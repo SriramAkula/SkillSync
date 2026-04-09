@@ -39,11 +39,16 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Check for Changes in Service
         id: filter
         uses: dorny/paths-filter@v3
         with:
+          # Use github.event.before for push events to compare against previous state.
+          # Fallback to current ref_name if it's the first push (0000... sha).
+          base: ${{ github.event.before != '0000000000000000000000000000000000000000' && github.event.before || github.ref_name }}
           filters: |
             changed:
               - '${{ matrix.service == 'frontend' && 'frontend/**' || format('backend/{0}/**', matrix.service) }}'
