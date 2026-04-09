@@ -1,0 +1,99 @@
+name: SkillSync CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'backend/**'
+      - 'frontend/**'
+      - '.github/workflows/**'
+
+jobs:
+  # ───────────────
+  # JOB 1: BUILD & PUSH
+  # ───────────────
+  build-and-push:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [
+          "api-gateway",
+          "auth-service",
+          "user-service",
+          "skill-service",
+          "session-service",
+          "mentor-service",
+          "group-service",
+          "review-service",
+          "notification-service",
+          "payment-gateway",
+          "eureka-server",
+          "config-server",
+          "frontend"
+        ]
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Check for Changes in Service
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            changed:
+              - '${{ matrix.service == 'frontend' && 'frontend/**' || format('backend/{0}/**', matrix.service) }}'
+
+      - name: Azure Login
+        if: steps.filter.outputs.changed == 'true'
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Login to ACR
+        if: steps.filter.outputs.changed == 'true'
+        uses: azure/docker-login@v1
+        with:
+          login-server: ${{ secrets.ACR_LOGIN_SERVER }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+
+      - name: Build and Push Docker Image
+        if: steps.filter.outputs.changed == 'true'
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ matrix.service == 'frontend' && './frontend' || format('./backend/{0}', matrix.service) }}
+          push: true
+          tags: |
+            ${{ secrets.ACR_LOGIN_SERVER }}/skillsync-${{ matrix.service }}:latest
+            ${{ secrets.ACR_LOGIN_SERVER }}/skillsync-${{ matrix.service }}:${{ github.sha }}
+
+  # ───────────────
+  # JOB 2: DEPLOY
+  # ───────────────
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: SSH to Azure VM and Deploy
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VM_IP }}
+          username: ${{ secrets.VM_USER }}
+          key: ${{ secrets.VM_SSH_KEY }}
+          script: |
+            cd /home/azureuser/SkillSync
+            
+            # Login to ACR on the VM
+            echo "${{ secrets.ACR_PASSWORD }}" | docker login ${{ secrets.ACR_LOGIN_SERVER }} -u ${{ secrets.ACR_USERNAME }} --password-stdin
+            
+            # Pull latest images
+            docker-compose -f backend/docker-compose.infra.yml -f backend/docker-compose.services.yml -f frontend/docker-compose.yml pull
+            
+            # Restart services
+            docker-compose -f backend/docker-compose.infra.yml -f backend/docker-compose.services.yml -f frontend/docker-compose.yml up -d
+            
+            # Cleanup old images (keeps last 3 untagged)
+            docker image prune -a -f --filter "until=72h"
