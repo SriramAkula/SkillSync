@@ -5,7 +5,7 @@ on:
     branches:
       - main
       - development
-      - feature/pipeline
+      - 'feature/**'
     paths:
       - 'backend/**'
       - 'frontend/**'
