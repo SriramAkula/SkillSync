@@ -4,7 +4,7 @@ services:
   # ─── Microservices Layer ──────────────────────────────────────────────────
 
   api-gateway:
-    image: ${DOCKER_USERNAME}/skillsync-api-gateway:latest
+    image: skillsyncadmin.azurecr.io/skillsync-api-gateway:latest
     container_name: api-gateway
     restart: unless-stopped
     env_file: .env
@@ -23,7 +23,7 @@ services:
       - proxy-network
 
   auth-service:
-    image: ${DOCKER_USERNAME}/skillsync-auth-service:latest
+    image: skillsyncadmin.azurecr.io/skillsync-auth-service:latest
     container_name: auth-service
     restart: unless-stopped
     env_file: .env
@@ -47,7 +47,7 @@ services:
       - proxy-network
 
   user-service:
-    image: ${DOCKER_USERNAME}/skillsync-user-service:latest
+    image: skillsyncadmin.azurecr.io/skillsync-user-service:latest
     container_name: user-service
     restart: unless-stopped
     env_file: .env
@@ -69,7 +69,7 @@ services:
       - private-network
 
   skill-service:
-    image: ${DOCKER_USERNAME}/skillsync-skill-service:latest
+    image: skillsyncadmin.azurecr.io/skillsync-skill-service:latest
     container_name: skill-service
     restart: unless-stopped
     env_file: .env
@@ -89,7 +89,7 @@ services:
       - private-network
 
   session-service:
-    image: ${DOCKER_USERNAME}/skillsync-session-service:latest
+    image: skillsyncadmin.azurecr.io/skillsync-session-service:latest
     container_name: session-service
     restart: unless-stopped
     env_file: .env
@@ -111,7 +111,7 @@ services:
       - private-network
 
   mentor-service:
-    image: ${DOCKER_USERNAME}/skillsync-mentor-service:latest
+    image: skillsyncadmin.azurecr.io/skillsync-mentor-service:latest
     container_name: mentor-service
     restart: unless-stopped
     env_file: .env
@@ -133,7 +133,7 @@ services:
       - private-network
 
   group-service:
-    image: ${DOCKER_USERNAME}/skillsync-group-service:latest
+    image: skillsyncadmin.azurecr.io/skillsync-group-service:latest
     container_name: group-service
     restart: unless-stopped
     env_file: .env
@@ -153,7 +153,7 @@ services:
       - private-network
 
   review-service:
-    image: ${DOCKER_USERNAME}/skillsync-review-service:latest
+    image: skillsyncadmin.azurecr.io/skillsync-review-service:latest
     container_name: review-service
     restart: unless-stopped
     env_file: .env
@@ -175,7 +175,7 @@ services:
       - private-network
 
   notification-service:
-    image: ${DOCKER_USERNAME}/skillsync-notification-service:latest
+    image: skillsyncadmin.azurecr.io/skillsync-notification-service:latest
     container_name: notification-service
     restart: unless-stopped
     env_file: .env
@@ -199,7 +199,7 @@ services:
       - proxy-network
 
   payment-gateway:
-    image: ${DOCKER_USERNAME}/skillsync-payment-gateway:latest
+    image: skillsyncadmin.azurecr.io/skillsync-payment-gateway:latest
     container_name: payment-gateway
     restart: unless-stopped
     env_file: .env

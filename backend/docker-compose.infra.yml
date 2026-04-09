@@ -4,7 +4,7 @@ services:
   # ─── Infrastructure Layer ──────────────────────────────────────────────────
 
   config-server:
-    image: ${DOCKER_USERNAME}/skillsync-config-server:latest
+    image: skillsyncadmin.azurecr.io/skillsync-config-server:latest
     container_name: config-server
     restart: unless-stopped
     env_file: .env
@@ -93,7 +93,7 @@ services:
       retries: 5
 
   eureka-server:
-    image: ${DOCKER_USERNAME}/skillsync-eureka-server:latest
+    image: skillsyncadmin.azurecr.io/skillsync-eureka-server:latest
     container_name: eureka-server
     restart: unless-stopped
     env_file: .env
