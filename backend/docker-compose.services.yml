@@ -1,131 +1,26 @@
-services:
-  # ─── Infrastructure ────────────────────────────────────────────────────────
+version: "3.9"
 
-  config-server:
-    image: ${DOCKER_USERNAME}/skillsync-config-server:latest
-    container_name: config-server
+services:
+  # ─── Microservices Layer ──────────────────────────────────────────────────
+
+  api-gateway:
+    image: ${DOCKER_USERNAME}/skillsync-api-gateway:latest
+    container_name: api-gateway
     restart: unless-stopped
     env_file: .env
     environment:
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
-      CONFIG_REPO_URI: ${CONFIG_REPO_URI}
-      CONFIG_REPO_USERNAME: ${CONFIG_REPO_USERNAME}
-      CONFIG_REPO_PASSWORD: ${CONFIG_REPO_PASSWORD}
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_DEFAULT_ZONE}
     depends_on:
       eureka-server:
         condition: service_started
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8888/actuator/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      config-server:
+        condition: service_healthy
+      zipkin:
+        condition: service_started
     networks:
       - private-network
       - proxy-network
-
-  zipkin-mysql:
-    image: mysql:8.0
-    container_name: zipkin-mysql
-    restart: unless-stopped
-    env_file: .env
-    environment:
-      MYSQL_ROOT_PASSWORD: ${ZIPKIN_MYSQL_ROOT_PASSWORD}
-      MYSQL_DATABASE: ${ZIPKIN_MYSQL_DATABASE}
-      MYSQL_USER: ${ZIPKIN_MYSQL_USER}
-      MYSQL_PASSWORD: ${ZIPKIN_MYSQL_PASSWORD}
-    volumes:
-      - zipkin-mysql-data:/var/lib/mysql
-      - ./zipkin-schema.sql:/docker-entrypoint-initdb.d/zipkin-schema.sql
-    networks:
-      - private-network
-    command: --default-authentication-plugin=mysql_native_password
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  mysql:
-    image: mysql:8.0
-    container_name: skillsync-mysql
-    restart: unless-stopped
-    env_file: .env
-    environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      MYSQL_DATABASE: ${MYSQL_MAIN_DATABASE}
-      MYSQL_ROOT_HOST: ${MYSQL_ROOT_HOST}
-    volumes:
-      - mysql-data:/var/lib/mysql
-    networks:
-      - private-network
-    command: --default-authentication-plugin=mysql_native_password
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  rabbitmq:
-    image: rabbitmq:3-management
-    container_name: rabbitmq
-    restart: unless-stopped
-    networks:
-      - private-network
-    healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  redis:
-    image: redis:latest
-    container_name: redis
-    restart: unless-stopped
-    networks:
-      - private-network
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  # ─── Observability ─────────────────────────────────────────────────────────
-
-  loki:
-    image: grafana/loki:latest
-    container_name: loki
-    restart: unless-stopped
-    volumes:
-      - ./loki-config.yml:/etc/loki/loki-config.yml
-      - loki-data:/loki
-    command: -config.file=/etc/loki/loki-config.yml
-    networks:
-      - private-network
-
-  promtail:
-    image: grafana/promtail:latest
-    container_name: promtail
-    restart: unless-stopped
-    volumes:
-      - ./promtail-config.yml:/etc/promtail/promtail-config.yml
-    command: -config.file=/etc/promtail/promtail-config.yml
-    depends_on:
-      - loki
-    networks:
-      - private-network
-
-  prometheus:
-    image: prom/prometheus:latest
-    container_name: prometheus
-    restart: unless-stopped
-    volumes:
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml
-      - prometheus-data:/prometheus
-    networks:
-      - private-network
-
-  # ─── Microservices ─────────────────────────────────────────────────────────
 
   auth-service:
     image: ${DOCKER_USERNAME}/skillsync-auth-service:latest
@@ -327,79 +222,6 @@ services:
       - private-network
       - proxy-network
 
-  # ─── Proxy-facing Services ────────────────────────────────────────────────
-
-  eureka-server:
-    image: ${DOCKER_USERNAME}/skillsync-eureka-server:latest
-    container_name: eureka-server
-    restart: unless-stopped
-    env_file: .env
-    environment:
-      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
-    depends_on:
-      zipkin:
-        condition: service_started
-    networks:
-      - private-network
-      - proxy-network
-
-  api-gateway:
-    image: ${DOCKER_USERNAME}/skillsync-api-gateway:latest
-    container_name: api-gateway
-    restart: unless-stopped
-    env_file: .env
-    environment:
-      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
-      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_DEFAULT_ZONE}
-    depends_on:
-      eureka-server:
-        condition: service_started
-      config-server:
-        condition: service_healthy
-      zipkin:
-        condition: service_started
-    networks:
-      - private-network
-      - proxy-network
-
-  zipkin:
-    image: openzipkin/zipkin:latest
-    container_name: zipkin-server
-    restart: unless-stopped
-    env_file: .env
-    environment:
-      STORAGE_TYPE: mysql
-      MYSQL_HOST: zipkin-mysql
-      MYSQL_PORT: 3306
-      MYSQL_USER: ${ZIPKIN_MYSQL_USER}
-      MYSQL_PASS: ${ZIPKIN_MYSQL_PASSWORD}
-      MYSQL_DB: ${ZIPKIN_MYSQL_DATABASE}
-    depends_on:
-      zipkin-mysql:
-        condition: service_healthy
-    networks:
-      - private-network
-      - proxy-network
-
-  grafana:
-    image: grafana/grafana:latest
-    container_name: grafana
-    restart: unless-stopped
-    env_file: .env
-    environment:
-      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER}
-      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD}
-    volumes:
-      - grafana-data:/var/lib/grafana
-      - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
-      - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards
-      - ./grafana/dashboards:/etc/grafana/dashboards
-    depends_on:
-      - prometheus
-    networks:
-      - private-network
-      - proxy-network
-
 networks:
   private-network:
     driver: bridge
@@ -407,12 +229,5 @@ networks:
     name: skillsync-private
 
   proxy-network:
-    driver: bridge
+    external: true
     name: skillsync-proxy
-
-volumes:
-  mysql-data:
-  zipkin-mysql-data:
-  prometheus-data:
-  grafana-data:
-  loki-data:
