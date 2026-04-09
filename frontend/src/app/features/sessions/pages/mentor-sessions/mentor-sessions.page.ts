@@ -11,7 +11,7 @@ import { SessionDto } from '../../../../shared/models';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
 
-type DashTab = 'pending' | 'upcoming' | 'all';
+type DashTab = 'pending' | 'upcoming' | 'all' | 'confirmed';
 
 @Component({
   selector: 'app-mentor-sessions-page',
@@ -44,9 +44,10 @@ export class MentorSessionsPage implements OnInit {
   rejectReason = '';
 
   readonly tabs: { key: DashTab; label: string }[] = [
-    { key: 'pending',  label: 'Incoming Requests' },
-    { key: 'upcoming', label: 'Accepted Schedule' },
-    { key: 'all',      label: 'Session History' },
+    { key: 'pending',   label: 'Incoming Requests' },
+    { key: 'upcoming',  label: 'Accepted Schedule' },
+    { key: 'confirmed', label: 'Completed Sessions' },
+    { key: 'all',       label: 'Session History' },
   ];
 
   readonly quickReasons = [
@@ -73,6 +74,7 @@ export class MentorSessionsPage implements OnInit {
     const tab = this.activeTab();
     if (tab === 'pending') return this.pendingSessions();
     if (tab === 'upcoming') return this.upcomingSessions();
+    if (tab === 'confirmed') return this.confirmedSessions();
     return this.sessionStore.mentorSessions() as SessionDto[];
   });
 

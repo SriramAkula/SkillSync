@@ -15,11 +15,11 @@ body {
 
 /* Premium Glassmorphism Utility */
 .glass-effect {
-  @apply backdrop-blur-md bg-white/70 border border-white/20 shadow-lg;
+  @apply backdrop-blur-md bg-white/70 border border-white/20 shadow-lg dark:bg-slate-900/60 dark:border-white/10;
 }
 
 .glass-card {
-  @apply backdrop-blur-md bg-white/70 border border-white/20 shadow-xl rounded-2xl overflow-hidden;
+  @apply backdrop-blur-md bg-white/70 border border-white/20 shadow-xl rounded-2xl dark:bg-slate-900/60 dark:border-white/10;
 }
 
 /* Custom Scrollbar for Premium Feel */
