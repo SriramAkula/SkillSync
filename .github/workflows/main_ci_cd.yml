@@ -86,7 +86,7 @@ jobs:
           else
             for tag in $TAGS_TO_DELETE; do
               echo "Deleting old tag: $tag"
-              az acr repository delete -n ${{ secrets.ACR_LOGIN_SERVER_NAME }} --repository $REPO --tag $tag --yes
+              az acr repository delete -n ${{ secrets.ACR_LOGIN_SERVER_NAME }} --image $REPO:$tag --yes
             done
           fi
 
