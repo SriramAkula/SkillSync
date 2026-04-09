@@ -100,5 +100,9 @@ jobs:
             # Restart services
             docker-compose -f backend/docker-compose.infra.yml -f backend/docker-compose.monitoring.yml -f backend/docker-compose.services.yml -f frontend/docker-compose.yml up -d
             
+            # Refresh Nginx Proxy to clear 502s
+            cd /home/azureuser/nginx-proxy
+            docker-compose restart
+            
             # Cleanup old images (keeps last 3 untagged)
             docker image prune -a -f --filter "until=72h"
