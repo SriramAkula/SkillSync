@@ -1,8 +1,15 @@
 {
   "/api": {
-    "target": "http://api.20.197.18.249.nip.io:9090",
+    "target": "https://api.skillssync.me",
     "secure": false,
     "changeOrigin": true,
-    "logLevel": "debug"
+    "logLevel": "debug",
+    "pathRewrite": {
+      "^/api": ""
+    },
+    "cookiepathRewrite": {
+      "/auth": "/api/auth"
+    }
+
   }
 }
