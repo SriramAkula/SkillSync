@@ -87,14 +87,18 @@ jobs:
           script: |
             cd /home/azureuser/SkillSync
             
+            # Ensure we have the latest .yml files
+            git fetch origin feature/pipeline
+            git reset --hard origin/feature/pipeline
+            
             # Login to ACR on the VM
             echo "${{ secrets.ACR_PASSWORD }}" | docker login ${{ secrets.ACR_LOGIN_SERVER }} -u ${{ secrets.ACR_USERNAME }} --password-stdin
             
             # Pull latest images
-            docker-compose -f backend/docker-compose.infra.yml -f backend/docker-compose.services.yml -f frontend/docker-compose.yml pull
+            docker-compose -f backend/docker-compose.infra.yml -f backend/docker-compose.monitoring.yml -f backend/docker-compose.services.yml -f frontend/docker-compose.yml pull
             
             # Restart services
-            docker-compose -f backend/docker-compose.infra.yml -f backend/docker-compose.services.yml -f frontend/docker-compose.yml up -d
+            docker-compose -f backend/docker-compose.infra.yml -f backend/docker-compose.monitoring.yml -f backend/docker-compose.services.yml -f frontend/docker-compose.yml up -d
             
             # Cleanup old images (keeps last 3 untagged)
             docker image prune -a -f --filter "until=72h"
