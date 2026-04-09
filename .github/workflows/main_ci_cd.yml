@@ -45,12 +45,11 @@ jobs:
       - name: Check for Changes in Service
         id: filter
         uses: dorny/paths-filter@v3
-        with:
-          # Reverting to 'main' to ensure stability and fix Git 128 errors
-          base: 'main'
+          # Using the 'Relative Comparison' approach as requested
+          base: ${{ github.event.before != '0000000000000000000000000000000000000000' && github.event.before || github.ref_name }}
           filters: |
             changed:
-              - '${{ matrix.service == 'frontend' && 'frontend/**' || format('backend/{0}/**', matrix.service) }}'
+              - '**'
 
       - name: Azure Login
         if: steps.filter.outputs.changed == 'true'
@@ -82,8 +81,8 @@ jobs:
           REPO="skillsync-${{ matrix.service }}"
           echo "Cleaning up repository: $REPO"
           
-          # Get all tags except the most recent 5 (tail -n +6 skips first 5)
-          TAGS_TO_DELETE=$(az acr repository show-tags -n ${{ secrets.ACR_LOGIN_SERVER_NAME }} --repository $REPO --orderby time_desc --output tsv | tail -n +6)
+          # Get all tags except 'latest' and keep the 5 most recent commit tags
+          TAGS_TO_DELETE=$(az acr repository show-tags -n ${{ secrets.ACR_LOGIN_SERVER_NAME }} --repository $REPO --orderby time_desc --output tsv | grep -v "latest" | tail -n +6)
           
           if [ -z "$TAGS_TO_DELETE" ]; then
             echo "No old tags to delete."
@@ -130,5 +129,5 @@ jobs:
             # Print running containers for debugging
             docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
             
-            # Cleanup old images (keeps last 3 untagged)
-            docker image prune -a -f --filter "until=72h"
+            # Aggressive cleanup to prevent 29GB disk from filling up
+            docker system prune -af
