@@ -123,9 +123,12 @@ jobs:
             # Restart services
             docker-compose -f backend/docker-compose.infra.yml -f backend/docker-compose.monitoring.yml -f backend/docker-compose.services.yml -f frontend/docker-compose.yml up -d
             
-            # Refresh Nginx Proxy to clear 502s
+            # Force-recreate Nginx Proxy to clear persistent connection issues
             cd /home/azureuser/nginx-proxy
-            docker-compose restart
+            docker-compose up -d --force-recreate
+            
+            # Print running containers for debugging
+            docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
             
             # Cleanup old images (keeps last 3 untagged)
             docker image prune -a -f --filter "until=72h"
