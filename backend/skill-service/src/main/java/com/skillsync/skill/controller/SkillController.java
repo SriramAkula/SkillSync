@@ -220,11 +220,11 @@ public class SkillController {
 	}
 
 	/**
-	 * POST /api/skill/{id}/popularity
+	 * PUT /api/skill/{id}/popularity
 	 * Increment or decrement skill popularity
 	 */
 	@io.swagger.v3.oas.annotations.Operation(summary = "Update skill popularity", description = "Increment or decrement a skill's learner count")
-	@org.springframework.web.bind.annotation.PostMapping("/{id}/popularity")
+	@org.springframework.web.bind.annotation.PutMapping("/{id}/popularity")
 	public ResponseEntity<ApiResponse<SkillResponseDto>> updatePopularity(
 			@PathVariable Long id,
 			@RequestParam boolean increment) {

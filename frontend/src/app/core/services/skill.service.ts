@@ -39,6 +39,6 @@ export class SkillService {
   }
 
   updatePopularity(id: number, increment: boolean): Observable<ApiResponse<SkillDto>> {
-    return this.http.post<ApiResponse<SkillDto>>(`${this.base}/${id}/popularity`, null, { params: { increment } });
+    return this.http.put<ApiResponse<SkillDto>>(`${this.base}/${id}/popularity`, null, { params: { increment } });
   }
 }
