@@ -4,7 +4,7 @@ import { rxMethod } from '@ngrx/signals/rxjs-interop';
 import { tapResponse } from '@ngrx/operators';
 import { pipe, switchMap, tap } from 'rxjs';
 import { SkillService } from '../services/skill.service';
-import { SkillDto, CreateSkillRequest } from '../../shared/models/skill.models';
+import { SkillDto } from '../../shared/models/skill.models';
 
 interface SkillState {
   skills: SkillDto[];
@@ -75,6 +75,7 @@ export const SkillStore = signalStore(
             })
           );
         })
+      )
     ),
 
     loadForSelection: rxMethod<void>(

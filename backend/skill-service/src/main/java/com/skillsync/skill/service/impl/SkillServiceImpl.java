@@ -1,6 +1,7 @@
 package com.skillsync.skill.service.impl;
 
 import com.skillsync.skill.dto.request.CreateSkillRequestDto;
+import com.skillsync.skill.dto.response.PageResponse;
 import com.skillsync.skill.dto.response.SkillResponseDto;
 import com.skillsync.skill.service.SkillService;
 import com.skillsync.skill.service.command.SkillCommandService;

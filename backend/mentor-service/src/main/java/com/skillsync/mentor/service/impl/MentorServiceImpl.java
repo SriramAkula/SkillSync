@@ -1,6 +1,7 @@
 package com.skillsync.mentor.service.impl;
 
 import com.skillsync.mentor.client.AuthServiceClient;
+import com.skillsync.mentor.dto.PageResponse;
 import com.skillsync.mentor.dto.request.ApplyMentorRequestDto;
 import com.skillsync.mentor.dto.request.UpdateAvailabilityRequestDto;
 import com.skillsync.mentor.dto.response.MentorProfileResponseDto;
