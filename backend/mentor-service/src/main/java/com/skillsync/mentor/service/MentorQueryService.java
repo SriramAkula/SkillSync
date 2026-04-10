@@ -1,5 +1,6 @@
 package com.skillsync.mentor.service;
 
+import com.skillsync.mentor.dto.PageResponse;
 import com.skillsync.mentor.dto.response.MentorProfileResponseDto;
 import com.skillsync.mentor.entity.MentorProfile;
 import com.skillsync.mentor.exception.MentorNotFoundException;
@@ -7,6 +8,9 @@ import com.skillsync.mentor.mapper.MentorMapper;
 import com.skillsync.mentor.repository.MentorRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
@@ -63,16 +67,32 @@ public class MentorQueryService {
         return response;
     }
 
-    public List<MentorProfileResponseDto> getAllApprovedMentors() {
-        log.info("Fetching all approved mentors from DB");
-        return mentorRepository.findAllApprovedMentors()
-                .stream().map(mentorMapper::toDto).collect(Collectors.toList());
+    public PageResponse<MentorProfileResponseDto> getAllApprovedMentors(int page, int size) {
+        log.info("Fetching all approved mentors from DB - page: {}, size: {}", page, size);
+        Pageable pageable = PageRequest.of(page, size);
+        Page<MentorProfile> mentorPage = mentorRepository.findAllApprovedMentors(pageable);
+        return toPageResponse(mentorPage);
     }
 
-    public List<MentorProfileResponseDto> getPendingApplications() {
-        log.info("Fetching pending mentor applications from DB");
-        return mentorRepository.findPendingApplications()
-                .stream().map(mentorMapper::toDto).collect(Collectors.toList());
+    public PageResponse<MentorProfileResponseDto> getPendingApplications(int page, int size) {
+        log.info("Fetching pending mentor applications from DB - page: {}, size: {}", page, size);
+        Pageable pageable = PageRequest.of(page, size);
+        Page<MentorProfile> mentorPage = mentorRepository.findPendingApplications(pageable);
+        return toPageResponse(mentorPage);
+    }
+
+    private PageResponse<MentorProfileResponseDto> toPageResponse(Page<MentorProfile> page) {
+        List<MentorProfileResponseDto> content = page.getContent().stream()
+                .map(mentorMapper::toDto)
+                .collect(Collectors.toList());
+
+        return PageResponse.<MentorProfileResponseDto>builder()
+                .content(content)
+                .currentPage(page.getNumber())
+                .totalElements(page.getTotalElements())
+                .totalPages(page.getTotalPages())
+                .pageSize(page.getSize())
+                .build();
     }
 
     public List<MentorProfileResponseDto> searchMentorsBySpecialization(String skill) {
