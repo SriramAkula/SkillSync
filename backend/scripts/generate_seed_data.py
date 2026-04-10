@@ -47,7 +47,13 @@ def generate_sql():
     # 2. USERS (skill_auth)
     output.append("\nUSE skill_auth;")
     output.append("DELETE FROM users;")
-    user_ids = list(range(ID_OFFSET + 1, ID_OFFSET + NUM_TOTAL_USERS + 1))
+    
+    # ID 1: Regular Admin
+    output.append(f"REPLACE INTO users (id, email, password, username, role, auth_provider, is_active, created_at, updated_at) VALUES (1, 'admin@skillsync.com', '{PASSWORD_HASH}', 'admin', 'ROLE_ADMIN', 'LOCAL', 1, NOW(), NOW());")
+    # ID 2: Super Admin
+    output.append(f"REPLACE INTO users (id, email, password, username, role, auth_provider, is_active, created_at, updated_at) VALUES (2, 'superadmin@skillsync.com', '{PASSWORD_HASH}', 'superadmin', 'ROLE_ADMIN', 'LOCAL', 1, NOW(), NOW());")
+    
+    user_ids = list(range(3, NUM_TOTAL_USERS + 3))
     mentor_user_ids = user_ids[:NUM_MENTORS]
     learner_user_ids = user_ids[NUM_MENTORS:]
     
@@ -60,6 +66,12 @@ def generate_sql():
     # 3. USER PROFILES (skill_user)
     output.append("\nUSE skill_user;")
     output.append("DELETE FROM user_profiles;")
+    
+    # ID 1: Admin Profile
+    output.append("REPLACE INTO user_profiles (user_id, email, name, username, bio, location, headline, is_active, created_at, updated_at) VALUES (1, 'admin@skillsync.com', 'Administrator', 'admin', 'System Administrator', 'Hyderabad', 'Platform Admin', 1, NOW(), NOW());")
+    # ID 2: Super Admin Profile
+    output.append("REPLACE INTO user_profiles (user_id, email, name, username, bio, location, headline, is_active, created_at, updated_at) VALUES (2, 'superadmin@skillsync.com', 'Super Administrator', 'superadmin', 'Master Admin', 'Hyderabad', 'System Owner', 1, NOW(), NOW());")
+
     for i in user_ids:
         first = random.choice(FIRST_NAMES)
         last = random.choice(LAST_NAMES)
