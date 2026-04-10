@@ -48,17 +48,179 @@ services:
       timeout: 5s
       retries: 5
 
-  mysql:
+  # --- Independent Databases ---
+
+  auth-db:
     image: mysql:8.0
-    container_name: skillsync-mysql
+    container_name: auth-db
     restart: unless-stopped
     env_file: .env
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      MYSQL_DATABASE: ${MYSQL_MAIN_DATABASE}
+      MYSQL_DATABASE: skill_auth
       MYSQL_ROOT_HOST: ${MYSQL_ROOT_HOST}
     volumes:
-      - mysql-data:/var/lib/mysql
+      - auth-db-data:/var/lib/mysql
+    networks:
+      - private-network
+    command: --default-authentication-plugin=mysql_native_password
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  user-db:
+    image: mysql:8.0
+    container_name: user-db
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: skill_user
+      MYSQL_ROOT_HOST: ${MYSQL_ROOT_HOST}
+    volumes:
+      - user-db-data:/var/lib/mysql
+    networks:
+      - private-network
+    command: --default-authentication-plugin=mysql_native_password
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  skill-db:
+    image: mysql:8.0
+    container_name: skill-db
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: skill_skill
+      MYSQL_ROOT_HOST: ${MYSQL_ROOT_HOST}
+    volumes:
+      - skill-db-data:/var/lib/mysql
+    networks:
+      - private-network
+    command: --default-authentication-plugin=mysql_native_password
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  session-db:
+    image: mysql:8.0
+    container_name: session-db
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: skill_session
+      MYSQL_ROOT_HOST: ${MYSQL_ROOT_HOST}
+    volumes:
+      - session-db-data:/var/lib/mysql
+    networks:
+      - private-network
+    command: --default-authentication-plugin=mysql_native_password
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  mentor-db:
+    image: mysql:8.0
+    container_name: mentor-db
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: skill_mentor
+      MYSQL_ROOT_HOST: ${MYSQL_ROOT_HOST}
+    volumes:
+      - mentor-db-data:/var/lib/mysql
+    networks:
+      - private-network
+    command: --default-authentication-plugin=mysql_native_password
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  group-db:
+    image: mysql:8.0
+    container_name: group-db
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: skill_group
+      MYSQL_ROOT_HOST: ${MYSQL_ROOT_HOST}
+    volumes:
+      - group-db-data:/var/lib/mysql
+    networks:
+      - private-network
+    command: --default-authentication-plugin=mysql_native_password
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  review-db:
+    image: mysql:8.0
+    container_name: review-db
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: skill_review
+      MYSQL_ROOT_HOST: ${MYSQL_ROOT_HOST}
+    volumes:
+      - review-db-data:/var/lib/mysql
+    networks:
+      - private-network
+    command: --default-authentication-plugin=mysql_native_password
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  notification-db:
+    image: mysql:8.0
+    container_name: notification-db
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: skill_notification
+      MYSQL_ROOT_HOST: ${MYSQL_ROOT_HOST}
+    volumes:
+      - notification-db-data:/var/lib/mysql
+    networks:
+      - private-network
+    command: --default-authentication-plugin=mysql_native_password
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  payment-db:
+    image: mysql:8.0
+    container_name: payment-db
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: skill_payment
+      MYSQL_ROOT_HOST: ${MYSQL_ROOT_HOST}
+    volumes:
+      - payment-db-data:/var/lib/mysql
     networks:
       - private-network
     command: --default-authentication-plugin=mysql_native_password
@@ -136,5 +298,13 @@ networks:
     name: skillsync-proxy
 
 volumes:
-  mysql-data:
+  auth-db-data:
+  user-db-data:
+  skill-db-data:
+  session-db-data:
+  mentor-db-data:
+  group-db-data:
+  review-db-data:
+  notification-db-data:
+  payment-db-data:
   zipkin-mysql-data:
