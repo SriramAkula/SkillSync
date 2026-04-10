@@ -42,8 +42,8 @@ public class ReviewController {
             @Parameter(hidden = true) @RequestHeader(value = "roles", required = false) String roles,
             @Valid @RequestBody SubmitReviewRequestDto request) {
         
-        if (roles == null || !roles.contains("ROLE_LEARNER")) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only learners can submit reviews");
+        if (roles == null || (!roles.contains("ROLE_LEARNER") && !roles.contains("ROLE_MENTOR"))) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only learners or mentors can submit reviews");
         }
         log.info("POST / - Learner {} submitting review", learnerId);
         ReviewResponseDto response = reviewService.submitReview(learnerId, request);
@@ -124,8 +124,8 @@ public class ReviewController {
             @Parameter(hidden = true) @RequestHeader(value = "roles", required = false) String roles,
             @Valid @RequestBody SubmitReviewRequestDto request) {
         
-        if (roles == null || !roles.contains("ROLE_LEARNER")) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only learners can update reviews");
+        if (roles == null || (!roles.contains("ROLE_LEARNER") && !roles.contains("ROLE_MENTOR"))) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only learners or mentors can update reviews");
         }
         log.info("PUT /{} - Learner {} updating review", reviewId, learnerId);
         ReviewResponseDto response = reviewService.updateReview(reviewId, learnerId, request);
@@ -150,8 +150,8 @@ public class ReviewController {
             @Parameter(hidden = true) @RequestHeader("X-User-Id") Long learnerId,
             @Parameter(hidden = true) @RequestHeader(value = "roles", required = false) String roles) {
         
-        if (roles == null || !roles.contains("ROLE_LEARNER")) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only learners can delete reviews");
+        if (roles == null || (!roles.contains("ROLE_LEARNER") && !roles.contains("ROLE_MENTOR"))) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only learners or mentors can delete reviews");
         }
         log.info("DELETE /{} - Learner {} deleting review", reviewId, learnerId);
         reviewService.deleteReview(reviewId, learnerId);

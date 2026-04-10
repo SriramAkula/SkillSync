@@ -44,8 +44,8 @@ public class MentorController {
             @Parameter(hidden = true) @RequestHeader(value = "roles", required = false) String roles,
             @Valid @RequestBody ApplyMentorRequestDto request) {
 
-        if (roles == null || !roles.contains("ROLE_LEARNER")) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only learners can apply to be mentors");
+        if (roles == null || (!roles.contains("ROLE_LEARNER") && !roles.contains("ROLE_MENTOR"))) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only learners or mentors can apply to be mentors");
         }
         log.info("POST /apply - User {}", userId);
         MentorProfileResponseDto response = mentorService.applyAsMentor(userId, request);
