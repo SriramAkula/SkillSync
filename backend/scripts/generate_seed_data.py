@@ -68,9 +68,9 @@ def generate_sql():
     output.append("DELETE FROM user_profiles;")
     
     # ID 1: Admin Profile
-    output.append("REPLACE INTO user_profiles (user_id, email, name, username, bio, location, headline, is_active, created_at, updated_at) VALUES (1, 'admin@skillsync.com', 'Administrator', 'admin', 'System Administrator', 'Hyderabad', 'Platform Admin', 1, NOW(), NOW());")
+    output.append("REPLACE INTO user_profiles (user_id, email, name, username, bio, phone_number, profile_complete, is_blocked, created_at, updated_at, rating, total_reviews) VALUES (1, 'admin@skillsync.com', 'Administrator', 'admin', 'System Administrator', '+910000000001', 1, 0, NOW(), NOW(), 5.0, 100);")
     # ID 2: Super Admin Profile
-    output.append("REPLACE INTO user_profiles (user_id, email, name, username, bio, location, headline, is_active, created_at, updated_at) VALUES (2, 'superadmin@skillsync.com', 'Super Administrator', 'superadmin', 'Master Admin', 'Hyderabad', 'System Owner', 1, NOW(), NOW());")
+    output.append("REPLACE INTO user_profiles (user_id, email, name, username, bio, phone_number, profile_complete, is_blocked, created_at, updated_at, rating, total_reviews) VALUES (2, 'superadmin@skillsync.com', 'Super Administrator', 'superadmin', 'Master Admin', '+910000000002', 1, 0, NOW(), NOW(), 5.0, 100);")
 
     for i in user_ids:
         first = random.choice(FIRST_NAMES)
