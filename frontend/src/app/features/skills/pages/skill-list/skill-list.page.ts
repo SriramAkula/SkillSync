@@ -113,12 +113,16 @@ export class SkillListPage implements OnInit {
     return this.selectedSkills().includes(name);
   }
 
-  toggleProfileSkill(name: string): void {
+  toggleProfileSkill(skill: SkillDto): void {
+    const name = skill.skillName;
+    if (!name) return;
+
     const list = this.selectedSkills();
+    const isAdding = !list.includes(name);
     let updated: string[];
     let actionStr = '';
     
-    if (list.includes(name)) {
+    if (!isAdding) {
       updated = list.filter(n => n !== name);
       actionStr = 'Removed from';
     } else {
@@ -126,24 +130,45 @@ export class SkillListPage implements OnInit {
       actionStr = 'Added to';
     }
     
+    // 1. Optimistic UI update for presence
     this.selectedSkills.set(updated);
+
+    // 2. Optimistic UI update for popularity count
+    const all = this.skillStore.skills();
+    const target = all.find(s => s.id === skill.id);
+    if (target) {
+      target.popularityScore = isAdding ? target.popularityScore + 1 : Math.max(0, target.popularityScore - 1);
+      this.skillStore.updateSkill(target);
+    }
     
-    // Get current profile to include name in update (backend requires it)
+    // 3. Update User Profile (User Service)
     this.userService.getMyProfile().subscribe({
       next: (res) => {
         const profile = res.data;
-        // Fire and forget auto-save to user profile with name included
         this.userService.updateProfile({ 
           name: profile.name || profile.username,
           skills: updated.join(',') 
         }).subscribe({
           next: () => {
-            this.snack.open(`${actionStr} your profile 🎉`, 'OK', { duration: 2500 });
+             this.snack.open(`${actionStr} your profile 🎉`, 'OK', { duration: 2500 });
+             
+             // 4. Update Popularity Count (Skill Service)
+             this.skillService.updatePopularity(skill.id, isAdding).subscribe({
+               next: (syncRes) => {
+                 // Sync exactly with DB response
+                 this.skillStore.updateSkill(syncRes.data);
+               },
+               error: () => {
+                 // Silent fail for popularity sync, or log it
+                 console.error('Failed to sync popularity to server');
+               }
+             });
           },
           error: (err) => {
             this.snack.open(err.error?.message ?? 'Failed to update skills', 'OK', { duration: 3000 });
-            // Revert the local change on error
+            // Revert all optimistic changes on actual failure
             this.selectedSkills.set(list);
+            this.skillStore.loadAll(undefined); // Full refresh to be safe
           }
         });
       }

@@ -47,4 +47,21 @@ public class SkillCommandService {
         skill.setIsActive(false);
         skillRepository.save(skill);
     }
+
+    @Transactional
+    @CacheEvict(value = {"skills", "skill"}, allEntries = true)
+    public SkillResponseDto updatePopularity(Long id, boolean increment) {
+        log.info("{} popularity for skill ID: {}", increment ? "Incrementing" : "Decrementing", id);
+        Skill skill = skillRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Skill not found"));
+        
+        int currentPopularity = skill.getPopularityScore() != null ? skill.getPopularityScore() : 0;
+        int newPopularity = increment ? currentPopularity + 1 : Math.max(0, currentPopularity - 1);
+        
+        skill.setPopularityScore(newPopularity);
+        Skill saved = skillRepository.save(skill);
+        
+        log.info("New popularity for skill {}: {}", saved.getSkillName(), newPopularity);
+        return skillMapper.toDto(saved);
+    }
 }

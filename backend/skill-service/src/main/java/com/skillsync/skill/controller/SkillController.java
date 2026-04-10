@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -214,6 +215,28 @@ public class SkillController {
 				true,
 				"Skill deleted successfully",
 				null,
+				200
+			));
+	}
+
+	/**
+	 * PATCH /api/skill/{id}/popularity
+	 * Increment or decrement skill popularity
+	 */
+	@io.swagger.v3.oas.annotations.Operation(summary = "Update skill popularity", description = "Increment or decrement a skill's learner count")
+	@org.springframework.web.bind.annotation.PatchMapping("/{id}/popularity")
+	public ResponseEntity<ApiResponse<SkillResponseDto>> updatePopularity(
+			@PathVariable Long id,
+			@RequestParam boolean increment) {
+
+		log.info("{} popularity for skill with ID: {}", increment ? "Incrementing" : "Decrementing", id);
+		SkillResponseDto response = skillService.updatePopularity(id, increment);
+
+		return ResponseEntity
+			.ok(new ApiResponse<>(
+				true,
+				"Popularity updated successfully",
+				response,
 				200
 			));
 	}

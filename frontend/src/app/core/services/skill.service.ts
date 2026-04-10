@@ -37,4 +37,8 @@ export class SkillService {
   delete(id: number): Observable<ApiResponse<void>> {
     return this.http.delete<ApiResponse<void>>(`${this.base}/${id}`);
   }
+
+  updatePopularity(id: number, increment: boolean): Observable<ApiResponse<SkillDto>> {
+    return this.http.patch<ApiResponse<SkillDto>>(`${this.base}/${id}/popularity`, null, { params: { increment } });
+  }
 }

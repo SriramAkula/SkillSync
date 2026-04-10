@@ -23,4 +23,6 @@ public interface SkillService {
 	SkillResponseDto updateSkill(Long id, CreateSkillRequestDto requestDto);
 
 	void deleteSkill(Long id);
+	
+	SkillResponseDto updatePopularity(Long id, boolean increment);
 }

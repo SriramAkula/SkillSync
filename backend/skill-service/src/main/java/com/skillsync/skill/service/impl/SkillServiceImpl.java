@@ -51,4 +51,9 @@ public class SkillServiceImpl implements SkillService {
     public List<SkillResponseDto> getSkillsByCategory(String category) {
         return skillQueryService.getSkillsByCategory(category);
     }
+
+    @Override
+    public SkillResponseDto updatePopularity(Long id, boolean increment) {
+        return skillCommandService.updatePopularity(id, increment);
+    }
 }

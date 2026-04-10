@@ -98,7 +98,7 @@
                 </div>
               }
               @if (!authStore.isAdmin()) {
-                <button class="btn-add-skill" [class.added]="isSkillSelected(skill.skillName)" (click)="$event.stopPropagation(); toggleProfileSkill(skill.skillName)">
+                <button class="btn-add-skill" [class.added]="isSkillSelected(skill.skillName)" (click)="$event.stopPropagation(); toggleProfileSkill(skill)">
                   @if (isSkillSelected(skill.skillName)) {
                     <span class="material-icons">check</span> Added
                   } @else {
