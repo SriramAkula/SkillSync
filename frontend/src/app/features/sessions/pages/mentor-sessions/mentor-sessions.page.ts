@@ -21,23 +21,38 @@ type DashTab = 'pending' | 'upcoming' | 'all' | 'confirmed';
   styleUrl: './mentor-sessions.page.scss'
 })
 export class MentorSessionsPage implements OnInit {
-  readonly sessionStore = inject(SessionStore) as any;
-  readonly mentorStore = inject(MentorStore) as any;
-  readonly authStore = inject(AuthStore) as any;
-  readonly skillStore = inject(SkillStore) as any;
+  readonly sessionStore = inject(SessionStore);
+  readonly mentorStore = inject(MentorStore);
+  readonly authStore = inject(AuthStore);
+  readonly skillStore = inject(SkillStore);
   readonly router = inject(Router);
   private readonly snack = inject(MatSnackBar);
 
-  constructor() {
-    effect(() => {
-      const profile = this.mentorStore.myProfile();
-      if (profile && !this.authStore.isMentor()) {
-        this.authStore.refreshToken(undefined);
-      }
-    }, { allowSignalWrites: false });
-  }
-
   readonly activeTab = signal<DashTab>('pending');
+  readonly rejectingSession = signal<SessionDto | null>(null);
+  rejectReason = '';
+
+  readonly pendingSessions = computed(() => 
+    this.sessionStore.mentorSessions().filter(s => s.status === 'REQUESTED')
+  );
+  readonly upcomingSessions = computed(() => 
+    this.sessionStore.mentorSessions().filter(s => s.status === 'ACCEPTED')
+  );
+
+  readonly tabs: { key: DashTab; label: string }[] = [
+    { key: 'pending',   label: 'Incoming Requests' },
+    { key: 'upcoming',  label: 'Accepted Schedule' },
+    { key: 'confirmed', label: 'Completed Sessions' },
+    { key: 'all',       label: 'Session History' },
+  ];
+
+  readonly quickReasons = [
+    'Schedule Conflict',
+    'Personal Emergency',
+    'Topic Misaligned',
+    'Full Capacity',
+  ];
+
   onPageChange(page: number): void {
     this.sessionStore.loadMentorSessions({ page, size: 8 });
   }
@@ -48,6 +63,11 @@ export class MentorSessionsPage implements OnInit {
     if (this.skillStore.skills().length === 0) {
       this.skillStore.loadAll(undefined);
     }
+  }
+
+  getSkillName(id: number): string {
+    const s = this.skillStore.getSkillById(id);
+    return s ? s.skillName : ('Skill #' + id);
   }
 
   refresh(): void {
@@ -78,7 +98,7 @@ export class MentorSessionsPage implements OnInit {
 
   changeTab(tab: DashTab): void {
     this.activeTab.set(tab);
-    this.currentPage.set(0); // Reset page on tab switch
+    this.sessionStore.loadMentorSessions({ page: 0, size: 8 }); // Reset to page 0 on tab change
   }
 
   cancelSession(id: number): void {

@@ -33,33 +33,6 @@ export class NotificationService {
     return this.http.delete<ApiResponse<void>>(`${this.base}/${id}`);
   }
 
-  // ── SSE upgrade point ──────────────────────────────────────────────────────
-      loadAll: rxMethod<{ page: number; size: number; unreadOnly?: boolean } | void>(
-        pipe(
-          tap(() => patchState(store, { loading: true })),
-          switchMap((params) => {
-            const page = typeof params === 'object' ? params?.page ?? store.currentPage() : store.currentPage();
-            const size = typeof params === 'object' ? params?.size ?? store.pageSize() : store.pageSize();
-            const unreadOnly = typeof params === 'object' ? params?.unreadOnly ?? false : false;
-            
-            const req = unreadOnly ? svc.getUnread(page, size) : svc.getAll(page, size);
-            
-            return req.pipe(
-              tapResponse({
-                next: (res) => patchState(store, { 
-                  notifications: res.data.content, 
-                  totalElements: res.data.totalElements,
-                  totalPages: res.data.totalPages,
-                  currentPage: res.data.currentPage,
-                  pageSize: res.data.pageSize,
-                  loading: false 
-                }),
-                error: () => patchState(store, { loading: false })
-              })
-            );
-          })
-        )
-      ),
   // When backend adds SSE endpoint, replace polling with this:
   // streamNotifications(): Observable<NotificationDto> {
   //   return new Observable(observer => {

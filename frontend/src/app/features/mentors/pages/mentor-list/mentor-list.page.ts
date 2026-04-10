@@ -120,7 +120,7 @@ export class MentorListPage implements OnInit, OnDestroy {
     const myId = this.authStore.userId();
     if (myId) {
       this.reviewService.getMentorReviews(Number(myId)).subscribe(res => {
-        this.myReviews.set(res.data);
+        this.myReviews.set(res.data?.content || []);
       });
       this.reviewService.getMentorRating(Number(myId)).subscribe(res => {
         this.myRating.set(res.data.averageRating);

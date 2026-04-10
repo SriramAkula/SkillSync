@@ -20,6 +20,16 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import com.skillsync.review.dto.response.PageResponse;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import com.skillsync.review.dto.response.PageResponse;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -103,40 +113,42 @@ class ReviewServiceTest {
 
     @Test
     void getMentorReviews_shouldReturnList_whenReviewsExist() {
-        when(reviewRepository.findByMentorId(5L)).thenReturn(List.of(review));
+        Page<Review> page = new PageImpl<>(List.of(review), PageRequest.of(0, 10), 1);
+        when(reviewRepository.findByMentorId(eq(5L), any(Pageable.class))).thenReturn(page);
         when(reviewMapper.toDto(review)).thenReturn(reviewResponse);
 
-        List<ReviewResponseDto> result = reviewService.getMentorReviews(5L);
+        PageResponse<ReviewResponseDto> result = reviewService.getMentorReviews(5L, 0, 10);
 
-        assertThat(result).hasSize(1);
-        assertThat(result.get(0).getMentorId()).isEqualTo(5L);
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getContent().get(0).getMentorId()).isEqualTo(5L);
     }
 
     @Test
     void getMentorReviews_shouldReturnEmpty_whenNoReviews() {
-        when(reviewRepository.findByMentorId(99L)).thenReturn(List.of());
+        when(reviewRepository.findByMentorId(eq(99L), any(Pageable.class))).thenReturn(Page.empty());
 
-        assertThat(reviewService.getMentorReviews(99L)).isEmpty();
+        assertThat(reviewService.getMentorReviews(99L, 0, 10).getContent()).isEmpty();
     }
 
     // ─── getLearnerReviews ───────────────────────────────────────────────────
 
     @Test
     void getLearnerReviews_shouldReturnList_whenReviewsExist() {
-        when(reviewRepository.findByLearnerId(10L)).thenReturn(List.of(review));
+        Page<Review> page = new PageImpl<>(List.of(review), PageRequest.of(0, 10), 1);
+        when(reviewRepository.findByLearnerId(eq(10L), any(Pageable.class))).thenReturn(page);
         when(reviewMapper.toDto(review)).thenReturn(reviewResponse);
 
-        List<ReviewResponseDto> result = reviewService.getLearnerReviews(10L);
+        PageResponse<ReviewResponseDto> result = reviewService.getLearnerReviews(10L, 0, 10);
 
-        assertThat(result).hasSize(1);
-        assertThat(result.get(0).getLearnerId()).isEqualTo(10L);
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getContent().get(0).getLearnerId()).isEqualTo(10L);
     }
 
     @Test
     void getLearnerReviews_shouldReturnEmpty_whenNoReviews() {
-        when(reviewRepository.findByLearnerId(99L)).thenReturn(List.of());
+        when(reviewRepository.findByLearnerId(eq(99L), any(Pageable.class))).thenReturn(Page.empty());
 
-        assertThat(reviewService.getLearnerReviews(99L)).isEmpty();
+        assertThat(reviewService.getLearnerReviews(99L, 0, 10).getContent()).isEmpty();
     }
 
     // ─── getMentorRating ─────────────────────────────────────────────────────

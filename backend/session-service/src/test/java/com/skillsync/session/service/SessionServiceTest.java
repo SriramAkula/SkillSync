@@ -20,6 +20,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import com.skillsync.session.dto.response.PageResponse;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -114,41 +119,42 @@ class SessionServiceTest {
     // ─── getSessionsForMentor ────────────────────────────────────────────────
 
     @Test
-    void getSessionsForMentor_shouldReturnList_whenSessionsExist() {
-        when(sessionRepository.findByMentorId(5L)).thenReturn(List.of(session));
+    void getSessionsForMentor_shouldReturnPageResponse_whenSessionsExist() {
+        Page<Session> page = new PageImpl<>(List.of(session), PageRequest.of(0, 10), 1);
+        when(sessionRepository.findByMentorId(eq(5L), any(Pageable.class))).thenReturn(page);
         when(sessionMapper.toDto(session)).thenReturn(requestedDto);
 
-        List<SessionResponseDto> result = sessionService.getSessionsForMentor(5L);
+        PageResponse<SessionResponseDto> result = sessionService.getSessionsForMentor(5L, 0, 10);
 
-        assertThat(result).hasSize(1);
-        assertThat(result.get(0).getMentorId()).isEqualTo(5L);
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getTotalElements()).isEqualTo(1);
     }
 
     @Test
     void getSessionsForMentor_shouldReturnEmpty_whenNoSessions() {
-        when(sessionRepository.findByMentorId(99L)).thenReturn(List.of());
+        when(sessionRepository.findByMentorId(eq(99L), any(Pageable.class))).thenReturn(Page.empty());
 
-        assertThat(sessionService.getSessionsForMentor(99L)).isEmpty();
+        assertThat(sessionService.getSessionsForMentor(99L, 0, 10).getContent()).isEmpty();
     }
 
     // ─── getSessionsForLearner ───────────────────────────────────────────────
 
     @Test
-    void getSessionsForLearner_shouldReturnList_whenSessionsExist() {
-        when(sessionRepository.findByLearnerId(10L)).thenReturn(List.of(session));
+    void getSessionsForLearner_shouldReturnPageResponse_whenSessionsExist() {
+        Page<Session> page = new PageImpl<>(List.of(session), PageRequest.of(0, 10), 1);
+        when(sessionRepository.findByLearnerId(eq(10L), any(Pageable.class))).thenReturn(page);
         when(sessionMapper.toDto(session)).thenReturn(requestedDto);
 
-        List<SessionResponseDto> result = sessionService.getSessionsForLearner(10L);
+        PageResponse<SessionResponseDto> result = sessionService.getSessionsForLearner(10L, 0, 10);
 
-        assertThat(result).hasSize(1);
-        assertThat(result.get(0).getLearnerId()).isEqualTo(10L);
+        assertThat(result.getContent()).hasSize(1);
     }
 
     @Test
     void getSessionsForLearner_shouldReturnEmpty_whenNoSessions() {
-        when(sessionRepository.findByLearnerId(99L)).thenReturn(List.of());
+        when(sessionRepository.findByLearnerId(eq(99L), any(Pageable.class))).thenReturn(Page.empty());
 
-        assertThat(sessionService.getSessionsForLearner(99L)).isEmpty();
+        assertThat(sessionService.getSessionsForLearner(99L, 0, 10).getContent()).isEmpty();
     }
 
     // ─── acceptSession ───────────────────────────────────────────────────────

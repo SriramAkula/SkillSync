@@ -125,7 +125,7 @@ export const NotificationStore = signalStore(
         pollSub = interval(environment.pollIntervalMs).subscribe(() => {
           svc.getUnread().subscribe({
             next: (res) => {
-              const unread = res.data || [];
+              const unread = res.data?.content || [];
               const oldCount = store.unreadCount();
               const newCount = unread.length;
               

@@ -5,6 +5,7 @@ import { SessionStore } from '../../../../core/auth/session.store';
 import { SkillStore } from '../../../../core/auth/skill.store';
 import { SessionCardComponent } from '../../components/session-card/session-card.component';
 import { SessionDto } from '../../../../shared/models';
+import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
 
 type FilterTab = 'all' | 'active' | 'completed' | 'cancelled';
 
@@ -28,6 +29,13 @@ export class MySessionsPage implements OnInit {
     { key: 'completed', label: 'Completed' },
     { key: 'cancelled', label: 'Cancelled' },
   ];
+
+  ngOnInit(): void {
+    this.sessionStore.loadLearnerSessions({ page: 0, size: 12 });
+    if (this.skillStore.skills().length === 0) {
+      this.skillStore.loadAll(undefined);
+    }
+  }
 
   onPageChange(page: number): void {
     this.sessionStore.loadLearnerSessions({ page, size: 12 });

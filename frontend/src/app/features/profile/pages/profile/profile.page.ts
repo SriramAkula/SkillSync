@@ -117,8 +117,8 @@ export class ProfilePage implements OnInit, OnDestroy {
   loadActivities() {
     this.notificationService.getAll().subscribe({
       next: (res) => {
-        const backend = (res.data || []).map(n => this.mapNotificationToActivity(n));
-        const combined = backend.sort((a, b) => b.timestamp - a.timestamp).slice(0, 10);
+        const backend = (res.data?.content || []).map((n: any) => this.mapNotificationToActivity(n));
+        const combined = backend.sort((a: any, b: any) => b.timestamp - a.timestamp).slice(0, 10);
         this.activities.set(combined);
       }
     });
