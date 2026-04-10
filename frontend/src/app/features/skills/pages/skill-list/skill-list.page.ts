@@ -135,9 +135,10 @@ export class SkillListPage implements OnInit {
 
     // 2. Optimistic UI update for popularity count
     const all = this.skillStore.skills();
-    const target = all.find(s => s.id === skill.id);
-    if (target) {
-      target.popularityScore = isAdding ? target.popularityScore + 1 : Math.max(0, target.popularityScore - 1);
+    const found = all.find(s => s.id === skill.id);
+    if (found) {
+      const target = { ...found }; // Clone to ensure reference change for Angular
+      target.popularityScore = isAdding ? (target.popularityScore || 0) + 1 : Math.max(0, (target.popularityScore || 0) - 1);
       this.skillStore.updateSkill(target);
     }
     
