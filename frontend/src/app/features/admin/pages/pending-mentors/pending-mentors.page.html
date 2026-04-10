@@ -7,9 +7,9 @@
       <p>Review and approve mentor applications</p>
     </div>
     <div class="header-stats">
-      <div class="stat-pill">
+        <div class="stat-pill">
         <span class="material-icons">pending_actions</span>
-        {{ mentorStore.pendingCount() }} pending
+        {{ mentorStore.totalElements() }} pending
       </div>
     </div>
   </div>
@@ -65,12 +65,14 @@
       </div>
 
       <!-- Pagination -->
-      <app-pagination
-        [totalItems]="mentorStore.pending().length"
-        [pageSize]="pageSize()"
-        [currentPage]="currentPage()"
-        (pageChange)="currentPage.set($event)"
-      ></app-pagination>
+      @if (mentorStore.totalElements() > pageSize()) {
+        <app-pagination
+          [totalItems]="mentorStore.totalElements()"
+          [pageSize]="pageSize()"
+          [currentPage]="mentorStore.currentPage()"
+          (pageChange)="onPageChange($event)"
+        ></app-pagination>
+      }
     }
   </div>
 

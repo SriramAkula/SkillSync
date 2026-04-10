@@ -38,13 +38,13 @@ public class SkillServiceImpl implements SkillService {
     }
 
     @Override
-    public List<SkillResponseDto> getAllActiveSkills() {
-        return skillQueryService.getAllActiveSkills();
+    public PageResponse<SkillResponseDto> getAllActiveSkills(int page, int size) {
+        return skillQueryService.getAllActiveSkills(page, size);
     }
 
     @Override
-    public List<SkillResponseDto> searchSkills(String keyword) {
-        return skillQueryService.searchSkills(keyword);
+    public PageResponse<SkillResponseDto> searchSkills(String keyword, int page, int size) {
+        return skillQueryService.searchSkills(keyword, page, size);
     }
 
     @Override

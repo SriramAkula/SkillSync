@@ -9,11 +9,12 @@ import { SkillStore } from '../../../../core/auth/skill.store';
 import { AuthStore } from '../../../../core/auth/auth.store';
 import { ReviewService } from '../../../../core/services/review.service';
 import { MentorCardComponent } from '../../components/mentor-card/mentor-card.component';
+import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
 
 @Component({
   selector: 'app-mentor-list-page',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, MatProgressSpinnerModule, MentorCardComponent],
+  imports: [CommonModule, ReactiveFormsModule, MatProgressSpinnerModule, MentorCardComponent, PaginationComponent],
   templateUrl: './mentor-list.page.html',
   styleUrl: './mentor-list.page.scss'
 })
@@ -64,7 +65,7 @@ export class MentorListPage implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.loadMentors();
     if (this.skillStore.skills().length === 0) {
-      this.skillStore.loadAll(undefined);
+      this.skillStore.loadForSelection(undefined);
     }
     
     // Refresh mentors when navigating back to this page
@@ -85,15 +86,33 @@ export class MentorListPage implements OnInit, OnDestroy {
         vals.maxRate != null ||
         vals.minRating != null;
       if (hasFilter) {
-        this.mentorStore.search(vals as any);
+        this.mentorStore.search({ ...vals, page: 0, size: this.mentorStore.pageSize() } as any);
       } else {
-        this.mentorStore.loadApproved(undefined);
+        this.mentorStore.loadApproved({ page: 0, size: this.mentorStore.pageSize() });
       }
     });
   }
 
+  onPageChange(page: number): void {
+    const vals = this.filterForm.value;
+    const hasFilter = (vals.skill && vals.skill.length >= 2) ||
+        vals.minExperience != null ||
+        vals.maxExperience != null ||
+        vals.maxRate != null ||
+        vals.minRating != null;
+    
+    if (hasFilter) {
+      this.mentorStore.search({ ...vals, page, size: this.mentorStore.pageSize() } as any);
+    } else {
+      this.mentorStore.loadApproved({ page, size: this.mentorStore.pageSize() });
+    }
+  }
+
   private loadMentors(): void {
-    this.mentorStore.loadApproved(undefined);
+    const page = this.mentorStore.currentPage();
+    const size = this.mentorStore.pageSize();
+    
+    this.mentorStore.loadApproved({ page, size });
     // Also refresh myProfile to sync updated mentor profile data
     this.mentorStore.loadMyProfile(undefined);
     

@@ -50,7 +50,7 @@ export class GroupListPage implements OnInit {
   }
 
   ngOnInit(): void { 
-    this.skillStore.loadAll(undefined); 
+    this.skillStore.loadForSelection(undefined); 
     this.loadRandomGroups();
   }
 
@@ -151,7 +151,7 @@ export class GroupListPage implements OnInit {
     this.newGroupCategory = '';
     this.newGroup = { name: '', skillId: null, maxMembers: null, description: '' };
     this.showCreate.set(true);
-    this.skillStore.loadAll(undefined);
+    this.skillStore.loadForSelection(undefined);
   }
 
   join(id: number): void {

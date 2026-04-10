@@ -45,7 +45,7 @@ export class ApplyMentorPage implements OnInit {
   ngOnInit(): void {
     this.mentorStore.loadMyProfile(undefined);
     if (this.skillStore.skills().length === 0) {
-      this.skillStore.loadAll(undefined);
+      this.skillStore.loadForSelection(undefined);
     }
     setTimeout(() => this.checkingProfile.set(false), 1200);
   }

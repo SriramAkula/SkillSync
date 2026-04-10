@@ -46,15 +46,12 @@ export class SkillListPage implements OnInit {
   private readonly searchSubject = new Subject<string>();
 
   ngOnInit(): void {
-    this.skillStore.loadAll(undefined);
+    this.skillStore.loadAll({ page: 0, size: this.pageSize() });
     this.searchSubject.pipe(debounceTime(350), distinctUntilChanged()).subscribe(q => {
       if (q.length >= 2) {
-        this.skillService.search(q).subscribe({
-          next: (r) => { /* local filter only, don't update store */ },
-          error: () => {}
-        });
+        this.skillStore.search({ keyword: q, page: 0, size: this.pageSize() });
       } else if (!q) {
-        this.skillStore.loadAll(undefined);
+        this.skillStore.loadAll({ page: 0, size: this.pageSize() });
       }
     });
 
@@ -68,7 +65,7 @@ export class SkillListPage implements OnInit {
     });
   }
 
-  loadAll(): void { this.skillStore.loadAll(undefined); }
+  loadAll(): void { this.skillStore.loadAll({ page: 0, size: this.pageSize() }); }
 
   filteredSkills(): SkillDto[] {
     let list = this.skillStore.skills();
@@ -86,9 +83,17 @@ export class SkillListPage implements OnInit {
   }
 
   pagedSkills(): SkillDto[] {
-    const list = this.filteredSkills();
-    const start = this.currentPage() * this.pageSize();
-    return list.slice(start, start + this.pageSize());
+    // Now return directly from store as it's server-side paged
+    return this.filteredSkills();
+  }
+
+  onPageChange(page: number): void {
+    const q = this.searchQuery.trim();
+    if (q.length >= 2) {
+      this.skillStore.search({ keyword: q, page, size: this.pageSize() });
+    } else {
+      this.skillStore.loadAll({ page, size: this.pageSize() });
+    }
   }
 
   onSearch(q: string): void {
@@ -106,8 +111,8 @@ export class SkillListPage implements OnInit {
     // Categories act as local filter 
   }
 
-  clearSearch(): void { this.searchQuery = ''; this.currentPage.set(0); }
-  clearAll(): void { this.searchQuery = ''; this.selectedCategory.set(''); this.showMySkills.set(false); this.currentPage.set(0); }
+  clearSearch(): void { this.searchQuery = ''; this.onPageChange(0); }
+  clearAll(): void { this.searchQuery = ''; this.selectedCategory.set(''); this.showMySkills.set(false); this.onPageChange(0); }
 
   isSkillSelected(name: string): boolean {
     return this.selectedSkills().includes(name);

@@ -24,13 +24,20 @@ export class PendingMentorsPage implements OnInit {
   pageSize = signal(10);
 
   ngOnInit(): void { 
-    this.mentorStore.loadPending(undefined); 
+    this.loadPending();
+  }
+
+  loadPending(page: number = 0): void {
+    this.mentorStore.loadPending({ page, size: this.pageSize() });
   }
 
   pagedMentors() {
-    const list = this.mentorStore.pending();
-    const start = this.currentPage() * this.pageSize();
-    return list.slice(start, start + this.pageSize());
+    return this.mentorStore.pending();
+  }
+
+  onPageChange(page: number): void {
+    this.currentPage.set(page);
+    this.loadPending(page);
   }
 
   approve(id: number): void { 

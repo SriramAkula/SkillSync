@@ -10,22 +10,84 @@ interface SkillState {
   skills: SkillDto[];
   loading: boolean;
   error: string | null;
+  
+  // Pagination State
+  currentPage: number;
+  totalElements: number;
+  totalPages: number;
+  pageSize: number;
 }
 
 export const SkillStore = signalStore(
   { providedIn: 'root' },
-  withState<SkillState>({ skills: [], loading: false, error: null }),
+  withState<SkillState>({ 
+    skills: [], 
+    loading: false, 
+    error: null,
+    currentPage: 0,
+    totalElements: 0,
+    totalPages: 0,
+    pageSize: 12
+  }),
 
   withMethods((store, svc = inject(SkillService)) => ({
 
-    loadAll: rxMethod<void>(
+    loadAll: rxMethod<{ page?: number; size?: number } | void>(
       pipe(
         tap(() => patchState(store, { loading: true, error: null })),
-        switchMap(() =>
-          svc.getAll().pipe(
+        switchMap((params) => {
+          const p = (params as any)?.page ?? 0;
+          const s = (params as any)?.size ?? 12;
+          return svc.getAll(p, s).pipe(
             tapResponse({
-              next: (r) => patchState(store, { skills: r.data ?? [], loading: false }),
+              next: (res) => patchState(store, { 
+                skills: res.data.content ?? [], 
+                currentPage: res.data.currentPage,
+                totalElements: res.data.totalElements,
+                totalPages: res.data.totalPages,
+                pageSize: res.data.pageSize,
+                loading: false 
+              }),
               error: (e: any) => patchState(store, { loading: false, error: e.error?.message ?? 'Failed to load skills' })
+            })
+          );
+        })
+      )
+    ),
+
+    search: rxMethod<{ keyword: string; page?: number; size?: number }>(
+      pipe(
+        tap(() => patchState(store, { loading: true, error: null })),
+        switchMap((params) => {
+          const p = params.page ?? 0;
+          const s = params.size ?? 12;
+          return svc.search(params.keyword, p, s).pipe(
+            tapResponse({
+              next: (res) => patchState(store, { 
+                skills: res.data.content ?? [], 
+                currentPage: res.data.currentPage,
+                totalElements: res.data.totalElements,
+                totalPages: res.data.totalPages,
+                pageSize: res.data.pageSize,
+                loading: false 
+              }),
+              error: (e: any) => patchState(store, { loading: false, error: e.error?.message ?? 'Search failed' })
+            })
+          );
+        })
+    ),
+
+    loadForSelection: rxMethod<void>(
+      pipe(
+        tap(() => patchState(store, { loading: true })),
+        switchMap(() =>
+          svc.getAll(0, 500).pipe(
+            tapResponse({
+              next: (res) => patchState(store, { 
+                skills: res.data.content ?? [], 
+                loading: false 
+              }),
+              error: () => patchState(store, { loading: false })
             })
           )
         )
