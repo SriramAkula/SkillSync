@@ -135,7 +135,7 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public AuthResponse login(LoginRequest request) {
         User user = userRepository.findByEmail(request.email())
-                .orElseThrow(() -> new AuthException("Invalid email or password"));
+                .orElseThrow(() -> new AuthException("User not found"));
 
         if (Boolean.FALSE.equals(user.getIsActive())) {
             throw new RuntimeException("Your account has been deactivated. Please contact support.");
@@ -150,7 +150,7 @@ public class AuthServiceImpl implements AuthService {
         }
 
         if (!passwordEncoder.matches(request.password(), user.getPassword())) {
-            throw new AuthException("Invalid credentials");
+            throw new AuthException("Invalid password");
         }
 
         List<String> roles = Arrays.asList(user.getRole().split(","));

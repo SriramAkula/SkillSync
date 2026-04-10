@@ -128,9 +128,13 @@ export const AuthStore = signalStore(
               },
               error: (err: any) => {
                 const msg = err.error?.message ?? 'Invalid credentials';
-                if (msg.toLowerCase().includes('user not found')) {
+                const lowerMsg = msg.toLowerCase();
+                
+                if (lowerMsg.includes('user not found')) {
                   router.navigate(['/auth/register'], { queryParams: { email: req.email } });
                   patchState(store, { loading: false, error: 'User not found. Please register to continue.' });
+                } else if (lowerMsg.includes('invalid password')) {
+                  patchState(store, { loading: false, error: 'Invalid password. Please try again.' });
                 } else {
                   patchState(store, { loading: false, error: msg });
                 }
