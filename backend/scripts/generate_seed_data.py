@@ -148,6 +148,6 @@ if __name__ == "__main__":
     # Save it one level up from 'scripts/', which is 'backend/'
     target_path = os.path.normpath(os.path.join(script_dir, "..", "seed_data.sql"))
     
-    with open(target_path, "w") as f:
+    with open(target_path, "w", encoding="utf-8", newline="\n") as f:
         f.write(sql_content)
     print(f"Successfully generated {target_path} with ID Offset: 10000 (Safety First!)")
