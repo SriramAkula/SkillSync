@@ -48,7 +48,7 @@
   <!-- Stats -->
   <div class="stats-bar">
     <span class="stat-text">
-      <strong>{{ filteredSkills().length }}</strong> skills
+      <strong>{{ skillStore.totalElements() }}</strong> skills
       @if (searchQuery) { matching "<em>{{ searchQuery }}</em>" }
       @if (selectedCategory()) { in <em>{{ selectedCategory() }}</em> }
       @if (showMySkills()) { inside your profile }
@@ -128,12 +128,14 @@
     </div>
 
     <!-- Pagination -->
-    <app-pagination
-      [totalItems]="filteredSkills().length"
-      [pageSize]="pageSize()"
-      [currentPage]="currentPage()"
-      (pageChange)="currentPage.set($event)"
-    ></app-pagination>
+    @if (skillStore.totalElements() > pageSize()) {
+      <app-pagination
+        [totalItems]="skillStore.totalElements()"
+        [pageSize]="pageSize()"
+        [currentPage]="skillStore.currentPage()"
+        (pageChange)="onPageChange($event)"
+      ></app-pagination>
+    }
   }
 
   <!-- Skill Detail Drawer -->

@@ -1,6 +1,7 @@
 package com.skillsync.mentor.service.impl;
 
 import com.skillsync.mentor.client.AuthServiceClient;
+import com.skillsync.mentor.dto.PageResponse;
 import com.skillsync.mentor.dto.request.ApplyMentorRequestDto;
 import com.skillsync.mentor.dto.request.UpdateAvailabilityRequestDto;
 import com.skillsync.mentor.dto.response.MentorProfileResponseDto;
@@ -17,6 +18,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheConfig;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -102,19 +106,21 @@ public class MentorServiceImpl implements MentorService {
     }
 
     @Override
-    @Cacheable(key = "'all_approved'")
-    public List<MentorProfileResponseDto> getAllApprovedMentors() {
-        log.info("Cache MISS - fetching all approved mentors from DB");
-        return mentorRepository.findAllApprovedMentors()
-                .stream().map(mentorMapper::toDto).collect(Collectors.toList());
+    @Cacheable(key = "'all_approved_p' + #page + '_s' + #size")
+    public PageResponse<MentorProfileResponseDto> getAllApprovedMentors(int page, int size) {
+        log.info("Cache MISS - fetching approved mentors from DB - page: {}, size: {}", page, size);
+        Pageable pageable = PageRequest.of(page, size);
+        Page<MentorProfile> mentorPage = mentorRepository.findAllApprovedMentors(pageable);
+        return toPageResponse(mentorPage);
     }
 
     @Override
-    @Cacheable(key = "'pending'")
-    public List<MentorProfileResponseDto> getPendingApplications() {
-        log.info("Cache MISS - fetching pending applications from DB");
-        return mentorRepository.findPendingApplications()
-                .stream().map(mentorMapper::toDto).collect(Collectors.toList());
+    @Cacheable(key = "'pending_p' + #page + '_s' + #size")
+    public PageResponse<MentorProfileResponseDto> getPendingApplications(int page, int size) {
+        log.info("Cache MISS - fetching pending applications from DB - page: {}, size: {}", page, size);
+        Pageable pageable = PageRequest.of(page, size);
+        Page<MentorProfile> mentorPage = mentorRepository.findPendingApplications(pageable);
+        return toPageResponse(mentorPage);
     }
 
     @Override
@@ -126,12 +132,27 @@ public class MentorServiceImpl implements MentorService {
     }
 
     @Override
-    public List<MentorProfileResponseDto> searchMentorsWithFilters(String skill, Integer minExperience,
-            Integer maxExperience, Double maxRate, Double minRating) {
-        log.info("Searching mentors by skill={}, exp={}-{}, rate={}, rating={}", skill, minExperience, maxExperience,
-                maxRate, minRating);
-        return mentorRepository.searchMentorsWithFilters(skill, minExperience, maxExperience, maxRate, minRating)
-                .stream().map(mentorMapper::toDto).collect(Collectors.toList());
+    public PageResponse<MentorProfileResponseDto> searchMentorsWithFilters(String skill, Integer minExperience,
+            Integer maxExperience, Double maxRate, Double minRating, int page, int size) {
+        log.info("Searching mentors by skill={}, exp={}-{}, rate={}, rating={}, page={}, size={}", skill, minExperience, maxExperience,
+                maxRate, minRating, page, size);
+        Pageable pageable = PageRequest.of(page, size);
+        Page<MentorProfile> mentorPage = mentorRepository.searchMentorsWithFilters(skill, minExperience, maxExperience, maxRate, minRating, pageable);
+        return toPageResponse(mentorPage);
+    }
+
+    private PageResponse<MentorProfileResponseDto> toPageResponse(Page<MentorProfile> page) {
+        List<MentorProfileResponseDto> content = page.getContent().stream()
+                .map(mentorMapper::toDto)
+                .collect(Collectors.toList());
+
+        return PageResponse.<MentorProfileResponseDto>builder()
+                .content(content)
+                .currentPage(page.getNumber())
+                .totalElements(page.getTotalElements())
+                .totalPages(page.getTotalPages())
+                .pageSize(page.getSize())
+                .build();
     }
 
     @Override

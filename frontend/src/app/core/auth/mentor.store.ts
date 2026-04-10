@@ -15,6 +15,12 @@ interface MentorState {
   searchResults: MentorProfileDto[];
   loading: boolean;
   error: string | null;
+  
+  // Pagination State
+  currentPage: number;
+  totalElements: number;
+  totalPages: number;
+  pageSize: number;
 }
 
 export const MentorStore = signalStore(
@@ -26,11 +32,15 @@ export const MentorStore = signalStore(
     myProfile: null,
     searchResults: [],
     loading: false,
-    error: null
+    error: null,
+    currentPage: 0,
+    totalElements: 0,
+    totalPages: 0,
+    pageSize: 12
   }),
 
   withComputed((store) => ({
-    approvedCount: computed(() => store.approved().length),
+    approvedCount: computed(() => store.totalElements()),
     pendingCount: computed(() => store.pending().length),
     hasMyProfile: computed(() => !!store.myProfile()),
     isAvailable: computed(() => store.myProfile()?.availabilityStatus === 'AVAILABLE')
@@ -38,27 +48,43 @@ export const MentorStore = signalStore(
 
   withMethods((store, svc = inject(MentorService), authStore = inject(AuthStore)) => ({
 
-    loadApproved: rxMethod<void>(
+    loadApproved: rxMethod<{ page?: number; size?: number } | void>(
       pipe(
         tap(() => patchState(store, { loading: true, error: null })),
-        switchMap(() =>
-          svc.getApprovedMentors().pipe(
+        switchMap((params) => {
+          const p = (params as any)?.page ?? 0;
+          const s = (params as any)?.size ?? 12;
+          return svc.getApprovedMentors(p, s).pipe(
             tapResponse({
-              next: (res) => patchState(store, { approved: res.data, loading: false }),
+              next: (res) => patchState(store, { 
+                approved: res.data.content, 
+                currentPage: res.data.currentPage,
+                totalElements: res.data.totalElements,
+                totalPages: res.data.totalPages,
+                pageSize: res.data.pageSize,
+                loading: false 
+              }),
               error: (err: any) => patchState(store, { loading: false, error: err.error?.message ?? 'Failed to load mentors' })
             })
-          )
-        )
+          );
+        })
       )
     ),
 
-    search: rxMethod<{ skill?: string; minExperience?: number; maxExperience?: number; maxRate?: number; minRating?: number }>(
+    search: rxMethod<{ skill?: string; minExperience?: number; maxExperience?: number; maxRate?: number; minRating?: number; page?: number; size?: number }>(
       pipe(
         tap(() => patchState(store, { loading: true })),
         switchMap(params =>
           svc.searchMentors(params).pipe(
             tapResponse({
-              next: (res) => patchState(store, { searchResults: res.data, loading: false }),
+              next: (res) => patchState(store, { 
+                searchResults: res.data.content,
+                currentPage: res.data.currentPage,
+                totalElements: res.data.totalElements,
+                totalPages: res.data.totalPages,
+                pageSize: res.data.pageSize,
+                loading: false 
+              }),
               error: () => patchState(store, { loading: false })
             })
           )
@@ -94,17 +120,26 @@ export const MentorStore = signalStore(
       )
     ),
 
-    loadPending: rxMethod<void>(
+    loadPending: rxMethod<{ page?: number; size?: number } | void>(
       pipe(
         tap(() => patchState(store, { loading: true })),
-        switchMap(() =>
-          svc.getPendingApplications().pipe(
+        switchMap((params) => {
+          const p = (params as any)?.page ?? 0;
+          const s = (params as any)?.size ?? 12;
+          return svc.getPendingApplications(p, s).pipe(
             tapResponse({
-              next: (res) => patchState(store, { pending: res.data, loading: false }),
+              next: (res) => patchState(store, { 
+                pending: res.data.content,
+                currentPage: res.data.currentPage,
+                totalElements: res.data.totalElements,
+                totalPages: res.data.totalPages,
+                pageSize: res.data.pageSize,
+                loading: false 
+              }),
               error: (err: any) => patchState(store, { loading: false, error: err.error?.message })
             })
-          )
-        )
+          );
+        })
       )
     ),
 

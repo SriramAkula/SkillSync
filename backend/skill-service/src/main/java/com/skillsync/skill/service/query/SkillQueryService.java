@@ -1,11 +1,16 @@
 package com.skillsync.skill.service.query;
 
+import com.skillsync.skill.dto.response.PageResponse;
 import com.skillsync.skill.dto.response.SkillResponseDto;
 import com.skillsync.skill.mapper.SkillMapper;
 import com.skillsync.skill.repository.SkillRepository;
+import com.skillsync.skill.entity.Skill;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -27,17 +32,33 @@ public class SkillQueryService {
                 .orElseThrow(() -> new RuntimeException("Skill not found"));
     }
 
-    @Cacheable(value = "skills")
-    public List<SkillResponseDto> getAllActiveSkills() {
-        log.info("Cache MISS - fetching all active skills from DB");
-        return skillRepository.findByIsActiveTrueOrderByPopularityScoreDesc()
-                .stream().map(skillMapper::toDto).collect(Collectors.toList());
+    @Cacheable(value = "skills", key = "'p' + #page + '_s' + #size")
+    public PageResponse<SkillResponseDto> getAllActiveSkills(int page, int size) {
+        log.info("Cache MISS - fetching active skills from DB - page: {}, size: {}", page, size);
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Skill> skillPage = skillRepository.findByIsActiveTrueOrderByPopularityScoreDesc(pageable);
+        return toPageResponse(skillPage);
     }
 
-    public List<SkillResponseDto> searchSkills(String keyword) {
-        log.info("Searching skills with keyword: {}", keyword);
-        return skillRepository.searchByName(keyword)
-                .stream().map(skillMapper::toDto).collect(Collectors.toList());
+    public PageResponse<SkillResponseDto> searchSkills(String keyword, int page, int size) {
+        log.info("Searching skills with keyword: {}, page: {}, size: {}", keyword, page, size);
+        Pageable pageable = PageRequest.of(page, size);
+        Page<Skill> skillPage = skillRepository.searchByName(keyword, pageable);
+        return toPageResponse(skillPage);
+    }
+
+    private PageResponse<SkillResponseDto> toPageResponse(Page<Skill> page) {
+        List<SkillResponseDto> content = page.getContent().stream()
+                .map(skillMapper::toDto)
+                .collect(Collectors.toList());
+
+        return PageResponse.<SkillResponseDto>builder()
+                .content(content)
+                .currentPage(page.getNumber())
+                .totalElements(page.getTotalElements())
+                .totalPages(page.getTotalPages())
+                .pageSize(page.getSize())
+                .build();
     }
 
     public List<SkillResponseDto> getSkillsByCategory(String category) {

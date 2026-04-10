@@ -54,8 +54,8 @@ public class SessionController {
             @Parameter(hidden = true) @RequestHeader(value = "roles", required = false) String roles,
             @Valid @RequestBody RequestSessionRequestDto request) {
 
-        if (roles == null || !roles.contains("ROLE_LEARNER")) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only learners can request sessions");
+        if (roles == null || (!roles.contains("ROLE_LEARNER") && !roles.contains("ROLE_MENTOR"))) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only learners or mentors can request sessions");
         }
         log.info("POST /request - User {}", learnerId);
         SessionResponseDto response = sessionService.requestSession(learnerId, request);
@@ -120,8 +120,8 @@ public class SessionController {
             @Parameter(hidden = true) @RequestHeader("X-User-Id") Long learnerId,
             @Parameter(hidden = true) @RequestHeader(value = "roles", required = false) String roles) {
 
-        if (roles == null || !roles.contains("ROLE_LEARNER")) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only learners can view their session history");
+        if (roles == null || (!roles.contains("ROLE_LEARNER") && !roles.contains("ROLE_MENTOR"))) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only learners or mentors can view their session history");
         }
         log.info("GET /learner/list - Learner {}", learnerId);
         List<SessionResponseDto> response = sessionService.getSessionsForLearner(learnerId);

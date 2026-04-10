@@ -21,9 +21,14 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import com.skillsync.mentor.audit.AuditService;
 import com.skillsync.mentor.client.AuthServiceClient;
+import com.skillsync.mentor.dto.PageResponse;
 import com.skillsync.mentor.dto.request.ApplyMentorRequestDto;
 import com.skillsync.mentor.dto.request.UpdateAvailabilityRequestDto;
 import com.skillsync.mentor.dto.response.MentorProfileResponseDto;
@@ -178,42 +183,44 @@ class MentorServiceImplTest {
     // ─── getAllApprovedMentors ────────────────────────────────────────────────
 
     @Test
-    void getAllApprovedMentors_shouldReturnList_whenApprovedExist() {
-        when(mentorRepository.findAllApprovedMentors()).thenReturn(List.of(approvedProfile));
+    void getAllApprovedMentors_shouldReturnPageResponse_whenApprovedExist() {
+        Page<MentorProfile> page = new PageImpl<>(List.of(approvedProfile));
+        when(mentorRepository.findAllApprovedMentors(any(Pageable.class))).thenReturn(page);
         when(mentorMapper.toDto(approvedProfile)).thenReturn(approvedDto);
 
-        List<MentorProfileResponseDto> result = mentorService.getAllApprovedMentors();
+        PageResponse<MentorProfileResponseDto> result = mentorService.getAllApprovedMentors(0, 10);
 
-        assertThat(result).hasSize(1);
-        assertThat(result.get(0).getIsApproved()).isTrue();
-        assertThat(result.get(0).getStatus()).isEqualTo("APPROVED");
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getContent().get(0).getIsApproved()).isTrue();
+        assertThat(result.getTotalElements()).isEqualTo(1L);
     }
 
     @Test
     void getAllApprovedMentors_shouldReturnEmpty_whenNone() {
-        when(mentorRepository.findAllApprovedMentors()).thenReturn(List.of());
+        when(mentorRepository.findAllApprovedMentors(any(Pageable.class))).thenReturn(Page.empty());
 
-        assertThat(mentorService.getAllApprovedMentors()).isEmpty();
+        assertThat(mentorService.getAllApprovedMentors(0, 10).getContent()).isEmpty();
     }
 
     // ─── getPendingApplications ──────────────────────────────────────────────
 
     @Test
-    void getPendingApplications_shouldReturnPendingList() {
-        when(mentorRepository.findPendingApplications()).thenReturn(List.of(pendingProfile));
+    void getPendingApplications_shouldReturnPageResponse() {
+        Page<MentorProfile> page = new PageImpl<>(List.of(pendingProfile));
+        when(mentorRepository.findPendingApplications(any(Pageable.class))).thenReturn(page);
         when(mentorMapper.toDto(pendingProfile)).thenReturn(pendingDto);
 
-        List<MentorProfileResponseDto> result = mentorService.getPendingApplications();
+        PageResponse<MentorProfileResponseDto> result = mentorService.getPendingApplications(0, 10);
 
-        assertThat(result).hasSize(1);
-        assertThat(result.get(0).getStatus()).isEqualTo("PENDING");
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getContent().get(0).getStatus()).isEqualTo("PENDING");
     }
 
     @Test
     void getPendingApplications_shouldReturnEmpty_whenNone() {
-        when(mentorRepository.findPendingApplications()).thenReturn(List.of());
+        when(mentorRepository.findPendingApplications(any(Pageable.class))).thenReturn(Page.empty());
 
-        assertThat(mentorService.getPendingApplications()).isEmpty();
+        assertThat(mentorService.getPendingApplications(0, 10).getContent()).isEmpty();
     }
 
     // ─── searchMentorsBySpecialization ───────────────────────────────────────

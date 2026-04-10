@@ -19,6 +19,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import com.skillsync.skill.dto.request.CreateSkillRequestDto;
 import com.skillsync.skill.dto.response.ApiResponse;
+import com.skillsync.skill.dto.response.PageResponse;
 import com.skillsync.skill.dto.response.SkillResponseDto;
 import com.skillsync.skill.service.SkillService;
 
@@ -109,10 +110,12 @@ public class SkillController {
 		@io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Skills fetched successfully"),
 		@io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Internal server error")
 	})
-	public ResponseEntity<ApiResponse<List<SkillResponseDto>>> getAllSkills() {
-		log.info("Fetching all active skills");
+	public ResponseEntity<ApiResponse<PageResponse<SkillResponseDto>>> getAllSkills(
+			@RequestParam(defaultValue = "0") int page,
+			@RequestParam(defaultValue = "12") int size) {
+		log.info("Fetching all active skills - page: {}, size: {}", page, size);
 
-		List<SkillResponseDto> response = skillService.getAllActiveSkills();
+		PageResponse<SkillResponseDto> response = skillService.getAllActiveSkills(page, size);
 
 		return ResponseEntity
 			.ok(new ApiResponse<>(
@@ -131,12 +134,14 @@ public class SkillController {
 	@ApiResponses(value = {
 		@io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Skills found successfully"),
 		@io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid search parameters")
-	})	public ResponseEntity<ApiResponse<List<SkillResponseDto>>> searchSkills(
-			@RequestParam String keyword) {
+	})	public ResponseEntity<ApiResponse<PageResponse<SkillResponseDto>>> searchSkills(
+			@RequestParam String keyword,
+			@RequestParam(defaultValue = "0") int page,
+			@RequestParam(defaultValue = "12") int size) {
 
-		log.info("Searching skills with keyword: {}", keyword);
+		log.info("Searching skills with keyword: {}, page: {}, size: {}", keyword, page, size);
 
-		List<SkillResponseDto> response = skillService.searchSkills(keyword);
+		PageResponse<SkillResponseDto> response = skillService.searchSkills(keyword, page, size);
 
 		return ResponseEntity
 			.ok(new ApiResponse<>(

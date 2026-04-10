@@ -1,6 +1,7 @@
 package com.skillsync.skill.service.impl;
 
 import com.skillsync.skill.dto.request.CreateSkillRequestDto;
+import com.skillsync.skill.dto.response.PageResponse;
 import com.skillsync.skill.dto.response.SkillResponseDto;
 import com.skillsync.skill.service.SkillService;
 import com.skillsync.skill.service.command.SkillCommandService;
@@ -38,13 +39,13 @@ public class SkillServiceImpl implements SkillService {
     }
 
     @Override
-    public List<SkillResponseDto> getAllActiveSkills() {
-        return skillQueryService.getAllActiveSkills();
+    public PageResponse<SkillResponseDto> getAllActiveSkills(int page, int size) {
+        return skillQueryService.getAllActiveSkills(page, size);
     }
 
     @Override
-    public List<SkillResponseDto> searchSkills(String keyword) {
-        return skillQueryService.searchSkills(keyword);
+    public PageResponse<SkillResponseDto> searchSkills(String keyword, int page, int size) {
+        return skillQueryService.searchSkills(keyword, page, size);
     }
 
     @Override

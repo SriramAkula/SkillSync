@@ -3,6 +3,7 @@ package com.skillsync.skill.service;
 import java.util.List;
 
 import com.skillsync.skill.dto.request.CreateSkillRequestDto;
+import com.skillsync.skill.dto.response.PageResponse;
 import com.skillsync.skill.dto.response.SkillResponseDto;
 
 /**
@@ -14,9 +15,9 @@ public interface SkillService {
 
 	SkillResponseDto getSkillById(Long id);
 
-	List<SkillResponseDto> getAllActiveSkills();
+	PageResponse<SkillResponseDto> getAllActiveSkills(int page, int size);
 
-	List<SkillResponseDto> searchSkills(String keyword);
+	PageResponse<SkillResponseDto> searchSkills(String keyword, int page, int size);
 
 	List<SkillResponseDto> getSkillsByCategory(String category);
 

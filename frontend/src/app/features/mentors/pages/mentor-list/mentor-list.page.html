@@ -117,5 +117,16 @@
         </div>
       }
     </div>
+
+    <!-- Pagination -->
+    @if (mentorStore.totalElements() > mentorStore.pageSize()) {
+      <div class="pagination-wrapper">
+        <app-pagination 
+          [totalItems]="mentorStore.totalElements()" 
+          [pageSize]="mentorStore.pageSize()" 
+          [currentPage]="mentorStore.currentPage()"
+          (pageChange)="onPageChange($event)" />
+      </div>
+    }
   }
 </div>
