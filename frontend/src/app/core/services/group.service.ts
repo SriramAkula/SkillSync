@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { ApiResponse, GroupDto, CreateGroupRequest } from '../../shared/models';
+import { ApiResponse, GroupDto, CreateGroupRequest, PageResponse } from '../../shared/models';
 
 @Injectable({ providedIn: 'root' })
 export class GroupService {
@@ -17,8 +17,10 @@ export class GroupService {
     return this.http.get<ApiResponse<GroupDto>>(`${this.base}/${id}`);
   }
 
-  getGroupsBySkill(skillId: number): Observable<ApiResponse<GroupDto[]>> {
-    return this.http.get<ApiResponse<GroupDto[]>>(`${this.base}/skill/${skillId}`);
+  getGroupsBySkill(skillId: number, page: number = 0, size: number = 10): Observable<ApiResponse<PageResponse<GroupDto>>> {
+    return this.http.get<ApiResponse<PageResponse<GroupDto>>>(`${this.base}/skill/${skillId}`, {
+      params: { page: page.toString(), size: size.toString() }
+    });
   }
 
   joinGroup(id: number): Observable<ApiResponse<GroupDto>> {

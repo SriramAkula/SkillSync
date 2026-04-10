@@ -12,6 +12,10 @@ interface NotificationState {
   notifications: NotificationDto[];
   unreadCount: number;
   loading: boolean;
+  currentPage: number;
+  pageSize: number;
+  totalElements: number;
+  totalPages: number;
 }
 
 export const NotificationStore = signalStore(
@@ -19,7 +23,11 @@ export const NotificationStore = signalStore(
   withState<NotificationState>({
     notifications: [],
     unreadCount: 0,
-    loading: false
+    loading: false,
+    currentPage: 0,
+    pageSize: 15,
+    totalElements: 0,
+    totalPages: 0
   }),
 
   withComputed((store) => ({
@@ -32,17 +40,30 @@ export const NotificationStore = signalStore(
     let pollSub: Subscription | null = null;
 
     return {
-      loadAll: rxMethod<void>(
+      loadAll: rxMethod<{ page: number; size: number; unreadOnly?: boolean } | void>(
         pipe(
           tap(() => patchState(store, { loading: true })),
-          switchMap(() =>
-            svc.getAll().pipe(
+          switchMap((params) => {
+            const page = typeof params === 'object' ? params?.page ?? store.currentPage() : store.currentPage();
+            const size = typeof params === 'object' ? params?.size ?? store.pageSize() : store.pageSize();
+            const unreadOnly = typeof params === 'object' ? params?.unreadOnly ?? false : false;
+            
+            const req = unreadOnly ? svc.getUnread(page, size) : svc.getAll(page, size);
+            
+            return req.pipe(
               tapResponse({
-                next: (res) => patchState(store, { notifications: res.data, loading: false }),
+                next: (res) => patchState(store, { 
+                  notifications: res.data.content, 
+                  totalElements: res.data.totalElements,
+                  totalPages: res.data.totalPages,
+                  currentPage: res.data.currentPage,
+                  pageSize: res.data.pageSize,
+                  loading: false 
+                }),
                 error: () => patchState(store, { loading: false })
               })
-            )
-          )
+            );
+          })
         )
       ),
 

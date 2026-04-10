@@ -48,13 +48,13 @@ public class SessionServiceImpl implements SessionService {
     }
 
     @Override
-    public List<SessionResponseDto> getSessionsForMentor(Long mentorId) {
-        return sessionQueryService.getSessionsForMentor(mentorId);
+    public com.skillsync.session.dto.response.PageResponse<SessionResponseDto> getSessionsForMentor(Long mentorId, int page, int size) {
+        return sessionQueryService.getSessionsForMentor(mentorId, page, size);
     }
 
     @Override
-    public List<SessionResponseDto> getSessionsForLearner(Long learnerId) {
-        return sessionQueryService.getSessionsForLearner(learnerId);
+    public com.skillsync.session.dto.response.PageResponse<SessionResponseDto> getSessionsForLearner(Long learnerId, int page, int size) {
+        return sessionQueryService.getSessionsForLearner(learnerId, page, size);
     }
 
     @Override

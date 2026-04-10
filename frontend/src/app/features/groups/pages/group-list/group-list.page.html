@@ -58,7 +58,9 @@
     </div>
     <div class="groups-grid">
       @for (g of groups(); track g.id) {
+        <!-- ... existing group card code ... -->
         <div class="group-card" (click)="router.navigate(['/groups', g.id])">
+          <!-- card content as before -->
           <div class="group-top">
             <div class="group-icon">{{ g.name[0].toUpperCase() }}</div>
             <div class="group-info">
@@ -87,7 +89,6 @@
           </div>
 
           <div class="group-actions" (click)="$event.stopPropagation()">
-            <!-- Join/Leave/Full Logic -->
             @if (!isCreator(g)) {
               @if (g.isJoined) {
                 <button class="btn-leave" (click)="leave(g.id)">
@@ -106,15 +107,11 @@
                 </button>
               }
             }
-
-            <!-- Creator badge -->
             @if (isCreator(g)) {
               <span class="creator-badge">
                 <span class="material-icons">star</span> Creator
               </span>
             }
-
-            <!-- Delete: only creator or admin -->
             @if (isCreator(g) || authStore.isAdmin()) {
               <button class="btn-delete" (click)="deleteGroup(g.id)" 
                       title="Only group creator or admin can delete">
@@ -124,6 +121,13 @@
           </div>
         </div>
       }
+    </div>
+
+    <!-- Load More Pagination -->
+    <div class="pagination-footer" *ngIf="currentPage() < totalPages() - 1">
+      <button class="btn-load-more" (click)="loadMore()" [disabled]="loading()">
+        @if (loading()) { <mat-spinner diameter="18" /> Loading... } @else { Load More Groups }
+      </button>
     </div>
   } @else if (searched() && !loading()) {
     <div class="empty-state">

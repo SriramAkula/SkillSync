@@ -26,7 +26,7 @@ export class MentorDetailPage implements OnInit {
   ngOnInit(): void {
     const id = Number(this.route.snapshot.paramMap.get('id')); 
     this.mentorStore.loadById(id);
-    this.reviewService.getMentorReviews(id).subscribe(r => this.reviews.set(r.data));
+    this.reviewService.getMentorReviews(id, 0, 5).subscribe(r => this.reviews.set(r.data.content));
     this.reviewService.getMentorRating(id).subscribe(r => this.rating.set(r.data));
   }
 

@@ -43,8 +43,8 @@ public class GroupServiceImpl implements GroupService {
     }
 
     @Override
-    public List<GroupResponseDto> getGroupsBySkill(Long skillId, Long currentUserId) {
-        return groupQueryService.getGroupsBySkill(skillId, currentUserId);
+    public com.skillsync.group.dto.response.PageResponse<GroupResponseDto> getGroupsBySkill(Long skillId, int page, int size, Long currentUserId) {
+        return groupQueryService.getGroupsBySkill(skillId, page, size, currentUserId);
     }
 
     @Override

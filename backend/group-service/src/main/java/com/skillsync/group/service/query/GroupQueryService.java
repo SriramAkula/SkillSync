@@ -1,6 +1,7 @@
 package com.skillsync.group.service.query;
 
 import com.skillsync.group.dto.response.GroupResponseDto;
+import com.skillsync.group.dto.response.PageResponse;
 import com.skillsync.group.exception.GroupNotFoundException;
 import com.skillsync.group.mapper.GroupMapper;
 import com.skillsync.group.repository.GroupMemberRepository;
@@ -31,13 +32,21 @@ public class GroupQueryService {
         return groupMapper.toDto(group, groupMemberRepository.countByGroupId(groupId), joined);
     }
 
-    @Cacheable(value = "group", key = "'skill_' + #skillId + '_' + (#currentUserId != null ? #currentUserId : 'anon')")
-    public List<GroupResponseDto> getGroupsBySkill(Long skillId, Long currentUserId) {
-        log.info("Cache MISS - fetching groups for skillId={} (user={}) from DB", skillId, currentUserId);
-        return groupRepository.findBySkillId(skillId).stream()
-                .map(g -> groupMapper.toDto(g, groupMemberRepository.countByGroupId(g.getId()),
-                        currentUserId != null && groupMemberRepository.findByGroupIdAndUserId(g.getId(), currentUserId).isPresent()))
-                .collect(Collectors.toList());
+    public com.skillsync.group.dto.response.PageResponse<GroupResponseDto> getGroupsBySkill(Long skillId, int page, int size, Long currentUserId) {
+        log.info("Fetching paginated groups for skillId={} (user={}), page={}, size={}", skillId, currentUserId, page, size);
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size, org.springframework.data.domain.Sort.by("createdAt").descending());
+        org.springframework.data.domain.Page<com.skillsync.group.entity.Group> groupPage = groupRepository.findBySkillId(skillId, pageable);
+        
+        return com.skillsync.group.dto.response.PageResponse.<GroupResponseDto>builder()
+                .content(groupPage.getContent().stream()
+                        .map(g -> groupMapper.toDto(g, groupMemberRepository.countByGroupId(g.getId()),
+                                currentUserId != null && groupMemberRepository.findByGroupIdAndUserId(g.getId(), currentUserId).isPresent()))
+                        .collect(java.util.stream.Collectors.toList()))
+                .currentPage(groupPage.getNumber())
+                .totalElements(groupPage.getTotalElements())
+                .totalPages(groupPage.getTotalPages())
+                .pageSize(groupPage.getSize())
+                .build();
     }
 
     @Cacheable(value = "group", key = "'creator_' + #creatorId + '_' + (#currentUserId != null ? #currentUserId : 'anon')")

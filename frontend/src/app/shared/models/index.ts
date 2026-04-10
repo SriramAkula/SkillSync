@@ -207,3 +207,4 @@ export interface VerifyPaymentRequest {
 }
 
 export * from './skill.models';
+export * from './page.models';

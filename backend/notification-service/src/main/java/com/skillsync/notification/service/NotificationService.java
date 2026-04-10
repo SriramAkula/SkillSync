@@ -6,6 +6,8 @@ import com.skillsync.notification.service.query.NotificationQueryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import com.skillsync.notification.dto.response.PageResponse;
+import com.skillsync.notification.dto.NotificationDto;
 import java.util.List;
 
 @Service
@@ -15,12 +17,12 @@ public class NotificationService {
     private final NotificationCommandService notificationCommandService;
     private final NotificationQueryService notificationQueryService;
 
-    public List<Notification> getUserNotifications(Long userId) {
-        return notificationQueryService.getUserNotifications(userId);
+    public PageResponse<NotificationDto> getUserNotifications(Long userId, int page, int size) {
+        return notificationQueryService.getUserNotifications(userId, page, size);
     }
 
-    public List<Notification> getUserUnreadNotifications(Long userId) {
-        return notificationQueryService.getUserUnreadNotifications(userId);
+    public PageResponse<NotificationDto> getUserUnreadNotifications(Long userId, int page, int size) {
+        return notificationQueryService.getUserUnreadNotifications(userId, page, size);
     }
 
     public Integer getUnreadCount(Long userId) {

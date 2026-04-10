@@ -1,5 +1,6 @@
 package com.skillsync.session.service.query;
 
+import com.skillsync.session.dto.response.PageResponse;
 import com.skillsync.session.dto.response.SessionResponseDto;
 import com.skillsync.session.exception.SessionNotFoundException;
 import com.skillsync.session.mapper.SessionMapper;
@@ -25,21 +26,35 @@ public class SessionQueryService {
         log.info("Cache MISS - fetching sessionId={} from DB", sessionId);
         return sessionRepository.findById(sessionId)
                 .map(sessionMapper::toDto)
-                .orElseThrow(() -> new SessionNotFoundException("Session not found with ID: " + sessionId));
+                .orElseThrow(() -> new com.skillsync.session.exception.SessionNotFoundException("Session not found with ID: " + sessionId));
     }
 
-    @Cacheable(value = "session", key = "'mentor_' + #mentorId")
-    public List<SessionResponseDto> getSessionsForMentor(Long mentorId) {
-        log.info("Cache MISS - fetching sessions for mentorId={} from DB", mentorId);
-        return sessionRepository.findByMentorId(mentorId).stream()
-                .map(sessionMapper::toDto).collect(Collectors.toList());
+    public com.skillsync.session.dto.response.PageResponse<SessionResponseDto> getSessionsForMentor(Long mentorId, int page, int size) {
+        log.info("Fetching paginated sessions for mentorId={}, page={}, size={}", mentorId, page, size);
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size, org.springframework.data.domain.Sort.by("scheduledAt").descending());
+        org.springframework.data.domain.Page<com.skillsync.session.entity.Session> sessionPage = sessionRepository.findByMentorId(mentorId, pageable);
+        
+        return com.skillsync.session.dto.response.PageResponse.<SessionResponseDto>builder()
+                .content(sessionPage.getContent().stream().map(sessionMapper::toDto).collect(java.util.stream.Collectors.toList()))
+                .currentPage(sessionPage.getNumber())
+                .totalElements(sessionPage.getTotalElements())
+                .totalPages(sessionPage.getTotalPages())
+                .pageSize(sessionPage.getSize())
+                .build();
     }
 
-    @Cacheable(value = "session", key = "'learner_' + #learnerId")
-    public List<SessionResponseDto> getSessionsForLearner(Long learnerId) {
-        log.info("Cache MISS - fetching sessions for learnerId={} from DB", learnerId);
-        return sessionRepository.findByLearnerId(learnerId).stream()
-                .map(sessionMapper::toDto).collect(Collectors.toList());
+    public com.skillsync.session.dto.response.PageResponse<SessionResponseDto> getSessionsForLearner(Long learnerId, int page, int size) {
+        log.info("Fetching paginated sessions for learnerId={}, page={}, size={}", learnerId, page, size);
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size, org.springframework.data.domain.Sort.by("scheduledAt").descending());
+        org.springframework.data.domain.Page<com.skillsync.session.entity.Session> sessionPage = sessionRepository.findByLearnerId(learnerId, pageable);
+        
+        return com.skillsync.session.dto.response.PageResponse.<SessionResponseDto>builder()
+                .content(sessionPage.getContent().stream().map(sessionMapper::toDto).collect(java.util.stream.Collectors.toList()))
+                .currentPage(sessionPage.getNumber())
+                .totalElements(sessionPage.getTotalElements())
+                .totalPages(sessionPage.getTotalPages())
+                .pageSize(sessionPage.getSize())
+                .build();
     }
 
     public List<SessionResponseDto> getPendingSessions() {

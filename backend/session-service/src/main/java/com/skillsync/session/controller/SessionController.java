@@ -93,16 +93,18 @@ public class SessionController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Mentor sessions retrieved successfully"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Unauthorized")
     })
-    public ResponseEntity<ApiResponse<List<SessionResponseDto>>> getMentorSessions(
+    public ResponseEntity<ApiResponse<com.skillsync.session.dto.response.PageResponse<SessionResponseDto>>> getMentorSessions(
             @Parameter(hidden = true) @RequestHeader("X-User-Id") Long mentorId,
-            @Parameter(hidden = true) @RequestHeader(value = "roles", required = false) String roles) {
+            @Parameter(hidden = true) @RequestHeader(value = "roles", required = false) String roles,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
 
         if (roles == null || !roles.contains("ROLE_MENTOR")) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only mentors can view their sessions");
         }
-        log.info("GET /mentor/list - Mentor {}", mentorId);
-        List<SessionResponseDto> response = sessionService.getSessionsForMentor(mentorId);
-        return ResponseEntity.ok(ApiResponse.<List<SessionResponseDto>>builder()
+        log.info("GET /mentor/list - Mentor {} - page: {}, size: {}", mentorId, page, size);
+        com.skillsync.session.dto.response.PageResponse<SessionResponseDto> response = sessionService.getSessionsForMentor(mentorId, page, size);
+        return ResponseEntity.ok(ApiResponse.<com.skillsync.session.dto.response.PageResponse<SessionResponseDto>>builder()
                 .success(true)
                 .data(response)
                 .message("Mentor sessions retrieved successfully")
@@ -116,16 +118,18 @@ public class SessionController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Learner sessions retrieved successfully"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Unauthorized")
     })
-    public ResponseEntity<ApiResponse<List<SessionResponseDto>>> getLearnerSessions(
+    public ResponseEntity<ApiResponse<com.skillsync.session.dto.response.PageResponse<SessionResponseDto>>> getLearnerSessions(
             @Parameter(hidden = true) @RequestHeader("X-User-Id") Long learnerId,
-            @Parameter(hidden = true) @RequestHeader(value = "roles", required = false) String roles) {
+            @Parameter(hidden = true) @RequestHeader(value = "roles", required = false) String roles,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
 
         if (roles == null || (!roles.contains("ROLE_LEARNER") && !roles.contains("ROLE_MENTOR"))) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only learners or mentors can view their session history");
         }
-        log.info("GET /learner/list - Learner {}", learnerId);
-        List<SessionResponseDto> response = sessionService.getSessionsForLearner(learnerId);
-        return ResponseEntity.ok(ApiResponse.<List<SessionResponseDto>>builder()
+        log.info("GET /learner/list - Learner {} - page: {}, size: {}", learnerId, page, size);
+        com.skillsync.session.dto.response.PageResponse<SessionResponseDto> response = sessionService.getSessionsForLearner(learnerId, page, size);
+        return ResponseEntity.ok(ApiResponse.<com.skillsync.session.dto.response.PageResponse<SessionResponseDto>>builder()
                 .success(true)
                 .data(response)
                 .message("Learner sessions retrieved successfully")

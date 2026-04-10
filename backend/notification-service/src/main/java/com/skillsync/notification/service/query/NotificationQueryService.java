@@ -16,16 +16,36 @@ public class NotificationQueryService {
 
     private final NotificationRepository notificationRepository;
 
-    @Cacheable(value = "notification", key = "'all_' + #userId")
-    public List<Notification> getUserNotifications(Long userId) {
-        log.info("Cache MISS - fetching all notifications for user {}", userId);
-        return notificationRepository.findByUserId(userId);
+    public com.skillsync.notification.dto.response.PageResponse<com.skillsync.notification.dto.NotificationDto> getUserNotifications(Long userId, int page, int size) {
+        log.info("Fetching paginated notifications for user {}, page={}, size={}", userId, page, size);
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size, org.springframework.data.domain.Sort.by("sentAt").descending());
+        org.springframework.data.domain.Page<Notification> notificationPage = notificationRepository.findByUserId(userId, pageable);
+        
+        return com.skillsync.notification.dto.response.PageResponse.<com.skillsync.notification.dto.NotificationDto>builder()
+                .content(notificationPage.getContent().stream()
+                        .map(com.skillsync.notification.dto.NotificationDto::fromEntity)
+                        .collect(java.util.stream.Collectors.toList()))
+                .currentPage(notificationPage.getNumber())
+                .totalElements(notificationPage.getTotalElements())
+                .totalPages(notificationPage.getTotalPages())
+                .pageSize(notificationPage.getSize())
+                .build();
     }
 
-    @Cacheable(value = "notification", key = "'unread_' + #userId")
-    public List<Notification> getUserUnreadNotifications(Long userId) {
-        log.info("Cache MISS - fetching unread notifications for user {}", userId);
-        return notificationRepository.findUnreadByUserId(userId);
+    public com.skillsync.notification.dto.response.PageResponse<com.skillsync.notification.dto.NotificationDto> getUserUnreadNotifications(Long userId, int page, int size) {
+        log.info("Fetching paginated unread notifications for user {}, page={}, size={}", userId, page, size);
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size, org.springframework.data.domain.Sort.by("sentAt").descending());
+        org.springframework.data.domain.Page<Notification> notificationPage = notificationRepository.findUnreadByUserId(userId, pageable);
+        
+        return com.skillsync.notification.dto.response.PageResponse.<com.skillsync.notification.dto.NotificationDto>builder()
+                .content(notificationPage.getContent().stream()
+                        .map(com.skillsync.notification.dto.NotificationDto::fromEntity)
+                        .collect(java.util.stream.Collectors.toList()))
+                .currentPage(notificationPage.getNumber())
+                .totalElements(notificationPage.getTotalElements())
+                .totalPages(notificationPage.getTotalPages())
+                .pageSize(notificationPage.getSize())
+                .build();
     }
 
     @Cacheable(value = "notification", key = "'count_' + #userId")

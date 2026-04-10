@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, forkJoin, map, of, switchMap, catchError } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { ApiResponse, SessionDto, RequestSessionRequest, UserProfileDto } from '../../shared/models';
+import { ApiResponse, SessionDto, RequestSessionRequest, UserProfileDto, PageResponse } from '../../shared/models';
 import { UserService } from './user.service';
 import { SkillService } from './skill.service';
 
@@ -23,15 +23,19 @@ export class SessionService {
     );
   }
 
-  getMentorSessions(): Observable<ApiResponse<SessionDto[]>> {
-    return this.http.get<ApiResponse<SessionDto[]>>(`${this.base}/mentor/list`).pipe(
-      switchMap(res => this.enrichSessions(res))
+  getMentorSessions(page: number = 0, size: number = 10): Observable<ApiResponse<PageResponse<SessionDto>>> {
+    return this.http.get<ApiResponse<PageResponse<SessionDto>>>(`${this.base}/mentor/list`, {
+      params: { page: page.toString(), size: size.toString() }
+    }).pipe(
+      switchMap(res => this.enrichSessionsPage(res))
     );
   }
 
-  getLearnerSessions(): Observable<ApiResponse<SessionDto[]>> {
-    return this.http.get<ApiResponse<SessionDto[]>>(`${this.base}/learner/list`).pipe(
-      switchMap(res => this.enrichSessions(res))
+  getLearnerSessions(page: number = 0, size: number = 10): Observable<ApiResponse<PageResponse<SessionDto>>> {
+    return this.http.get<ApiResponse<PageResponse<SessionDto>>>(`${this.base}/learner/list`, {
+      params: { page: page.toString(), size: size.toString() }
+    }).pipe(
+      switchMap(res => this.enrichSessionsPage(res))
     );
   }
 
@@ -52,14 +56,25 @@ export class SessionService {
   private enrichSingle(res: ApiResponse<SessionDto>): Observable<ApiResponse<SessionDto>> {
     const s = res.data;
     if (!s) return of(res);
-    return this.enrichSessions({ ...res, data: [s] }).pipe(
-      map(eRes => ({ ...res, data: eRes.data[0] }))
+    return this.enrichSessionsList([s]).pipe(
+      map(enriched => ({ ...res, data: enriched[0] }))
     );
   }
 
-  private enrichSessions(res: ApiResponse<SessionDto[]>): Observable<ApiResponse<SessionDto[]>> {
-    const sessions = res.data || [];
-    if (sessions.length === 0) return of(res);
+  private enrichSessionsPage(res: ApiResponse<PageResponse<SessionDto>>): Observable<ApiResponse<PageResponse<SessionDto>>> {
+    const page = res.data;
+    if (!page || !page.content || page.content.length === 0) return of(res);
+
+    return this.enrichSessionsList(page.content).pipe(
+      map(enriched => ({
+        ...res,
+        data: { ...page, content: enriched }
+      }))
+    );
+  }
+
+  private enrichSessionsList(sessions: SessionDto[]): Observable<SessionDto[]> {
+    if (sessions.length === 0) return of(sessions);
 
     // Get all skills once (they are cached in service anyway)
     return this.skillService.getAll().pipe(
@@ -92,9 +107,7 @@ export class SessionService {
           );
         });
 
-        return forkJoin(requests).pipe(
-          map(enriched => ({ ...res, data: enriched }))
-        );
+        return forkJoin(requests);
       })
     );
   }

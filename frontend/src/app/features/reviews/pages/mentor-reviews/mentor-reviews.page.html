@@ -106,6 +106,13 @@
           <p>Be the first to review this mentor!</p>
         </div>
       }
+
+      <!-- Load More Pagination -->
+      <div class="pagination-footer" *ngIf="currentPage() < totalPages() - 1">
+        <button class="btn-load-more" (click)="loadMore()" [disabled]="loading()">
+          @if (loading()) { <mat-spinner diameter="18" /> Loading... } @else { Load More Reviews }
+        </button>
+      </div>
     </div>
   }
 </div>

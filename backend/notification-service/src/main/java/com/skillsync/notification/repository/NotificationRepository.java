@@ -9,11 +9,11 @@ import java.util.List;
 @Repository
 public interface NotificationRepository extends JpaRepository<Notification, Long> {
     
-    @Query("SELECT n FROM Notification n WHERE n.userId = :userId ORDER BY n.sentAt DESC")
-    List<Notification> findByUserId(Long userId);
+    @Query("SELECT n FROM Notification n WHERE n.userId = :userId")
+    org.springframework.data.domain.Page<Notification> findByUserId(Long userId, org.springframework.data.domain.Pageable pageable);
     
-    @Query("SELECT n FROM Notification n WHERE n.userId = :userId AND n.read = false ORDER BY n.sentAt DESC")
-    List<Notification> findUnreadByUserId(Long userId);
+    @Query("SELECT n FROM Notification n WHERE n.userId = :userId AND n.read = false")
+    org.springframework.data.domain.Page<Notification> findUnreadByUserId(Long userId, org.springframework.data.domain.Pageable pageable);
     
     @Query("SELECT COUNT(n) FROM Notification n WHERE n.userId = :userId AND n.read = false")
     Integer countUnreadByUserId(Long userId);

@@ -73,27 +73,12 @@
         </div>
         <div>
           <p class="text-[10px] font-bold uppercase tracking-widest text-violet-600 dark:text-violet-300">Lifetime</p>
-          <p class="text-2xl font-black text-violet-600 dark:text-violet-200 tracking-tight">{{ sessionStore.mentorSessions().length }}</p>
+          <p class="text-2xl font-black text-violet-600 dark:text-violet-200 tracking-tight">{{ sessionStore.mentorTotalElements() }}</p>
         </div>
       </div>
     </div>
 
-    <div (click)="changeTab('confirmed')" 
-         [class.ring-2]="activeTab() === 'confirmed'"
-         class="glass-card dark:bg-emerald-950/50 p-6 cursor-pointer hover:shadow-2xl transition-all duration-300 ring-emerald-500/50 ring-offset-2 dark:ring-offset-slate-950 relative overflow-hidden group border border-emerald-500/10">
-      <div class="flex items-center gap-4">
-        <div class="w-12 h-12 bg-emerald-100 dark:bg-emerald-900/30 rounded-xl flex items-center justify-center text-emerald-600 dark:text-emerald-400 group-hover:bg-emerald-200 dark:group-hover:bg-emerald-900/50 transition-colors shadow-sm">
-          <span class="material-icons">account_balance_wallet</span>
-        </div>
-        <div>
-          <p class="text-[10px] font-bold uppercase tracking-widest text-emerald-600 dark:text-amber-300">Total Confirmed</p>
-          <p class="text-2xl font-black text-emerald-600 dark:text-emerald-200 tracking-tight">{{ confirmedSessions().length }}</p>
-        </div>
-      </div>
-      <div class="absolute -right-4 -bottom-4 opacity-5 pointer-events-none">
-         <span class="material-icons text-8xl text-emerald-600">volunteer_activism</span>
-      </div>
-    </div>
+    <!-- ... -->
   </div>
 
   <!-- Content Area -->
@@ -125,75 +110,28 @@
           }
         </div>
     } @else {
-      
-      <!-- Special View for Pending to emphasize action -->
-      @if (activeTab() === 'pending') {
-        <div class="space-y-4 animate-drop-in">
-          @for (s of pagedSessions(); track s.id) {
-            <div class="glass-card p-6 md:p-8 flex flex-col md:flex-row md:items-center justify-between gap-8 border border-white/40 shadow-xl hover:shadow-2xl transition-all duration-300 group">
-              <div class="flex items-center gap-6">
-                <div class="w-16 h-16 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-300 group-hover:bg-amber-50 group-hover:text-amber-500 transition-colors">
-                  <span class="material-icons text-3xl">contact_support</span>
-                </div>
-                <div class="space-y-2">
-                  <div class="flex gap-2">
-                     <span class="bg-amber-100 text-amber-700 px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-widest">New Booking Request</span>
-                     <span class="text-[10px] font-bold text-slate-300 uppercase tracking-widest pt-0.5">Session #{{ s.id }}</span>
-                  </div>
-                  <h4 class="text-xl font-black text-slate-800 tracking-tight leading-none">{{ getSkillName(s.skillId) }}</h4>
-                  <div class="flex items-center gap-4 text-[11px] font-bold text-slate-400 tracking-wide uppercase">
-                     <span class="flex items-center gap-1"><span class="material-icons text-sm">calendar_month</span> {{ s.scheduledAt | date:'EEE, MMM d' }}</span>
-                     <span class="flex items-center gap-1"><span class="material-icons text-sm">schedule</span> {{ s.scheduledAt | date:'h:mm a' }}</span>
-                     <span class="flex items-center gap-1 text-slate-300 flex-shrink-0">•</span>
-                     <span class="flex items-center gap-1"><span class="material-icons text-sm">timer</span> {{ s.durationMinutes }} Min</span>
-                  </div>
-                </div>
-              </div>
-              
-              <div class="flex items-center gap-3 pt-4 md:pt-0 border-t md:border-t-0 border-slate-50">
-                <button (click)="openReject(s)" class="flex-1 md:flex-none px-6 py-3 rounded-xl border border-red-100 text-red-500 text-xs font-extrabold uppercase tracking-widest hover:bg-red-50 transition-all active:scale-95">Decline</button>
-                <button (click)="accept(s.id)" class="flex-[2] md:flex-none px-10 py-3 bg-emerald-600 text-white rounded-xl text-xs font-extrabold uppercase tracking-widest shadow-xl hover:bg-emerald-700 hover:-translate-y-1 transition-all active:scale-95 flex items-center justify-center gap-2">
-                   <span class="material-icons text-base">verified</span>
-                   Accept Session
-                </button>
-              </div>
-            </div>
-          } @empty {
-            <div class="py-24 glass-card dark:bg-slate-800/30 border border-dashed border-slate-200 dark:border-slate-700 flex flex-col items-center text-center space-y-4">
-               <div class="w-16 h-16 bg-slate-100 dark:bg-slate-700/50 rounded-full flex items-center justify-center text-slate-300 dark:text-slate-400">
-                  <span class="material-icons text-3xl">inbox</span>
-               </div>
-               <h3 class="text-xl font-bold text-slate-800 dark:text-slate-100">No pending requests</h3>
-               <p class="text-slate-600 dark:text-slate-300 text-sm max-w-xs font-medium">When learners book sessions with you, they'll appear here for your approval.</p>
-            </div>
-          }
-        </div>
-      } @else {
-        <!-- Regular Grid for Other Tabs -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 animate-drop-in">
-          @for (s of pagedSessions(); track s.id) {
-            <app-session-card 
-              [session]="s"
-              (view)="router.navigate(['/sessions', $event])"
-              (cancel)="cancelSession($event)"
-              (pay)="noop()" />
-          } @empty {
-            <div class="col-span-full py-24 flex flex-col items-center text-center space-y-4 text-slate-500 dark:text-slate-400">
-               <span class="material-icons text-6xl">event_busy</span>
-               <p class="text-sm font-bold uppercase tracking-widest">No matching activities found.</p>
-            </div>
-          }
-        </div>
-      }
-
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 animate-drop-in">
+        @for (s of sessionStore.mentorSessions(); track s.id) {
+          <app-session-card 
+            [session]="s"
+            (view)="router.navigate(['/sessions', $event])"
+            (cancel)="cancelSession($event)"
+            (pay)="noop()" />
+        } @empty {
+          <div class="col-span-full py-24 flex flex-col items-center text-center space-y-4 text-slate-500 dark:text-slate-400">
+             <span class="material-icons text-6xl">event_busy</span>
+             <p class="text-sm font-bold uppercase tracking-widest">No matching activities found.</p>
+          </div>
+        }
+      </div>
     }
 
     <!-- Pagination -->
     <app-pagination
-      [totalItems]="currentSessions().length"
-      [pageSize]="pageSize()"
-      [currentPage]="currentPage()"
-      (pageChange)="currentPage.set($event)"
+      [totalItems]="sessionStore.mentorTotalElements()"
+      [pageSize]="sessionStore.mentorPageSize()"
+      [currentPage]="sessionStore.mentorCurrentPage()"
+      (pageChange)="onPageChange($event)"
     ></app-pagination>
 
   </div>

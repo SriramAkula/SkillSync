@@ -30,6 +30,12 @@ export class MentorReviewsPage implements OnInit {
   readonly editingId = signal<number | null>(null);
   readonly hoverRating = signal(0);
 
+  // Pagination
+  readonly currentPage = signal(0);
+  readonly totalElements = signal(0);
+  readonly totalPages = signal(0);
+  readonly pageSize = 10;
+
   newReview = { sessionId: null as number | null, rating: 0, comment: '' };
   editComment = '';
 
@@ -39,8 +45,32 @@ export class MentorReviewsPage implements OnInit {
   ngOnInit(): void {
     const id = Number(this.route.snapshot.paramMap.get('mentorId'));
     this.mentorId.set(id);
-    this.reviewService.getMentorReviews(id).subscribe({ next: (r) => { this.reviews.set(r.data ?? []); this.loading.set(false); }, error: () => this.loading.set(false) });
+    this.loadReviews(id, 0);
     this.reviewService.getMentorRating(id).subscribe({ next: (r) => this.rating.set(r.data), error: () => {} });
+  }
+
+  loadReviews(mentorId: number, page: number, append: boolean = false): void {
+    this.loading.set(true);
+    this.reviewService.getMentorReviews(mentorId, page, this.pageSize).subscribe({
+      next: (res) => {
+        if (append) {
+          this.reviews.update(list => [...list, ...res.data.content]);
+        } else {
+          this.reviews.set(res.data.content);
+        }
+        this.currentPage.set(res.data.currentPage);
+        this.totalElements.set(res.data.totalElements);
+        this.totalPages.set(res.data.totalPages);
+        this.loading.set(false);
+      },
+      error: () => this.loading.set(false)
+    });
+  }
+
+  loadMore(): void {
+    if (this.currentPage() < this.totalPages() - 1) {
+      this.loadReviews(this.mentorId(), this.currentPage() + 1, true);
+    }
   }
 
   submitReview(): void {

@@ -33,6 +33,12 @@ export class GroupListPage implements OnInit {
   readonly selectedCategory = signal('');
   readonly selectedSkillId = signal<number | null>(null);
 
+  // Pagination
+  readonly currentPage = signal(0);
+  readonly totalElements = signal(0);
+  readonly totalPages = signal(0);
+  readonly pageSize = 12;
+
   newGroupCategory = '';
   newGroup = { name: '', skillId: null as number | null, maxMembers: null as number | null, description: '' };
 
@@ -97,19 +103,36 @@ export class GroupListPage implements OnInit {
     return s ? s.skillName : `Skill #${skillId}`;
   }
 
-  loadGroups(): void {
+  loadGroups(page: number = 0, append: boolean = false): void {
     if (!this.selectedSkillId()) return;
     this.loading.set(true);
     this.searched.set(true);
     
-    this.groupService.getGroupsBySkill(this.selectedSkillId()!).subscribe({
+    this.groupService.getGroupsBySkill(this.selectedSkillId()!, page, this.pageSize).subscribe({
       next: (res) => {
-        this.groups.set(res.data ?? []);
+        const list = res.data.content || [];
+        if (append) {
+          this.groups.update(curr => [...curr, ...list]);
+        } else {
+          this.groups.set(list);
+        }
+        this.currentPage.set(res.data.currentPage);
+        this.totalElements.set(res.data.totalElements);
+        this.totalPages.set(res.data.totalPages);
         this.loading.set(false);
-        this.cleanupOldGroups(res.data ?? []);
+        this.cleanupOldGroups(list);
       },
-      error: () => { this.groups.set([]); this.loading.set(false); }
+      error: () => { 
+        if (!append) this.groups.set([]); 
+        this.loading.set(false); 
+      }
     });
+  }
+
+  loadMore(): void {
+    if (this.currentPage() < this.totalPages() - 1) {
+      this.loadGroups(this.currentPage() + 1, true);
+    }
   }
 
   clearFilters(): void {

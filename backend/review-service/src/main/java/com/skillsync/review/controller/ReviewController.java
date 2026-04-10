@@ -80,11 +80,13 @@ public class ReviewController {
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Mentor reviews retrieved successfully"),
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Mentor not found")
     })
-    public ResponseEntity<ApiResponse<List<ReviewResponseDto>>> getMentorReviews(
-            @PathVariable Long mentorId) {
-        log.info("GET /mentors/{} - Get mentor reviews", mentorId);
-        List<ReviewResponseDto> response = reviewService.getMentorReviews(mentorId);
-        return ResponseEntity.ok(ApiResponse.<List<ReviewResponseDto>>builder()
+    public ResponseEntity<ApiResponse<com.skillsync.review.dto.response.PageResponse<ReviewResponseDto>>> getMentorReviews(
+            @PathVariable Long mentorId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        log.info("GET /mentors/{} - Get mentor reviews - page: {}, size: {}", mentorId, page, size);
+        com.skillsync.review.dto.response.PageResponse<ReviewResponseDto> response = reviewService.getMentorReviews(mentorId, page, size);
+        return ResponseEntity.ok(ApiResponse.<com.skillsync.review.dto.response.PageResponse<ReviewResponseDto>>builder()
             .success(true)
             .data(response)
             .message("Mentor reviews retrieved successfully")

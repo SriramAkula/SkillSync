@@ -12,6 +12,14 @@ interface SessionState {
   selected: SessionDto | null;
   loading: boolean;
   error: string | null;
+  // Learner pagination
+  learnerCurrentPage: number;
+  learnerTotalElements: number;
+  learnerTotalPages: number;
+  // Mentor pagination
+  mentorCurrentPage: number;
+  mentorTotalElements: number;
+  mentorTotalPages: number;
 }
 
 export const SessionStore = signalStore(
@@ -21,7 +29,13 @@ export const SessionStore = signalStore(
     mentorSessions: [],
     selected: null,
     loading: false,
-    error: null
+    error: null,
+    learnerCurrentPage: 0,
+    learnerTotalElements: 0,
+    learnerTotalPages: 0,
+    mentorCurrentPage: 0,
+    mentorTotalElements: 0,
+    mentorTotalPages: 0
   }),
 
   withComputed((store) => ({
@@ -52,31 +66,47 @@ export const SessionStore = signalStore(
       )
     ),
 
-    loadLearnerSessions: rxMethod<void>(
+    loadLearnerSessions: rxMethod<{ page: number; size: number } | void>(
       pipe(
         tap(() => patchState(store, { loading: true })),
-        switchMap(() =>
-          svc.getLearnerSessions().pipe(
+        switchMap((params) => {
+          const page = typeof params === 'object' ? params?.page ?? store.learnerCurrentPage() : store.learnerCurrentPage();
+          const size = typeof params === 'object' ? params?.size ?? 10 : 10;
+          return svc.getLearnerSessions(page, size).pipe(
             tapResponse({
-              next: (res) => patchState(store, { learnerSessions: res.data, loading: false }),
+              next: (res) => patchState(store, { 
+                learnerSessions: res.data.content,
+                learnerTotalElements: res.data.totalElements,
+                learnerTotalPages: res.data.totalPages,
+                learnerCurrentPage: res.data.currentPage,
+                loading: false 
+              }),
               error: (err: any) => patchState(store, { loading: false, error: err.error?.message })
             })
-          )
-        )
+          );
+        })
       )
     ),
 
-    loadMentorSessions: rxMethod<void>(
+    loadMentorSessions: rxMethod<{ page: number; size: number } | void>(
       pipe(
         tap(() => patchState(store, { loading: true })),
-        switchMap(() =>
-          svc.getMentorSessions().pipe(
+        switchMap((params) => {
+          const page = typeof params === 'object' ? params?.page ?? store.mentorCurrentPage() : store.mentorCurrentPage();
+          const size = typeof params === 'object' ? params?.size ?? 10 : 10;
+          return svc.getMentorSessions(page, size).pipe(
             tapResponse({
-              next: (res) => patchState(store, { mentorSessions: res.data, loading: false }),
+              next: (res) => patchState(store, { 
+                mentorSessions: res.data.content,
+                mentorTotalElements: res.data.totalElements,
+                mentorTotalPages: res.data.totalPages,
+                mentorCurrentPage: res.data.currentPage,
+                loading: false 
+              }),
               error: (err: any) => patchState(store, { loading: false, error: err.error?.message })
             })
-          )
-        )
+          );
+        })
       )
     ),
 

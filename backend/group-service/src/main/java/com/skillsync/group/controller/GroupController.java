@@ -89,12 +89,14 @@ public class GroupController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Groups retrieved successfully"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Skill not found")
     })
-    public ResponseEntity<ApiResponse<List<GroupResponseDto>>> getGroupsBySkill(
+    public ResponseEntity<ApiResponse<com.skillsync.group.dto.response.PageResponse<GroupResponseDto>>> getGroupsBySkill(
             @PathVariable Long skillId,
-            @Parameter(hidden = true) @RequestHeader(value = "X-User-Id", required = false) Long userId) {
-        log.info("GET /skill/{} - Get groups by skill (user={})", skillId, userId);
-        List<GroupResponseDto> response = groupService.getGroupsBySkill(skillId, userId);
-        return ResponseEntity.ok(ApiResponse.<List<GroupResponseDto>>builder()
+            @Parameter(hidden = true) @RequestHeader(value = "X-User-Id", required = false) Long userId,
+            @org.springframework.web.bind.annotation.RequestParam(defaultValue = "0") int page,
+            @org.springframework.web.bind.annotation.RequestParam(defaultValue = "10") int size) {
+        log.info("GET /skill/{} - Get groups by skill (user={}) - page: {}, size: {}", skillId, userId, page, size);
+        com.skillsync.group.dto.response.PageResponse<GroupResponseDto> response = groupService.getGroupsBySkill(skillId, page, size, userId);
+        return ResponseEntity.ok(ApiResponse.<com.skillsync.group.dto.response.PageResponse<GroupResponseDto>>builder()
                 .success(true)
                 .data(response)
                 .message("Groups retrieved successfully")

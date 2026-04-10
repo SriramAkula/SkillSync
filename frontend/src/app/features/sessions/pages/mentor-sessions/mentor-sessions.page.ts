@@ -38,67 +38,20 @@ export class MentorSessionsPage implements OnInit {
   }
 
   readonly activeTab = signal<DashTab>('pending');
-  readonly currentPage = signal(0);
-  readonly pageSize = signal(8); // High-density cards
-  readonly rejectingSession = signal<SessionDto | null>(null);
-  rejectReason = '';
-
-  readonly tabs: { key: DashTab; label: string }[] = [
-    { key: 'pending',   label: 'Incoming Requests' },
-    { key: 'upcoming',  label: 'Accepted Schedule' },
-    { key: 'confirmed', label: 'Completed Sessions' },
-    { key: 'all',       label: 'Session History' },
-  ];
-
-  readonly quickReasons = [
-    'Schedule Conflict',
-    'Personal Emergency',
-    'Topic Misaligned',
-    'Full Capacity',
-  ];
-
-  readonly pendingSessions = computed(() =>
-    (this.sessionStore.mentorSessions() as SessionDto[]).filter(s => s.status === 'REQUESTED')
-  );
-  readonly upcomingSessions = computed(() =>
-    (this.sessionStore.mentorSessions() as SessionDto[]).filter(s =>
-      ['ACCEPTED', 'CONFIRMED'].includes(s.status) &&
-      new Date(s.scheduledAt) > new Date()
-    )
-  );
-  readonly confirmedSessions = computed(() =>
-    (this.sessionStore.mentorSessions() as SessionDto[]).filter(s => s.status === 'CONFIRMED')
-  );
-
-  readonly currentSessions = computed(() => {
-    const tab = this.activeTab();
-    if (tab === 'pending') return this.pendingSessions();
-    if (tab === 'upcoming') return this.upcomingSessions();
-    if (tab === 'confirmed') return this.confirmedSessions();
-    return this.sessionStore.mentorSessions() as SessionDto[];
-  });
-
-  readonly pagedSessions = computed(() => {
-    const list = this.currentSessions();
-    const start = this.currentPage() * this.pageSize();
-    return list.slice(start, start + this.pageSize());
-  });
+  onPageChange(page: number): void {
+    this.sessionStore.loadMentorSessions({ page, size: 8 });
+  }
 
   ngOnInit(): void {
-    this.refresh();
+    this.sessionStore.loadMentorSessions({ page: 0, size: 8 });
     this.mentorStore.loadMyProfile(undefined);
     if (this.skillStore.skills().length === 0) {
       this.skillStore.loadAll(undefined);
     }
   }
 
-  getSkillName(id: number): string {
-    const s = this.skillStore.getSkillById(id);
-    return s ? (s.skillName || s.name) : ('Skill #' + id);
-  }
-
   refresh(): void {
-    this.sessionStore.loadMentorSessions(undefined);
+    this.sessionStore.loadMentorSessions({ page: this.sessionStore.mentorCurrentPage(), size: 8 });
   }
 
   toggleAvailability(): void {

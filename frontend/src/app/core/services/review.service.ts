@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { ApiResponse, ReviewDto, SubmitReviewRequest, MentorRatingDto } from '../../shared/models';
+import { ApiResponse, ReviewDto, SubmitReviewRequest, MentorRatingDto, PageResponse } from '../../shared/models';
 
 @Injectable({ providedIn: 'root' })
 export class ReviewService {
@@ -17,8 +17,10 @@ export class ReviewService {
     return this.http.get<ApiResponse<ReviewDto>>(`${this.base}/${id}`);
   }
 
-  getMentorReviews(mentorId: number): Observable<ApiResponse<ReviewDto[]>> {
-    return this.http.get<ApiResponse<ReviewDto[]>>(`${this.base}/mentors/${mentorId}`);
+  getMentorReviews(mentorId: number, page: number = 0, size: number = 10): Observable<ApiResponse<PageResponse<ReviewDto>>> {
+    return this.http.get<ApiResponse<PageResponse<ReviewDto>>>(`${this.base}/mentors/${mentorId}`, {
+      params: { page: page.toString(), size: size.toString() }
+    });
   }
 
   getMentorRating(mentorId: number): Observable<ApiResponse<MentorRatingDto>> {

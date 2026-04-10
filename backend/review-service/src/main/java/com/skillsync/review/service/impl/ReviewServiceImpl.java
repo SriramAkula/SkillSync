@@ -39,13 +39,13 @@ public class ReviewServiceImpl implements ReviewService {
     }
 
     @Override
-    public List<ReviewResponseDto> getMentorReviews(Long mentorId) {
-        return reviewQueryService.getMentorReviews(mentorId);
+    public com.skillsync.review.dto.response.PageResponse<ReviewResponseDto> getMentorReviews(Long mentorId, int page, int size) {
+        return reviewQueryService.getMentorReviews(mentorId, page, size);
     }
 
     @Override
-    public List<ReviewResponseDto> getLearnerReviews(Long learnerId) {
-        return reviewQueryService.getLearnerReviews(learnerId);
+    public com.skillsync.review.dto.response.PageResponse<ReviewResponseDto> getLearnerReviews(Long learnerId, int page, int size) {
+        return reviewQueryService.getLearnerReviews(learnerId, page, size);
     }
 
     @Override

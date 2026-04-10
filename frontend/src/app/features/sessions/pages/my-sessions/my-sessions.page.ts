@@ -11,7 +11,7 @@ type FilterTab = 'all' | 'active' | 'completed' | 'cancelled';
 @Component({
   selector: 'app-my-sessions-page',
   standalone: true,
-  imports: [CommonModule, SessionCardComponent],
+  imports: [CommonModule, SessionCardComponent, PaginationComponent],
   templateUrl: './my-sessions.page.html',
   styleUrl: './my-sessions.page.scss'
 })
@@ -29,26 +29,17 @@ export class MySessionsPage implements OnInit {
     { key: 'cancelled', label: 'Cancelled' },
   ];
 
-  ngOnInit(): void { 
-    this.sessionStore.loadLearnerSessions(undefined); 
-    if (this.skillStore.skills().length === 0) {
-      this.skillStore.loadAll(undefined);
-    }
+  onPageChange(page: number): void {
+    this.sessionStore.loadLearnerSessions({ page, size: 12 });
   }
 
-  // Computed counts for better performance
-  activeCount = computed(() => (this.sessionStore.learnerSessions() as SessionDto[]).filter(s => ['REQUESTED','ACCEPTED','CONFIRMED'].includes(s.status)).length);
-  completedCount = computed(() => (this.sessionStore.learnerSessions() as SessionDto[]).filter(s => s.status === 'CONFIRMED').length);
-  cancelledCount = computed(() => (this.sessionStore.learnerSessions() as SessionDto[]).filter(s => ['CANCELLED','REJECTED','PAYMENT_FAILED'].includes(s.status)).length);
-
-  filteredSessions(): SessionDto[] {
-    const all = this.sessionStore.learnerSessions() as SessionDto[];
-    switch (this.activeTab()) {
-      case 'active':    return all.filter(s => ['REQUESTED','ACCEPTED','CONFIRMED'].includes(s.status));
-      case 'completed': return all.filter(s => s.status === 'CONFIRMED');
-      case 'cancelled': return all.filter(s => ['CANCELLED','REJECTED','PAYMENT_FAILED'].includes(s.status));
-      default:          return all;
-    }
+  loadMore(): void {
+    const nextPage = this.sessionStore.learnerCurrentPage() + 1;
+    // Note: For "Load More" style, the store needs to append. 
+    // Our currently implemented store replaces. 
+    // Let's stick to standard pagination for now for consistency, or update store to append.
+    // For now, let's just use the standard pagination component in the HTML.
+    this.sessionStore.loadLearnerSessions({ page: nextPage, size: 12 });
   }
 
   emptyIcon(): string {
