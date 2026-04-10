@@ -17,6 +17,7 @@ import com.skillsync.authservice.dto.request.RegisterRequest;
 import com.skillsync.authservice.dto.response.AuthResponse;
 import com.skillsync.authservice.entity.User;
 import com.skillsync.authservice.event.UserCreatedEvent;
+import com.skillsync.authservice.exception.AuthException;
 import com.skillsync.authservice.publisher.AuthEventPublisher;
 import com.skillsync.authservice.repository.UserRepository;
 import com.skillsync.authservice.security.JwtUtil;
@@ -134,7 +135,7 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public AuthResponse login(LoginRequest request) {
         User user = userRepository.findByEmail(request.email())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new AuthException("Invalid email or password"));
 
         if (Boolean.FALSE.equals(user.getIsActive())) {
             throw new RuntimeException("Your account has been deactivated. Please contact support.");
@@ -149,7 +150,7 @@ public class AuthServiceImpl implements AuthService {
         }
 
         if (!passwordEncoder.matches(request.password(), user.getPassword())) {
-            throw new RuntimeException("Invalid credentials");
+            throw new AuthException("Invalid credentials");
         }
 
         List<String> roles = Arrays.asList(user.getRole().split(","));
