@@ -1,9 +1,10 @@
 package com.skillsync.skill.service.impl;
 
 import com.skillsync.skill.dto.request.CreateSkillRequestDto;
+import com.skillsync.skill.dto.response.PageResponse;
 import com.skillsync.skill.dto.response.SkillResponseDto;
-import com.skillsync.skill.entity.Skill;
-import com.skillsync.skill.repository.SkillRepository;
+import com.skillsync.skill.service.command.SkillCommandService;
+import com.skillsync.skill.service.query.SkillQueryService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -11,214 +12,120 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class SkillServiceImplTest {
 
-    @Mock private SkillRepository skillRepository;
+    @Mock private SkillCommandService skillCommandService;
+    @Mock private SkillQueryService skillQueryService;
     @InjectMocks private SkillServiceImpl skillService;
 
-    private Skill skill;
+    private SkillResponseDto skillResponse;
     private CreateSkillRequestDto createRequest;
 
     @BeforeEach
     void setUp() {
-        skill = new Skill();
-        skill.setId(1L);
-        skill.setSkillName("Java");
-        skill.setDescription("Java programming language");
-        skill.setCategory("Programming");
-        skill.setPopularityScore(100);
-        skill.setIsActive(true);
-        skill.setCreatedAt(LocalDateTime.now());
-        skill.setUpdatedAt(LocalDateTime.now());
+        skillResponse = new SkillResponseDto();
+        skillResponse.setId(1L);
+        skillResponse.setSkillName("Java");
+        skillResponse.setCategory("Programming");
+        skillResponse.setIsActive(true);
 
         createRequest = new CreateSkillRequestDto("Java", "Java programming language", "Programming");
     }
 
-    // ─── createSkill ─────────────────────────────────────────────────────────
-
     @Test
-    void createSkill_shouldReturnDto_whenValid() {
-        when(skillRepository.save(any(Skill.class))).thenReturn(skill);
+    void createSkill_shouldDelegateToCommandService() {
+        when(skillCommandService.createSkill(any())).thenReturn(skillResponse);
 
         SkillResponseDto result = skillService.createSkill(createRequest);
 
-        assertThat(result.getSkillName()).isEqualTo("Java");
-        assertThat(result.getCategory()).isEqualTo("Programming");
-        assertThat(result.getId()).isEqualTo(1L);
-        verify(skillRepository).save(argThat(s ->
-                s.getSkillName().equals("Java") &&
-                s.getCategory().equals("Programming")
-        ));
+        assertThat(result).isEqualTo(skillResponse);
+        verify(skillCommandService).createSkill(createRequest);
     }
 
     @Test
-    void createSkill_shouldSetAllFields_whenSaved() {
-        when(skillRepository.save(any(Skill.class))).thenReturn(skill);
+    void updateSkill_shouldDelegateToCommandService() {
+        when(skillCommandService.updateSkill(anyLong(), any())).thenReturn(skillResponse);
 
-        SkillResponseDto result = skillService.createSkill(createRequest);
+        SkillResponseDto result = skillService.updateSkill(1L, createRequest);
 
-        assertThat(result.getDescription()).isEqualTo("Java programming language");
-        assertThat(result.getIsActive()).isTrue();
-        assertThat(result.getPopularityScore()).isEqualTo(100);
+        assertThat(result).isEqualTo(skillResponse);
+        verify(skillCommandService).updateSkill(1L, createRequest);
     }
 
     @Test
-    void createSkill_shouldThrow_whenRepositoryFails() {
-        when(skillRepository.save(any())).thenThrow(new RuntimeException("DB error"));
+    void deleteSkill_shouldDelegateToCommandService() {
+        doNothing().when(skillCommandService).deleteSkill(anyLong());
 
-        assertThatThrownBy(() -> skillService.createSkill(createRequest))
-                .isInstanceOf(RuntimeException.class)
-                .hasMessageContaining("DB error");
+        skillService.deleteSkill(1L);
+
+        verify(skillCommandService).deleteSkill(1L);
     }
 
-    // ─── getSkillById ─────────────────────────────────────────────────────────
-
     @Test
-    void getSkillById_shouldReturnDto_whenExists() {
-        when(skillRepository.findById(1L)).thenReturn(Optional.of(skill));
+    void getSkillById_shouldDelegateToQueryService() {
+        when(skillQueryService.getSkillById(anyLong())).thenReturn(skillResponse);
 
         SkillResponseDto result = skillService.getSkillById(1L);
 
-        assertThat(result.getId()).isEqualTo(1L);
-        assertThat(result.getSkillName()).isEqualTo("Java");
+        assertThat(result).isEqualTo(skillResponse);
+        verify(skillQueryService).getSkillById(1L);
     }
 
     @Test
-    void getSkillById_shouldThrow_whenNotFound() {
-        when(skillRepository.findById(99L)).thenReturn(Optional.empty());
+    void getAllActiveSkills_shouldDelegateToQueryService() {
+        PageResponse<SkillResponseDto> pageResponse = PageResponse.<SkillResponseDto>builder()
+                .content(List.of(skillResponse))
+                .currentPage(0)
+                .totalElements(1L)
+                .build();
 
-        assertThatThrownBy(() -> skillService.getSkillById(99L))
-                .isInstanceOf(RuntimeException.class)
-                .hasMessage("Skill not found");
-    }
+        when(skillQueryService.getAllActiveSkills(anyInt(), anyInt())).thenReturn(pageResponse);
 
-    // ─── getAllActiveSkills ───────────────────────────────────────────────────
+        PageResponse<SkillResponseDto> result = skillService.getAllActiveSkills(0, 10);
 
-    @Test
-    void getAllActiveSkills_shouldReturnList_whenSkillsExist() {
-        when(skillRepository.findByIsActiveTrueOrderByPopularityScoreDesc())
-                .thenReturn(List.of(skill));
-
-        List<SkillResponseDto> result = skillService.getAllActiveSkills();
-
-        assertThat(result).hasSize(1);
-        assertThat(result.get(0).getSkillName()).isEqualTo("Java");
-        assertThat(result.get(0).getIsActive()).isTrue();
+        assertThat(result).isEqualTo(pageResponse);
+        verify(skillQueryService).getAllActiveSkills(0, 10);
     }
 
     @Test
-    void getAllActiveSkills_shouldReturnEmpty_whenNoSkills() {
-        when(skillRepository.findByIsActiveTrueOrderByPopularityScoreDesc())
-                .thenReturn(List.of());
+    void searchSkills_shouldDelegateToQueryService() {
+        PageResponse<SkillResponseDto> pageResponse = PageResponse.<SkillResponseDto>builder()
+                .content(List.of(skillResponse))
+                .currentPage(0)
+                .totalElements(1L)
+                .build();
 
-        assertThat(skillService.getAllActiveSkills()).isEmpty();
-    }
+        when(skillQueryService.searchSkills(anyString(), anyInt(), anyInt())).thenReturn(pageResponse);
 
-    // ─── searchSkills ─────────────────────────────────────────────────────────
+        PageResponse<SkillResponseDto> result = skillService.searchSkills("java", 0, 10);
 
-    @Test
-    void searchSkills_shouldReturnMatches_whenKeywordMatches() {
-        when(skillRepository.searchByName("java")).thenReturn(List.of(skill));
-
-        List<SkillResponseDto> result = skillService.searchSkills("java");
-
-        assertThat(result).hasSize(1);
-        assertThat(result.get(0).getSkillName()).isEqualTo("Java");
+        assertThat(result).isEqualTo(pageResponse);
+        verify(skillQueryService).searchSkills("java", 0, 10);
     }
 
     @Test
-    void searchSkills_shouldReturnEmpty_whenNoMatch() {
-        when(skillRepository.searchByName("unknown")).thenReturn(List.of());
-
-        assertThat(skillService.searchSkills("unknown")).isEmpty();
-    }
-
-    // ─── getSkillsByCategory ──────────────────────────────────────────────────
-
-    @Test
-    void getSkillsByCategory_shouldReturnList_whenCategoryExists() {
-        when(skillRepository.findByCategory("Programming")).thenReturn(List.of(skill));
+    void getSkillsByCategory_shouldDelegateToQueryService() {
+        when(skillQueryService.getSkillsByCategory(anyString())).thenReturn(List.of(skillResponse));
 
         List<SkillResponseDto> result = skillService.getSkillsByCategory("Programming");
 
         assertThat(result).hasSize(1);
-        assertThat(result.get(0).getCategory()).isEqualTo("Programming");
+        verify(skillQueryService).getSkillsByCategory("Programming");
     }
 
     @Test
-    void getSkillsByCategory_shouldReturnEmpty_whenCategoryNotFound() {
-        when(skillRepository.findByCategory("Unknown")).thenReturn(List.of());
+    void updatePopularity_shouldDelegateToCommandService() {
+        when(skillCommandService.updatePopularity(anyLong(), anyBoolean())).thenReturn(skillResponse);
 
-        assertThat(skillService.getSkillsByCategory("Unknown")).isEmpty();
-    }
+        SkillResponseDto result = skillService.updatePopularity(1L, true);
 
-    // ─── updateSkill ──────────────────────────────────────────────────────────
-
-    @Test
-    void updateSkill_shouldReturnUpdatedDto_whenExists() {
-        CreateSkillRequestDto updateRequest = new CreateSkillRequestDto("Python", "Python language", "Programming");
-        Skill updatedSkill = new Skill();
-        updatedSkill.setId(1L);
-        updatedSkill.setSkillName("Python");
-        updatedSkill.setDescription("Python language");
-        updatedSkill.setCategory("Programming");
-        updatedSkill.setPopularityScore(90);
-        updatedSkill.setIsActive(true);
-        updatedSkill.setCreatedAt(LocalDateTime.now());
-        updatedSkill.setUpdatedAt(LocalDateTime.now());
-
-        when(skillRepository.findById(1L)).thenReturn(Optional.of(skill));
-        when(skillRepository.save(any(Skill.class))).thenReturn(updatedSkill);
-
-        SkillResponseDto result = skillService.updateSkill(1L, updateRequest);
-
-        assertThat(result.getSkillName()).isEqualTo("Python");
-        verify(skillRepository).save(argThat(s ->
-                s.getSkillName().equals("Python") &&
-                s.getDescription().equals("Python language")
-        ));
-    }
-
-    @Test
-    void updateSkill_shouldThrow_whenNotFound() {
-        when(skillRepository.findById(99L)).thenReturn(Optional.empty());
-
-        assertThatThrownBy(() -> skillService.updateSkill(99L, createRequest))
-                .isInstanceOf(RuntimeException.class)
-                .hasMessage("Skill not found");
-
-        verify(skillRepository, never()).save(any());
-    }
-
-    // ─── deleteSkill ──────────────────────────────────────────────────────────
-
-    @Test
-    void deleteSkill_shouldSetInactive_whenExists() {
-        when(skillRepository.findById(1L)).thenReturn(Optional.of(skill));
-        when(skillRepository.save(any())).thenReturn(skill);
-
-        skillService.deleteSkill(1L);
-
-        verify(skillRepository).save(argThat(s -> !s.getIsActive()));
-    }
-
-    @Test
-    void deleteSkill_shouldThrow_whenNotFound() {
-        when(skillRepository.findById(99L)).thenReturn(Optional.empty());
-
-        assertThatThrownBy(() -> skillService.deleteSkill(99L))
-                .isInstanceOf(RuntimeException.class)
-                .hasMessage("Skill not found");
-
-        verify(skillRepository, never()).save(any());
+        assertThat(result).isEqualTo(skillResponse);
+        verify(skillCommandService).updatePopularity(1L, true);
     }
 }
