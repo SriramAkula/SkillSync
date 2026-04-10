@@ -16,10 +16,12 @@ interface SessionState {
   learnerCurrentPage: number;
   learnerTotalElements: number;
   learnerTotalPages: number;
+  learnerPageSize: number;
   // Mentor pagination
   mentorCurrentPage: number;
   mentorTotalElements: number;
   mentorTotalPages: number;
+  mentorPageSize: number;
 }
 
 export const SessionStore = signalStore(
@@ -33,9 +35,11 @@ export const SessionStore = signalStore(
     learnerCurrentPage: 0,
     learnerTotalElements: 0,
     learnerTotalPages: 0,
+    learnerPageSize: 10,
     mentorCurrentPage: 0,
     mentorTotalElements: 0,
-    mentorTotalPages: 0
+    mentorTotalPages: 0,
+    mentorPageSize: 10
   }),
 
   withComputed((store) => ({
@@ -79,6 +83,7 @@ export const SessionStore = signalStore(
                 learnerTotalElements: res.data.totalElements,
                 learnerTotalPages: res.data.totalPages,
                 learnerCurrentPage: res.data.currentPage,
+                learnerPageSize: res.data.pageSize,
                 loading: false 
               }),
               error: (err: any) => patchState(store, { loading: false, error: err.error?.message })
@@ -101,6 +106,7 @@ export const SessionStore = signalStore(
                 mentorTotalElements: res.data.totalElements,
                 mentorTotalPages: res.data.totalPages,
                 mentorCurrentPage: res.data.currentPage,
+                mentorPageSize: res.data.pageSize,
                 loading: false 
               }),
               error: (err: any) => patchState(store, { loading: false, error: err.error?.message })
