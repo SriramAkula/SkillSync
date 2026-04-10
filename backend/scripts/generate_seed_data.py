@@ -10,8 +10,8 @@ NUM_SKILLS = 100
 NUM_SESSIONS = 500
 ID_OFFSET = 0  # Start from 1 for a clean overwrite of existing data
 
-# Fixed salt/hash for "password123" (BCrypt)
-PASSWORD_HASH = "$2a$10$8.UnVuG9HHgffUDAlk8qfOuVGkqRzgVymGe07xd00DMxs.TVuHOn2"
+# Fixed salt/hash for "admin123" (BCrypt)
+PASSWORD_HASH = "$2b$12$N8cTnX9xUsf2tzBX0qlTu.O8QfjsCahSb/XsFKPie2Nhw1DdgDnxa"
 
 # Data Lists
 FIRST_NAMES = ["John", "Jane", "Alice", "Bob", "Charlie", "Diana", "Edward", "Fiona", "George", "Hannah", "Ivan", "Julia", "Kevin", "Laura", "Michael", "Nina", "Oscar", "Paula", "Quinn", "Rachel"]
