@@ -3,6 +3,7 @@ package com.skillsync.session.service.query;
 import com.skillsync.session.dto.response.PageResponse;
 import com.skillsync.session.dto.response.SessionResponseDto;
 import com.skillsync.session.entity.Session;
+import com.skillsync.session.entity.SessionStatus;
 import com.skillsync.session.exception.SessionNotFoundException;
 import com.skillsync.session.mapper.SessionMapper;
 import com.skillsync.session.repository.SessionRepository;
@@ -14,13 +15,16 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -32,60 +36,69 @@ class SessionQueryServiceTest {
     @InjectMocks private SessionQueryService sessionQueryService;
 
     private Session session;
+    private SessionResponseDto sessionDto;
 
     @BeforeEach
     void setUp() {
         session = new Session();
         session.setId(1L);
+        session.setMentorId(100L);
+        session.setLearnerId(200L);
+        session.setScheduledAt(LocalDateTime.now().plusDays(1));
+        session.setStatus(SessionStatus.REQUESTED);
+
+        sessionDto = new SessionResponseDto();
+        sessionDto.setId(1L);
     }
 
     @Test
-    void getSession_ShouldReturnDto_WhenExists() {
+    void getSession_shouldReturnDto_whenExists() {
         when(sessionRepository.findById(1L)).thenReturn(Optional.of(session));
-        when(sessionMapper.toDto(session)).thenReturn(new SessionResponseDto());
+        when(sessionMapper.toDto(session)).thenReturn(sessionDto);
 
         SessionResponseDto result = sessionQueryService.getSession(1L);
-        assertNotNull(result);
+
+        assertThat(result).isNotNull();
+        assertThat(result.getId()).isEqualTo(1L);
     }
 
     @Test
-    void getSession_ShouldThrow_WhenNotFound() {
+    void getSession_shouldThrow_whenNotFound() {
         when(sessionRepository.findById(99L)).thenReturn(Optional.empty());
-        assertThrows(SessionNotFoundException.class, () -> sessionQueryService.getSession(99L));
+        assertThatThrownBy(() -> sessionQueryService.getSession(99L))
+                .isInstanceOf(SessionNotFoundException.class);
     }
 
     @Test
-    void getSessionsForMentor_ShouldReturnEmptyPage_WhenNoSessions() {
-        Page<Session> page = Page.empty();
-        when(sessionRepository.findByMentorId(eq(100L), any())).thenReturn(page);
-
-        PageResponse<SessionResponseDto> response = sessionQueryService.getSessionsForMentor(100L, 0, 10);
-        
-        assertNotNull(response);
-        assertEquals(0, response.getContent().size());
-        assertEquals(0, response.getTotalElements());
-    }
-
-    @Test
-    void getSessionsForLearner_ShouldReturnPage() {
+    void getSessionsForMentor_shouldReturnPaginatedResponse() {
         Page<Session> page = new PageImpl<>(List.of(session));
-        when(sessionRepository.findByLearnerId(eq(200L), any())).thenReturn(page);
-        when(sessionMapper.toDto(any())).thenReturn(new SessionResponseDto());
+        when(sessionRepository.findByMentorId(anyLong(), any(Pageable.class))).thenReturn(page);
+        when(sessionMapper.toDto(any())).thenReturn(sessionDto);
 
-        PageResponse<SessionResponseDto> response = sessionQueryService.getSessionsForLearner(200L, 0, 10);
-        
-        assertNotNull(response);
-        assertEquals(1, response.getContent().size());
+        PageResponse<SessionResponseDto> result = sessionQueryService.getSessionsForMentor(100L, 0, 10);
+
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getTotalElements()).isEqualTo(1);
     }
 
     @Test
-    void getPendingSessions_ShouldReturnList() {
+    void getSessionsForLearner_shouldReturnPaginatedResponse() {
+        Page<Session> page = new PageImpl<>(List.of(session));
+        when(sessionRepository.findByLearnerId(anyLong(), any(Pageable.class))).thenReturn(page);
+        when(sessionMapper.toDto(any())).thenReturn(sessionDto);
+
+        PageResponse<SessionResponseDto> result = sessionQueryService.getSessionsForLearner(200L, 0, 10);
+
+        assertThat(result.getContent()).hasSize(1);
+    }
+
+    @Test
+    void getPendingSessions_shouldReturnList() {
         when(sessionRepository.findPendingSessions()).thenReturn(List.of(session));
-        when(sessionMapper.toDto(any())).thenReturn(new SessionResponseDto());
+        when(sessionMapper.toDto(any())).thenReturn(sessionDto);
 
         List<SessionResponseDto> result = sessionQueryService.getPendingSessions();
-        
-        assertNotNull(result);
-        assertEquals(1, result.size());
+
+        assertThat(result).hasSize(1);
     }
 }

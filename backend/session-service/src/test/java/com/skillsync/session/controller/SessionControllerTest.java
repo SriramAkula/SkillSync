@@ -150,5 +150,68 @@ class SessionControllerTest {
                         .header("roles", "ROLE_LEARNER"))
                 .andExpect(status().isOk());
     }
+
+    // ─── Forbidden Paths ───────────────────────────────────────────────────────
+
+    @Test
+    void requestSession_shouldReturn403_whenInvalidRole() throws Exception {
+        mockMvc.perform(post("/session/request")
+                        .header("X-User-Id", 10L)
+                        .header("roles", "ROLE_ADMIN")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(sessionRequest)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void getMentorSessions_shouldReturn403_whenNotMentor() throws Exception {
+        mockMvc.perform(get("/session/mentor/list")
+                        .header("X-User-Id", 5L)
+                        .header("roles", "ROLE_LEARNER"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void getLearnerSessions_shouldReturn403_whenNotRelatedParticipant() throws Exception {
+        mockMvc.perform(get("/session/learner/list")
+                        .header("X-User-Id", 10L)
+                        .header("roles", "ROLE_ADMIN"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void acceptSession_shouldReturn403_whenNotMentor() throws Exception {
+        mockMvc.perform(put("/session/1/accept")
+                        .header("roles", "ROLE_LEARNER"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void updateSessionStatus_shouldReturn200() throws Exception {
+        mockMvc.perform(put("/session/1/status")
+                        .param("status", "COMPLETED"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("Session status updated to COMPLETED"));
+    }
+
+    // ─── Exception Handling ───────────────────────────────────────────────────
+
+    @Test
+    void getSession_shouldReturn404_whenNotFound() throws Exception {
+        when(sessionService.getSession(99L)).thenThrow(new SessionNotFoundException("Not found"));
+        mockMvc.perform(get("/session/99"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void requestSession_shouldReturn409_whenConflict() throws Exception {
+        when(sessionService.requestSession(anyLong(), any())).thenThrow(new SessionConflictException("Conflict"));
+        mockMvc.perform(post("/session/request")
+                        .header("X-User-Id", 10L)
+                        .header("roles", "ROLE_LEARNER")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(sessionRequest)))
+                .andExpect(status().isConflict());
+    }
 }
 

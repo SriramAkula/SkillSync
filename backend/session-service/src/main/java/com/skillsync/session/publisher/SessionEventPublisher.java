@@ -32,7 +32,7 @@ public class SessionEventPublisher {
         }
     }
     
-    private void publishSessionRequestedFallback(SessionRequestedEvent event, Exception ex) {
+    void publishSessionRequestedFallback(SessionRequestedEvent event, Exception ex) {
         log.warn("CircuitBreaker | Fallback triggered for SessionRequestedEvent (session {}): {}", 
             event.getSessionId(), ex.getMessage());
         // Log event for later processing or alternative handling
@@ -52,7 +52,7 @@ public class SessionEventPublisher {
         }
     }
     
-    private void publishSessionAcceptedFallback(SessionAcceptedEvent event, Exception ex) {
+    void publishSessionAcceptedFallback(SessionAcceptedEvent event, Exception ex) {
         log.warn("CircuitBreaker | Fallback triggered for SessionAcceptedEvent (session {}): {}", 
             event.getSessionId(), ex.getMessage());
         log.info("Event queued for retry: SessionAcceptedEvent for session {} (mentor: {}, learner: {})", 
@@ -71,7 +71,7 @@ public class SessionEventPublisher {
         }
     }
     
-    private void publishSessionRejectedFallback(SessionRejectedEvent event, Exception ex) {
+    void publishSessionRejectedFallback(SessionRejectedEvent event, Exception ex) {
         log.warn("CircuitBreaker | Fallback triggered for SessionRejectedEvent (session {}): {}", 
             event.getSessionId(), ex.getMessage());
         log.info("Event queued for retry: SessionRejectedEvent for session {} (mentor: {}, learner: {}, reason: {})", 
@@ -90,7 +90,7 @@ public class SessionEventPublisher {
         }
     }
     
-    private void publishSessionCancelledFallback(SessionCancelledEvent event, Exception ex) {
+    void publishSessionCancelledFallback(SessionCancelledEvent event, Exception ex) {
         log.warn("CircuitBreaker | Fallback triggered for SessionCancelledEvent (session {}): {}", 
             event.getSessionId(), ex.getMessage());
         log.info("Event queued for retry: SessionCancelledEvent for session {} (mentor: {}, learner: {})", 
