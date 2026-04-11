@@ -1,5 +1,6 @@
 package com.skillsync.mentor.service;
 
+import org.springframework.data.redis.core.RedisTemplate;
 import com.skillsync.mentor.client.AuthServiceClient;
 import com.skillsync.mentor.dto.request.ApplyMentorRequestDto;
 import com.skillsync.mentor.dto.request.UpdateAvailabilityRequestDto;
@@ -11,19 +12,19 @@ import com.skillsync.mentor.exception.MentorAlreadyExistsException;
 import com.skillsync.mentor.exception.MentorNotFoundException;
 import com.skillsync.mentor.mapper.MentorMapper;
 import com.skillsync.mentor.repository.MentorRepository;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import lombok.extern.slf4j.Slf4j;
+import lombok.RequiredArgsConstructor;
 
 import java.time.LocalDateTime;
 import java.util.concurrent.TimeUnit;
 
 @Service
+@Slf4j
+@RequiredArgsConstructor
 public class MentorCommandService {
 
-    private static final Logger log = LoggerFactory.getLogger(MentorCommandService.class);
     private static final String CACHE_PREFIX = "mentor:";
     private static final long CACHE_TTL_MINUTES = 60;
 
@@ -31,16 +32,6 @@ public class MentorCommandService {
     private final RedisTemplate<String, Object> redisTemplate;
     private final AuthServiceClient authServiceClient;
     private final MentorMapper mentorMapper;
-
-    public MentorCommandService(MentorRepository mentorRepository,
-                                RedisTemplate<String, Object> redisTemplate,
-                                AuthServiceClient authServiceClient,
-                                MentorMapper mentorMapper) {
-        this.mentorRepository = mentorRepository;
-        this.redisTemplate = redisTemplate;
-        this.authServiceClient = authServiceClient;
-        this.mentorMapper = mentorMapper;
-    }
 
     @Transactional
     public MentorProfileResponseDto applyAsMentor(Long userId, ApplyMentorRequestDto request) {
@@ -141,3 +132,5 @@ public class MentorCommandService {
                 .orElseThrow(() -> new MentorNotFoundException("Mentor not found with ID: " + mentorId));
     }
 }
+
+

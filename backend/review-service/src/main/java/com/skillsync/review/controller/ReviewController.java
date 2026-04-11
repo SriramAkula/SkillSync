@@ -10,24 +10,22 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
+import lombok.extern.slf4j.Slf4j;
+import lombok.RequiredArgsConstructor;
 import java.util.List;
 
 @RestController
 @RequestMapping("/review")
 @Tag(name = "Review Management", description = "Mentor reviews and ratings")
+@Slf4j
+@RequiredArgsConstructor
 public class ReviewController {
     
-    private static final Logger log = LoggerFactory.getLogger(ReviewController.class);
-    
-    @Autowired
-    private ReviewService reviewService;
+    private final ReviewService reviewService;
     
     @PostMapping
     @Operation(summary = "Submit a review", description = "Submit a review for a mentor after a session")
@@ -42,8 +40,8 @@ public class ReviewController {
             @Parameter(hidden = true) @RequestHeader(value = "roles", required = false) String roles,
             @Valid @RequestBody SubmitReviewRequestDto request) {
         
-        if (roles == null || !roles.contains("ROLE_LEARNER")) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only learners can submit reviews");
+        if (roles == null || (!roles.contains("ROLE_LEARNER") && !roles.contains("ROLE_MENTOR"))) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only learners or mentors can submit reviews");
         }
         log.info("POST / - Learner {} submitting review", learnerId);
         ReviewResponseDto response = reviewService.submitReview(learnerId, request);
@@ -80,11 +78,13 @@ public class ReviewController {
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Mentor reviews retrieved successfully"),
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Mentor not found")
     })
-    public ResponseEntity<ApiResponse<List<ReviewResponseDto>>> getMentorReviews(
-            @PathVariable Long mentorId) {
-        log.info("GET /mentors/{} - Get mentor reviews", mentorId);
-        List<ReviewResponseDto> response = reviewService.getMentorReviews(mentorId);
-        return ResponseEntity.ok(ApiResponse.<List<ReviewResponseDto>>builder()
+    public ResponseEntity<ApiResponse<com.skillsync.review.dto.response.PageResponse<ReviewResponseDto>>> getMentorReviews(
+            @PathVariable Long mentorId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        log.info("GET /mentors/{} - Get mentor reviews - page: {}, size: {}", mentorId, page, size);
+        com.skillsync.review.dto.response.PageResponse<ReviewResponseDto> response = reviewService.getMentorReviews(mentorId, page, size);
+        return ResponseEntity.ok(ApiResponse.<com.skillsync.review.dto.response.PageResponse<ReviewResponseDto>>builder()
             .success(true)
             .data(response)
             .message("Mentor reviews retrieved successfully")
@@ -124,8 +124,8 @@ public class ReviewController {
             @Parameter(hidden = true) @RequestHeader(value = "roles", required = false) String roles,
             @Valid @RequestBody SubmitReviewRequestDto request) {
         
-        if (roles == null || !roles.contains("ROLE_LEARNER")) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only learners can update reviews");
+        if (roles == null || (!roles.contains("ROLE_LEARNER") && !roles.contains("ROLE_MENTOR"))) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only learners or mentors can update reviews");
         }
         log.info("PUT /{} - Learner {} updating review", reviewId, learnerId);
         ReviewResponseDto response = reviewService.updateReview(reviewId, learnerId, request);
@@ -150,8 +150,8 @@ public class ReviewController {
             @Parameter(hidden = true) @RequestHeader("X-User-Id") Long learnerId,
             @Parameter(hidden = true) @RequestHeader(value = "roles", required = false) String roles) {
         
-        if (roles == null || !roles.contains("ROLE_LEARNER")) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only learners can delete reviews");
+        if (roles == null || (!roles.contains("ROLE_LEARNER") && !roles.contains("ROLE_MENTOR"))) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only learners or mentors can delete reviews");
         }
         log.info("DELETE /{} - Learner {} deleting review", reviewId, learnerId);
         reviewService.deleteReview(reviewId, learnerId);

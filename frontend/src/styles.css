@@ -32,7 +32,7 @@ body {
 }
 
 .glass-card {
-  @apply backdrop-blur-xl bg-[var(--glass-bg)] border border-[var(--glass-border)] shadow-xl rounded-2xl overflow-hidden transition-all duration-300;
+  @apply backdrop-blur-xl bg-[var(--glass-bg)] border border-[var(--glass-border)] shadow-xl rounded-2xl transition-all duration-300;
 }
 
 /* Custom Scrollbar for Premium Feel */

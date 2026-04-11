@@ -57,7 +57,7 @@ export class SessionDetailPage implements OnInit {
   }
 
   get isLearnerForThisSession(): boolean {
-    const s = this.sessionStore.selected() as any;
+    const s = this.sessionStore.selected();
     return s ? Number(this.authStore.userId()) === Number(s.learnerId) : false;
   }
 

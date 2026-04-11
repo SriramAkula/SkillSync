@@ -48,10 +48,9 @@ public class GroupController {
             @Parameter(hidden = true) @RequestHeader(value = "roles", required = false) String roles,
             @Valid @RequestBody CreateGroupRequestDto request) {
 
-        if (roles == null || (!roles.contains("ROLE_MENTOR") && !roles.contains("ROLE_LEARNER")
-                && !roles.contains("ROLE_ADMIN"))) {
+        if (roles == null || (!roles.contains("ROLE_MENTOR") && !roles.contains("ROLE_ADMIN"))) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN,
-                    "Only learners, mentors or admins can create learning groups.");
+                    "Only mentors and admins can create learning groups.");
         }
         log.info("POST / - User {} creating group", creatorId);
         GroupResponseDto response = groupService.createGroup(creatorId, request);
@@ -89,12 +88,14 @@ public class GroupController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Groups retrieved successfully"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Skill not found")
     })
-    public ResponseEntity<ApiResponse<List<GroupResponseDto>>> getGroupsBySkill(
+    public ResponseEntity<ApiResponse<com.skillsync.group.dto.response.PageResponse<GroupResponseDto>>> getGroupsBySkill(
             @PathVariable Long skillId,
-            @Parameter(hidden = true) @RequestHeader(value = "X-User-Id", required = false) Long userId) {
-        log.info("GET /skill/{} - Get groups by skill (user={})", skillId, userId);
-        List<GroupResponseDto> response = groupService.getGroupsBySkill(skillId, userId);
-        return ResponseEntity.ok(ApiResponse.<List<GroupResponseDto>>builder()
+            @Parameter(hidden = true) @RequestHeader(value = "X-User-Id", required = false) Long userId,
+            @org.springframework.web.bind.annotation.RequestParam(defaultValue = "0") int page,
+            @org.springframework.web.bind.annotation.RequestParam(defaultValue = "10") int size) {
+        log.info("GET /skill/{} - Get groups by skill (user={}) - page: {}, size: {}", skillId, userId, page, size);
+        com.skillsync.group.dto.response.PageResponse<GroupResponseDto> response = groupService.getGroupsBySkill(skillId, page, size, userId);
+        return ResponseEntity.ok(ApiResponse.<com.skillsync.group.dto.response.PageResponse<GroupResponseDto>>builder()
                 .success(true)
                 .data(response)
                 .message("Groups retrieved successfully")
@@ -116,8 +117,8 @@ public class GroupController {
             @Parameter(hidden = true) @RequestHeader("X-User-Id") Long userId,
             @Parameter(hidden = true) @RequestHeader(value = "roles", required = false) String roles) {
 
-        if (roles == null || roles.isBlank()) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentication required to join a group");
+        if (roles == null || (!roles.contains("ROLE_LEARNER") && !roles.contains("ROLE_ADMIN"))) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only learners and admins can join a group");
         }
         log.info("POST /{}/join - User {} joining", groupId, userId);
         GroupResponseDto response = groupService.joinGroup(groupId, userId);
@@ -141,8 +142,8 @@ public class GroupController {
             @Parameter(hidden = true) @RequestHeader("X-User-Id") Long userId,
             @Parameter(hidden = true) @RequestHeader(value = "roles", required = false) String roles) {
 
-        if (roles == null || roles.isBlank()) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentication required to leave a group");
+        if (roles == null || (!roles.contains("ROLE_LEARNER") && !roles.contains("ROLE_ADMIN"))) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only learners and admins can leave a group");
         }
         log.info("DELETE /{}/leave - User {} leaving", groupId, userId);
         GroupResponseDto response = groupService.leaveGroup(groupId, userId);
@@ -167,7 +168,7 @@ public class GroupController {
             @Parameter(hidden = true) @RequestHeader("X-User-Id") Long creatorId,
             @Parameter(hidden = true) @RequestHeader(value = "roles", required = false) String roles) {
 
-        if (roles == null || roles.isBlank()) {
+        if (roles == null || (!roles.contains("ROLE_MENTOR") && !roles.contains("ROLE_ADMIN"))) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Access denied.");
         }
         log.info("DELETE /{} - Creator {} deleting group", groupId, creatorId);

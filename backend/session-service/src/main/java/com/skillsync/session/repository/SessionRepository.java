@@ -18,11 +18,11 @@ public interface SessionRepository extends JpaRepository<Session, Long> {
            "AND s.status IN ('REQUESTED', 'ACCEPTED')")
     Optional<Session> findConflictingSession(Long mentorId, LocalDateTime scheduledAt);
     
-    @Query("SELECT s FROM Session s WHERE s.mentorId = :mentorId ORDER BY s.scheduledAt DESC")
-    List<Session> findByMentorId(Long mentorId);
+    @Query("SELECT s FROM Session s WHERE s.mentorId = :mentorId")
+    org.springframework.data.domain.Page<Session> findByMentorId(Long mentorId, org.springframework.data.domain.Pageable pageable);
     
-    @Query("SELECT s FROM Session s WHERE s.learnerId = :learnerId ORDER BY s.scheduledAt DESC")
-    List<Session> findByLearnerId(Long learnerId);
+    @Query("SELECT s FROM Session s WHERE s.learnerId = :learnerId")
+    org.springframework.data.domain.Page<Session> findByLearnerId(Long learnerId, org.springframework.data.domain.Pageable pageable);
     
     @Query("SELECT s FROM Session s WHERE s.status = 'REQUESTED' ORDER BY s.createdAt ASC")
     List<Session> findPendingSessions();

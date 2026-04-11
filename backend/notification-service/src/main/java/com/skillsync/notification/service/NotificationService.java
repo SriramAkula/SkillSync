@@ -1,64 +1,39 @@
 package com.skillsync.notification.service;
 
-import com.skillsync.notification.dto.NotificationDto;
 import com.skillsync.notification.entity.Notification;
-import com.skillsync.notification.exception.NotificationNotFoundException;
-import com.skillsync.notification.exception.UnauthorizedException;
-import com.skillsync.notification.repository.NotificationRepository;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.skillsync.notification.service.command.NotificationCommandService;
+import com.skillsync.notification.service.query.NotificationQueryService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+
+import com.skillsync.notification.dto.response.PageResponse;
+import com.skillsync.notification.dto.NotificationDto;
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class NotificationService {
-    
-    private static final Logger log = LoggerFactory.getLogger(NotificationService.class);
-    
-    @Autowired
-    private NotificationRepository notificationRepository;
-    
-    public List<Notification> getUserNotifications(Long userId) {
-        log.info("Fetching all notifications for user {}", userId);
-        return notificationRepository.findByUserId(userId);
+
+    private final NotificationCommandService notificationCommandService;
+    private final NotificationQueryService notificationQueryService;
+
+    public PageResponse<NotificationDto> getUserNotifications(Long userId, int page, int size) {
+        return notificationQueryService.getUserNotifications(userId, page, size);
     }
-    
-    public List<Notification> getUserUnreadNotifications(Long userId) {
-        log.info("Fetching unread notifications for user {}", userId);
-        return notificationRepository.findUnreadByUserId(userId);
+
+    public PageResponse<NotificationDto> getUserUnreadNotifications(Long userId, int page, int size) {
+        return notificationQueryService.getUserUnreadNotifications(userId, page, size);
     }
-    
+
     public Integer getUnreadCount(Long userId) {
-        log.info("Getting unread notification count for user {}", userId);
-        return notificationRepository.countUnreadByUserId(userId);
+        return notificationQueryService.getUnreadCount(userId);
     }
-    
-    @Transactional
+
     public void markAsRead(Long notificationId, Long userId) {
-        log.info("Marking notification {} as read for user {}", notificationId, userId);
-        Notification notification = notificationRepository.findById(notificationId)
-            .orElseThrow(() -> new NotificationNotFoundException("Notification not found"));
-        
-        if (!notification.getUserId().equals(userId)) {
-            throw new UnauthorizedException("You can only read your own notifications");
-        }
-        
-        notification.setRead(true);
-        notificationRepository.save(notification);
+        notificationCommandService.markAsRead(notificationId, userId);
     }
-    
-    @Transactional
+
     public void deleteNotification(Long notificationId, Long userId) {
-        log.info("Deleting notification {} for user {}", notificationId, userId);
-        Notification notification = notificationRepository.findById(notificationId)
-            .orElseThrow(() -> new NotificationNotFoundException("Notification not found"));
-            
-        if (!notification.getUserId().equals(userId)) {
-            throw new UnauthorizedException("You can only delete your own notifications");
-        }
-        
-        notificationRepository.delete(notification);
+        notificationCommandService.deleteNotification(notificationId, userId);
     }
 }

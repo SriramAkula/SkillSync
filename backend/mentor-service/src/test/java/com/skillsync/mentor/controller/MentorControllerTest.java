@@ -1,7 +1,10 @@
 package com.skillsync.mentor.controller;
 
+import org.springframework.data.domain.Page;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
@@ -30,6 +33,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.skillsync.mentor.dto.PageResponse;
 import com.skillsync.mentor.dto.request.ApplyMentorRequestDto;
 import com.skillsync.mentor.dto.request.UpdateAvailabilityRequestDto;
 import com.skillsync.mentor.dto.response.MentorProfileResponseDto;
@@ -98,7 +102,7 @@ class MentorControllerTest {
 
         mockMvc.perform(post("/mentor/apply")
                         .header("X-User-Id", 10L)
-                        .header("roles", "ROLE_MENTOR")
+                        .header("roles", "ROLE_ADMIN")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isForbidden());
@@ -184,33 +188,48 @@ class MentorControllerTest {
     // ─── GET /mentor/approved ────────────────────────────────────────────────
 
     @Test
-    void getAllApprovedMentors_shouldReturn200_withList() throws Exception {
-        when(mentorService.getAllApprovedMentors()).thenReturn(List.of(mentorResponse));
+    void getAllApprovedMentors_shouldReturn200_withPaginatedList() throws Exception {
+        PageResponse<MentorProfileResponseDto> pageResponse = PageResponse.<MentorProfileResponseDto>builder()
+                .content(List.of(mentorResponse))
+                .currentPage(0)
+                .totalElements(1L)
+                .build();
+        when(mentorService.getAllApprovedMentors(anyInt(), anyInt())).thenReturn(pageResponse);
 
-        mockMvc.perform(get("/mentor/approved"))
+        mockMvc.perform(get("/mentor/approved")
+                        .param("page", "0")
+                        .param("size", "10"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data[0].id").value(1));
+                .andExpect(jsonPath("$.data.content[0].id").value(1));
     }
 
     @Test
-    void getAllApprovedMentors_shouldReturn200_withEmptyList() throws Exception {
-        when(mentorService.getAllApprovedMentors()).thenReturn(List.of());
+    void getAllApprovedMentors_shouldReturn200_withEmptyPaginatedList() throws Exception {
+        PageResponse<MentorProfileResponseDto> emptyResponse = PageResponse.<MentorProfileResponseDto>builder()
+                .content(List.of())
+                .build();
+        when(mentorService.getAllApprovedMentors(anyInt(), anyInt())).thenReturn(emptyResponse);
 
         mockMvc.perform(get("/mentor/approved"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data").isEmpty());
+                .andExpect(jsonPath("$.data.content").isEmpty());
     }
 
     // ─── GET /mentor/pending ─────────────────────────────────────────────────
 
     @Test
-    void getPendingApplications_shouldReturn200_whenAdminRole() throws Exception {
-        when(mentorService.getPendingApplications()).thenReturn(List.of(mentorResponse));
+    void getPendingApplications_shouldReturn200_withPaginatedResults_whenAdminRole() throws Exception {
+        PageResponse<MentorProfileResponseDto> pageResponse = PageResponse.<MentorProfileResponseDto>builder()
+                .content(List.of(mentorResponse))
+                .currentPage(0)
+                .totalElements(1L)
+                .build();
+        when(mentorService.getPendingApplications(anyInt(), anyInt())).thenReturn(pageResponse);
 
         mockMvc.perform(get("/mentor/pending")
                         .header("roles", "ROLE_ADMIN"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data[0].status").value("PENDING"));
+                .andExpect(jsonPath("$.data.content[0].status").value("PENDING"));
     }
 
     @Test
@@ -223,21 +242,31 @@ class MentorControllerTest {
     // ─── GET /mentor/search ──────────────────────────────────────────────────
 
     @Test
-    void searchMentors_shouldReturn200_withResults() throws Exception {
-        when(mentorService.searchMentorsBySpecialization("Java")).thenReturn(List.of(mentorResponse));
+    void searchMentors_shouldReturn200_withPaginatedResults() throws Exception {
+        PageResponse<MentorProfileResponseDto> pageResponse = PageResponse.<MentorProfileResponseDto>builder()
+                .content(List.of(mentorResponse))
+                .currentPage(0)
+                .totalElements(1L)
+                .build();
+        when(mentorService.searchMentorsWithFilters(anyString(), any(), any(), any(), any(), anyInt(), anyInt()))
+                .thenReturn(pageResponse);
 
         mockMvc.perform(get("/mentor/search").param("skill", "Java"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data[0].specialization").value("Java"));
+                .andExpect(jsonPath("$.data.content[0].specialization").value("Java"));
     }
 
     @Test
-    void searchMentors_shouldReturn200_withEmptyResults() throws Exception {
-        when(mentorService.searchMentorsBySpecialization("Unknown")).thenReturn(List.of());
+    void searchMentors_shouldReturn200_withEmptyPaginatedResults() throws Exception {
+        PageResponse<MentorProfileResponseDto> emptyResponse = PageResponse.<MentorProfileResponseDto>builder()
+                .content(List.of())
+                .build();
+        when(mentorService.searchMentorsWithFilters(any(), any(), any(), any(), any(), anyInt(), anyInt()))
+                .thenReturn(emptyResponse);
 
         mockMvc.perform(get("/mentor/search").param("skill", "Unknown"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data").isEmpty());
+                .andExpect(jsonPath("$.data.content").isEmpty());
     }
 
     // ─── PUT /mentor/{mentorId}/approve ──────────────────────────────────────
@@ -382,3 +411,5 @@ class MentorControllerTest {
                 .andExpect(status().isNotFound());
     }
 }
+
+

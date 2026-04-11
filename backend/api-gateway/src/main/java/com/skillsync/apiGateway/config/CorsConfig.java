@@ -23,13 +23,21 @@ public class CorsConfig {
                 "https://skillssync.me",
                 "https://www.skillssync.me"));
 
-        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
+        config.setAllowedMethods(List.of(
+                "GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
 
         config.setAllowedHeaders(List.of(
                 "Authorization", "Content-Type", "X-Requested-With",
-                "Accept", "Origin", "X-Gateway-Request"));
+                "Accept", "Origin", "X-Gateway-Request",
+                "X-Auth-Token", "x-auth-token",
+                "Cache-Control", "cache-control",
+                "Pragma", "pragma"));
 
-        config.setExposedHeaders(List.of("Authorization"));
+        config.setExposedHeaders(List.of(
+                "Authorization",
+                "x-auth-token",
+                "X-Auth-Token"));
+
         config.setAllowCredentials(true);
         config.setMaxAge(3600L);
 

@@ -1,0 +1,233 @@
+version: "3.9"
+
+services:
+  # ─── Microservices Layer ──────────────────────────────────────────────────
+
+  api-gateway:
+    image: skillsyncadmin.azurecr.io/skillsync-api-gateway:latest
+    container_name: api-gateway
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_DEFAULT_ZONE}
+    depends_on:
+      eureka-server:
+        condition: service_started
+      config-server:
+        condition: service_healthy
+      zipkin:
+        condition: service_started
+    networks:
+      - private-network
+      - proxy-network
+
+  auth-service:
+    image: skillsyncadmin.azurecr.io/skillsync-auth-service:latest
+    container_name: auth-service
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_DEFAULT_ZONE}
+    depends_on:
+      auth-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+      config-server:
+        condition: service_healthy
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+    networks:
+      - private-network
+      - proxy-network
+
+  user-service:
+    image: skillsyncadmin.azurecr.io/skillsync-user-service:latest
+    container_name: user-service
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_DEFAULT_ZONE}
+    depends_on:
+      user-db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+      config-server:
+        condition: service_healthy
+    networks:
+      - private-network
+
+  skill-service:
+    image: skillsyncadmin.azurecr.io/skillsync-skill-service:latest
+    container_name: skill-service
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_DEFAULT_ZONE}
+    depends_on:
+      skill-db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+      config-server:
+        condition: service_healthy
+    networks:
+      - private-network
+
+  session-service:
+    image: skillsyncadmin.azurecr.io/skillsync-session-service:latest
+    container_name: session-service
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_DEFAULT_ZONE}
+    depends_on:
+      session-db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+      config-server:
+        condition: service_healthy
+    networks:
+      - private-network
+
+  mentor-service:
+    image: skillsyncadmin.azurecr.io/skillsync-mentor-service:latest
+    container_name: mentor-service
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_DEFAULT_ZONE}
+    depends_on:
+      mentor-db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+      config-server:
+        condition: service_healthy
+    networks:
+      - private-network
+
+  group-service:
+    image: skillsyncadmin.azurecr.io/skillsync-group-service:latest
+    container_name: group-service
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_DEFAULT_ZONE}
+    depends_on:
+      group-db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+      config-server:
+        condition: service_healthy
+    networks:
+      - private-network
+
+  review-service:
+    image: skillsyncadmin.azurecr.io/skillsync-review-service:latest
+    container_name: review-service
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_DEFAULT_ZONE}
+    depends_on:
+      review-db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+      config-server:
+        condition: service_healthy
+    networks:
+      - private-network
+
+  notification-service:
+    image: skillsyncadmin.azurecr.io/skillsync-notification-service:latest
+    container_name: notification-service
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_DEFAULT_ZONE}
+    depends_on:
+      notification-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+      config-server:
+        condition: service_healthy
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+    networks:
+      - private-network
+      - proxy-network
+
+  payment-gateway:
+    image: skillsyncadmin.azurecr.io/skillsync-payment-gateway:latest
+    container_name: payment-gateway
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_DEFAULT_ZONE}
+    depends_on:
+      payment-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+      config-server:
+        condition: service_healthy
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+    networks:
+      - private-network
+      - proxy-network
+
+networks:
+  private-network:
+    driver: bridge
+    internal: true
+    name: skillsync-private
+
+  proxy-network:
+    external: true
+    name: skillsync-proxy

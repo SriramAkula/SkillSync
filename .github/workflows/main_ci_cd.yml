@@ -1,0 +1,215 @@
+name: SkillSync CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+      - development
+      - 'feature/**'
+    paths:
+      - 'backend/**'
+      - 'frontend/**'
+      - '.github/workflows/**'
+
+jobs:
+  # ───────────────
+  # JOB 1: QUALITY CHECKS (Sonar & Lint)
+  # ───────────────
+  quality-checks:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [
+          "auth-service",
+          "user-service",
+          "skill-service",
+          "session-service",
+          "mentor-service",
+          "group-service",
+          "review-service",
+          "notification-service",
+          "payment-gateway",
+          "api-gateway",
+          "frontend"
+        ]
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Filtering: Only run quality checks if the specific service has changes
+      - name: Check for Changes
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          base: ${{ (github.ref_name == 'main' || github.ref_name == 'development') && (github.event.before != '0000000000000000000000000000000000000000' && github.event.before || github.ref_name) || 'development' }}
+          filters: |
+            changed:
+              - '${{ matrix.service == 'frontend' && 'frontend/**' || format('backend/{0}/**', matrix.service) }}'
+
+      # --- FRONTEND QUALITY ---
+      - name: Setup Node.js
+        if: matrix.service == 'frontend' && steps.filter.outputs.changed == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install Frontend Dependencies
+        if: matrix.service == 'frontend' && steps.filter.outputs.changed == 'true'
+        working-directory: ./frontend
+        run: npm ci
+
+      - name: Run Frontend Lint
+        if: matrix.service == 'frontend' && steps.filter.outputs.changed == 'true'
+        working-directory: ./frontend
+        run: npm run lint
+
+      # --- BACKEND QUALITY ---
+      - name: Set up JDK 21
+        if: matrix.service != 'frontend' && steps.filter.outputs.changed == 'true'
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Run Maven Verify & Sonar Scan
+        if: matrix.service != 'frontend' && steps.filter.outputs.changed == 'true'
+        working-directory: ./backend/${{ matrix.service }}
+        run: |
+          mvn clean verify sonar:sonar \
+            -Dsonar.projectKey=SriramAkula_SkillSync \
+            -Dsonar.organization=sriramakula \
+            -Dsonar.host.url=https://sonarcloud.io \
+            -Dsonar.login=${{ secrets.SONAR_TOKEN }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+  # ───────────────
+  # JOB 2: BUILD & PUSH
+  # ───────────────
+  build-and-push:
+    needs: quality-checks
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [
+          "api-gateway",
+          "auth-service",
+          "user-service",
+          "skill-service",
+          "session-service",
+          "mentor-service",
+          "group-service",
+          "review-service",
+          "notification-service",
+          "payment-gateway",
+          "eureka-server",
+          "config-server",
+          "frontend"
+        ]
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for Changes in Service
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          # Restoring specific paths for high-speed builds
+          base: ${{ (github.ref_name == 'main' || github.ref_name == 'development') && (github.event.before != '0000000000000000000000000000000000000000' && github.event.before || github.ref_name) || 'development' }}
+          filters: |
+            changed:
+              - '${{ matrix.service == 'frontend' && 'frontend/**' || format('backend/{0}/**', matrix.service) }}'
+
+      - name: Azure Login
+        if: steps.filter.outputs.changed == 'true'
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Login to ACR
+        if: steps.filter.outputs.changed == 'true'
+        uses: azure/docker-login@v1
+        with:
+          login-server: ${{ secrets.ACR_LOGIN_SERVER }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+
+      - name: Build and Push Docker Image
+        if: steps.filter.outputs.changed == 'true'
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ matrix.service == 'frontend' && './frontend' || format('./backend/{0}', matrix.service) }}
+          push: true
+          tags: |
+            ${{ secrets.ACR_LOGIN_SERVER }}/skillsync-${{ matrix.service }}:latest
+            ${{ secrets.ACR_LOGIN_SERVER }}/skillsync-${{ matrix.service }}:${{ github.sha }}
+
+      - name: Cleanup Old ACR Tags
+        if: steps.filter.outputs.changed == 'true'
+        run: |
+          REPO="skillsync-${{ matrix.service }}"
+          echo "Cleaning up repository: $REPO"
+          
+          # Get all tags except 'latest' and keep the 5 most recent commit tags
+          TAGS_TO_DELETE=$(az acr repository show-tags -n ${{ secrets.ACR_LOGIN_SERVER_NAME }} --repository $REPO --orderby time_desc --output tsv | grep -v "latest" | tail -n +6)
+          
+          if [ -z "$TAGS_TO_DELETE" ]; then
+            echo "No old tags to delete."
+          else
+            for tag in $TAGS_TO_DELETE; do
+              echo "Deleting old tag: $tag"
+              az acr repository delete -n ${{ secrets.ACR_LOGIN_SERVER_NAME }} --image $REPO:$tag --yes
+            done
+          fi
+
+  # ───────────────
+  # JOB 2: DEPLOY
+  # ───────────────
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: SSH to Azure VM and Deploy
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VM_IP }}
+          username: ${{ secrets.VM_USER }}
+          key: ${{ secrets.VM_SSH_KEY }}
+          script: |
+            cd /home/azureuser/SkillSync
+            
+            # Ensure the proxy network exists to prevent dependency errors
+            docker network create skillsync-proxy || true
+            
+            # Ensure we have the latest .yml files
+            git fetch origin ${{ github.ref_name }}
+            git reset --hard origin/${{ github.ref_name }}
+            
+            # Login to ACR on the VM
+            echo "${{ secrets.ACR_PASSWORD }}" | docker login ${{ secrets.ACR_LOGIN_SERVER }} -u ${{ secrets.ACR_USERNAME }} --password-stdin
+            
+            # Pull latest images
+            docker compose -f backend/docker-compose.infra.yml -f backend/docker-compose.monitoring.yml -f backend/docker-compose.services.yml -f frontend/docker-compose.yml pull
+            
+            # Restart services
+            docker compose -f backend/docker-compose.infra.yml -f backend/docker-compose.monitoring.yml -f backend/docker-compose.services.yml -f frontend/docker-compose.yml up -d
+            
+            # Re-pull and force-recreate Nginx Proxy to ensure it recovers from disk-full cleanups
+            cd /home/azureuser/nginx-proxy
+            docker compose pull
+            docker compose up -d --force-recreate
+            
+            # Print running containers for debugging
+            docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+            
+            # Aggressive cleanup to prevent 29GB disk from filling up
+            docker system prune -af

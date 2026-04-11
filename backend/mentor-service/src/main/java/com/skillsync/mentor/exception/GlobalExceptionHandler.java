@@ -8,13 +8,13 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.data.redis.RedisConnectionFailureException;
-import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import java.time.LocalDateTime;
 
 @RestControllerAdvice
+@Slf4j
 public class GlobalExceptionHandler {
-    private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
     
     @ExceptionHandler(MentorNotFoundException.class)
     public ResponseEntity<ApiResponse<?>> handleMentorNotFound(MentorNotFoundException ex) {
@@ -71,7 +71,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<?>> handleRedisConnectionFailure(RedisConnectionFailureException ex) {
         // Redis is down - log and continue. The request should NOT fail because of cache unavailability.
         // This handler is a last-resort safety net; CacheErrorHandler in RedisConfig handles it first.
-        logger.warn("Redis unavailable - request will proceed without cache: {}", ex.getMessage());
+        log.warn("Redis unavailable - request will proceed without cache: {}", ex.getMessage());
         return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
             .body(ApiResponse.builder()
                 .success(false)

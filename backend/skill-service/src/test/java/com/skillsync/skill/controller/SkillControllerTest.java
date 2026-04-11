@@ -3,6 +3,7 @@ package com.skillsync.skill.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.skillsync.skill.dto.request.CreateSkillRequestDto;
 import com.skillsync.skill.dto.response.ApiResponse;
+import com.skillsync.skill.dto.response.PageResponse;
 import com.skillsync.skill.dto.response.SkillResponseDto;
 import com.skillsync.skill.service.SkillService;
 import org.junit.jupiter.api.BeforeEach;
@@ -153,53 +154,81 @@ class SkillControllerTest {
     // ─── GET /skill ───────────────────────────────────────────────────────────
 
     @Test
-    void getAllSkills_shouldReturn200_withList() throws Exception {
-        when(skillService.getAllActiveSkills()).thenReturn(List.of(skillResponse));
+    void getAllSkills_shouldReturn200_withPaginatedList() throws Exception {
+        PageResponse<SkillResponseDto> pageResponse = PageResponse.<SkillResponseDto>builder()
+                .content(List.of(skillResponse))
+                .currentPage(0)
+                .totalElements(1L)
+                .totalPages(1)
+                .pageSize(10)
+                .build();
+
+        when(skillService.getAllActiveSkills(anyInt(), anyInt())).thenReturn(pageResponse);
 
         mockMvc.perform(get("/skill")
+                        .param("page", "0")
+                        .param("size", "10")
                         .header("X-Gateway-Request", "true"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.message").value("Skills fetched successfully"))
-                .andExpect(jsonPath("$.data[0].skillName").value("Java"))
+                .andExpect(jsonPath("$.data.content[0].skillName").value("Java"))
                 .andExpect(jsonPath("$.statusCode").value(200));
     }
 
     @Test
-    void getAllSkills_shouldReturn200_withEmptyList() throws Exception {
-        when(skillService.getAllActiveSkills()).thenReturn(List.of());
+    void getAllSkills_shouldReturn200_withEmptyPaginatedList() throws Exception {
+        PageResponse<SkillResponseDto> emptyResponse = PageResponse.<SkillResponseDto>builder()
+                .content(List.of())
+                .currentPage(0)
+                .totalElements(0L)
+                .build();
+
+        when(skillService.getAllActiveSkills(anyInt(), anyInt())).thenReturn(emptyResponse);
 
         mockMvc.perform(get("/skill")
                         .header("X-Gateway-Request", "true"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data").isEmpty());
+                .andExpect(jsonPath("$.data.content").isEmpty());
     }
 
     // ─── GET /skill/search ────────────────────────────────────────────────────
 
     @Test
-    void searchSkills_shouldReturn200_withResults() throws Exception {
-        when(skillService.searchSkills("java")).thenReturn(List.of(skillResponse));
+    void searchSkills_shouldReturn200_withPaginatedResults() throws Exception {
+        PageResponse<SkillResponseDto> pageResponse = PageResponse.<SkillResponseDto>builder()
+                .content(List.of(skillResponse))
+                .currentPage(0)
+                .totalElements(1L)
+                .build();
+
+        when(skillService.searchSkills(anyString(), anyInt(), anyInt())).thenReturn(pageResponse);
 
         mockMvc.perform(get("/skill/search")
                         .param("keyword", "java")
+                        .param("page", "0")
+                        .param("size", "10")
                         .header("X-Gateway-Request", "true"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.message").value("Skills found"))
-                .andExpect(jsonPath("$.data[0].skillName").value("Java"))
+                .andExpect(jsonPath("$.data.content[0].skillName").value("Java"))
                 .andExpect(jsonPath("$.statusCode").value(200));
     }
 
     @Test
-    void searchSkills_shouldReturn200_withEmptyResults() throws Exception {
-        when(skillService.searchSkills("unknown")).thenReturn(List.of());
+    void searchSkills_shouldReturn200_withEmptyPaginatedResults() throws Exception {
+        PageResponse<SkillResponseDto> emptyResponse = PageResponse.<SkillResponseDto>builder()
+                .content(List.of())
+                .build();
+
+        when(skillService.searchSkills(anyString(), anyInt(), anyInt())).thenReturn(emptyResponse);
 
         mockMvc.perform(get("/skill/search")
                         .param("keyword", "unknown")
                         .header("X-Gateway-Request", "true"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data").isEmpty());
+                .andExpect(jsonPath("$.data.content").isEmpty());
     }
 
     // ─── GET /skill/category/{category} ──────────────────────────────────────

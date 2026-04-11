@@ -1,7 +1,9 @@
 package com.skillsync.mentor.service;
 
+import org.springframework.data.domain.Page;
 import com.skillsync.mentor.dto.request.ApplyMentorRequestDto;
 import com.skillsync.mentor.dto.request.UpdateAvailabilityRequestDto;
+import com.skillsync.mentor.dto.PageResponse;
 import com.skillsync.mentor.dto.response.MentorProfileResponseDto;
 import java.util.List;
 
@@ -12,14 +14,14 @@ public interface MentorService {
 
     MentorProfileResponseDto getMentorByUserId(Long userId);
 
-    List<MentorProfileResponseDto> getAllApprovedMentors();
+    PageResponse<MentorProfileResponseDto> getAllApprovedMentors(int page, int size);
 
-    List<MentorProfileResponseDto> getPendingApplications();
+    PageResponse<MentorProfileResponseDto> getPendingApplications(int page, int size);
 
     List<MentorProfileResponseDto> searchMentorsBySpecialization(String skill);
 
-    List<MentorProfileResponseDto> searchMentorsWithFilters(String skill, Integer minExperience, Integer maxExperience,
-            Double maxRate, Double minRating);
+    PageResponse<MentorProfileResponseDto> searchMentorsWithFilters(String skill, Integer minExperience, Integer maxExperience,
+            Double maxRate, Double minRating, int page, int size);
 
     MentorProfileResponseDto approveMentor(Long mentorId, Long adminId);
 
@@ -31,3 +33,5 @@ public interface MentorService {
 
     void updateMentorRating(Long mentorId, Double newRating);
 }
+
+

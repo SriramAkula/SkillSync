@@ -5,6 +5,7 @@ import { tapResponse } from '@ngrx/operators';
 import { pipe, switchMap, tap } from 'rxjs';
 import { SessionService } from '../services/session.service';
 import { SessionDto, RequestSessionRequest } from '../../shared/models';
+import { HttpErrorResponse } from '@angular/common/http';
 
 interface SessionState {
   learnerSessions: SessionDto[];
@@ -12,6 +13,16 @@ interface SessionState {
   selected: SessionDto | null;
   loading: boolean;
   error: string | null;
+  // Learner pagination
+  learnerCurrentPage: number;
+  learnerTotalElements: number;
+  learnerTotalPages: number;
+  learnerPageSize: number;
+  // Mentor pagination
+  mentorCurrentPage: number;
+  mentorTotalElements: number;
+  mentorTotalPages: number;
+  mentorPageSize: number;
 }
 
 export const SessionStore = signalStore(
@@ -21,7 +32,15 @@ export const SessionStore = signalStore(
     mentorSessions: [],
     selected: null,
     loading: false,
-    error: null
+    error: null,
+    learnerCurrentPage: 0,
+    learnerTotalElements: 0,
+    learnerTotalPages: 0,
+    learnerPageSize: 10,
+    mentorCurrentPage: 0,
+    mentorTotalElements: 0,
+    mentorTotalPages: 0,
+    mentorPageSize: 10
   }),
 
   withComputed((store) => ({
@@ -45,38 +64,56 @@ export const SessionStore = signalStore(
                 learnerSessions: [res.data, ...store.learnerSessions()],
                 loading: false
               }),
-              error: (err: any) => patchState(store, { loading: false, error: err.error?.message ?? 'Failed to request session' })
+              error: (err: HttpErrorResponse) => patchState(store, { loading: false, error: err.error?.message ?? 'Failed to request session' })
             })
           )
         )
       )
     ),
 
-    loadLearnerSessions: rxMethod<void>(
+    loadLearnerSessions: rxMethod<{ page: number; size: number } | void>(
       pipe(
         tap(() => patchState(store, { loading: true })),
-        switchMap(() =>
-          svc.getLearnerSessions().pipe(
+        switchMap((params) => {
+          const page = typeof params === 'object' ? params?.page ?? store.learnerCurrentPage() : store.learnerCurrentPage();
+          const size = typeof params === 'object' ? params?.size ?? 10 : 10;
+          return svc.getLearnerSessions(page, size).pipe(
             tapResponse({
-              next: (res) => patchState(store, { learnerSessions: res.data, loading: false }),
-              error: (err: any) => patchState(store, { loading: false, error: err.error?.message })
+              next: (res) => patchState(store, { 
+                learnerSessions: res.data.content,
+                learnerTotalElements: res.data.totalElements,
+                learnerTotalPages: res.data.totalPages,
+                learnerCurrentPage: res.data.currentPage,
+                learnerPageSize: res.data.pageSize,
+                loading: false 
+              }),
+              error: (err: HttpErrorResponse) => patchState(store, { loading: false, error: err.error?.message })
             })
-          )
-        )
+          );
+        })
       )
     ),
 
-    loadMentorSessions: rxMethod<void>(
+    loadMentorSessions: rxMethod<{ page: number; size: number } | void>(
       pipe(
         tap(() => patchState(store, { loading: true })),
-        switchMap(() =>
-          svc.getMentorSessions().pipe(
+        switchMap((params) => {
+          const page = typeof params === 'object' ? params?.page ?? store.mentorCurrentPage() : store.mentorCurrentPage();
+          const size = typeof params === 'object' ? params?.size ?? 10 : 10;
+          return svc.getMentorSessions(page, size).pipe(
             tapResponse({
-              next: (res) => patchState(store, { mentorSessions: res.data, loading: false }),
-              error: (err: any) => patchState(store, { loading: false, error: err.error?.message })
+              next: (res) => patchState(store, { 
+                mentorSessions: res.data.content,
+                mentorTotalElements: res.data.totalElements,
+                mentorTotalPages: res.data.totalPages,
+                mentorCurrentPage: res.data.currentPage,
+                mentorPageSize: res.data.pageSize,
+                loading: false 
+              }),
+              error: (err: HttpErrorResponse) => patchState(store, { loading: false, error: err.error?.message })
             })
-          )
-        )
+          );
+        })
       )
     ),
 
@@ -102,7 +139,7 @@ export const SessionStore = signalStore(
               next: (res) => patchState(store, {
                 mentorSessions: store.mentorSessions().map(s => s.id === id ? res.data : s)
               }),
-              error: () => {}
+              error: (err: HttpErrorResponse) => console.error('Failed to accept session', err)
             })
           )
         )
@@ -117,7 +154,7 @@ export const SessionStore = signalStore(
               next: (res) => patchState(store, {
                 mentorSessions: store.mentorSessions().map(s => s.id === id ? res.data : s)
               }),
-              error: () => {}
+              error: (err: HttpErrorResponse) => console.error('Failed to reject session', err)
             })
           )
         )
@@ -133,11 +170,13 @@ export const SessionStore = signalStore(
                 learnerSessions: store.learnerSessions().map(s => s.id === id ? res.data : s),
                 mentorSessions: store.mentorSessions().map(s => s.id === id ? res.data : s)
               }),
-              error: () => {}
+              error: (err: HttpErrorResponse) => console.error('Failed to cancel session', err)
             })
           )
         )
       )
-    )
+    ),
+
+    clearError: () => patchState(store, { error: null })
   }))
 );

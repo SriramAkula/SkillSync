@@ -19,6 +19,7 @@ import org.springframework.context.annotation.FilterType;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import com.skillsync.group.filter.GatewayRequestFilter;
+import com.skillsync.group.dto.response.PageResponse;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -131,20 +132,35 @@ class GroupControllerTest {
 
     @Test
     void getGroupsBySkill_shouldReturn200_withList() throws Exception {
-        when(groupService.getGroupsBySkill(eq(5L), any())).thenReturn(List.of(groupResponse));
+        PageResponse<GroupResponseDto> pageResponse = PageResponse.<GroupResponseDto>builder()
+                .content(List.of(groupResponse))
+                .totalElements(1L)
+                .totalPages(1)
+                .currentPage(0)
+                .pageSize(10)
+                .build();
+        when(groupService.getGroupsBySkill(eq(5L), anyInt(), anyInt(), any())).thenReturn(pageResponse);
 
         mockMvc.perform(get("/group/skill/5"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data[0].skillId").value(5));
+                .andExpect(jsonPath("$.data.content[0].skillId").value(5));
     }
 
     @Test
     void getGroupsBySkill_shouldReturn200_withEmptyList() throws Exception {
-        when(groupService.getGroupsBySkill(eq(99L), any())).thenReturn(List.of());
+        PageResponse<GroupResponseDto> pageResponse = PageResponse.<GroupResponseDto>builder()
+                .content(List.of())
+                .totalElements(0L)
+                .totalPages(0)
+                .currentPage(0)
+                .pageSize(10)
+                .build();
+        when(groupService.getGroupsBySkill(eq(99L), anyInt(), anyInt(), any())).thenReturn(pageResponse);
 
         mockMvc.perform(get("/group/skill/99"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data").isEmpty());
+                .andExpect(jsonPath("$.data.content").isArray())
+                .andExpect(jsonPath("$.data.content").isEmpty());
     }
 
     // ─── POST /group/{groupId}/join ──────────────────────────────────────────

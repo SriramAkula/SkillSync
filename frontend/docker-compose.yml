@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   skillsync-frontend:
-    image: sriramakula212/skillsync-frontend:latest
+    image: skillsyncadmin.azurecr.io/skillsync-frontend:latest
     container_name: skillsync-frontend
     # No 'ports' mapped to the VM. 
     # NPM handles the public traffic from port 80/443.

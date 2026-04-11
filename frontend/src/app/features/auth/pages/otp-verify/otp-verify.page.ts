@@ -19,26 +19,26 @@ export class OtpVerifyPage implements OnInit {
   email = '';
   otp = signal('');
 
-  ngOnInit() {
-    this.email = sessionStorage.getItem('reg_email') || window.history.state?.email || '';
+  ngOnInit(): void {
+    this.email = sessionStorage.getItem('reg_email') || (window.history.state as { email?: string })?.email || '';
     if (!this.email) {
       console.warn('No email state found');
       this.router.navigate(['/auth/register']);
     }
   }
 
-  onOtpComplete(otp: string) {
+  onOtpComplete(otp: string): void {
     this.otp.set(otp);
     this.verifyOtp(otp);
   }
 
-  manualVerify() {
+  manualVerify(): void {
     if (this.otp().length === 6) {
       this.verifyOtp(this.otp());
     }
   }
 
-  private verifyOtp(otp: string) {
+  private verifyOtp(otp: string): void {
     this.authStore.verifyOtp({ email: this.email, otp });
     
     // Check verification status
@@ -52,7 +52,7 @@ export class OtpVerifyPage implements OnInit {
     }, 100);
   }
 
-  resendOtp() {
+  resendOtp(): void {
     this.authStore.sendOtp(this.email);
   }
 }

@@ -1,7 +1,7 @@
 import { Component, inject, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NotificationStore } from '../../../../core/auth/notification.store';
-import { NotificationDto } from '../../../../shared/models';
+
 import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
 
 type NotifFilter = 'all' | 'unread';
@@ -15,25 +15,8 @@ type NotifFilter = 'all' | 'unread';
 })
 export class NotificationListPage implements OnInit {
   readonly notifStore = inject(NotificationStore);
-  
   readonly filter = signal<NotifFilter>('all');
   
-  readonly filteredNotifications = computed(() => {
-    const all = this.notifStore.notifications();
-    const f = this.filter();
-    if (f === 'unread') return all.filter(n => !n.isRead);
-    return all;
-  });
-
-  readonly currentPage = signal(0);
-  readonly pageSize = signal(15);
-
-  readonly pagedNotifications = computed(() => {
-    const list = this.filteredNotifications();
-    const start = this.currentPage() * this.pageSize();
-    return list.slice(start, start + this.pageSize());
-  });
-
   readonly activeTabPos = computed(() => {
     const f = this.filter();
     if (f === 'unread') return 50;
@@ -42,13 +25,15 @@ export class NotificationListPage implements OnInit {
 
   updateFilter(f: NotifFilter) {
     this.filter.set(f);
-    this.currentPage.set(0); // Reset to first page
+    this.notifStore.loadAll({ page: 0, size: 15, unreadOnly: f === 'unread' });
   }
 
   ngOnInit(): void { 
-    if (this.notifStore.notifications().length === 0) {
-      this.notifStore.loadAll(); 
-    }
+    this.notifStore.loadAll({ page: 0, size: 15 }); 
+  }
+
+  onPageChange(page: number): void {
+    this.notifStore.loadAll({ page, size: 15, unreadOnly: this.filter() === 'unread' });
   }
 
   notifIcon(type: string): { icon: string; class: string } {

@@ -1,8 +1,5 @@
 package com.skillsync.session.controller;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -17,6 +14,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
+import lombok.extern.slf4j.Slf4j;
+import lombok.RequiredArgsConstructor;
 
 import com.skillsync.session.dto.ApiResponse;
 import com.skillsync.session.dto.request.RequestSessionRequestDto;
@@ -34,12 +33,11 @@ import jakarta.validation.Valid;
 @RestController
 @RequestMapping("/session")
 @Tag(name = "Session Management", description = "Session request and management operations")
+@Slf4j
+@RequiredArgsConstructor
 public class SessionController {
 
-    private static final Logger log = LoggerFactory.getLogger(SessionController.class);
-    
-    @Autowired
-    private SessionService sessionService;
+    private final SessionService sessionService;
 
     @PostMapping("/request")
     @Operation(summary = "Request a session", description = "Submit a new session request to a mentor")
@@ -54,8 +52,8 @@ public class SessionController {
             @Parameter(hidden = true) @RequestHeader(value = "roles", required = false) String roles,
             @Valid @RequestBody RequestSessionRequestDto request) {
 
-        if (roles == null || !roles.contains("ROLE_LEARNER")) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only learners can request sessions");
+        if (roles == null || (!roles.contains("ROLE_LEARNER") && !roles.contains("ROLE_MENTOR"))) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only learners or mentors can request sessions");
         }
         log.info("POST /request - User {}", learnerId);
         SessionResponseDto response = sessionService.requestSession(learnerId, request);
@@ -93,16 +91,18 @@ public class SessionController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Mentor sessions retrieved successfully"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Unauthorized")
     })
-    public ResponseEntity<ApiResponse<List<SessionResponseDto>>> getMentorSessions(
+    public ResponseEntity<ApiResponse<com.skillsync.session.dto.response.PageResponse<SessionResponseDto>>> getMentorSessions(
             @Parameter(hidden = true) @RequestHeader("X-User-Id") Long mentorId,
-            @Parameter(hidden = true) @RequestHeader(value = "roles", required = false) String roles) {
+            @Parameter(hidden = true) @RequestHeader(value = "roles", required = false) String roles,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
 
         if (roles == null || !roles.contains("ROLE_MENTOR")) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only mentors can view their sessions");
         }
-        log.info("GET /mentor/list - Mentor {}", mentorId);
-        List<SessionResponseDto> response = sessionService.getSessionsForMentor(mentorId);
-        return ResponseEntity.ok(ApiResponse.<List<SessionResponseDto>>builder()
+        log.info("GET /mentor/list - Mentor {} - page: {}, size: {}", mentorId, page, size);
+        com.skillsync.session.dto.response.PageResponse<SessionResponseDto> response = sessionService.getSessionsForMentor(mentorId, page, size);
+        return ResponseEntity.ok(ApiResponse.<com.skillsync.session.dto.response.PageResponse<SessionResponseDto>>builder()
                 .success(true)
                 .data(response)
                 .message("Mentor sessions retrieved successfully")
@@ -116,16 +116,18 @@ public class SessionController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Learner sessions retrieved successfully"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Unauthorized")
     })
-    public ResponseEntity<ApiResponse<List<SessionResponseDto>>> getLearnerSessions(
+    public ResponseEntity<ApiResponse<com.skillsync.session.dto.response.PageResponse<SessionResponseDto>>> getLearnerSessions(
             @Parameter(hidden = true) @RequestHeader("X-User-Id") Long learnerId,
-            @Parameter(hidden = true) @RequestHeader(value = "roles", required = false) String roles) {
+            @Parameter(hidden = true) @RequestHeader(value = "roles", required = false) String roles,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
 
-        if (roles == null || !roles.contains("ROLE_LEARNER")) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only learners can view their session history");
+        if (roles == null || (!roles.contains("ROLE_LEARNER") && !roles.contains("ROLE_MENTOR"))) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only learners or mentors can view their session history");
         }
-        log.info("GET /learner/list - Learner {}", learnerId);
-        List<SessionResponseDto> response = sessionService.getSessionsForLearner(learnerId);
-        return ResponseEntity.ok(ApiResponse.<List<SessionResponseDto>>builder()
+        log.info("GET /learner/list - Learner {} - page: {}, size: {}", learnerId, page, size);
+        com.skillsync.session.dto.response.PageResponse<SessionResponseDto> response = sessionService.getSessionsForLearner(learnerId, page, size);
+        return ResponseEntity.ok(ApiResponse.<com.skillsync.session.dto.response.PageResponse<SessionResponseDto>>builder()
                 .success(true)
                 .data(response)
                 .message("Learner sessions retrieved successfully")

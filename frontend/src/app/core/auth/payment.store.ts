@@ -5,6 +5,7 @@ import { tapResponse } from '@ngrx/operators';
 import { pipe, switchMap, tap } from 'rxjs';
 import { PaymentService } from '../services/payment.service';
 import { SagaResponse, StartSagaRequest, VerifyPaymentRequest } from '../../shared/models';
+import { HttpErrorResponse } from '@angular/common/http';
 
 interface PaymentState {
   saga: SagaResponse | null;
@@ -16,19 +17,34 @@ export const PaymentStore = signalStore(
   { providedIn: 'root' },
   withState<PaymentState>({ saga: null, loading: false, error: null }),
 
-  withMethods((store: any, svc = inject(PaymentService)) => ({
+  withMethods((store, svc = inject(PaymentService)) => ({
+    loadSaga: rxMethod<number>(
+      pipe(
+        tap(() => patchState(store, { loading: true })),
+        switchMap((sessionId) =>
+          svc.getSagaStatus(sessionId).pipe(
+            tapResponse({
+              next: (res) => patchState(store, { saga: res.data, loading: false }),
+              error: () => patchState(store, { loading: false })
+            })
+          )
+        )
+      )
+    )
+  })),
 
+  withMethods((store, svc = inject(PaymentService)) => ({
     startSaga: rxMethod<StartSagaRequest>(
       pipe(
         tap(() => patchState(store, { loading: true, error: null })),
-        switchMap((req: any) =>
+        switchMap((req) =>
           svc.startSaga(req).pipe(
             tapResponse({
               next: (res) => patchState(store, { saga: res.data, loading: false }),
-              error: (err: any) => {
+              error: (err: HttpErrorResponse) => {
                 if (err.status === 409) {
                   patchState(store, { loading: true });
-                  (store as any).loadSaga(req.sessionId);
+                  store.loadSaga(req.sessionId);
                 } else {
                   patchState(store, { loading: false, error: err.error?.message || 'Failed to start payment' });
                 }
@@ -39,34 +55,22 @@ export const PaymentStore = signalStore(
       )
     ),
 
-    loadSaga: rxMethod<number>(
-      pipe(
-        tap(() => patchState(store, { loading: true })),
-        switchMap((sessionId: any) =>
-          svc.getSagaStatus(sessionId).pipe(
-            tapResponse({
-              next: (res) => patchState(store, { saga: res.data, loading: false }),
-              error: () => patchState(store, { loading: false })
-            })
-          )
-        )
-      )
-    ),
-
     verifyPayment: rxMethod<VerifyPaymentRequest>(
       pipe(
         tap(() => patchState(store, { loading: true, error: null })),
-        switchMap((req: any) =>
+        switchMap((req) =>
           svc.verifyPayment(req).pipe(
             tapResponse({
               next: (res) => patchState(store, { saga: res.data, loading: false }),
-              error: (err: any) => patchState(store, { loading: false, error: err.error?.message ?? 'Payment verification failed' })
+              error: (err: HttpErrorResponse) => patchState(store, { loading: false, error: err.error?.message ?? 'Payment verification failed' })
             })
           )
         )
       )
     ),
 
-    reset: () => patchState(store, { saga: null, loading: false, error: null })
+    reset(): void {
+      patchState(store, { saga: null, loading: false, error: null });
+    }
   }))
 );

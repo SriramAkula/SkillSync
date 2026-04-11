@@ -61,7 +61,7 @@
      }
      
      @if (session.status === 'REQUESTED' || session.status === 'ACCEPTED') {
-       <button (click)="cancel.emit(session.id)" class="px-4 text-red-400 hover:text-red-600 transition-colors">
+       <button (click)="cancelSession.emit(session.id)" class="px-4 text-red-400 hover:text-red-600 transition-colors" aria-label="Cancel session">
           <span class="material-icons text-sm">delete_outline</span>
        </button>
      }

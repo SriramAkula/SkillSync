@@ -1,7 +1,9 @@
 <div class="page">
   <div class="left-panel">
     <div class="brand-content">
-      <div class="brand-logo"><span class="bolt">⚡</span></div>
+      <div class="brand-logo">
+        <img src="assets/logo.png" class="w-12 h-12 object-contain" alt="SkillSync">
+      </div>
       <h1>SkillSync</h1>
       <p>Secure your new account</p>
       <div class="steps-preview">
@@ -25,7 +27,10 @@
 
   <div class="right-panel">
     <div class="form-wrapper">
-      <div class="mobile-logo">⚡ SkillSync</div>
+      <div class="mobile-logo flex items-center gap-2">
+        <img src="assets/logo.png" class="w-8 h-8 object-contain" alt="SkillSync">
+        <span>SkillSync</span>
+      </div>
 
       <div class="form-header">
         <h2>Set Password</h2>
@@ -34,10 +39,10 @@
 
       <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="form">
         <div class="input-group">
-          <label class="input-label">Password</label>
+          <label for="rdPwd" class="input-label">Password</label>
           <div class="input-wrapper" [class.focused]="pwdFocused()" [class.error]="registerForm.get('password')?.invalid && registerForm.get('password')?.touched">
             <span class="material-icons input-icon">lock</span>
-            <input [type]="showPwd() ? 'text' : 'password'" formControlName="password" placeholder="Min 8 characters"
+            <input id="rdPwd" [type]="showPwd() ? 'text' : 'password'" formControlName="password" placeholder="Min 8 characters"
               (focus)="pwdFocused.set(true)" (blur)="pwdFocused.set(false)" />
             <button type="button" class="toggle-pwd" (click)="showPwd.set(!showPwd())">
               <span class="material-icons">{{ showPwd() ? 'visibility_off' : 'visibility' }}</span>
@@ -46,10 +51,10 @@
         </div>
         
         <div class="input-group">
-          <label class="input-label">Confirm Password</label>
+          <label for="rdConfirmPwd" class="input-label">Confirm Password</label>
           <div class="input-wrapper" [class.focused]="confirmPwdFocused()" [class.error]="registerForm.get('confirmPassword')?.invalid && registerForm.get('confirmPassword')?.touched">
             <span class="material-icons input-icon">lock_outline</span>
-            <input [type]="showConfirmPwd() ? 'text' : 'password'" formControlName="confirmPassword" placeholder="Confirm Password"
+            <input id="rdConfirmPwd" [type]="showConfirmPwd() ? 'text' : 'password'" formControlName="confirmPassword" placeholder="Confirm Password"
               (focus)="confirmPwdFocused.set(true)" (blur)="confirmPwdFocused.set(false)" />
             <button type="button" class="toggle-pwd" (click)="showConfirmPwd.set(!showConfirmPwd())">
               <span class="material-icons">{{ showConfirmPwd() ? 'visibility_off' : 'visibility' }}</span>

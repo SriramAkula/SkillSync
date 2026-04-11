@@ -83,3 +83,4 @@ class AuditAndSecurityTest {
                 .hasMessageContaining("ghost@example.com");
     }
 }
+

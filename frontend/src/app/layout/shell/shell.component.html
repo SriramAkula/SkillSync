@@ -32,7 +32,7 @@
         <span class="text-[10px] font-medium uppercase tracking-wider">Sessions</span>
       </a>
       <div class="relative -top-6">
-        <a routerLink="/groups" routerLinkActive="bg-primary-700 shadow-primary-200" class="flex items-center justify-center w-14 h-14 bg-primary-600 text-white rounded-2xl shadow-xl shadow-primary-100 transition-transform active:scale-95">
+        <a routerLink="/groups" routerLinkActive="bg-primary-700" class="flex items-center justify-center w-14 h-14 bg-primary-600 text-white rounded-2xl shadow-xl transition-transform active:scale-95">
           <span class="material-icons">group</span>
         </a>
       </div>
@@ -50,8 +50,12 @@
 
   <!-- Mobile Sidebar Overlay (optional drawer) -->
   @if (mobileMenuOpen()) {
-    <div class="lg:hidden fixed inset-0 z-[60] bg-slate-900/40 backdrop-blur-sm" (click)="mobileMenuOpen.set(false)">
-      <aside class="w-72 h-full bg-white shadow-2xl animate-slide-in" (click)="$event.stopPropagation()">
+    <div class="lg:hidden fixed inset-0 z-[60] bg-slate-900/40 backdrop-blur-sm" 
+         (click)="mobileMenuOpen.set(false)" (keyup.enter)="mobileMenuOpen.set(false)"
+         tabindex="0" role="button" aria-label="Close mobile menu">
+      <aside class="w-72 h-full bg-white shadow-2xl animate-slide-in" 
+             (click)="$event.stopPropagation()" (keyup.enter)="$event.stopPropagation()"
+             tabindex="0" role="dialog" aria-modal="true">
          <app-sidebar (navClick)="mobileMenuOpen.set(false)" />
       </aside>
     </div>

@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal, computed, effect } from '@angular/core';
+import { Component, inject, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
@@ -11,7 +11,7 @@ import { SessionDto } from '../../../../shared/models';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
 
-type DashTab = 'pending' | 'upcoming' | 'all';
+type DashTab = 'pending' | 'upcoming' | 'all' | 'confirmed';
 
 @Component({
   selector: 'app-mentor-sessions-page',
@@ -21,32 +21,29 @@ type DashTab = 'pending' | 'upcoming' | 'all';
   styleUrl: './mentor-sessions.page.scss'
 })
 export class MentorSessionsPage implements OnInit {
-  readonly sessionStore = inject(SessionStore) as any;
-  readonly mentorStore = inject(MentorStore) as any;
-  readonly authStore = inject(AuthStore) as any;
-  readonly skillStore = inject(SkillStore) as any;
+  readonly sessionStore = inject(SessionStore);
+  readonly mentorStore = inject(MentorStore);
+  readonly authStore = inject(AuthStore);
+  readonly skillStore = inject(SkillStore);
   readonly router = inject(Router);
   private readonly snack = inject(MatSnackBar);
 
-  constructor() {
-    effect(() => {
-      const profile = this.mentorStore.myProfile();
-      if (profile && !this.authStore.isMentor()) {
-        this.authStore.refreshToken(undefined);
-      }
-    }, { allowSignalWrites: false });
-  }
-
   readonly activeTab = signal<DashTab>('pending');
-  readonly currentPage = signal(0);
-  readonly pageSize = signal(8); // High-density cards
   readonly rejectingSession = signal<SessionDto | null>(null);
   rejectReason = '';
 
+  readonly pendingSessions = computed(() => 
+    this.sessionStore.mentorSessions().filter(s => s.status === 'REQUESTED')
+  );
+  readonly upcomingSessions = computed(() => 
+    this.sessionStore.mentorSessions().filter(s => s.status === 'ACCEPTED')
+  );
+
   readonly tabs: { key: DashTab; label: string }[] = [
-    { key: 'pending',  label: 'Incoming Requests' },
-    { key: 'upcoming', label: 'Accepted Schedule' },
-    { key: 'all',      label: 'Session History' },
+    { key: 'pending',   label: 'Incoming Requests' },
+    { key: 'upcoming',  label: 'Accepted Schedule' },
+    { key: 'confirmed', label: 'Completed Sessions' },
+    { key: 'all',       label: 'Session History' },
   ];
 
   readonly quickReasons = [
@@ -56,34 +53,12 @@ export class MentorSessionsPage implements OnInit {
     'Full Capacity',
   ];
 
-  readonly pendingSessions = computed(() =>
-    (this.sessionStore.mentorSessions() as SessionDto[]).filter(s => s.status === 'REQUESTED')
-  );
-  readonly upcomingSessions = computed(() =>
-    (this.sessionStore.mentorSessions() as SessionDto[]).filter(s =>
-      ['ACCEPTED', 'CONFIRMED'].includes(s.status) &&
-      new Date(s.scheduledAt) > new Date()
-    )
-  );
-  readonly confirmedSessions = computed(() =>
-    (this.sessionStore.mentorSessions() as SessionDto[]).filter(s => s.status === 'CONFIRMED')
-  );
-
-  readonly currentSessions = computed(() => {
-    const tab = this.activeTab();
-    if (tab === 'pending') return this.pendingSessions();
-    if (tab === 'upcoming') return this.upcomingSessions();
-    return this.sessionStore.mentorSessions() as SessionDto[];
-  });
-
-  readonly pagedSessions = computed(() => {
-    const list = this.currentSessions();
-    const start = this.currentPage() * this.pageSize();
-    return list.slice(start, start + this.pageSize());
-  });
+  onPageChange(page: number): void {
+    this.sessionStore.loadMentorSessions({ page, size: 8 });
+  }
 
   ngOnInit(): void {
-    this.refresh();
+    this.sessionStore.loadMentorSessions({ page: 0, size: 8 });
     this.mentorStore.loadMyProfile(undefined);
     if (this.skillStore.skills().length === 0) {
       this.skillStore.loadAll(undefined);
@@ -92,11 +67,11 @@ export class MentorSessionsPage implements OnInit {
 
   getSkillName(id: number): string {
     const s = this.skillStore.getSkillById(id);
-    return s ? (s.skillName || s.name) : ('Skill #' + id);
+    return s ? s.skillName : ('Skill #' + id);
   }
 
   refresh(): void {
-    this.sessionStore.loadMentorSessions(undefined);
+    this.sessionStore.loadMentorSessions({ page: this.sessionStore.mentorCurrentPage(), size: 8 });
   }
 
   toggleAvailability(): void {
@@ -105,7 +80,7 @@ export class MentorSessionsPage implements OnInit {
       return;
     }
     const next = this.mentorStore.isAvailable() ? 'BUSY' : 'AVAILABLE';
-    this.mentorStore.updateAvailability({ availabilityStatus: next as any });
+    this.mentorStore.updateAvailability({ availabilityStatus: next });
   }
 
   accept(id: number): void {
@@ -123,12 +98,14 @@ export class MentorSessionsPage implements OnInit {
 
   changeTab(tab: DashTab): void {
     this.activeTab.set(tab);
-    this.currentPage.set(0); // Reset page on tab switch
+    this.sessionStore.loadMentorSessions({ page: 0, size: 8 }); // Reset to page 0 on tab change
   }
 
   cancelSession(id: number): void {
     this.sessionStore.cancel(id);
   }
 
-  noop(): void {}
+  noop(): void {
+    // Used for event swallowing if needed
+  }
 }

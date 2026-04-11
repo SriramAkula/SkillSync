@@ -3,14 +3,13 @@ package com.skillsync.authservice.logging;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
+import lombok.extern.slf4j.Slf4j;
 
 @Aspect
 @Component
+@Slf4j
 public class LoggingAspect {
-    private final Logger log = LoggerFactory.getLogger(this.getClass());
 
     @Pointcut("within(com.skillsync..controller..*) || within(com.skillsync..service..*)")
     public void applicationPackagePointcut() {}

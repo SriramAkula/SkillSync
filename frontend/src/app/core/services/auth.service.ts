@@ -3,8 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable, finalize } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import {
-  ApiResponse, AuthResponse, LoginRequest, RegisterRequest,
-  OtpRequest, OtpVerifyRequest, ResetPasswordRequest
+  ApiResponse, AuthResponse, LoginRequest, RegisterRequest
 } from '../../shared/models';
 
 @Injectable({ providedIn: 'root' })

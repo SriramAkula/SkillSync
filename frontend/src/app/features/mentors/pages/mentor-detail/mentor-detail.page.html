@@ -22,10 +22,10 @@
           
           <!-- Large Avatar -->
           <div class="relative group active:scale-105 transition-transform">
-            <div class="w-32 h-32 bg-gradient-to-br from-primary-500 to-indigo-600 rounded-[2.5rem] p-1 shadow-2xl shadow-primary-200">
+            <div class="w-32 h-32 bg-gradient-to-br from-primary-500 to-indigo-600 rounded-[2.5rem] p-1 shadow-2xl">
               <div class="w-full h-full bg-white rounded-[2.3rem] flex items-center justify-center overflow-hidden">
                 @if (mentor.profileImageUrl) {
-                  <img [src]="mentor.profileImageUrl" class="w-full h-full object-cover">
+                  <img [src]="mentor.profileImageUrl" [alt]="mentor.username + ' Profile'" class="w-full h-full object-cover">
                 } @else {
                   <span class="text-4xl font-extrabold text-primary-600">{{ initials(mentor.specialization) }}</span>
                 }
@@ -75,7 +75,7 @@
             <button 
               [disabled]="mentor.availabilityStatus !== 'AVAILABLE'"
               (click)="bookSession(mentor.userId)"
-              class="w-full bg-primary-600 text-white rounded-2xl py-4 font-bold shadow-xl shadow-primary-200 hover:bg-primary-700 hover:-translate-y-1 active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed">
+              class="w-full bg-primary-600 text-white rounded-2xl py-4 font-bold shadow-xl hover:bg-primary-700 hover:-translate-y-1 active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed">
               <span class="material-icons text-xl">event_available</span>
               Book a Session
             </button>
@@ -142,7 +142,7 @@
                             <div class="space-y-1">
                                 <div class="flex gap-0.5 text-amber-400">
                                     @for (star of [1,2,3,4,5]; track star) {
-                                        <span class="material-icons text-base">{{ star <= r.rating ? 'star' : 'star_border' }}</span>
+                                        <span class="material-icons text-base">{{ star <= (r.rating || 0) ? 'star' : 'star_border' }}</span>
                                     }
                                 </div>
                                 <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">{{ r.username || 'Verified Learner' }}</p>

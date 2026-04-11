@@ -15,6 +15,7 @@ import org.springframework.mock.web.MockHttpServletResponse;
 import java.util.List;
 
 import static org.mockito.Mockito.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @ExtendWith(MockitoExtension.class)
 class JwtFilterTest {
@@ -45,6 +46,14 @@ class JwtFilterTest {
         }
 
         verify(filterChain, times(publicPaths.length)).doFilter(any(), any());
+    }
+
+    @Test
+    void doFilterInternal_shouldPassThrough_forSpecificPublicEndpoint() throws Exception {
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/auth/swagger-ui.html");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        jwtFilter.doFilterInternal(request, response, filterChain);
+        verify(filterChain).doFilter(request, response);
     }
 
     @Test
@@ -90,5 +99,23 @@ class JwtFilterTest {
         jwtFilter.doFilterInternal(request, response, filterChain);
 
         verify(filterChain).doFilter(request, response);
+    }
+
+    @Test
+    void doFilterInternal_shouldNotReAuthenticate_ifAlreadyAuthenticated() throws Exception {
+        org.springframework.security.core.Authentication existingAuth = mock(org.springframework.security.core.Authentication.class);
+        org.springframework.security.core.context.SecurityContextHolder.getContext().setAuthentication(existingAuth);
+        
+        String token = jwtUtil.generateToken(1L, "test@example.com", List.of("ROLE_LEARNER"));
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/protected");
+        request.addHeader("Authorization", "Bearer " + token);
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        jwtFilter.doFilterInternal(request, response, filterChain);
+
+        verify(filterChain).doFilter(request, response);
+        // SecurityContext should still have the old one
+        assertThat(org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication()).isEqualTo(existingAuth);
+        org.springframework.security.core.context.SecurityContextHolder.clearContext();
     }
 }

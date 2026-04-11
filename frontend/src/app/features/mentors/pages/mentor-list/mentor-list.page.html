@@ -33,22 +33,22 @@
       @if (isFilterOpen()) {
         <div class="advanced-filters">
           <div class="filter-group">
-            <label>Experience (Years)</label>
+            <label for="minExp">Experience (Years)</label>
             <div class="range-inputs">
-              <input type="number" formControlName="minExperience" placeholder="Min" min="0" />
+              <input type="number" id="minExp" formControlName="minExperience" placeholder="Min" min="0" />
               <span class="dash">-</span>
-              <input type="number" formControlName="maxExperience" placeholder="Max" min="0" />
+              <input type="number" id="maxExp" formControlName="maxExperience" placeholder="Max" min="0" aria-label="Maximum experience" />
             </div>
           </div>
           
           <div class="filter-group">
-            <label>Max Hourly Rate ($)</label>
-            <input type="number" formControlName="maxRate" placeholder="Any" min="0" />
+            <label for="maxRate">Max Hourly Rate ($)</label>
+            <input type="number" id="maxRate" formControlName="maxRate" placeholder="Any" min="0" />
           </div>
 
           <div class="filter-group">
-            <label>Minimum Rating</label>
-            <select formControlName="minRating" class="rating-select">
+            <label for="minRating">Minimum Rating</label>
+            <select id="minRating" formControlName="minRating" class="rating-select">
               <option [ngValue]="null">Any</option>
               <option [ngValue]="4.5">4.5+ ⭐</option>
               <option [ngValue]="4.0">4.0+ ⭐</option>
@@ -117,5 +117,16 @@
         </div>
       }
     </div>
+
+    <!-- Pagination -->
+    @if (mentorStore.totalElements() > mentorStore.pageSize()) {
+      <div class="pagination-wrapper">
+        <app-pagination 
+          [totalItems]="mentorStore.totalElements()" 
+          [pageSize]="mentorStore.pageSize()" 
+          [currentPage]="mentorStore.currentPage()"
+          (pageChange)="onPageChange($event)" />
+      </div>
+    }
   }
 </div>

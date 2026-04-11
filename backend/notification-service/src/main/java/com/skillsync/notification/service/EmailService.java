@@ -10,34 +10,26 @@ import com.skillsync.notification.event.SessionRejectedEvent;
 import com.skillsync.notification.event.SessionCancelledEvent;
 import com.skillsync.notification.event.MentorApprovedEvent;
 import com.skillsync.notification.event.ReviewSubmittedEvent;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
+import lombok.extern.slf4j.Slf4j;
+import lombok.RequiredArgsConstructor;
 
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 
 @Service
+@Slf4j
+@RequiredArgsConstructor
 public class EmailService {
     
-    private static final Logger log = LoggerFactory.getLogger(EmailService.class);
-    
-    @Autowired
-    private JavaMailSender mailSender;
-    
-    @Autowired
-    private TemplateEngine templateEngine;
-    
-    @Autowired
-    private UserServiceClient userServiceClient;
-    
-    @Autowired
-    private MentorServiceClient mentorServiceClient;
+    private final JavaMailSender mailSender;
+    private final TemplateEngine templateEngine;
+    private final UserServiceClient userServiceClient;
+    private final MentorServiceClient mentorServiceClient;
 
     private void sendHtmlEmail(String to, String subject, String templateName, Context context) {
         try {

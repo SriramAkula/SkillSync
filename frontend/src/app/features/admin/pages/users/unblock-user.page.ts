@@ -13,29 +13,29 @@ import { AdminUserService, UserProfile } from '../../../../core/services/admin-u
   styleUrl: './unblock-user.page.scss'
 })
 export class UnblockUserPage implements OnInit {
-  private route = inject(ActivatedRoute);
-  private router = inject(Router);
-  private adminUserService: AdminUserService = inject(AdminUserService);
-  private snackBar: MatSnackBar = inject(MatSnackBar);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  private readonly adminUserService = inject(AdminUserService);
+  private readonly snackBar = inject(MatSnackBar);
 
   user: UserProfile | null = null;
   isLoading = false;
 
-  ngOnInit() {
+  ngOnInit(): void {
     const userId = this.route.snapshot.paramMap.get('id');
     if (userId) {
       this.loadUser(+userId);
     }
   }
 
-  loadUser(userId: number) {
+  loadUser(userId: number): void {
     this.isLoading = true;
     this.adminUserService.getUserDetails(userId).subscribe({
-      next: (response: any) => {
+      next: (response: { data: UserProfile }) => {
         this.user = response.data;
         this.isLoading = false;
       },
-      error: (err: any) => {
+      error: () => {
         this.snackBar.open('Failed to load user details', 'Close', { duration: 3000 });
         this.isLoading = false;
       }
@@ -69,14 +69,14 @@ export class UnblockUserPage implements OnInit {
         this.snackBar.open('User unblocked successfully', 'Close', { duration: 3000 });
         this.goBack();
       },
-      error: (err: any) => {
+      error: () => {
         this.snackBar.open('Failed to unblock user', 'Close', { duration: 3000 });
         this.isLoading = false;
       }
     });
   }
 
-  goBack() {
+  goBack(): void {
     this.router.navigate(['/admin/users']);
   }
 }

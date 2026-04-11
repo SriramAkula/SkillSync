@@ -1,98 +1,60 @@
 package com.skillsync.skill.service.impl;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import com.skillsync.skill.dto.request.CreateSkillRequestDto;
+import com.skillsync.skill.dto.response.PageResponse;
 import com.skillsync.skill.dto.response.SkillResponseDto;
-import com.skillsync.skill.entity.Skill;
-import com.skillsync.skill.mapper.SkillMapper;
-import com.skillsync.skill.repository.SkillRepository;
 import com.skillsync.skill.service.SkillService;
-
+import com.skillsync.skill.service.command.SkillCommandService;
+import com.skillsync.skill.service.query.SkillQueryService;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-@Slf4j
 public class SkillServiceImpl implements SkillService {
 
-	private final SkillRepository skillRepository;
-	private final SkillMapper skillMapper;
+    private final SkillCommandService skillCommandService;
+    private final SkillQueryService skillQueryService;
 
-	@Override
-	@Transactional
-	@CacheEvict(value = "skills", allEntries = true)
-	public SkillResponseDto createSkill(CreateSkillRequestDto requestDto) {
-		log.info("Creating skill: {}", requestDto.getSkillName());
-		Skill skill = skillMapper.toEntity(requestDto);
-		Skill savedSkill = skillRepository.save(skill);
-		log.info("Skill created with ID: {}", savedSkill.getId());
-		return skillMapper.toDto(savedSkill);
-	}
+    @Override
+    public SkillResponseDto createSkill(CreateSkillRequestDto requestDto) {
+        return skillCommandService.createSkill(requestDto);
+    }
 
-	@Override
-	@Cacheable(value = "skill", key = "#id")
-	public SkillResponseDto getSkillById(Long id) {
-		log.info("Cache MISS - fetching skillId={} from DB", id);
-		Skill skill = skillRepository.findById(id)
-			.orElseThrow(() -> new RuntimeException("Skill not found"));
-		return skillMapper.toDto(skill);
-	}
+    @Override
+    public SkillResponseDto updateSkill(Long id, CreateSkillRequestDto requestDto) {
+        return skillCommandService.updateSkill(id, requestDto);
+    }
 
-	@Override
-	@Cacheable(value = "skills")
-	public List<SkillResponseDto> getAllActiveSkills() {
-		log.info("Cache MISS - fetching all active skills from DB");
-		return skillRepository.findByIsActiveTrueOrderByPopularityScoreDesc()
-			.stream()
-			.map(skillMapper::toDto)
-			.collect(Collectors.toList());
-	}
+    @Override
+    public void deleteSkill(Long id) {
+        skillCommandService.deleteSkill(id);
+    }
 
-	@Override
-	public List<SkillResponseDto> searchSkills(String keyword) {
-		log.info("Searching skills with keyword: {}", keyword);
-		return skillRepository.searchByName(keyword)
-			.stream()
-			.map(skillMapper::toDto)
-			.collect(Collectors.toList());
-	}
+    @Override
+    public SkillResponseDto getSkillById(Long id) {
+        return skillQueryService.getSkillById(id);
+    }
 
-	@Override
-	public List<SkillResponseDto> getSkillsByCategory(String category) {
-		log.info("Fetching skills for category: {}", category);
-		return skillRepository.findByCategory(category)
-			.stream()
-			.map(skillMapper::toDto)
-			.collect(Collectors.toList());
-	}
+    @Override
+    public PageResponse<SkillResponseDto> getAllActiveSkills(int page, int size) {
+        return skillQueryService.getAllActiveSkills(page, size);
+    }
 
-	@Override
-	@Transactional
-	@CacheEvict(value = {"skills", "skill"}, allEntries = true)
-	public SkillResponseDto updateSkill(Long id, CreateSkillRequestDto requestDto) {
-		log.info("Updating skill with ID: {}", id);
-		Skill skill = skillRepository.findById(id)
-			.orElseThrow(() -> new RuntimeException("Skill not found"));
-		skillMapper.updateEntity(skill, requestDto);
-		return skillMapper.toDto(skillRepository.save(skill));
-	}
+    @Override
+    public PageResponse<SkillResponseDto> searchSkills(String keyword, int page, int size) {
+        return skillQueryService.searchSkills(keyword, page, size);
+    }
 
-	@Override
-	@Transactional
-	@CacheEvict(value = {"skills", "skill"}, allEntries = true)
-	public void deleteSkill(Long id) {
-		log.info("Deleting skill with ID: {}", id);
-		Skill skill = skillRepository.findById(id)
-			.orElseThrow(() -> new RuntimeException("Skill not found"));
-		skill.setIsActive(false);
-		skillRepository.save(skill);
-	}
+    @Override
+    public List<SkillResponseDto> getSkillsByCategory(String category) {
+        return skillQueryService.getSkillsByCategory(category);
+    }
+
+    @Override
+    public SkillResponseDto updatePopularity(Long id, boolean increment) {
+        return skillCommandService.updatePopularity(id, increment);
+    }
 }

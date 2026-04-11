@@ -8,7 +8,8 @@ import { GroupService } from '../../../../core/services/group.service';
 import { AuthStore } from '../../../../core/auth/auth.store';
 import { SkillStore } from '../../../../core/auth/skill.store';
 import { GroupDto } from '../../../../shared/models';
-import { forkJoin } from 'rxjs';
+import { HttpErrorResponse } from '@angular/common/http';
+import { Observable } from 'rxjs';
 
 @Component({
   selector: 'app-group-list-page',
@@ -33,6 +34,12 @@ export class GroupListPage implements OnInit {
   readonly selectedCategory = signal('');
   readonly selectedSkillId = signal<number | null>(null);
 
+  // Pagination
+  readonly currentPage = signal(0);
+  readonly totalElements = signal(0);
+  readonly totalPages = signal(0);
+  readonly pageSize = 12;
+
   newGroupCategory = '';
   newGroup = { name: '', skillId: null as number | null, maxMembers: null as number | null, description: '' };
 
@@ -50,7 +57,7 @@ export class GroupListPage implements OnInit {
   }
 
   ngOnInit(): void { 
-    this.skillStore.loadAll(undefined); 
+    this.skillStore.loadForSelection(undefined); 
     this.loadRandomGroups();
   }
 
@@ -97,19 +104,36 @@ export class GroupListPage implements OnInit {
     return s ? s.skillName : `Skill #${skillId}`;
   }
 
-  loadGroups(): void {
+  loadGroups(page = 0, append = false): Observable<void> | void {
     if (!this.selectedSkillId()) return;
     this.loading.set(true);
     this.searched.set(true);
     
-    this.groupService.getGroupsBySkill(this.selectedSkillId()!).subscribe({
+    this.groupService.getGroupsBySkill(this.selectedSkillId()!, page, this.pageSize).subscribe({
       next: (res) => {
-        this.groups.set(res.data ?? []);
+        const list = res.data.content || [];
+        if (append) {
+          this.groups.update(curr => [...curr, ...list]);
+        } else {
+          this.groups.set(list);
+        }
+        this.currentPage.set(res.data.currentPage);
+        this.totalElements.set(res.data.totalElements);
+        this.totalPages.set(res.data.totalPages);
         this.loading.set(false);
-        this.cleanupOldGroups(res.data ?? []);
+        this.cleanupOldGroups(list);
       },
-      error: () => { this.groups.set([]); this.loading.set(false); }
+      error: () => { 
+        if (!append) this.groups.set([]); 
+        this.loading.set(false); 
+      }
     });
+  }
+
+  loadMore(): void {
+    if (this.currentPage() < this.totalPages() - 1) {
+      this.loadGroups(this.currentPage() + 1, true);
+    }
   }
 
   clearFilters(): void {
@@ -151,27 +175,27 @@ export class GroupListPage implements OnInit {
     this.newGroupCategory = '';
     this.newGroup = { name: '', skillId: null, maxMembers: null, description: '' };
     this.showCreate.set(true);
-    this.skillStore.loadAll(undefined);
+    this.skillStore.loadForSelection(undefined);
   }
 
   join(id: number): void {
     this.groupService.joinGroup(id).subscribe({
       next: (r) => { this.groups.update(list => list.map(g => g.id === id ? r.data : g)); this.snack.open('Joined group!', 'OK', { duration: 3000 }); },
-      error: (e) => this.snack.open(e.error?.message ?? 'Failed to join', 'OK', { duration: 3000 })
+      error: (e: HttpErrorResponse) => this.snack.open(e.error?.message ?? 'Failed to join', 'OK', { duration: 3000 })
     });
   }
 
   leave(id: number): void {
     this.groupService.leaveGroup(id).subscribe({
       next: (r) => { this.groups.update(list => list.map(g => g.id === id ? r.data : g)); this.snack.open('Left group.', 'OK', { duration: 3000 }); },
-      error: (e) => this.snack.open(e.error?.message ?? 'Failed to leave', 'OK', { duration: 3000 })
+      error: (e: HttpErrorResponse) => this.snack.open(e.error?.message ?? 'Failed to leave', 'OK', { duration: 3000 })
     });
   }
 
   deleteGroup(id: number): void {
     this.groupService.deleteGroup(id).subscribe({
       next: () => { this.groups.update(list => list.filter(g => g.id !== id)); this.snack.open('Group deleted.', 'OK', { duration: 3000 }); },
-      error: (e) => this.snack.open(e.error?.message ?? 'Failed', 'OK', { duration: 3000 })
+      error: (e: HttpErrorResponse) => this.snack.open(e.error?.message ?? 'Failed', 'OK', { duration: 3000 })
     });
   }
 
@@ -211,7 +235,7 @@ export class GroupListPage implements OnInit {
         this.newGroup = { name: '', skillId: null, maxMembers: null, description: '' };
         this.snack.open('Group created successfully!', 'OK', { duration: 3000 });
       },
-      error: (e) => { 
+      error: (e: HttpErrorResponse) => { 
         console.error('Group creation failed:', e);
         this.creating.set(false); 
         this.snack.open(e.error?.message ?? 'Failed to create group', 'OK', { duration: 3000 }); 

@@ -39,10 +39,12 @@
               <span class="label">Email</span>
               <span class="value">{{ user.email }}</span>
             </div>
-            <div class="detail-row" *ngIf="user.name">
-              <span class="label">Full Name</span>
-              <span class="value">{{ user.name }}</span>
-            </div>
+            @if (user.name) {
+              <div class="detail-row">
+                <span class="label">Full Name</span>
+                <span class="value">{{ user.name }}</span>
+              </div>
+            }
             <div class="detail-row">
               <span class="label">Status</span>
               <span class="value status-active">

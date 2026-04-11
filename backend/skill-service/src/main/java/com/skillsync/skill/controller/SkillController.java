@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -18,6 +19,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import com.skillsync.skill.dto.request.CreateSkillRequestDto;
 import com.skillsync.skill.dto.response.ApiResponse;
+import com.skillsync.skill.dto.response.PageResponse;
 import com.skillsync.skill.dto.response.SkillResponseDto;
 import com.skillsync.skill.service.SkillService;
 
@@ -108,10 +110,12 @@ public class SkillController {
 		@io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Skills fetched successfully"),
 		@io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Internal server error")
 	})
-	public ResponseEntity<ApiResponse<List<SkillResponseDto>>> getAllSkills() {
-		log.info("Fetching all active skills");
+	public ResponseEntity<ApiResponse<PageResponse<SkillResponseDto>>> getAllSkills(
+			@RequestParam(defaultValue = "0") int page,
+			@RequestParam(defaultValue = "12") int size) {
+		log.info("Fetching all active skills - page: {}, size: {}", page, size);
 
-		List<SkillResponseDto> response = skillService.getAllActiveSkills();
+		PageResponse<SkillResponseDto> response = skillService.getAllActiveSkills(page, size);
 
 		return ResponseEntity
 			.ok(new ApiResponse<>(
@@ -130,12 +134,14 @@ public class SkillController {
 	@ApiResponses(value = {
 		@io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Skills found successfully"),
 		@io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid search parameters")
-	})	public ResponseEntity<ApiResponse<List<SkillResponseDto>>> searchSkills(
-			@RequestParam String keyword) {
+	})	public ResponseEntity<ApiResponse<PageResponse<SkillResponseDto>>> searchSkills(
+			@RequestParam String keyword,
+			@RequestParam(defaultValue = "0") int page,
+			@RequestParam(defaultValue = "12") int size) {
 
-		log.info("Searching skills with keyword: {}", keyword);
+		log.info("Searching skills with keyword: {}, page: {}, size: {}", keyword, page, size);
 
-		List<SkillResponseDto> response = skillService.searchSkills(keyword);
+		PageResponse<SkillResponseDto> response = skillService.searchSkills(keyword, page, size);
 
 		return ResponseEntity
 			.ok(new ApiResponse<>(
@@ -214,6 +220,28 @@ public class SkillController {
 				true,
 				"Skill deleted successfully",
 				null,
+				200
+			));
+	}
+
+	/**
+	 * PUT /api/skill/{id}/popularity
+	 * Increment or decrement skill popularity
+	 */
+	@io.swagger.v3.oas.annotations.Operation(summary = "Update skill popularity", description = "Increment or decrement a skill's learner count")
+	@org.springframework.web.bind.annotation.PutMapping("/{id}/popularity")
+	public ResponseEntity<ApiResponse<SkillResponseDto>> updatePopularity(
+			@PathVariable Long id,
+			@RequestParam boolean increment) {
+
+		log.info("{} popularity for skill with ID: {}", increment ? "Incrementing" : "Decrementing", id);
+		SkillResponseDto response = skillService.updatePopularity(id, increment);
+
+		return ResponseEntity
+			.ok(new ApiResponse<>(
+				true,
+				"Popularity updated successfully",
+				response,
 				200
 			));
 	}

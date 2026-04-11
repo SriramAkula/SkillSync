@@ -43,6 +43,9 @@ export class LoginPage {
 
   onSubmit(): void {
     if (this.form.invalid) return;
-    this.authStore.login(this.form.getRawValue() as any);
+    const { email, password } = this.form.getRawValue();
+    if (email && password) {
+      this.authStore.login({ email, password });
+    }
   }
 }

@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal, computed } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { MentorStore } from '../../../../core/auth/mentor.store';
@@ -26,7 +26,7 @@ export class MentorDetailPage implements OnInit {
   ngOnInit(): void {
     const id = Number(this.route.snapshot.paramMap.get('id')); 
     this.mentorStore.loadById(id);
-    this.reviewService.getMentorReviews(id).subscribe(r => this.reviews.set(r.data));
+    this.reviewService.getMentorReviews(id, 0, 5).subscribe(r => this.reviews.set(r.data.content));
     this.reviewService.getMentorRating(id).subscribe(r => this.rating.set(r.data));
   }
 
@@ -35,8 +35,8 @@ export class MentorDetailPage implements OnInit {
     return myId !== null && Number(myId) === Number(mentorUserId);
   }
 
-  statusClasses(status: string) {
-    const map: Record<string, any> = {
+  statusClasses(status: string): { bg: string; text: string } {
+    const map: Record<string, { bg: string; text: string }> = {
       'AVAILABLE': { bg: 'bg-emerald-500 shadow-emerald-50', text: 'text-emerald-600' },
       'BUSY': { bg: 'bg-amber-500 shadow-amber-50', text: 'text-amber-600' },
       'UNAVAILABLE': { bg: 'bg-slate-300', text: 'text-slate-400' }

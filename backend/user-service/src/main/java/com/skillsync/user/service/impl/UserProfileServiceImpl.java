@@ -1,109 +1,37 @@
 package com.skillsync.user.service.impl;
 
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import com.skillsync.user.dto.request.UpdateProfileRequestDto;
 import com.skillsync.user.dto.response.UserProfileResponseDto;
-import com.skillsync.user.entity.UserProfile;
-import com.skillsync.user.exception.UserProfileNotFoundException;
-import com.skillsync.user.mapper.UserProfileMapper;
-import com.skillsync.user.repository.UserProfileRepository;
 import com.skillsync.user.service.UserProfileService;
-
+import com.skillsync.user.service.command.UserProfileCommandService;
+import com.skillsync.user.service.query.UserProfileQueryService;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.cache.annotation.CacheConfig;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.CachePut;
-import org.springframework.cache.annotation.Cacheable;
-import org.springframework.cache.annotation.Caching;
+import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
-@Slf4j
-@CacheConfig(cacheNames = "user")
 public class UserProfileServiceImpl implements UserProfileService {
 
-	private final UserProfileRepository userProfileRepository;
-	private final UserProfileMapper userProfileMapper;
-	private final com.skillsync.user.client.AuthClient authClient;
+    private final UserProfileCommandService userProfileCommandService;
+    private final UserProfileQueryService userProfileQueryService;
 
-	@Override
-	@Cacheable(key = "'userId_' + #userId")
-	public UserProfileResponseDto getProfileByUserId(Long userId) {
-		log.info("Cache MISS - fetching profile for userId={} from DB", userId);
-		return userProfileRepository.findByUserId(userId)
-			.map(userProfileMapper::toDto)
-			.orElseGet(() -> {
-				log.warn("User profile not found for userId: {}. Returning default placeholder.", userId);
-				// Standard User 1 is Admin/System
-				String name = (userId == 1) ? "Admin" : "User " + userId;
-				String email = (userId == 1) ? "admin@skillsync.com" : "user" + userId + "@skillsync.com";
-				
-				UserProfileResponseDto placeholder = new UserProfileResponseDto();
-				placeholder.setUserId(userId);
-				placeholder.setUsername(name);
-				placeholder.setName(name);
-				placeholder.setEmail(email);
-				placeholder.setBio("I am a " + name + " in SkillSync");
-				return placeholder;
-			});
-	}
+    @Override
+    public UserProfileResponseDto getProfileByUserId(Long userId) {
+        return userProfileQueryService.getProfileByUserId(userId);
+    }
 
-	@Override
-	@Transactional
-	@Caching(evict = {
-		@CacheEvict(key = "'userId_' + #userId"),
-		@CacheEvict(key = "'email_' + #result.email", condition = "#result != null")
-	}, put = {
-		@CachePut(key = "'userId_' + #userId")
-	})
-	public UserProfileResponseDto updateProfile(Long userId, UpdateProfileRequestDto requestDto) {
-		log.info("Updating profile for userId: {}", userId);
-		UserProfile profile = userProfileRepository.findByUserId(userId)
-			.orElseThrow(() -> new UserProfileNotFoundException(
-				"User profile not found for userId: " + userId));
-		
-		String oldUsername = profile.getUsername();
-		userProfileMapper.updateEntity(profile, requestDto);
-		UserProfile updated = userProfileRepository.save(profile);
-		
-		// ── Sync with Auth Service if username changed ──
-		if (requestDto.getUsername() != null && !requestDto.getUsername().equals(oldUsername)) {
-			try {
-				log.info("Syncing username change to Auth Service: {} -> {}", oldUsername, requestDto.getUsername());
-				authClient.updateUserProfile(userId, new com.skillsync.user.dto.internal.AuthProfileUpdateDTO(requestDto.getUsername()));
-			} catch (Exception e) {
-				log.error("Failed to sync username with Auth Service for userId {}: {}", userId, e.getMessage());
-				// We don't fail the whole transaction here to avoid breaking core profile updates if auth-service is down
-			}
-		}
-		
-		log.info("Profile updated successfully for userId: {}", userId);
-		return userProfileMapper.toDto(updated);
-	}
+    @Override
+    public UserProfileResponseDto getProfileByEmail(String email) {
+        return userProfileQueryService.getProfileByEmail(email);
+    }
 
-	@Override
-	@Transactional
-	@Caching(evict = {
-		@CacheEvict(key = "'userId_' + #userId"),
-		@CacheEvict(key = "'email_' + #email")
-	})
-	public void createProfile(Long userId, String email, String username) {
-		log.info("Creating profile for userId: {}, email: {}, username: {}", userId, email, username);
-		UserProfile profile = userProfileMapper.toEntity(userId, email, username);
-		userProfileRepository.save(profile);
-		log.info("UserProfile created successfully for userId: {}", userId);
-	}
+    @Override
+    public UserProfileResponseDto updateProfile(Long userId, UpdateProfileRequestDto requestDto) {
+        return userProfileCommandService.updateProfile(userId, requestDto);
+    }
 
-	@Override
-	@Cacheable(key = "'email_' + #email")
-	public UserProfileResponseDto getProfileByEmail(String email) {
-		log.info("Cache MISS - fetching profile for email={} from DB", email);
-		UserProfile profile = userProfileRepository.findByEmail(email)
-			.orElseThrow(() -> new UserProfileNotFoundException(
-				"User profile not found for email: " + email));
-		return userProfileMapper.toDto(profile);
-	}
+    @Override
+    public void createProfile(Long userId, String email, String username) {
+        userProfileCommandService.createProfile(userId, email, username);
+    }
 }

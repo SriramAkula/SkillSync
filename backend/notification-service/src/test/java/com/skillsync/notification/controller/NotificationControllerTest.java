@@ -1,8 +1,8 @@
 package com.skillsync.notification.controller;
 
-import com.skillsync.notification.entity.Notification;
+import com.skillsync.notification.dto.NotificationDto;
+import com.skillsync.notification.dto.response.PageResponse;
 import com.skillsync.notification.exception.NotificationNotFoundException;
-import com.skillsync.notification.exception.UnauthorizedException;
 import com.skillsync.notification.service.NotificationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -18,6 +18,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -38,30 +39,39 @@ class NotificationControllerTest {
     @Autowired MockMvc mockMvc;
     @MockBean NotificationService notificationService;
 
-    private Notification notification;
+    private NotificationDto notificationDto;
 
     @BeforeEach
     void setUp() {
-        notification = new Notification();
-        notification.setId(1L);
-        notification.setUserId(10L);
-        notification.setType("SESSION_REQUESTED");
-        notification.setMessage("New session request");
-        notification.setIsRead(false);
-        notification.setSentAt(LocalDateTime.now());
+        notificationDto = new NotificationDto(
+                1L,
+                10L,
+                "SESSION_REQUESTED",
+                "New session request",
+                null,
+                false,
+                LocalDateTime.now()
+        );
     }
 
     // ─── GET /notification ───────────────────────────────────────────────────
 
     @Test
     void getUserNotifications_shouldReturn200_whenAuthenticated() throws Exception {
-        when(notificationService.getUserNotifications(10L)).thenReturn(List.of(notification));
+        PageResponse<NotificationDto> pageResponse = PageResponse.<NotificationDto>builder()
+                .content(List.of(notificationDto))
+                .totalElements(1L)
+                .totalPages(1)
+                .currentPage(0)
+                .pageSize(10)
+                .build();
+        when(notificationService.getUserNotifications(eq(10L), anyInt(), anyInt())).thenReturn(pageResponse);
 
         mockMvc.perform(get("/notification")
                         .header("X-User-Id", 10L)
                         .header("roles", "ROLE_LEARNER"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data[0].userId").value(10));
+                .andExpect(jsonPath("$.data.content[0].userId").value(10));
     }
 
     @Test
@@ -81,27 +91,41 @@ class NotificationControllerTest {
 
     @Test
     void getUserNotifications_shouldReturnEmptyList_whenNoNotifications() throws Exception {
-        when(notificationService.getUserNotifications(10L)).thenReturn(List.of());
+        PageResponse<NotificationDto> emptyResponse = PageResponse.<NotificationDto>builder()
+                .content(List.of())
+                .totalElements(0L)
+                .totalPages(0)
+                .currentPage(0)
+                .pageSize(10)
+                .build();
+        when(notificationService.getUserNotifications(eq(10L), anyInt(), anyInt())).thenReturn(emptyResponse);
 
         mockMvc.perform(get("/notification")
                         .header("X-User-Id", 10L)
                         .header("roles", "ROLE_LEARNER"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data").isArray())
-                .andExpect(jsonPath("$.data").isEmpty());
+                .andExpect(jsonPath("$.data.content").isArray())
+                .andExpect(jsonPath("$.data.content").isEmpty());
     }
 
     // ─── GET /notification/unread ────────────────────────────────────────────
 
     @Test
     void getUnreadNotifications_shouldReturn200_whenAuthenticated() throws Exception {
-        when(notificationService.getUserUnreadNotifications(10L)).thenReturn(List.of(notification));
+        PageResponse<NotificationDto> pageResponse = PageResponse.<NotificationDto>builder()
+                .content(List.of(notificationDto))
+                .totalElements(1L)
+                .totalPages(1)
+                .currentPage(0)
+                .pageSize(10)
+                .build();
+        when(notificationService.getUserUnreadNotifications(eq(10L), anyInt(), anyInt())).thenReturn(pageResponse);
 
         mockMvc.perform(get("/notification/unread")
                         .header("X-User-Id", 10L)
                         .header("roles", "ROLE_LEARNER"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data[0].isRead").value(false));
+                .andExpect(jsonPath("$.data.content[0].isRead").value(false));
     }
 
     @Test
@@ -193,3 +217,4 @@ class NotificationControllerTest {
                 .andExpect(status().isNotFound());
     }
 }
+

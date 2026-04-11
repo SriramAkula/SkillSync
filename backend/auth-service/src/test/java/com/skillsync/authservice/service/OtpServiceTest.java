@@ -7,11 +7,13 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
-import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.JavaMailSenderImpl;
 
 import java.util.concurrent.TimeUnit;
 
+import org.thymeleaf.spring6.SpringTemplateEngine;
+import jakarta.mail.internet.MimeMessage;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -22,19 +24,28 @@ class OtpServiceTest {
     @Mock private RedisTemplate<String, String> redisTemplate;
     @Mock private JavaMailSender mailSender;
     @Mock private ValueOperations<String, String> valueOps;
+    @Mock private SpringTemplateEngine templateEngine;
 
     @InjectMocks private OtpService otpService;
+
+    @org.junit.jupiter.api.BeforeEach
+    void setUp() {
+        org.springframework.test.util.ReflectionTestUtils.setField(otpService, "fromEmail", "test@example.com");
+    }
 
     // ─── sendOtp ─────────────────────────────────────────────────
 
     @Test
     void sendOtp_shouldStoreInRedisAndSendEmail() {
         when(redisTemplate.opsForValue()).thenReturn(valueOps);
+        MimeMessage mimeMessage = new JavaMailSenderImpl().createMimeMessage();
+        when(mailSender.createMimeMessage()).thenReturn(mimeMessage);
+        when(templateEngine.process(anyString(), any())).thenReturn("<html></html>");
 
         otpService.sendOtp("test@example.com");
 
         verify(valueOps).set(eq("otp:test@example.com"), anyString(), anyLong(), eq(TimeUnit.MINUTES));
-        verify(mailSender).send(any(SimpleMailMessage.class));
+        verify(mailSender).send(any(MimeMessage.class));
     }
 
     // ─── verifyOtp ───────────────────────────────────────────────
@@ -102,11 +113,14 @@ class OtpServiceTest {
     @Test
     void sendPasswordResetOtp_shouldStoreInRedisAndSendEmail() {
         when(redisTemplate.opsForValue()).thenReturn(valueOps);
+        MimeMessage mimeMessage = new JavaMailSenderImpl().createMimeMessage();
+        when(mailSender.createMimeMessage()).thenReturn(mimeMessage);
+        when(templateEngine.process(anyString(), any())).thenReturn("<html></html>");
 
         otpService.sendPasswordResetOtp("test@example.com");
 
         verify(valueOps).set(eq("otp:pwd:test@example.com"), anyString(), anyLong(), eq(TimeUnit.MINUTES));
-        verify(mailSender).send(any(SimpleMailMessage.class));
+        verify(mailSender).send(any(MimeMessage.class));
     }
 
     // ─── verifyPasswordResetOtp ──────────────────────────────────
@@ -164,4 +178,29 @@ class OtpServiceTest {
         otpService.clearPasswordResetVerification("test@example.com");
         verify(redisTemplate).delete("otp:pwd-reset:test@example.com");
     }
+    @Test
+    void verifyForgotPasswordOtp_shouldReturnFalse_whenOtpMismatch() {
+        when(redisTemplate.opsForValue()).thenReturn(valueOps);
+        when(mailSender.createMimeMessage()).thenReturn(new jakarta.mail.internet.MimeMessage((jakarta.mail.Session)null));
+        lenient().when(templateEngine.process(anyString(), any(org.thymeleaf.context.Context.class))).thenReturn("test-html");
+        
+        otpService.sendPasswordResetOtp("test@example.com");
+        // We can't easily get the OTP from the private map, but we can test a known mismatch
+        boolean result = otpService.verifyPasswordResetOtp("test@example.com", "000000");
+        assertThat(result).isFalse();
+    }
+
+    @Test
+    void sendOtp_shouldThrow_whenEmailFails() {
+        when(redisTemplate.opsForValue()).thenReturn(valueOps);
+        when(mailSender.createMimeMessage()).thenReturn(new jakarta.mail.internet.MimeMessage((jakarta.mail.Session)null));
+        lenient().when(templateEngine.process(anyString(), any(org.thymeleaf.context.Context.class))).thenReturn("test-html");
+        
+        doThrow(new RuntimeException("Mail server down")).when(mailSender).send(any(MimeMessage.class));
+        
+        assertThatThrownBy(() -> otpService.sendOtp("test@example.com"))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("Failed to send email");
+    }
 }
+

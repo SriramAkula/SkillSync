@@ -2,19 +2,23 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { ApiResponse, NotificationDto } from '../../shared/models';
+import { ApiResponse, NotificationDto, PageResponse } from '../../shared/models';
 
 @Injectable({ providedIn: 'root' })
 export class NotificationService {
   private readonly http = inject(HttpClient);
   private readonly base = `${environment.apiUrl}/notification`;
 
-  getAll(): Observable<ApiResponse<NotificationDto[]>> {
-    return this.http.get<ApiResponse<NotificationDto[]>>(this.base);
+  getAll(page = 0, size = 15): Observable<ApiResponse<PageResponse<NotificationDto>>> {
+    return this.http.get<ApiResponse<PageResponse<NotificationDto>>>(this.base, {
+      params: { page: page.toString(), size: size.toString() }
+    });
   }
 
-  getUnread(): Observable<ApiResponse<NotificationDto[]>> {
-    return this.http.get<ApiResponse<NotificationDto[]>>(`${this.base}/unread`);
+  getUnread(page = 0, size = 15): Observable<ApiResponse<PageResponse<NotificationDto>>> {
+    return this.http.get<ApiResponse<PageResponse<NotificationDto>>>(`${this.base}/unread`, {
+      params: { page: page.toString(), size: size.toString() }
+    });
   }
 
   getUnreadCount(): Observable<ApiResponse<number>> {
@@ -29,7 +33,6 @@ export class NotificationService {
     return this.http.delete<ApiResponse<void>>(`${this.base}/${id}`);
   }
 
-  // ── SSE upgrade point ──────────────────────────────────────────────────────
   // When backend adds SSE endpoint, replace polling with this:
   // streamNotifications(): Observable<NotificationDto> {
   //   return new Observable(observer => {

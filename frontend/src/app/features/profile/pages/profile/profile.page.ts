@@ -2,7 +2,7 @@ import { Component, inject, OnInit, OnDestroy, signal, effect, computed, HostLis
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { Router, RouterLink, NavigationEnd } from '@angular/router';
-import { filter } from 'rxjs';
+import { filter, Subscription } from 'rxjs';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { UserService } from '../../../../core/services/user.service';
@@ -24,6 +24,12 @@ interface UserActivity {
   timestamp: number;
 }
 
+interface ConfettiDrop {
+  x: number;
+  delay: number;
+  color: string;
+}
+
 @Component({
   selector: 'app-profile-page',
   standalone: true,
@@ -42,7 +48,7 @@ export class ProfilePage implements OnInit, OnDestroy {
   readonly skillStore = inject(SkillStore);
   readonly themeService = inject(ThemeService);
 
-  private routerSub: any;
+  private routerSub: Subscription | null = null;
 
   readonly profile = signal<UserProfileDto | null>(null);
   readonly loading = signal(true);
@@ -56,7 +62,7 @@ export class ProfilePage implements OnInit, OnDestroy {
   readonly isDragOver = signal(false);
   readonly activities = signal<UserActivity[]>([]);
 
-  confettiDrops: any[] = [];
+  confettiDrops: ConfettiDrop[] = [];
 
   readonly allSkillOptions = computed(() => {
     const backend = this.skillStore.skillNames();
@@ -97,8 +103,8 @@ export class ProfilePage implements OnInit, OnDestroy {
 
     // Auto-refresh profile when navigating to this page
     this.routerSub = this.router.events
-      .pipe(filter(event => event instanceof NavigationEnd))
-      .subscribe((event: any) => {
+      .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
+      .subscribe((event: NavigationEnd) => {
         const url = event.urlAfterRedirects || event.url;
         // Refresh profile when on /profile page
         if (url === '/profile' || url.startsWith('/profile?')) {
@@ -117,7 +123,7 @@ export class ProfilePage implements OnInit, OnDestroy {
   loadActivities() {
     this.notificationService.getAll().subscribe({
       next: (res) => {
-        const backend = (res.data || []).map(n => this.mapNotificationToActivity(n));
+        const backend = (res.data?.content || []).map((n: NotificationDto) => this.mapNotificationToActivity(n));
         const combined = backend.sort((a, b) => b.timestamp - a.timestamp).slice(0, 10);
         this.activities.set(combined);
       }
@@ -166,7 +172,7 @@ export class ProfilePage implements OnInit, OnDestroy {
     this.form.patchValue({
       username: p.username || '', firstName: p.firstName || '', lastName: p.lastName || '',
       bio: p.bio || '', phoneNumber: p.phoneNumber || '',
-      skills: (p.skills ? p.skills.split(',').map(s => s.trim()) : []) as any
+      skills: (p.skills ? p.skills.split(',').map(s => s.trim()) : [])
     });
   }
 
@@ -208,9 +214,9 @@ export class ProfilePage implements OnInit, OnDestroy {
   toggleSkillDropdown(): void { this.isSkillDropdownOpen.update(v => !v); }
   toggleSkill(skill: string, e: Event): void {
     e.stopPropagation(); const curr = this.selectedSkills();
-    this.form.patchValue({ skills: (curr.includes(skill) ? curr.filter(s => s !== skill) : [...curr, skill]) as any });
+    this.form.patchValue({ skills: (curr.includes(skill) ? curr.filter(s => s !== skill) : [...curr, skill]) });
   }
-  removeSkill(skill: string) { this.form.patchValue({ skills: this.selectedSkills().filter(s => s !== skill) as any }); }
+  removeSkill(skill: string) { this.form.patchValue({ skills: this.selectedSkills().filter(s => s !== skill) }); }
   @HostListener('document:keydown', ['$event']) onKeydown(e: KeyboardEvent) { if (this.isEditing() && e.key === 'Escape') this.cancelEdit(); }
   @HostListener('document:click', ['$event']) onDocumentClick(e: MouseEvent) { if (!(e.target as HTMLElement).closest('.custom-dropdown')) this.isSkillDropdownOpen.set(false); }
 }

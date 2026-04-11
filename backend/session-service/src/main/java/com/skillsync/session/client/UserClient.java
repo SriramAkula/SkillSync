@@ -17,3 +17,4 @@ public interface UserClient {
             @PathVariable("userId") Long userId
     );
 }
+

@@ -12,3 +12,4 @@ public class MentorRatingDto {
     private Double averageRating;
     private Integer totalReviews;
 }
+

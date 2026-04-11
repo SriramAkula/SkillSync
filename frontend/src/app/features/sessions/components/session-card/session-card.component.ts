@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, inject, computed } from '@angular/core';
+import { Component, Input, Output, EventEmitter, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { SessionDto } from '../../../../shared/models';
 import { SkillStore } from '../../../../core/auth/skill.store';
@@ -24,11 +24,11 @@ const STATUS_MAP: Record<string, { color: string; bg: string; icon: string; labe
 export class SessionCardComponent {
   @Input({ required: true }) session!: SessionDto;
   @Output() view = new EventEmitter<number>();
-  @Output() cancel = new EventEmitter<number>();
+  @Output() cancelSession = new EventEmitter<number>();
   @Output() pay = new EventEmitter<number>();
 
-  private readonly skillStore = inject(SkillStore) as any;
-  private readonly authStore = inject(AuthStore) as any;
+  private readonly skillStore = inject(SkillStore);
+  private readonly authStore = inject(AuthStore);
 
   get isLearner(): boolean {
     return Number(this.authStore.userId()) === Number(this.session.learnerId);
@@ -36,7 +36,7 @@ export class SessionCardComponent {
 
   get skillName(): string {
     const s = this.skillStore.getSkillById(this.session.skillId);
-    return s ? (s.skillName || s.name) : ('Skill #' + this.session.skillId);
+    return s?.skillName ? s.skillName : ('Skill #' + this.session.skillId);
   }
 
   get s() { return STATUS_MAP[this.session.status] ?? STATUS_MAP['CANCELLED']; }

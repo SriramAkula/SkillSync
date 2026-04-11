@@ -12,10 +12,11 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
+import lombok.RequiredArgsConstructor;
 
 import com.skillsync.notification.dto.ApiResponse;
 import com.skillsync.notification.dto.NotificationDto;
@@ -34,12 +35,11 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 @RestController
 @RequestMapping("/notification")
 @Tag(name = "Notification Management", description = "User notifications and preferences")
+@Slf4j
+@RequiredArgsConstructor
 public class NotificationController {
     
-    private static final Logger log = LoggerFactory.getLogger(NotificationController.class);
-    
-    @Autowired
-    private NotificationService notificationService;
+    private final NotificationService notificationService;
     
     /**
      * Get all notifications for the authenticated user
@@ -51,9 +51,11 @@ public class NotificationController {
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Notifications retrieved successfully"),
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Unauthorized")
     })
-    public ResponseEntity<ApiResponse<List<NotificationDto>>> getUserNotifications(
+    public ResponseEntity<ApiResponse<com.skillsync.notification.dto.response.PageResponse<NotificationDto>>> getUserNotifications(
             @Parameter(hidden = true) @RequestHeader(value = "X-User-Id", required = false) Long userId,
-            @Parameter(hidden = true) @RequestHeader(value = "roles", required = false) String roles) {
+            @Parameter(hidden = true) @RequestHeader(value = "roles", required = false) String roles,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "15") int size) {
         
         // Check roles first (403 for missing authorization)
         if (roles == null || roles.isEmpty()) {
@@ -64,15 +66,12 @@ public class NotificationController {
         if (userId == null) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User ID is required. Please provide valid authorization.");
         }
-        log.info("Fetching notifications for user {}", userId);
+        log.info("Fetching paginated notifications for user {} - page: {}, size: {}", userId, page, size);
         
-        List<NotificationDto> notifications = notificationService.getUserNotifications(userId)
-            .stream()
-            .map(NotificationDto::fromEntity)
-            .collect(Collectors.toList());
+        com.skillsync.notification.dto.response.PageResponse<NotificationDto> response = notificationService.getUserNotifications(userId, page, size);
         
         return new ResponseEntity<>(
-            ApiResponse.<List<NotificationDto>>ok(notifications, "Notifications retrieved successfully"),
+            ApiResponse.<com.skillsync.notification.dto.response.PageResponse<NotificationDto>>ok(response, "Notifications retrieved successfully"),
             HttpStatus.OK
         );
     }
@@ -86,9 +85,11 @@ public class NotificationController {
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Unread notifications retrieved successfully"),
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Unauthorized")
     })
-    public ResponseEntity<ApiResponse<List<NotificationDto>>> getUnreadNotifications(
+    public ResponseEntity<ApiResponse<com.skillsync.notification.dto.response.PageResponse<NotificationDto>>> getUnreadNotifications(
             @Parameter(hidden = true) @RequestHeader(value = "X-User-Id", required = false) Long userId,
-            @Parameter(hidden = true) @RequestHeader(value = "roles", required = false) String roles) {
+            @Parameter(hidden = true) @RequestHeader(value = "roles", required = false) String roles,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "15") int size) {
 
         if (roles == null || roles.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Authenticated access required");
@@ -97,15 +98,12 @@ public class NotificationController {
         if (userId == null) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User ID is required. Please provide valid authorization.");
         }
-        log.info("Fetching unread notifications for user {}", userId);
+        log.info("Fetching paginated unread notifications for user {} - page: {}, size: {}", userId, page, size);
         
-        List<NotificationDto> notifications = notificationService.getUserUnreadNotifications(userId)
-            .stream()
-            .map(NotificationDto::fromEntity)
-            .collect(Collectors.toList());
+        com.skillsync.notification.dto.response.PageResponse<NotificationDto> response = notificationService.getUserUnreadNotifications(userId, page, size);
         
         return new ResponseEntity<>(
-            ApiResponse.<List<NotificationDto>>ok(notifications, "Unread notifications retrieved successfully"),
+            ApiResponse.<com.skillsync.notification.dto.response.PageResponse<NotificationDto>>ok(response, "Unread notifications retrieved successfully"),
             HttpStatus.OK
         );
     }

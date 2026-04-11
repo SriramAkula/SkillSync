@@ -1,6 +1,8 @@
 package com.skillsync.mentor.controller;
 
+import org.springframework.data.domain.Page;
 import com.skillsync.mentor.dto.ApiResponse;
+import com.skillsync.mentor.dto.PageResponse;
 import com.skillsync.mentor.dto.request.ApplyMentorRequestDto;
 import com.skillsync.mentor.dto.request.UpdateAvailabilityRequestDto;
 import com.skillsync.mentor.dto.response.MentorProfileResponseDto;
@@ -10,26 +12,23 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
+import lombok.extern.slf4j.Slf4j;
+import lombok.RequiredArgsConstructor;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/mentor")
 @Tag(name = "Mentor Management", description = "Mentor profile and application management")
+@Slf4j
+@RequiredArgsConstructor
 public class MentorController {
 
-    private static final Logger log = LoggerFactory.getLogger(MentorController.class);
     private final MentorService mentorService;
-
-    public MentorController(MentorService mentorService) {
-        this.mentorService = mentorService;
-    }
 
     @PostMapping("/apply")
     @Operation(summary = "Apply as mentor", description = "Submit mentor application with skills and experience")
@@ -43,8 +42,8 @@ public class MentorController {
             @Parameter(hidden = true) @RequestHeader(value = "roles", required = false) String roles,
             @Valid @RequestBody ApplyMentorRequestDto request) {
 
-        if (roles == null || !roles.contains("ROLE_LEARNER")) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only learners can apply to be mentors");
+        if (roles == null || (!roles.contains("ROLE_LEARNER") && !roles.contains("ROLE_MENTOR"))) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only learners or mentors can apply to be mentors");
         }
         log.info("POST /apply - User {}", userId);
         MentorProfileResponseDto response = mentorService.applyAsMentor(userId, request);
@@ -100,10 +99,12 @@ public class MentorController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Approved mentors retrieved successfully"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "Internal server error")
     })
-    public ResponseEntity<ApiResponse<List<MentorProfileResponseDto>>> getAllApprovedMentors() {
-        log.info("GET /approved - Get all approved mentors");
-        List<MentorProfileResponseDto> response = mentorService.getAllApprovedMentors();
-        return ResponseEntity.ok(ApiResponse.<List<MentorProfileResponseDto>>builder()
+    public ResponseEntity<ApiResponse<PageResponse<MentorProfileResponseDto>>> getAllApprovedMentors(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "12") int size) {
+        log.info("GET /approved - Get all approved mentors - page: {}, size: {}", page, size);
+        PageResponse<MentorProfileResponseDto> response = mentorService.getAllApprovedMentors(page, size);
+        return ResponseEntity.ok(ApiResponse.<PageResponse<MentorProfileResponseDto>>builder()
                 .success(true)
                 .data(response)
                 .message("Approved mentors retrieved successfully")
@@ -118,14 +119,16 @@ public class MentorController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "Only admins can view pending applications"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Unauthorized")
     })
-    public ResponseEntity<ApiResponse<List<MentorProfileResponseDto>>> getPendingApplications(
-            @Parameter(hidden = true) @RequestHeader(value = "roles", required = false) String role) {
-        log.info("GET /pending - Get pending mentor applications");
+    public ResponseEntity<ApiResponse<PageResponse<MentorProfileResponseDto>>> getPendingApplications(
+            @Parameter(hidden = true) @RequestHeader(value = "roles", required = false) String role,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "12") int size) {
+        log.info("GET /pending - Get pending mentor applications - page: {}, size: {}", page, size);
         if (role == null || !role.contains("ROLE_ADMIN")) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only admins can view pending applications");
         }
-        List<MentorProfileResponseDto> response = mentorService.getPendingApplications();
-        return ResponseEntity.ok(ApiResponse.<List<MentorProfileResponseDto>>builder()
+        PageResponse<MentorProfileResponseDto> response = mentorService.getPendingApplications(page, size);
+        return ResponseEntity.ok(ApiResponse.<PageResponse<MentorProfileResponseDto>>builder()
                 .success(true)
                 .data(response)
                 .message("Pending applications retrieved successfully")
@@ -139,15 +142,17 @@ public class MentorController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Mentors found successfully"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Invalid search parameters")
     })
-    public ResponseEntity<ApiResponse<List<MentorProfileResponseDto>>> searchMentors(
+    public ResponseEntity<ApiResponse<PageResponse<MentorProfileResponseDto>>> searchMentors(
             @RequestParam(required = false) String skill,
             @RequestParam(required = false) Integer minExperience,
             @RequestParam(required = false) Integer maxExperience,
             @RequestParam(required = false) Double maxRate,
-            @RequestParam(required = false) Double minRating) {
-        log.info("GET /search?skill={}&minExp={}&maxExp={}&maxRate={}&minRating={}", skill, minExperience, maxExperience, maxRate, minRating);
-        List<MentorProfileResponseDto> response = mentorService.searchMentorsWithFilters(skill, minExperience, maxExperience, maxRate, minRating);
-        return ResponseEntity.ok(ApiResponse.<List<MentorProfileResponseDto>>builder()
+            @RequestParam(required = false) Double minRating,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "12") int size) {
+        log.info("GET /search?skill={}&minExp={}&maxExp={}&maxRate={}&minRating={}&page={}&size={}", skill, minExperience, maxExperience, maxRate, minRating, page, size);
+        PageResponse<MentorProfileResponseDto> response = mentorService.searchMentorsWithFilters(skill, minExperience, maxExperience, maxRate, minRating, page, size);
+        return ResponseEntity.ok(ApiResponse.<PageResponse<MentorProfileResponseDto>>builder()
                 .success(true)
                 .data(response)
                 .message("Mentors found successfully")
@@ -260,3 +265,5 @@ public class MentorController {
                 .build());
     }
 }
+
+

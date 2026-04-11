@@ -1,10 +1,11 @@
-import { computed, inject, OnDestroy } from '@angular/core';
+import { computed, inject } from '@angular/core';
 import { signalStore, withState, withMethods, withComputed, patchState } from '@ngrx/signals';
 import { rxMethod } from '@ngrx/signals/rxjs-interop';
 import { tapResponse } from '@ngrx/operators';
 import { pipe, switchMap, mergeMap, tap, interval, Subscription } from 'rxjs';
 import { NotificationService } from '../services/notification.service';
-import { NotificationDto } from '../../shared/models';
+import type { NotificationDto } from '../../shared/models';
+import { HttpErrorResponse } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { AuthStore } from './auth.store';
 
@@ -12,6 +13,10 @@ interface NotificationState {
   notifications: NotificationDto[];
   unreadCount: number;
   loading: boolean;
+  currentPage: number;
+  pageSize: number;
+  totalElements: number;
+  totalPages: number;
 }
 
 export const NotificationStore = signalStore(
@@ -19,7 +24,11 @@ export const NotificationStore = signalStore(
   withState<NotificationState>({
     notifications: [],
     unreadCount: 0,
-    loading: false
+    loading: false,
+    currentPage: 0,
+    pageSize: 15,
+    totalElements: 0,
+    totalPages: 0
   }),
 
   withComputed((store) => ({
@@ -32,17 +41,30 @@ export const NotificationStore = signalStore(
     let pollSub: Subscription | null = null;
 
     return {
-      loadAll: rxMethod<void>(
+      loadAll: rxMethod<{ page: number; size: number; unreadOnly?: boolean } | void>(
         pipe(
           tap(() => patchState(store, { loading: true })),
-          switchMap(() =>
-            svc.getAll().pipe(
+          switchMap((params) => {
+            const page = typeof params === 'object' ? params?.page ?? store.currentPage() : store.currentPage();
+            const size = typeof params === 'object' ? params?.size ?? store.pageSize() : store.pageSize();
+            const unreadOnly = typeof params === 'object' ? params?.unreadOnly ?? false : false;
+            
+            const req = unreadOnly ? svc.getUnread(page, size) : svc.getAll(page, size);
+            
+            return req.pipe(
               tapResponse({
-                next: (res) => patchState(store, { notifications: res.data, loading: false }),
+                next: (res) => patchState(store, { 
+                  notifications: res.data.content, 
+                  totalElements: res.data.totalElements,
+                  totalPages: res.data.totalPages,
+                  currentPage: res.data.currentPage,
+                  pageSize: res.data.pageSize,
+                  loading: false 
+                }),
                 error: () => patchState(store, { loading: false })
               })
-            )
-          )
+            );
+          })
         )
       ),
 
@@ -52,7 +74,7 @@ export const NotificationStore = signalStore(
             svc.getUnreadCount().pipe(
               tapResponse({
                 next: (res) => patchState(store, { unreadCount: res.data }),
-                error: () => {}
+                error: (err: HttpErrorResponse) => console.error('Failed to refresh unread count', err)
               })
             )
           )
@@ -72,7 +94,7 @@ export const NotificationStore = signalStore(
                     unreadCount: Math.max(0, store.unreadCount() - 1)
                   });
                 },
-                error: () => {}
+                error: (err: HttpErrorResponse) => console.error('Failed to mark notification as read', err)
               })
             )
           )
@@ -81,7 +103,7 @@ export const NotificationStore = signalStore(
 
       deleteNotification: rxMethod<number>(
         pipe(
-          mergeMap(id =>
+          mergeMap((id: number) =>
             svc.delete(id).pipe(
               tapResponse({
                 next: () => patchState(store, {
@@ -90,7 +112,7 @@ export const NotificationStore = signalStore(
                     ? Math.max(0, store.unreadCount() - 1) 
                     : store.unreadCount()
                 }),
-                error: () => {}
+                error: (err: HttpErrorResponse) => console.error('Failed to delete notification', err)
               })
             )
           )
@@ -104,7 +126,7 @@ export const NotificationStore = signalStore(
         pollSub = interval(environment.pollIntervalMs).subscribe(() => {
           svc.getUnread().subscribe({
             next: (res) => {
-              const unread = res.data || [];
+              const unread = res.data?.content || [];
               const oldCount = store.unreadCount();
               const newCount = unread.length;
               
@@ -118,7 +140,7 @@ export const NotificationStore = signalStore(
               // Automatically sync role if mentor approval notification is detected
               const hasMentorApproval = unread.some(n => n.type === 'MENTOR_APPROVED');
               if (hasMentorApproval && !authStore.isMentor()) {
-                authStore.refreshToken(undefined);
+                authStore.refreshToken();
               }
             }
           });

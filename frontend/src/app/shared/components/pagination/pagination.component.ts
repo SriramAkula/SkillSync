@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, computed } from '@angular/core';
+import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 @Component({
@@ -31,7 +31,7 @@ export class PaginationComponent {
     const pages: number[] = [];
     const maxVisible = 5;
     let start = Math.max(0, this.currentPage - Math.floor(maxVisible / 2));
-    let end = Math.min(this.totalPages, start + maxVisible);
+    const end = Math.min(this.totalPages, start + maxVisible);
 
     if (end - start < maxVisible) {
       start = Math.max(0, end - maxVisible);

@@ -7,17 +7,15 @@ import com.razorpay.RazorpayClient;
 import com.razorpay.RazorpayException;
 import com.razorpay.Utils;
 import org.json.JSONObject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
 
 @Service
+@Slf4j
 public class PaymentProcessor {
-
-    private static final Logger log = LoggerFactory.getLogger(PaymentProcessor.class);
 
     @Value("${razorpay.key.id}")
     private String keyId;

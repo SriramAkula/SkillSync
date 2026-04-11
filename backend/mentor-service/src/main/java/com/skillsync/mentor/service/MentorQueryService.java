@@ -1,37 +1,34 @@
 package com.skillsync.mentor.service;
 
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Page;
+import com.skillsync.mentor.dto.PageResponse;
 import com.skillsync.mentor.dto.response.MentorProfileResponseDto;
 import com.skillsync.mentor.entity.MentorProfile;
 import com.skillsync.mentor.exception.MentorNotFoundException;
 import com.skillsync.mentor.mapper.MentorMapper;
 import com.skillsync.mentor.repository.MentorRepository;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
+import lombok.extern.slf4j.Slf4j;
+import lombok.RequiredArgsConstructor;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Service
+@Slf4j
+@RequiredArgsConstructor
 public class MentorQueryService {
 
-    private static final Logger log = LoggerFactory.getLogger(MentorQueryService.class);
     private static final String CACHE_PREFIX = "mentor:";
     private static final long CACHE_TTL_MINUTES = 60;
 
     private final MentorRepository mentorRepository;
     private final RedisTemplate<String, Object> redisTemplate;
     private final MentorMapper mentorMapper;
-
-    public MentorQueryService(MentorRepository mentorRepository,
-                              RedisTemplate<String, Object> redisTemplate,
-                              MentorMapper mentorMapper) {
-        this.mentorRepository = mentorRepository;
-        this.redisTemplate = redisTemplate;
-        this.mentorMapper = mentorMapper;
-    }
 
     public MentorProfileResponseDto getMentorById(Long mentorId) {
         String key = CACHE_PREFIX + mentorId;
@@ -63,16 +60,32 @@ public class MentorQueryService {
         return response;
     }
 
-    public List<MentorProfileResponseDto> getAllApprovedMentors() {
-        log.info("Fetching all approved mentors from DB");
-        return mentorRepository.findAllApprovedMentors()
-                .stream().map(mentorMapper::toDto).collect(Collectors.toList());
+    public PageResponse<MentorProfileResponseDto> getAllApprovedMentors(int page, int size) {
+        log.info("Fetching all approved mentors from DB - page: {}, size: {}", page, size);
+        Pageable pageable = PageRequest.of(page, size);
+        Page<MentorProfile> mentorPage = mentorRepository.findAllApprovedMentors(pageable);
+        return toPageResponse(mentorPage);
     }
 
-    public List<MentorProfileResponseDto> getPendingApplications() {
-        log.info("Fetching pending mentor applications from DB");
-        return mentorRepository.findPendingApplications()
-                .stream().map(mentorMapper::toDto).collect(Collectors.toList());
+    public PageResponse<MentorProfileResponseDto> getPendingApplications(int page, int size) {
+        log.info("Fetching pending mentor applications from DB - page: {}, size: {}", page, size);
+        Pageable pageable = PageRequest.of(page, size);
+        Page<MentorProfile> mentorPage = mentorRepository.findPendingApplications(pageable);
+        return toPageResponse(mentorPage);
+    }
+
+    private PageResponse<MentorProfileResponseDto> toPageResponse(Page<MentorProfile> page) {
+        List<MentorProfileResponseDto> content = page.getContent().stream()
+                .map(mentorMapper::toDto)
+                .collect(Collectors.toList());
+
+        return PageResponse.<MentorProfileResponseDto>builder()
+                .content(content)
+                .currentPage(page.getNumber())
+                .totalElements(page.getTotalElements())
+                .totalPages(page.getTotalPages())
+                .pageSize(page.getSize())
+                .build();
     }
 
     public List<MentorProfileResponseDto> searchMentorsBySpecialization(String skill) {
@@ -102,3 +115,7 @@ public class MentorQueryService {
         }
     }
 }
+
+
+
+

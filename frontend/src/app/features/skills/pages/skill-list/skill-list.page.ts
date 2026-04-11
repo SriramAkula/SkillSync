@@ -46,29 +46,26 @@ export class SkillListPage implements OnInit {
   private readonly searchSubject = new Subject<string>();
 
   ngOnInit(): void {
-    this.skillStore.loadAll(undefined);
+    this.skillStore.loadAll({ page: 0, size: this.pageSize() });
     this.searchSubject.pipe(debounceTime(350), distinctUntilChanged()).subscribe(q => {
       if (q.length >= 2) {
-        this.skillService.search(q).subscribe({
-          next: (r) => { /* local filter only, don't update store */ },
-          error: () => {}
-        });
+        this.skillStore.search({ keyword: q, page: 0, size: this.pageSize() });
       } else if (!q) {
-        this.skillStore.loadAll(undefined);
+        this.skillStore.loadAll({ page: 0, size: this.pageSize() });
       }
     });
 
     this.userService.getMyProfile().subscribe({
-      next: (res: any) => {
-        const str = res.data.skills;
-        if (str) {
-          this.selectedSkills.set(str.split(',').map((s: string) => s.trim()));
+      next: (res) => {
+        const profile = res.data;
+        if (profile && profile.skills) {
+          this.selectedSkills.set(profile.skills.split(',').map((s: string) => s.trim()));
         }
       }
     });
   }
 
-  loadAll(): void { this.skillStore.loadAll(undefined); }
+  loadAll(): void { this.skillStore.loadAll({ page: 0, size: this.pageSize() }); }
 
   filteredSkills(): SkillDto[] {
     let list = this.skillStore.skills();
@@ -86,9 +83,17 @@ export class SkillListPage implements OnInit {
   }
 
   pagedSkills(): SkillDto[] {
-    const list = this.filteredSkills();
-    const start = this.currentPage() * this.pageSize();
-    return list.slice(start, start + this.pageSize());
+    // Now return directly from store as it's server-side paged
+    return this.filteredSkills();
+  }
+
+  onPageChange(page: number): void {
+    const q = this.searchQuery.trim();
+    if (q.length >= 2) {
+      this.skillStore.search({ keyword: q, page, size: this.pageSize() });
+    } else {
+      this.skillStore.loadAll({ page, size: this.pageSize() });
+    }
   }
 
   onSearch(q: string): void {
@@ -99,26 +104,30 @@ export class SkillListPage implements OnInit {
     this.categories.set(cats);
   }
 
-  filterByCategory(cat: string, mySkills: boolean = false): void {
+  filterByCategory(cat: string, mySkills = false): void {
     this.showMySkills.set(mySkills);
     this.selectedCategory.set(cat);
     this.currentPage.set(0); // Reset to first page on filter change
     // Categories act as local filter 
   }
 
-  clearSearch(): void { this.searchQuery = ''; this.currentPage.set(0); }
-  clearAll(): void { this.searchQuery = ''; this.selectedCategory.set(''); this.showMySkills.set(false); this.currentPage.set(0); }
+  clearSearch(): void { this.searchQuery = ''; this.onPageChange(0); }
+  clearAll(): void { this.searchQuery = ''; this.selectedCategory.set(''); this.showMySkills.set(false); this.onPageChange(0); }
 
   isSkillSelected(name: string): boolean {
     return this.selectedSkills().includes(name);
   }
 
-  toggleProfileSkill(name: string): void {
+  toggleProfileSkill(skill: SkillDto): void {
+    const name = skill.skillName;
+    if (!name) return;
+
     const list = this.selectedSkills();
+    const isAdding = !list.includes(name);
     let updated: string[];
     let actionStr = '';
     
-    if (list.includes(name)) {
+    if (!isAdding) {
       updated = list.filter(n => n !== name);
       actionStr = 'Removed from';
     } else {
@@ -126,24 +135,46 @@ export class SkillListPage implements OnInit {
       actionStr = 'Added to';
     }
     
+    // 1. Optimistic UI update for presence
     this.selectedSkills.set(updated);
+
+    // 2. Optimistic UI update for popularity count
+    const all = this.skillStore.skills();
+    const found = all.find(s => s.id === skill.id);
+    if (found) {
+      const target = { ...found }; // Clone to ensure reference change for Angular
+      target.popularityScore = isAdding ? (target.popularityScore || 0) + 1 : Math.max(0, (target.popularityScore || 0) - 1);
+      this.skillStore.updateSkill(target);
+    }
     
-    // Get current profile to include name in update (backend requires it)
+    // 3. Update User Profile (User Service)
     this.userService.getMyProfile().subscribe({
       next: (res) => {
         const profile = res.data;
-        // Fire and forget auto-save to user profile with name included
         this.userService.updateProfile({ 
           name: profile.name || profile.username,
           skills: updated.join(',') 
         }).subscribe({
           next: () => {
-            this.snack.open(`${actionStr} your profile 🎉`, 'OK', { duration: 2500 });
+             this.snack.open(`${actionStr} your profile 🎉`, 'OK', { duration: 2500 });
+             
+             // 4. Update Popularity Count (Skill Service)
+             this.skillService.updatePopularity(skill.id, isAdding).subscribe({
+               next: (syncRes) => {
+                 // Sync exactly with DB response
+                 this.skillStore.updateSkill(syncRes.data);
+               },
+               error: () => {
+                 // Silent fail for popularity sync, or log it
+                 console.error('Failed to sync popularity to server');
+               }
+             });
           },
           error: (err) => {
             this.snack.open(err.error?.message ?? 'Failed to update skills', 'OK', { duration: 3000 });
-            // Revert the local change on error
+            // Revert all optimistic changes on actual failure
             this.selectedSkills.set(list);
+            this.skillStore.loadAll(undefined); // Full refresh to be safe
           }
         });
       }

@@ -3,9 +3,10 @@ package com.skillsync.authservice.config;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import lombok.extern.slf4j.Slf4j;
+import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
@@ -15,48 +16,41 @@ import com.skillsync.authservice.entity.User;
 import com.skillsync.authservice.repository.UserRepository;
 
 @Component
+@Slf4j
+@RequiredArgsConstructor
 public class DataInitializer implements CommandLineRunner {
-
-    private static final Logger log = LoggerFactory.getLogger(DataInitializer.class);
-
-    private static final String ROLE_ADMIN = "ROLE_ADMIN";
-
-    @Value("${admin.email:admin@skillsync.com}")
-    private String adminEmail;
-
-    @Value("${admin.password:admin123}")
-    private String adminPassword;
-
-    @Value("${admin.username:admin}")
-    private String adminUsername;
-
-    @Value("${superadmin.email:superadmin@skillsync.com}")
-    private String superAdminEmail;
-
-    @Value("${superadmin.password:superadmin123}")
-    private String superAdminPassword;
-
-    @Value("${superadmin.username:superadmin}")
-    private String superAdminUsername;
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final UserServiceClient userServiceClient;
 
-    public DataInitializer(UserRepository userRepository, PasswordEncoder passwordEncoder,
-                           UserServiceClient userServiceClient) {
-        this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
-        this.userServiceClient = userServiceClient;
-    }
+    @Value("${admin.email}")
+    private String adminEmail;
+
+    @Value("${admin.password}")
+    private String adminPassword;
+
+    @Value("${admin.username}")
+    private String adminUsername;
+
+    @Value("${superadmin.email}")
+    private String superAdminEmail;
+
+    @Value("${superadmin.password}")
+    private String superAdminPassword;
+
+    @Value("${superadmin.username}")
+    private String superAdminUsername;
+
+    private static final String ROLE_ADMIN = "ROLE_ADMIN";
 
     @Override
     public void run(String... args) throws Exception {
         createAdminIfNotExists(adminEmail, adminPassword, adminUsername, "Administrator");
         createAdminIfNotExists(superAdminEmail, superAdminPassword, superAdminUsername, "Super Administrator");
-        System.out.println("\n===== DATA INITIALIZATION COMPLETE =====");
-        System.out.println("Admin accounts created and synced to User Service.");
-        System.out.println("========================================\n");
+        log.info("\n===== DATA INITIALIZATION COMPLETE =====");
+        log.info("Admin accounts created and synced to User Service.");
+        log.info("========================================\n");
     }
 
     private void createAdminIfNotExists(String email, String password, String username, String displayName) {
@@ -77,8 +71,8 @@ public class DataInitializer implements CommandLineRunner {
             log.error("Failed to sync admin to User Service: {}", e.getMessage());
         }
 
-        System.out.println("-------------------------------------------");
-        System.out.println("SUCCESS: Admin Created! Email: " + email + " | Username: " + username);
-        System.out.println("-------------------------------------------");
+        log.info("-------------------------------------------");
+        log.info("SUCCESS: Admin Created! Email: " + email + " | Username: " + username);
+        log.info("-------------------------------------------");
     }
 }

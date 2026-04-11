@@ -6,6 +6,7 @@ import {
   ApiResponse, MentorProfileDto, UserProfileDto,
   ApplyMentorRequest, UpdateAvailabilityRequest
 } from '../../shared/models';
+import { PageResponse } from '../../shared/models/page.models';
 import { UserService } from './user.service';
 
 @Injectable({ providedIn: 'root' })
@@ -15,8 +16,10 @@ export class MentorService {
 
   private readonly userService = inject(UserService);
 
-  getApprovedMentors(): Observable<ApiResponse<MentorProfileDto[]>> {
-    return this.http.get<ApiResponse<MentorProfileDto[]>>(`${this.base}/approved`).pipe(
+  getApprovedMentors(page = 0, size = 12): Observable<ApiResponse<PageResponse<MentorProfileDto>>> {
+    return this.http.get<ApiResponse<PageResponse<MentorProfileDto>>>(`${this.base}/approved`, {
+      params: { page: page.toString(), size: size.toString() }
+    }).pipe(
       switchMap(res => this.enrichMentors(res))
     );
   }
@@ -27,15 +30,20 @@ export class MentorService {
     maxExperience?: number;
     maxRate?: number;
     minRating?: number;
-  }): Observable<ApiResponse<MentorProfileDto[]>> {
-    let params: any = {};
-    if (filters.skill) params.skill = filters.skill;
-    if (filters.minExperience != null) params.minExperience = filters.minExperience;
-    if (filters.maxExperience != null) params.maxExperience = filters.maxExperience;
-    if (filters.maxRate != null) params.maxRate = filters.maxRate;
-    if (filters.minRating != null) params.minRating = filters.minRating;
+    page?: number;
+    size?: number;
+  }): Observable<ApiResponse<PageResponse<MentorProfileDto>>> {
+    const params: Record<string, string | number> = {};
+    if (filters.skill) params['skill'] = filters.skill;
+    if (filters.minExperience != null) params['minExperience'] = filters.minExperience;
+    if (filters.maxExperience != null) params['maxExperience'] = filters.maxExperience;
+    if (filters.maxRate != null) params['maxRate'] = filters.maxRate;
+    if (filters.minRating != null) params['minRating'] = filters.minRating;
 
-    return this.http.get<ApiResponse<MentorProfileDto[]>>(`${this.base}/search`, { params });
+    if (filters.page != null) params['page'] = filters.page.toString();
+    if (filters.size != null) params['size'] = filters.size.toString();
+
+    return this.http.get<ApiResponse<PageResponse<MentorProfileDto>>>(`${this.base}/search`, { params });
   }
 
   getMentor(id: number): Observable<ApiResponse<MentorProfileDto>> {
@@ -46,8 +54,10 @@ export class MentorService {
     return this.http.get<ApiResponse<MentorProfileDto>>(`${this.base}/profile/me`);
   }
 
-  getPendingApplications(): Observable<ApiResponse<MentorProfileDto[]>> {
-    return this.http.get<ApiResponse<MentorProfileDto[]>>(`${this.base}/pending`);
+  getPendingApplications(page = 0, size = 12): Observable<ApiResponse<PageResponse<MentorProfileDto>>> {
+    return this.http.get<ApiResponse<PageResponse<MentorProfileDto>>>(`${this.base}/pending`, {
+      params: { page: page.toString(), size: size.toString() }
+    });
   }
 
   applyAsMentor(req: ApplyMentorRequest): Observable<ApiResponse<MentorProfileDto>> {
@@ -71,21 +81,21 @@ export class MentorService {
   }
 
   /** logic to enrich mentor list with user names from user-service */
-  private enrichMentors(res: ApiResponse<MentorProfileDto[]>): Observable<ApiResponse<MentorProfileDto[]>> {
-    const mentors = res.data || [];
+  private enrichMentors(res: ApiResponse<PageResponse<MentorProfileDto>>): Observable<ApiResponse<PageResponse<MentorProfileDto>>> {
+    const pageData = res.data;
+    const mentors = pageData?.content || [];
     if (mentors.length === 0) return of(res);
 
     const userRequests = mentors.map(m =>
       this.userService.getProfile(m.userId).pipe(
         map((uRes: ApiResponse<UserProfileDto>) => ({ mentorId: m.id, user: uRes.data })),
-        // Silently handle errors for individual profile fetches
         switchMap(data => of(data))
       )
     );
 
     return forkJoin(userRequests).pipe(
       map(userProfiles => {
-        const enrichedData = mentors.map(m => {
+        const enrichedContent = mentors.map(m => {
           const profile = userProfiles.find(up => up.mentorId === m.id);
           return {
             ...m,
@@ -94,7 +104,9 @@ export class MentorService {
             name: profile?.user?.name || profile?.user?.username || 'Unknown Mentor'
           } as MentorProfileDto;
         });
-        return { ...res, data: enrichedData };
+        
+        const enrichedPage = { ...pageData, content: enrichedContent } as PageResponse<MentorProfileDto>;
+        return { ...res, data: enrichedPage };
       })
     );
   }

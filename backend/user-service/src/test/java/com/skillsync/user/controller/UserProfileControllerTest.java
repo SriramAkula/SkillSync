@@ -41,6 +41,8 @@ class UserProfileControllerTest {
     @Autowired MockMvc mockMvc;
     @Autowired ObjectMapper objectMapper;
     @MockBean UserProfileService userProfileService;
+    @MockBean com.skillsync.user.util.SecurityContextUtil securityUtil;
+    @MockBean com.skillsync.user.service.UserAdminService userAdminService;
 
     private UserProfileResponseDto responseDto;
 
@@ -57,11 +59,12 @@ class UserProfileControllerTest {
 
     @Test
     void getProfile_shouldReturn200_whenValidRequest() throws Exception {
-        when(userProfileService.getProfileByUserId(10L)).thenReturn(responseDto);
+        when(securityUtil.extractUserId(any())).thenReturn(10L);
+        when(userProfileService.getProfileByUserId(anyLong())).thenReturn(responseDto);
 
         mockMvc.perform(get("/user/profile")
                         .header("X-User-Id", 10L)
-                        .header("roles", "ROLE_LEARNER")
+                        .header("roles", "ROLE_USER")
                         .header("X-Gateway-Request", "true"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.userId").value(10))
@@ -91,12 +94,13 @@ class UserProfileControllerTest {
 
     @Test
     void getProfile_shouldReturn404_whenProfileNotFound() throws Exception {
-        when(userProfileService.getProfileByUserId(10L))
+        when(securityUtil.extractUserId(any())).thenReturn(10L);
+        when(userProfileService.getProfileByUserId(anyLong()))
                 .thenThrow(new UserProfileNotFoundException("Not found"));
 
         mockMvc.perform(get("/user/profile")
                         .header("X-User-Id", 10L)
-                        .header("roles", "ROLE_LEARNER")
+                        .header("roles", "ROLE_USER")
                         .header("X-Gateway-Request", "true"))
                 .andExpect(status().isNotFound());
     }
@@ -105,7 +109,7 @@ class UserProfileControllerTest {
 
     @Test
     void getUserProfile_shouldReturn200_whenProfileExists() throws Exception {
-        when(userProfileService.getProfileByUserId(10L)).thenReturn(responseDto);
+        when(userProfileService.getProfileByUserId(anyLong())).thenReturn(responseDto);
 
         mockMvc.perform(get("/user/profile/10")
                         .header("X-Gateway-Request", "true"))
@@ -115,7 +119,7 @@ class UserProfileControllerTest {
 
     @Test
     void getUserProfile_shouldReturn404_whenProfileNotFound() throws Exception {
-        when(userProfileService.getProfileByUserId(99L))
+        when(userProfileService.getProfileByUserId(anyLong()))
                 .thenThrow(new UserProfileNotFoundException("Not found"));
 
         mockMvc.perform(get("/user/profile/99")
@@ -128,18 +132,19 @@ class UserProfileControllerTest {
     @Test
     void updateProfile_shouldReturn200_whenValidRequest() throws Exception {
         UpdateProfileRequestDto request = new UpdateProfileRequestDto("jdoe", "Jane Doe", "bio", "1234567890", "Java");
-        when(userProfileService.updateProfile(eq(10L), any())).thenReturn(responseDto);
+        when(securityUtil.extractUserId(any())).thenReturn(10L);
+        when(userProfileService.updateProfile(anyLong(), any())).thenReturn(responseDto);
 
         mockMvc.perform(put("/user/profile")
                         .header("X-User-Id", 10L)
-                        .header("roles", "ROLE_LEARNER")
+                        .header("roles", "ROLE_USER")
                         .header("X-Gateway-Request", "true")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.message").value("Profile updated successfully"))
-                .andExpect(jsonPath("$.data.userId").value(1))
+                .andExpect(jsonPath("$.data.userId").value(10))
                 .andExpect(jsonPath("$.statusCode").value(200));
     }
 
@@ -186,12 +191,13 @@ class UserProfileControllerTest {
     @Test
     void updateProfile_shouldReturn404_whenProfileNotFound() throws Exception {
         UpdateProfileRequestDto request = new UpdateProfileRequestDto("jane", "Jane", "bio", "1234567890", "Java");
-        when(userProfileService.updateProfile(eq(10L), any()))
+        when(securityUtil.extractUserId(any())).thenReturn(10L);
+        when(userProfileService.updateProfile(anyLong(), any()))
                 .thenThrow(new UserProfileNotFoundException("Not found"));
 
         mockMvc.perform(put("/user/profile")
                         .header("X-User-Id", 10L)
-                        .header("roles", "ROLE_LEARNER")
+                        .header("roles", "ROLE_USER")
                         .header("X-Gateway-Request", "true")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))

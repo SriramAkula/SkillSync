@@ -34,7 +34,7 @@ export class ApplyMentorPage implements OnInit {
 
   statusClasses = computed(() => {
     const s = this.myProfile()?.status || 'PENDING';
-    const map: Record<string, any> = {
+    const map: Record<string, { bg: string; text: string }> = {
       'PENDING': { bg: 'bg-amber-500 shadow-amber-100', text: 'text-amber-600' },
       'APPROVED': { bg: 'bg-emerald-500 shadow-emerald-100', text: 'text-emerald-600' },
       'REJECTED': { bg: 'bg-red-500 shadow-red-100', text: 'text-red-600' }
@@ -45,7 +45,7 @@ export class ApplyMentorPage implements OnInit {
   ngOnInit(): void {
     this.mentorStore.loadMyProfile(undefined);
     if (this.skillStore.skills().length === 0) {
-      this.skillStore.loadAll(undefined);
+      this.skillStore.loadForSelection(undefined);
     }
     setTimeout(() => this.checkingProfile.set(false), 1200);
   }
@@ -59,7 +59,7 @@ export class ApplyMentorPage implements OnInit {
            bio.length >= 10;
   }
 
-  filteredCategories() {
+  filteredCategories(): { category: string; skills: { id: number; name: string }[] }[] {
     const q = this.skillSearch.toLowerCase().trim();
     const source = this.skillStore.groupedByCategory();
     if (!q) return source;

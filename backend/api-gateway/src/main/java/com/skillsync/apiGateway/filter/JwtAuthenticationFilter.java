@@ -2,11 +2,13 @@ package com.skillsync.apiGateway.filter;
 
 import com.skillsync.apiGateway.util.JwtUtil;
 import io.jsonwebtoken.Claims;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Component;
@@ -16,10 +18,11 @@ import reactor.core.publisher.Mono;
 import java.util.List;
 
 @Component
+@Slf4j
+@RequiredArgsConstructor
 public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
-    @Autowired
-    private JwtUtil jwtUtil;
+    private final JwtUtil jwtUtil;
 
     // List of public endpoints that don't need a JWT
     private static final List<String> PUBLIC_ENDPOINTS = List.of(
@@ -53,6 +56,11 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         ServerHttpRequest request = exchange.getRequest();
 
+        // 0. Skip CORS preflight requests
+        if (request.getMethod() == HttpMethod.OPTIONS) {
+            return chain.filter(exchange);
+        }
+
         // 1. Mark the request as coming from the Gateway
         request = request.mutate()
                 .header("X-Gateway-Request", "true")
@@ -61,6 +69,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         // 2. Security Check
         if (isSecured(request)) {
             if (!request.getHeaders().containsKey(HttpHeaders.AUTHORIZATION)) {
+                log.warn("Unauthorized request to {}: Missing Authorization header", request.getURI().getPath());
                 return this.onError(exchange, "Missing authorization header", HttpStatus.UNAUTHORIZED);
             }
 

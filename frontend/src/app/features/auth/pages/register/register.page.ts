@@ -1,7 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
-import { RouterLink, Router } from '@angular/router';
+import { RouterLink, Router, ActivatedRoute } from '@angular/router';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { AuthStore } from '../../../../core/auth/auth.store';
 
@@ -17,10 +17,19 @@ export class RegisterPage {
   readonly emailFocused = signal(false);
   private readonly fb = inject(FormBuilder);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
 
   readonly registerForm = this.fb.group({
     email: ['', [Validators.required, Validators.email]]
   });
+
+  constructor() {
+    this.route.queryParams.subscribe(params => {
+      if (params['email']) {
+        this.registerForm.patchValue({ email: params['email'] });
+      }
+    });
+  }
 
   onSubmit(): void {
     if (this.registerForm.invalid) return;
