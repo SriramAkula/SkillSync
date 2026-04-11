@@ -11,6 +11,7 @@ import com.skillsync.authservice.config.DataInitializer;
 import org.springframework.mail.javamail.JavaMailSender;
 
 @SpringBootTest(properties = {
+    "spring.cloud.config.enabled=false",
     "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.amqp.RabbitAutoConfiguration,org.springframework.boot.actuate.autoconfigure.mail.MailHealthContributorAutoConfiguration",
     "spring.mail.username=test@example.com",
     "google.oauth2.client-id=test-client-id"

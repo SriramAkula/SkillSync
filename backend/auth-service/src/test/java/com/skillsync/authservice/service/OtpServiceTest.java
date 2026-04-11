@@ -202,5 +202,18 @@ class OtpServiceTest {
                 .isInstanceOf(RuntimeException.class)
                 .hasMessageContaining("Failed to send email");
     }
+
+    @Test
+    void sendPasswordResetOtp_shouldThrow_whenEmailFails() {
+        when(redisTemplate.opsForValue()).thenReturn(valueOps);
+        when(mailSender.createMimeMessage()).thenReturn(new jakarta.mail.internet.MimeMessage((jakarta.mail.Session)null));
+        lenient().when(templateEngine.process(anyString(), any(org.thymeleaf.context.Context.class))).thenReturn("test-html");
+        
+        doThrow(new RuntimeException("Mail server down")).when(mailSender).send(any(MimeMessage.class));
+        
+        assertThatThrownBy(() -> otpService.sendPasswordResetOtp("test@example.com"))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("Failed to send email");
+    }
 }
 
