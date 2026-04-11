@@ -11,7 +11,7 @@ export class SkillService {
   private readonly http = inject(HttpClient);
   private readonly base = `${environment.apiUrl}/skill`;
 
-  getAll(page: number = 0, size: number = 12): Observable<ApiResponse<PageResponse<SkillDto>>> {
+  getAll(page = 0, size = 10): Observable<ApiResponse<PageResponse<SkillDto>>> {
     return this.http.get<ApiResponse<PageResponse<SkillDto>>>(this.base, {
       params: { page: page.toString(), size: size.toString() }
     });
@@ -21,7 +21,7 @@ export class SkillService {
     return this.http.get<ApiResponse<SkillDto>>(`${this.base}/${id}`);
   }
 
-  search(keyword: string, page: number = 0, size: number = 12): Observable<ApiResponse<PageResponse<SkillDto>>> {
+  search(keyword: string, page = 0, size = 10): Observable<ApiResponse<PageResponse<SkillDto>>> {
     return this.http.get<ApiResponse<PageResponse<SkillDto>>>(`${this.base}/search`, { 
       params: { keyword, page: page.toString(), size: size.toString() } 
     });

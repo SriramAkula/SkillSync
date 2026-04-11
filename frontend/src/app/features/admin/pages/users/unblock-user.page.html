@@ -9,8 +9,9 @@
 
   <!-- Page Content -->
   <div class="page-content">
-    <div class="unblock-card" *ngIf="user">
-      <!-- Card Header -->
+    @if (user) {
+      <div class="unblock-card">
+        <!-- Card Header -->
       <div class="card-header">
         <div class="header-icon success">✓</div>
         <div class="header-text">
@@ -99,5 +100,6 @@
         </button>
       </div>
     </div>
+    }
   </div>
 </div>

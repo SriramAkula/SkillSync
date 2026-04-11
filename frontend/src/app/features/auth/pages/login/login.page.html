@@ -48,10 +48,11 @@
 
         <!-- Email -->
         <div class="input-group">
-          <label class="input-label">Email address</label>
+          <label for="loginEmail" class="input-label">Email address</label>
           <div class="input-wrapper" [class.focused]="emailFocused()" [class.error]="form.get('email')?.invalid && form.get('email')?.touched">
             <span class="material-icons input-icon">email</span>
             <input
+              id="loginEmail"
               type="email"
               formControlName="email"
               placeholder="you@example.com"
@@ -68,12 +69,13 @@
         <!-- Password -->
         <div class="input-group">
           <div class="label-row">
-            <label class="input-label">Password</label>
+            <label for="loginPwd" class="input-label">Password</label>
             <a routerLink="/auth/forgot-password" class="forgot-link">Forgot password?</a>
           </div>
           <div class="input-wrapper" [class.focused]="pwdFocused()" [class.error]="form.get('password')?.invalid && form.get('password')?.touched">
             <span class="material-icons input-icon">lock</span>
             <input
+              id="loginPwd"
               [type]="showPwd() ? 'text' : 'password'"
               formControlName="password"
               placeholder="Enter your password"

@@ -34,7 +34,9 @@
   <!-- Stats Grid (Glassmorphic) -->
   <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
     <div (click)="changeTab('pending')" 
+         (keyup.enter)="changeTab('pending')"
          [class.ring-2]="activeTab() === 'pending'"
+         tabindex="0" role="button" aria-label="View pending session requests"
          class="glass-card dark:bg-amber-950/50 p-6 cursor-pointer hover:shadow-2xl transition-all duration-300 ring-amber-500/50 ring-offset-2 dark:ring-offset-slate-950 relative overflow-hidden group border border-amber-500/10">
       <div class="flex items-center gap-4 relative z-10">
         <div class="w-12 h-12 bg-amber-100 dark:bg-amber-900/30 rounded-xl flex items-center justify-center text-amber-600 dark:text-amber-400 group-hover:bg-amber-200 dark:group-hover:bg-amber-900/50 transition-colors shadow-sm">
@@ -51,7 +53,9 @@
     </div>
 
     <div (click)="changeTab('upcoming')" 
+         (keyup.enter)="changeTab('upcoming')"
          [class.ring-2]="activeTab() === 'upcoming'"
+         tabindex="0" role="button" aria-label="View upcoming confirmed sessions"
          class="glass-card dark:bg-blue-950/50 p-6 cursor-pointer hover:shadow-2xl transition-all duration-300 ring-blue-500/50 ring-offset-2 dark:ring-offset-slate-950 relative overflow-hidden group border border-blue-500/10">
       <div class="flex items-center gap-4">
         <div class="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center text-blue-600 dark:text-blue-400 group-hover:bg-blue-200 dark:group-hover:bg-blue-900/50 transition-colors shadow-sm">
@@ -65,7 +69,9 @@
     </div>
 
     <div (click)="changeTab('all')" 
+         (keyup.enter)="changeTab('all')"
          [class.ring-2]="activeTab() === 'all'"
+         tabindex="0" role="button" aria-label="View all session history"
          class="glass-card dark:bg-violet-950/50 p-6 cursor-pointer hover:shadow-2xl transition-all duration-300 ring-violet-500/50 ring-offset-2 dark:ring-offset-slate-950 relative overflow-hidden group border border-violet-500/10">
       <div class="flex items-center gap-4">
         <div class="w-12 h-12 bg-violet-100 dark:bg-violet-900/30 rounded-xl flex items-center justify-center text-violet-600 dark:text-violet-400 group-hover:bg-violet-200 dark:group-hover:bg-violet-900/50 transition-colors shadow-sm">
@@ -115,7 +121,7 @@
           <app-session-card 
             [session]="s"
             (view)="router.navigate(['/sessions', $event])"
-            (cancel)="cancelSession($event)"
+            (cancelSession)="cancelSession($event)"
             (pay)="noop()" />
         } @empty {
           <div class="col-span-full py-24 flex flex-col items-center text-center space-y-4 text-slate-500 dark:text-slate-400">
@@ -140,7 +146,9 @@
 <!-- Rejection Modal (Premium Backdrop) -->
 @if (rejectingSession()) {
   <div class="fixed inset-0 z-[200] flex items-center justify-center p-4 animate-fade-in">
-    <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" (click)="rejectingSession.set(null)"></div>
+    <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" 
+         (click)="rejectingSession.set(null)" (keyup.enter)="rejectingSession.set(null)"
+         tabindex="0" role="button" aria-label="Close modal backdrop"></div>
     
     <div class="bg-white rounded-[2.5rem] w-full max-w-lg p-10 relative z-10 shadow-2xl animate-drop-in border border-slate-100">
        <div class="flex items-center gap-4 mb-8">

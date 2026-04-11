@@ -3,13 +3,14 @@ import { CommonModule } from '@angular/common';
 import { Router, NavigationEnd, ActivatedRoute } from '@angular/router';
 import { ReactiveFormsModule, FormGroup, FormControl } from '@angular/forms';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { debounceTime, distinctUntilChanged, filter } from 'rxjs';
+import { debounceTime, filter, Subscription } from 'rxjs';
 import { MentorStore } from '../../../../core/auth/mentor.store';
 import { SkillStore } from '../../../../core/auth/skill.store';
 import { AuthStore } from '../../../../core/auth/auth.store';
 import { ReviewService } from '../../../../core/services/review.service';
 import { MentorCardComponent } from '../../components/mentor-card/mentor-card.component';
 import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
+import { ReviewDto } from '../../../../shared/models';
 
 @Component({
   selector: 'app-mentor-list-page',
@@ -42,11 +43,11 @@ export class MentorListPage implements OnInit, OnDestroy {
     { label: '🟡 Busy', value: 'BUSY' },
   ];
 
-  private routerSub: any;
+  private routerSub: Subscription | null = null;
 
   // Track current user's mentor rating and reviews
   readonly myRating = signal<number | null>(null);
-  readonly myReviews = signal<any[]>([]);
+  readonly myReviews = signal<ReviewDto[]>([]);
 
   // Merge myProfile with approved list to always show latest data for current user
   readonly syncedApprovedMentors = computed(() => {
@@ -70,8 +71,8 @@ export class MentorListPage implements OnInit, OnDestroy {
     
     // Refresh mentors when navigating back to this page
     this.routerSub = this.router.events
-      .pipe(filter(event => event instanceof NavigationEnd))
-      .subscribe((event: any) => {
+      .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
+      .subscribe((event: NavigationEnd) => {
         const url = event.urlAfterRedirects;
         // Match /mentors or /mentors?query but not /mentors/123 (detail page)
         if ((url === '/mentors' || url.startsWith('/mentors?')) && !url.match(/\/mentors\/\d+/)) {
@@ -86,7 +87,15 @@ export class MentorListPage implements OnInit, OnDestroy {
         vals.maxRate != null ||
         vals.minRating != null;
       if (hasFilter) {
-        this.mentorStore.search({ ...vals, page: 0, size: this.mentorStore.pageSize() } as any);
+        this.mentorStore.search({ 
+          skill: vals.skill ?? undefined,
+          minExperience: vals.minExperience ?? undefined,
+          maxExperience: vals.maxExperience ?? undefined,
+          maxRate: vals.maxRate ?? undefined,
+          minRating: vals.minRating ?? undefined,
+          page: 0, 
+          size: this.mentorStore.pageSize() 
+        });
       } else {
         this.mentorStore.loadApproved({ page: 0, size: this.mentorStore.pageSize() });
       }
@@ -102,7 +111,15 @@ export class MentorListPage implements OnInit, OnDestroy {
         vals.minRating != null;
     
     if (hasFilter) {
-      this.mentorStore.search({ ...vals, page, size: this.mentorStore.pageSize() } as any);
+      this.mentorStore.search({ 
+        skill: vals.skill ?? undefined,
+        minExperience: vals.minExperience ?? undefined,
+        maxExperience: vals.maxExperience ?? undefined,
+        maxRate: vals.maxRate ?? undefined,
+        minRating: vals.minRating ?? undefined,
+        page, 
+        size: this.mentorStore.pageSize() 
+      });
     } else {
       this.mentorStore.loadApproved({ page, size: this.mentorStore.pageSize() });
     }

@@ -1,4 +1,4 @@
-import { Component, inject, Output, EventEmitter, Input, signal } from '@angular/core';
+import { Component, inject, Output, EventEmitter, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthStore } from '../../core/auth/auth.store';

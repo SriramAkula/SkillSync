@@ -154,18 +154,18 @@
 
               <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div class="space-y-1.5">
-                  <label class="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Years of Exp.</label>
-                  <input type="number" [(ngModel)]="form.yearsOfExperience" name="yearsOfExperience" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-3.5 px-4 text-sm focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500/50 outline-none transition-all font-bold text-slate-700 font-mono" placeholder="e.g. 8">
+                  <label for="yearsExp" class="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Years of Exp.</label>
+                  <input type="number" id="yearsExp" [(ngModel)]="form.yearsOfExperience" name="yearsOfExperience" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-3.5 px-4 text-sm focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500/50 outline-none transition-all font-bold text-slate-700 font-mono" placeholder="e.g. 8">
                 </div>
                 <div class="space-y-1.5">
-                  <label class="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Hourly Rate (₹)</label>
-                  <input type="number" [(ngModel)]="form.hourlyRate" name="hourlyRate" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-3.5 px-4 text-sm focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500/50 outline-none transition-all font-bold text-slate-700 font-mono" placeholder="Max ₹500">
+                  <label for="hourlyRate" class="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Hourly Rate (₹)</label>
+                  <input type="number" id="hourlyRate" [(ngModel)]="form.hourlyRate" name="hourlyRate" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-3.5 px-4 text-sm focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500/50 outline-none transition-all font-bold text-slate-700 font-mono" placeholder="Max ₹500">
                 </div>
               </div>
 
               <div class="space-y-1.5">
-                <label class="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Professional Pitch</label>
-                <textarea [(ngModel)]="form.bio" name="bio" rows="4" class="w-full bg-slate-50 border border-slate-200 rounded-2xl py-4 px-5 text-sm focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500/50 outline-none transition-all font-medium text-slate-700 leading-relaxed resize-none" placeholder="Explain why you are the best mentor for your skills... (min 10 chars)"></textarea>
+                <label for="bio" class="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Professional Pitch</label>
+                <textarea id="bio" [(ngModel)]="form.bio" name="bio" rows="4" class="w-full bg-slate-50 border border-slate-200 rounded-2xl py-4 px-5 text-sm focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500/50 outline-none transition-all font-medium text-slate-700 leading-relaxed resize-none" placeholder="Explain why you are the best mentor for your skills... (min 10 chars)"></textarea>
                 <div class="flex justify-end text-[9px] font-bold uppercase tracking-widest" [class.text-red-500]="form.bio.length < 10">
                    {{ form.bio.length }}/500 {{ form.bio.length < 10 ? '· Min 10 chars required' : '' }}
                 </div>

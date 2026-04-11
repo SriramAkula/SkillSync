@@ -1,10 +1,9 @@
-import { Component, inject, OnInit, signal, computed } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { SessionStore } from '../../../../core/auth/session.store';
 import { SkillStore } from '../../../../core/auth/skill.store';
 import { SessionCardComponent } from '../../components/session-card/session-card.component';
-import { SessionDto } from '../../../../shared/models';
 import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
 
 type FilterTab = 'all' | 'active' | 'completed' | 'cancelled';
@@ -17,8 +16,8 @@ type FilterTab = 'all' | 'active' | 'completed' | 'cancelled';
   styleUrl: './my-sessions.page.scss'
 })
 export class MySessionsPage implements OnInit {
-  readonly sessionStore = inject(SessionStore) as any;
-  readonly skillStore = inject(SkillStore) as any;
+  readonly sessionStore = inject(SessionStore);
+  readonly skillStore = inject(SkillStore);
   readonly router = inject(Router);
 
   readonly activeTab = signal<FilterTab>('all');

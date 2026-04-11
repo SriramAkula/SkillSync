@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal, computed, effect } from '@angular/core';
+import { Component, inject, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
@@ -80,7 +80,7 @@ export class MentorSessionsPage implements OnInit {
       return;
     }
     const next = this.mentorStore.isAvailable() ? 'BUSY' : 'AVAILABLE';
-    this.mentorStore.updateAvailability({ availabilityStatus: next as any });
+    this.mentorStore.updateAvailability({ availabilityStatus: next });
   }
 
   accept(id: number): void {
@@ -105,5 +105,7 @@ export class MentorSessionsPage implements OnInit {
     this.sessionStore.cancel(id);
   }
 
-  noop(): void {}
+  noop(): void {
+    // Used for event swallowing if needed
+  }
 }

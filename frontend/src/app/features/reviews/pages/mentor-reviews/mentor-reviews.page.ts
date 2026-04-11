@@ -46,10 +46,13 @@ export class MentorReviewsPage implements OnInit {
     const id = Number(this.route.snapshot.paramMap.get('mentorId'));
     this.mentorId.set(id);
     this.loadReviews(id, 0);
-    this.reviewService.getMentorRating(id).subscribe({ next: (r) => this.rating.set(r.data), error: () => {} });
+    this.reviewService.getMentorRating(id).subscribe({ 
+      next: (r) => this.rating.set(r.data), 
+      error: () => { /* Handle error siloently if needed */ } 
+    });
   }
 
-  loadReviews(mentorId: number, page: number, append: boolean = false): void {
+  loadReviews(mentorId: number, page: number, append = false): void {
     this.loading.set(true);
     this.reviewService.getMentorReviews(mentorId, page, this.pageSize).subscribe({
       next: (res) => {

@@ -7,8 +7,9 @@ import { pipe, switchMap, tap } from 'rxjs';
 import { AuthService } from '../services/auth.service';
 import {
   AuthResponse, LoginRequest, RegisterRequest,
-  OtpVerifyRequest, GoogleTokenRequest
+  OtpVerifyRequest
 } from '../../shared/models';
+import { HttpErrorResponse } from '@angular/common/http';
 
 interface AuthState {
   token: string | null;
@@ -20,6 +21,13 @@ interface AuthState {
   error: string | null;
   otpSent: boolean;
   otpVerified: boolean;
+}
+
+interface JwtClaims {
+  userId?: number;
+  roles?: string[];
+  sub?: string;
+  [key: string]: unknown;
 }
 
 const initialState: AuthState = {
@@ -56,7 +64,7 @@ export const AuthStore = signalStore(
           authService.sendOtp(email).pipe(
             tapResponse({
               next: () => patchState(store, { loading: false, otpSent: true }),
-              error: (err: any) => patchState(store, { loading: false, error: err.error?.message ?? 'Failed to send OTP' })
+              error: (err: HttpErrorResponse) => patchState(store, { loading: false, error: err.error?.message ?? 'Failed to send OTP' })
             })
           )
         )
@@ -70,7 +78,7 @@ export const AuthStore = signalStore(
           authService.verifyOtp(req.email, req.otp).pipe(
             tapResponse({
               next: () => patchState(store, { loading: false, otpVerified: true }),
-              error: (err: any) => patchState(store, { loading: false, error: err.error?.message ?? 'Invalid OTP' })
+              error: (err: HttpErrorResponse) => patchState(store, { loading: false, error: err.error?.message ?? 'Invalid OTP' })
             })
           )
         )
@@ -95,7 +103,7 @@ export const AuthStore = signalStore(
                   loading: false, error: null
                 });
               },
-              error: (err: any) => patchState(store, { loading: false, error: err.error?.message ?? 'Registration failed' })
+              error: (err: HttpErrorResponse) => patchState(store, { loading: false, error: err.error?.message ?? 'Registration failed' })
             })
           )
         )
@@ -126,7 +134,7 @@ export const AuthStore = signalStore(
                   router.navigate(['/mentors']);
                 }
               },
-              error: (err: any) => {
+              error: (err: HttpErrorResponse) => {
                 const msg = err.error?.message ?? 'Invalid credentials';
                 const lowerMsg = msg.toLowerCase();
                 
@@ -169,7 +177,7 @@ export const AuthStore = signalStore(
                   router.navigate(['/mentors']);
                 }
               },
-              error: (err: any) => patchState(store, { loading: false, error: err.error?.message ?? 'Google login failed' })
+              error: (err: HttpErrorResponse) => patchState(store, { loading: false, error: err.error?.message ?? 'Google login failed' })
             })
           )
         )
@@ -252,8 +260,8 @@ function clearAuth(): void {
   ['token', 'userId', 'email', 'username', 'roles'].forEach(k => localStorage.removeItem(k));
 }
 
-function decodeJwt(token: string): any {
+function decodeJwt(token: string): JwtClaims {
   try {
-    return JSON.parse(atob(token.split('.')[1]));
+    return JSON.parse(atob(token.split('.')[1])) as JwtClaims;
   } catch { return {}; }
 }

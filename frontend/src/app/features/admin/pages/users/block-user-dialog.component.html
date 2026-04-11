@@ -20,7 +20,7 @@
 
     <!-- User Card -->
     <div class="user-card">
-      <div class="user-avatar">{{ getInitials(data.username) }}</div>
+      <div class="user-avatar">{{ getInitials(data.username || '') }}</div>
       <div class="user-details">
         <strong>{{ data.username }}</strong>
         <p class="email">{{ data.email }}</p>
@@ -29,8 +29,9 @@
 
     <!-- Reason Input -->
     <div class="reason-group">
-      <label class="reason-label">⛔ Block Reason (Required)</label>
+      <label for="blockReason" class="reason-label">⛔ Block Reason (Required)</label>
       <textarea 
+        id="blockReason"
         [(ngModel)]="reason" 
         class="reason-textarea"
         placeholder="Enter the reason for blocking this user..."

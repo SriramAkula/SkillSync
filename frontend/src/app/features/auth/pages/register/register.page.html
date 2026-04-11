@@ -39,10 +39,10 @@
 
       <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="form">
         <div class="input-group">
-          <label class="input-label">Email address</label>
+          <label for="regEmail" class="input-label">Email address</label>
           <div class="input-wrapper" [class.focused]="emailFocused()" [class.error]="registerForm.get('email')?.invalid && registerForm.get('email')?.touched">
             <span class="material-icons input-icon">email</span>
-            <input type="email" formControlName="email" placeholder="you@example.com"
+            <input id="regEmail" type="email" formControlName="email" placeholder="you@example.com"
               (focus)="emailFocused.set(true)" (blur)="emailFocused.set(false)" />
           </div>
         </div>

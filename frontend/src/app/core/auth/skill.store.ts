@@ -5,6 +5,7 @@ import { tapResponse } from '@ngrx/operators';
 import { pipe, switchMap, tap } from 'rxjs';
 import { SkillService } from '../services/skill.service';
 import { SkillDto } from '../../shared/models/skill.models';
+import { HttpErrorResponse } from '@angular/common/http';
 
 interface SkillState {
   skills: SkillDto[];
@@ -36,8 +37,8 @@ export const SkillStore = signalStore(
       pipe(
         tap(() => patchState(store, { loading: true, error: null })),
         switchMap((params) => {
-          const p = (params as any)?.page ?? 0;
-          const s = (params as any)?.size ?? 12;
+          const p = params && typeof params === 'object' ? params.page ?? 0 : 0;
+          const s = params && typeof params === 'object' ? params.size ?? 12 : 12;
           return svc.getAll(p, s).pipe(
             tapResponse({
               next: (res) => patchState(store, { 
@@ -48,7 +49,7 @@ export const SkillStore = signalStore(
                 pageSize: res.data.pageSize,
                 loading: false 
               }),
-              error: (e: any) => patchState(store, { loading: false, error: e.error?.message ?? 'Failed to load skills' })
+              error: (e: HttpErrorResponse) => patchState(store, { loading: false, error: e.error?.message ?? 'Failed to load skills' })
             })
           );
         })
@@ -71,7 +72,7 @@ export const SkillStore = signalStore(
                 pageSize: res.data.pageSize,
                 loading: false 
               }),
-              error: (e: any) => patchState(store, { loading: false, error: e.error?.message ?? 'Search failed' })
+              error: (e: HttpErrorResponse) => patchState(store, { loading: false, error: e.error?.message ?? 'Search failed' })
             })
           );
         })

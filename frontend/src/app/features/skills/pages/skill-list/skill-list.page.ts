@@ -56,10 +56,10 @@ export class SkillListPage implements OnInit {
     });
 
     this.userService.getMyProfile().subscribe({
-      next: (res: any) => {
-        const str = res.data.skills;
-        if (str) {
-          this.selectedSkills.set(str.split(',').map((s: string) => s.trim()));
+      next: (res) => {
+        const profile = res.data;
+        if (profile && profile.skills) {
+          this.selectedSkills.set(profile.skills.split(',').map((s: string) => s.trim()));
         }
       }
     });
@@ -104,7 +104,7 @@ export class SkillListPage implements OnInit {
     this.categories.set(cats);
   }
 
-  filterByCategory(cat: string, mySkills: boolean = false): void {
+  filterByCategory(cat: string, mySkills = false): void {
     this.showMySkills.set(mySkills);
     this.selectedCategory.set(cat);
     this.currentPage.set(0); // Reset to first page on filter change

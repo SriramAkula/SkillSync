@@ -4,8 +4,6 @@ import { RouterLink } from '@angular/router';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MentorStore } from '../../../../core/auth/mentor.store';
-import { SkillService } from '../../../../core/services/skill.service';
-import { SkillDto, CreateSkillRequest } from '../../../../shared/models/skill.models';
 import { FormsModule } from '@angular/forms';
 import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
 
@@ -27,7 +25,7 @@ export class PendingMentorsPage implements OnInit {
     this.loadPending();
   }
 
-  loadPending(page: number = 0): void {
+  loadPending(page = 0): void {
     this.mentorStore.loadPending({ page, size: this.pageSize() });
   }
 

@@ -64,7 +64,9 @@
   @if (!loading()) {
     <div class="skills-grid">
       @for (skill of pagedSkills(); track skill.id) {
-        <div class="skill-card" (click)="selectSkill(skill)">
+        <div class="skill-card" 
+             (click)="selectSkill(skill)" (keyup.enter)="selectSkill(skill)"
+             tabindex="0" role="button" [aria-label]="'View details for ' + skill.skillName">
           <!-- ... existing skill card content ... -->
           <div class="skill-top">
             <div class="skill-icon">{{ skill.skillName[0].toUpperCase() }}</div>
@@ -140,8 +142,12 @@
 
   <!-- Skill Detail Drawer -->
   @if (selectedSkill()) {
-    <div class="drawer-overlay" (click)="selectedSkill.set(null)">
-      <div class="drawer" (click)="$event.stopPropagation()">
+    <div class="drawer-overlay" 
+         (click)="selectedSkill.set(null)" (keyup.enter)="selectedSkill.set(null)"
+         tabindex="0" role="button" aria-label="Close details drawer">
+      <div class="drawer" 
+           (click)="$event.stopPropagation()" (keyup.enter)="$event.stopPropagation()"
+           tabindex="0" role="dialog" aria-modal="true" [aria-label]="selectedSkill()!.skillName + ' Details'">
         <div class="drawer-header">
           <div class="drawer-icon">{{ selectedSkill()!.skillName[0].toUpperCase() }}</div>
           <div>
@@ -192,8 +198,12 @@
 
   <!-- Create / Edit Modal -->
   @if (showForm()) {
-    <div class="modal-overlay" (click)="showForm.set(false)">
-      <div class="modal-card" (click)="$event.stopPropagation()">
+    <div class="modal-overlay" 
+         (click)="showForm.set(false)" (keyup.enter)="showForm.set(false)"
+         tabindex="0" role="button" aria-label="Close modal">
+      <div class="modal-card" 
+           (click)="$event.stopPropagation()" (keyup.enter)="$event.stopPropagation()"
+           tabindex="0" role="dialog" aria-modal="true" [aria-label]="editingSkill() ? 'Edit Skill' : 'Add New Skill'">
         <div class="modal-header">
           <h3>{{ editingSkill() ? 'Edit Skill' : 'Add New Skill' }}</h3>
           <button class="modal-close" (click)="showForm.set(false)">
@@ -203,23 +213,23 @@
 
         <div class="form">
           <div class="input-group">
-            <label class="input-label">Skill Name <span class="required">*</span></label>
+            <label for="skillNameInput" class="input-label">Skill Name <span class="required">*</span></label>
             <div class="input-wrapper">
               <span class="material-icons input-icon">auto_stories</span>
-              <input type="text" [(ngModel)]="formData.skillName" placeholder="e.g. Java, React, AWS" />
+              <input type="text" id="skillNameInput" [(ngModel)]="formData.skillName" placeholder="e.g. Java, React, AWS" />
             </div>
           </div>
           <div class="input-group">
-            <label class="input-label">Category</label>
+            <label for="categoryInput" class="input-label">Category</label>
             <div class="input-wrapper">
               <span class="material-icons input-icon">category</span>
-              <input type="text" [(ngModel)]="formData.category" placeholder="e.g. Programming, Design, Data Science" />
+              <input type="text" id="categoryInput" [(ngModel)]="formData.category" placeholder="e.g. Programming, Design, Data Science" />
             </div>
           </div>
           <div class="input-group">
-            <label class="input-label">Description</label>
+            <label for="descInput" class="input-label">Description</label>
             <div class="input-wrapper textarea-wrap">
-              <textarea [(ngModel)]="formData.description" placeholder="Brief description of this skill..." rows="3"></textarea>
+              <textarea id="descInput" [(ngModel)]="formData.description" placeholder="Brief description of this skill..." rows="3"></textarea>
             </div>
           </div>
         </div>

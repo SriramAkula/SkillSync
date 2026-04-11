@@ -1,8 +1,15 @@
 import { Component, inject, OnInit } from '@angular/core';
-import { MatButtonModule } from '@angular/material/button';
+
 import { AuthStore } from '../../../../core/auth/auth.store';
 
-declare const google: any;
+declare const google: {
+  accounts: {
+    id: {
+      initialize: (config: { client_id: string; callback: (response: { credential: string }) => void }) => void;
+      renderButton: (element: HTMLElement | null, options: { theme: string; size: string; width: string }) => void;
+    };
+  };
+};
 
 @Component({
   selector: 'app-google-login-button',
@@ -20,7 +27,7 @@ export class GoogleLoginButtonComponent implements OnInit {
     }
     google.accounts.id.initialize({
       client_id: '537688864642-mi9j3rfvrn6e6s68kafp99lk8unchu0p.apps.googleusercontent.com',
-      callback: (response: any) => this.authStore.googleLogin(response.credential)
+      callback: (response) => this.authStore.googleLogin(response.credential)
     });
     // This renders the actual Google Sign-In button
     google.accounts.id.renderButton(

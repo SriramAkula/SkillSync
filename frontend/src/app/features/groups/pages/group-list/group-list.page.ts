@@ -8,7 +8,8 @@ import { GroupService } from '../../../../core/services/group.service';
 import { AuthStore } from '../../../../core/auth/auth.store';
 import { SkillStore } from '../../../../core/auth/skill.store';
 import { GroupDto } from '../../../../shared/models';
-import { forkJoin } from 'rxjs';
+import { HttpErrorResponse } from '@angular/common/http';
+import { Observable } from 'rxjs';
 
 @Component({
   selector: 'app-group-list-page',
@@ -103,7 +104,7 @@ export class GroupListPage implements OnInit {
     return s ? s.skillName : `Skill #${skillId}`;
   }
 
-  loadGroups(page: number = 0, append: boolean = false): void {
+  loadGroups(page = 0, append = false): Observable<void> | void {
     if (!this.selectedSkillId()) return;
     this.loading.set(true);
     this.searched.set(true);
@@ -180,21 +181,21 @@ export class GroupListPage implements OnInit {
   join(id: number): void {
     this.groupService.joinGroup(id).subscribe({
       next: (r) => { this.groups.update(list => list.map(g => g.id === id ? r.data : g)); this.snack.open('Joined group!', 'OK', { duration: 3000 }); },
-      error: (e) => this.snack.open(e.error?.message ?? 'Failed to join', 'OK', { duration: 3000 })
+      error: (e: HttpErrorResponse) => this.snack.open(e.error?.message ?? 'Failed to join', 'OK', { duration: 3000 })
     });
   }
 
   leave(id: number): void {
     this.groupService.leaveGroup(id).subscribe({
       next: (r) => { this.groups.update(list => list.map(g => g.id === id ? r.data : g)); this.snack.open('Left group.', 'OK', { duration: 3000 }); },
-      error: (e) => this.snack.open(e.error?.message ?? 'Failed to leave', 'OK', { duration: 3000 })
+      error: (e: HttpErrorResponse) => this.snack.open(e.error?.message ?? 'Failed to leave', 'OK', { duration: 3000 })
     });
   }
 
   deleteGroup(id: number): void {
     this.groupService.deleteGroup(id).subscribe({
       next: () => { this.groups.update(list => list.filter(g => g.id !== id)); this.snack.open('Group deleted.', 'OK', { duration: 3000 }); },
-      error: (e) => this.snack.open(e.error?.message ?? 'Failed', 'OK', { duration: 3000 })
+      error: (e: HttpErrorResponse) => this.snack.open(e.error?.message ?? 'Failed', 'OK', { duration: 3000 })
     });
   }
 
@@ -234,7 +235,7 @@ export class GroupListPage implements OnInit {
         this.newGroup = { name: '', skillId: null, maxMembers: null, description: '' };
         this.snack.open('Group created successfully!', 'OK', { duration: 3000 });
       },
-      error: (e) => { 
+      error: (e: HttpErrorResponse) => { 
         console.error('Group creation failed:', e);
         this.creating.set(false); 
         this.snack.open(e.error?.message ?? 'Failed to create group', 'OK', { duration: 3000 }); 
