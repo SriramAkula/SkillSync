@@ -80,7 +80,8 @@ jobs:
         working-directory: ./backend/${{ matrix.service }}
         run: |
           mvn clean verify sonar:sonar \
-            -Dsonar.projectKey=SriramAkula_SkillSync \
+            -Dsonar.projectKey=SriramAkula_SkillSync_${{ matrix.service }} \
+            -Dsonar.projectName="SkillSync - ${{ matrix.service }}" \
             -Dsonar.organization=sriramakula \
             -Dsonar.host.url=https://sonarcloud.io \
             -Dsonar.login=${{ secrets.SONAR_TOKEN }}
