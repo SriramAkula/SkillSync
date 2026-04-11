@@ -2,10 +2,10 @@ package com.skillsync.payment.listener;
 
 import com.skillsync.payment.config.RabbitMQConfig;
 import com.skillsync.payment.saga.SagaOrchestrator;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
+import lombok.extern.slf4j.Slf4j;
+import lombok.RequiredArgsConstructor;
 
 import java.util.Map;
 
@@ -14,15 +14,11 @@ import java.util.Map;
  * This is the async trigger for the saga state machine.
  */
 @Component
+@Slf4j
+@RequiredArgsConstructor
 public class SessionEventListener {
 
-    private static final Logger log = LoggerFactory.getLogger(SessionEventListener.class);
-
     private final SagaOrchestrator sagaOrchestrator;
-
-    public SessionEventListener(SagaOrchestrator sagaOrchestrator) {
-        this.sagaOrchestrator = sagaOrchestrator;
-    }
 
     /**
      * Triggered when mentor accepts a session.

@@ -1,17 +1,15 @@
 package com.skillsync.review.client;
 
 import com.skillsync.review.dto.ApiResponse;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 
 @Component
+@Slf4j
 public class MentorServiceFallback implements MentorServiceClient {
-    
-    private static final Logger log = LoggerFactory.getLogger(MentorServiceFallback.class);
     
     @Override
     public ResponseEntity<ApiResponse<Void>> updateMentorRating(

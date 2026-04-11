@@ -6,36 +6,26 @@ import com.skillsync.mentor.entity.MentorProfile;
 import com.skillsync.mentor.exception.MentorNotFoundException;
 import com.skillsync.mentor.mapper.MentorMapper;
 import com.skillsync.mentor.repository.MentorRepository;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
+import lombok.extern.slf4j.Slf4j;
+import lombok.RequiredArgsConstructor;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Service
+@Slf4j
+@RequiredArgsConstructor
 public class MentorQueryService {
 
-    private static final Logger log = LoggerFactory.getLogger(MentorQueryService.class);
     private static final String CACHE_PREFIX = "mentor:";
     private static final long CACHE_TTL_MINUTES = 60;
 
     private final MentorRepository mentorRepository;
     private final RedisTemplate<String, Object> redisTemplate;
     private final MentorMapper mentorMapper;
-
-    public MentorQueryService(MentorRepository mentorRepository,
-                              RedisTemplate<String, Object> redisTemplate,
-                              MentorMapper mentorMapper) {
-        this.mentorRepository = mentorRepository;
-        this.redisTemplate = redisTemplate;
-        this.mentorMapper = mentorMapper;
-    }
 
     public MentorProfileResponseDto getMentorById(Long mentorId) {
         String key = CACHE_PREFIX + mentorId;

@@ -12,17 +12,17 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import lombok.extern.slf4j.Slf4j;
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/payments")
 @Tag(name = "Payment Saga", description = "Orchestration-based Saga for session payments via Razorpay")
+@Slf4j
+@RequiredArgsConstructor
 public class PaymentController {
 
     private final SagaOrchestrator sagaOrchestrator;
-
-    public PaymentController(SagaOrchestrator sagaOrchestrator) {
-        this.sagaOrchestrator = sagaOrchestrator;
-    }
 
     /**
      * STEP 1 - Start saga when session is created.
@@ -32,6 +32,7 @@ public class PaymentController {
     @Operation(summary = "Start payment saga",
                description = "Initiates saga when a session is created. Waits for mentor acceptance.")
     public ResponseEntity<ApiResponse<SagaResponse>> startSaga(@Valid @RequestBody StartSagaRequest request) {
+        log.info("Starting payment saga for session {}", request.getSessionId());
         SagaResponse response = sagaOrchestrator.startSaga(request);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new ApiResponse<>(true, response,

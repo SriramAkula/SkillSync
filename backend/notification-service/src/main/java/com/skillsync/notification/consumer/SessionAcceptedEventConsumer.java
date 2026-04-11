@@ -4,23 +4,19 @@ import com.skillsync.notification.entity.Notification;
 import com.skillsync.notification.event.SessionAcceptedEvent;
 import com.skillsync.notification.repository.NotificationRepository;
 import com.skillsync.notification.service.EmailService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
+import lombok.extern.slf4j.Slf4j;
+import lombok.RequiredArgsConstructor;
 import java.time.LocalDateTime;
 
 @Component
+@Slf4j
+@RequiredArgsConstructor
 public class SessionAcceptedEventConsumer {
     
-    private static final Logger log = LoggerFactory.getLogger(SessionAcceptedEventConsumer.class);
-    
-    @Autowired
-    private NotificationRepository notificationRepository;
-    
-    @Autowired
-    private EmailService emailService;
+    private final NotificationRepository notificationRepository;
+    private final EmailService emailService;
     
     @RabbitListener(queues = "session.accepted.queue")
     public void handleSessionAccepted(SessionAcceptedEvent event) {

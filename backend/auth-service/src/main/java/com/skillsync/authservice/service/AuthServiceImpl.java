@@ -5,11 +5,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import lombok.extern.slf4j.Slf4j;
+import lombok.RequiredArgsConstructor;
 
 import com.skillsync.authservice.client.UserServiceClient;
 import com.skillsync.authservice.dto.request.LoginRequest;
@@ -27,9 +27,9 @@ import com.skillsync.authservice.audit.AuditService;
 import com.skillsync.authservice.enums.AuthProvider;
 
 @Service
+@Slf4j
+@RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
-
-    private static final Logger log = LoggerFactory.getLogger(AuthServiceImpl.class);
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -38,22 +38,6 @@ public class AuthServiceImpl implements AuthService {
     private final AuthEventPublisher eventPublisher;
     private final OtpService otpService;
     private final AuditService auditService;
-
-    public AuthServiceImpl(UserRepository userRepository,
-                           PasswordEncoder passwordEncoder,
-                           JwtUtil jwtUtil,
-                           UserServiceClient userServiceClient,
-                           AuthEventPublisher eventPublisher,
-                           OtpService otpService,
-                           AuditService auditService) {
-        this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
-        this.jwtUtil = jwtUtil;
-        this.userServiceClient = userServiceClient;
-        this.eventPublisher = eventPublisher;
-        this.otpService = otpService;
-        this.auditService = auditService;
-    }
 
     @Override
     public void sendOtp(String email) {

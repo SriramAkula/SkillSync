@@ -1,8 +1,7 @@
 package com.skillsync.payment.client;
 
 import com.skillsync.payment.client.dto.MentorRateDto;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -13,8 +12,8 @@ public interface MentorServiceClient {
     @GetMapping("/mentor/internal/{mentorId}")
     MentorRateDto fetchMentorProfileForSaga(@PathVariable Long mentorId);
 
+    @Slf4j
     class MentorServiceFallback implements MentorServiceClient {
-        private static final Logger log = LoggerFactory.getLogger(MentorServiceFallback.class);
 
         @Override
         public MentorRateDto fetchMentorProfileForSaga(Long mentorId) {

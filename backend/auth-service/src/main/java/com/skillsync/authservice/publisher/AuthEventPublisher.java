@@ -1,10 +1,8 @@
 package com.skillsync.authservice.publisher;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import lombok.extern.slf4j.Slf4j;
+import lombok.RequiredArgsConstructor;
 
 import com.skillsync.authservice.config.RabbitMQConfig;
 import com.skillsync.authservice.event.UserCreatedEvent;
@@ -18,18 +16,11 @@ import io.github.resilience4j.retry.annotation.Retry;
  * Publishes user lifecycle events to RabbitMQ for consumption by other services
  */
 @Component
+@Slf4j
+@RequiredArgsConstructor
 public class AuthEventPublisher {
 
-    private static final Logger log = LoggerFactory.getLogger(AuthEventPublisher.class);
-
-    @Autowired
-    private RabbitTemplate rabbitTemplate;
-
-    public AuthEventPublisher() {}
-
-    public AuthEventPublisher(RabbitTemplate rabbitTemplate) {
-        this.rabbitTemplate = rabbitTemplate;
-    }
+    private final RabbitTemplate rabbitTemplate;
 
     /**
      * Publish UserCreatedEvent when a new user is registered

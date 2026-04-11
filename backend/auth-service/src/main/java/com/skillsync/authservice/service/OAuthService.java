@@ -10,12 +10,11 @@ import com.skillsync.authservice.entity.User;
 import com.skillsync.authservice.enums.AuthProvider;
 import com.skillsync.authservice.repository.UserRepository;
 import com.skillsync.authservice.security.JwtUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import lombok.extern.slf4j.Slf4j;
+import lombok.RequiredArgsConstructor;
 
 import com.skillsync.authservice.client.UserServiceClient;
 import com.skillsync.authservice.event.UserCreatedEvent;
@@ -29,9 +28,9 @@ import java.util.List;
 import java.util.UUID;
 
 @Service
+@Slf4j
+@RequiredArgsConstructor
 public class OAuthService {
-
-    private static final Logger log = LoggerFactory.getLogger(OAuthService.class);
 
     @Value("${google.oauth2.client-id}")
     private String googleClientId;
@@ -42,20 +41,6 @@ public class OAuthService {
     private final AuditService auditService;
     private final UserServiceClient userServiceClient;
     private final AuthEventPublisher eventPublisher;
-
-    public OAuthService(UserRepository userRepository,
-                        PasswordEncoder passwordEncoder,
-                        JwtUtil jwtUtil,
-                        AuditService auditService,
-                        UserServiceClient userServiceClient,
-                        AuthEventPublisher eventPublisher) {
-        this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
-        this.jwtUtil = jwtUtil;
-        this.auditService = auditService;
-        this.userServiceClient = userServiceClient;
-        this.eventPublisher = eventPublisher;
-    }
     @Transactional
     public AuthResponse loginWithGoogle(String idToken) {
         GoogleIdToken.Payload payload = verifyGoogleToken(idToken);
@@ -154,10 +139,7 @@ public class OAuthService {
     // ─────────────────────────────────────────────────────────────
     private GoogleIdToken.Payload verifyGoogleToken(String idToken) {
         try {
-            GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(
-                    new NetHttpTransport(), GsonFactory.getDefaultInstance())
-                    .setAudience(Collections.singletonList(googleClientId))
-                    .build();
+            GoogleIdTokenVerifier verifier = getVerifier();
 
             GoogleIdToken googleIdToken = verifier.verify(idToken);
             if (googleIdToken == null) {
@@ -171,5 +153,12 @@ public class OAuthService {
             log.error("Google token verification failed: {}", e.getMessage());
             throw new RuntimeException("Google token verification failed: " + e.getMessage());
         }
+    }
+
+    protected GoogleIdTokenVerifier getVerifier() {
+        return new GoogleIdTokenVerifier.Builder(
+                new NetHttpTransport(), GsonFactory.getDefaultInstance())
+                .setAudience(Collections.singletonList(googleClientId))
+                .build();
     }
 }

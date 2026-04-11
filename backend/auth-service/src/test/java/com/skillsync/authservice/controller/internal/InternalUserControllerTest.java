@@ -1,141 +1,135 @@
 package com.skillsync.authservice.controller.internal;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.skillsync.authservice.dto.AuthProfileUpdateDTO;
 import com.skillsync.authservice.entity.User;
 import com.skillsync.authservice.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
-import org.springframework.boot.autoconfigure.security.servlet.SecurityFilterAutoConfiguration;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.FilterType;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.util.Optional;
 
-import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-import com.skillsync.authservice.config.JwtConfig;
-import com.skillsync.authservice.security.JwtUtil;
-
-@WebMvcTest(
-    controllers = InternalUserController.class,
-    excludeAutoConfiguration = {
-        SecurityAutoConfiguration.class,
-        SecurityFilterAutoConfiguration.class
-    },
-    excludeFilters = @ComponentScan.Filter(
-        type = FilterType.ASSIGNABLE_TYPE,
-        classes = com.skillsync.authservice.filter.GatewayRequestFilter.class
-    )
-)
+@ExtendWith(MockitoExtension.class)
 class InternalUserControllerTest {
 
-    @Autowired MockMvc mockMvc;
-    @Autowired ObjectMapper objectMapper;
-    @MockBean UserRepository userRepository;
-    @MockBean JwtUtil jwtUtil;
-    @MockBean JwtConfig jwtConfig;
+    private MockMvc mockMvc;
+
+    @Mock
+    private UserRepository userRepository;
+
+    @InjectMocks
+    private InternalUserController internalUserController;
 
     private User user;
 
     @BeforeEach
     void setUp() {
-        user = new User("test@example.com", "encodedPass", "old.username", "ROLE_LEARNER");
+        mockMvc = MockMvcBuilders.standaloneSetup(internalUserController).build();
+        user = new User("test@example.com", "pass", "testuser", "ROLE_LEARNER");
         user.setId(1L);
-        user.setIsActive(true);
     }
 
-    // ─── PUT /internal/users/{userId}/profile ────────────────────
-
     @Test
-    void updateUserProfile_shouldReturn200_whenUserExists() throws Exception {
+    void updateUserProfile_shouldUpdate_whenValid() throws Exception {
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-        when(userRepository.save(any())).thenReturn(user);
-
-        AuthProfileUpdateDTO dto = new AuthProfileUpdateDTO();
-        dto.setUsername("new.username");
 
         mockMvc.perform(put("/internal/users/1/profile")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(dto)))
+                        .content("{\"username\":\"newname\"}")
+                        .header("X-Gateway-Request", "true"))
                 .andExpect(status().isOk());
 
-        verify(userRepository).save(argThat(u -> u.getUsername().equals("new.username")));
+        verify(userRepository).save(argThat(u -> u.getUsername().equals("newname")));
     }
 
     @Test
-    void updateUserProfile_shouldReturn404_whenUserNotFound() throws Exception {
-        when(userRepository.findById(99L)).thenReturn(Optional.empty());
+    void updateUserProfile_shouldNotUpdate_whenEmptyUsername() throws Exception {
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
 
-        AuthProfileUpdateDTO dto = new AuthProfileUpdateDTO();
-        dto.setUsername("new.username");
-
-        mockMvc.perform(put("/internal/users/99/profile")
+        mockMvc.perform(put("/internal/users/1/profile")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(dto)))
-                .andExpect(status().isNotFound());
+                        .content("{\"username\":\"\"}")
+                        .header("X-Gateway-Request", "true"))
+                .andExpect(status().isOk());
 
         verify(userRepository, never()).save(any());
     }
 
     @Test
-    void updateUserProfile_shouldNotUpdateUsername_whenUsernameBlank() throws Exception {
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-        when(userRepository.save(any())).thenReturn(user);
-
-        AuthProfileUpdateDTO dto = new AuthProfileUpdateDTO();
-        dto.setUsername("");
+    void updateUserProfile_shouldReturn404_whenUserNotFound() throws Exception {
+        when(userRepository.findById(1L)).thenReturn(Optional.empty());
 
         mockMvc.perform(put("/internal/users/1/profile")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(dto)))
-                .andExpect(status().isOk());
-
-        verify(userRepository).save(argThat(u -> u.getUsername().equals("old.username")));
+                        .content("{\"username\":\"newname\"}")
+                        .header("X-Gateway-Request", "true"))
+                .andExpect(status().isNotFound());
     }
 
-    // ─── PUT /internal/users/{userId}/roles ──────────────────────
-
     @Test
-    void addUserRole_shouldReturn200_andAddRole_whenUserExists() throws Exception {
+    void addUserRole_shouldAdd_whenNew() throws Exception {
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-        when(userRepository.save(any())).thenReturn(user);
 
         mockMvc.perform(put("/internal/users/1/roles")
-                        .param("role", "ROLE_MENTOR"))
+                        .param("role", "ROLE_MENTOR")
+                        .header("X-Gateway-Request", "true"))
                 .andExpect(status().isOk());
 
         verify(userRepository).save(argThat(u -> u.getRole().contains("ROLE_MENTOR")));
     }
 
     @Test
-    void addUserRole_shouldReturn200_andNotDuplicate_whenRoleAlreadyExists() throws Exception {
-        user = new User("test@example.com", "encodedPass", "test.example.com", "ROLE_LEARNER,ROLE_MENTOR");
-        user.setId(1L);
+    void addUserRole_shouldNotAdd_whenAlreadyExists() throws Exception {
+        user.setRole("ROLE_LEARNER,ROLE_MENTOR");
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
 
         mockMvc.perform(put("/internal/users/1/roles")
-                        .param("role", "ROLE_MENTOR"))
+                        .param("role", "ROLE_MENTOR")
+                        .header("X-Gateway-Request", "true"))
                 .andExpect(status().isOk());
 
         verify(userRepository, never()).save(any());
     }
 
     @Test
-    void addUserRole_shouldReturn404_whenUserNotFound() throws Exception {
-        when(userRepository.findById(99L)).thenReturn(Optional.empty());
+    void getUserRoles_shouldReturnEmptySet_whenNoRoles() throws Exception {
+        user.setRole("");
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
 
-        mockMvc.perform(put("/internal/users/99/roles")
-                        .param("role", "ROLE_MENTOR"))
+        mockMvc.perform(get("/internal/users/1/roles")
+                        .header("X-Gateway-Request", "true"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$.length()").value(0));
+    }
+
+    @Test
+    void getUserRoles_shouldHandleNullHeaders() throws Exception {
+        user.setRole("ROLE_LEARNER");
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+
+        mockMvc.perform(get("/internal/users/1/roles"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void updateUserStatus_shouldReturn404_whenUserNotFound() throws Exception {
+        when(userRepository.findById(1L)).thenReturn(Optional.empty());
+
+        mockMvc.perform(put("/internal/users/1/status")
+                        .param("isActive", "false"))
                 .andExpect(status().isNotFound());
     }
 }

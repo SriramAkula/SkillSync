@@ -53,7 +53,7 @@ class AuthServiceImplTest {
         RegisterRequest request = new RegisterRequest("test@example.com", "password123");
         when(otpService.isEmailVerified("test@example.com")).thenReturn(true);
         when(userRepository.existsByEmail("test@example.com")).thenReturn(false);
-        when(userRepository.existsByUsername("test.example.com")).thenReturn(false);
+        when(userRepository.existsByUsername(anyString())).thenReturn(false);
         when(passwordEncoder.encode("password123")).thenReturn("encodedPass");
         when(userRepository.save(any(User.class))).thenReturn(user);
         when(jwtUtil.generateToken(anyLong(), anyString(), anyList())).thenReturn("jwt-token");
@@ -97,7 +97,7 @@ class AuthServiceImplTest {
         RegisterRequest request = new RegisterRequest("test@example.com", "password123");
         when(otpService.isEmailVerified("test@example.com")).thenReturn(true);
         when(userRepository.existsByEmail("test@example.com")).thenReturn(false);
-        when(userRepository.existsByUsername("test.example.com")).thenReturn(true);
+        when(userRepository.existsByUsername(anyString())).thenReturn(true);
 
         assertThatThrownBy(() -> authService.register(request))
                 .isInstanceOf(RuntimeException.class)
@@ -185,7 +185,7 @@ class AuthServiceImplTest {
 
         assertThatThrownBy(() -> authService.login(request))
                 .isInstanceOf(RuntimeException.class)
-                .hasMessageContaining("Invalid credentials");
+                .hasMessageContaining("Invalid password");
     }
 
     // ─── refreshToken ────────────────────────────────────────────────────────
@@ -222,5 +222,83 @@ class AuthServiceImplTest {
         assertThatThrownBy(() -> authService.refreshToken("token"))
                 .isInstanceOf(RuntimeException.class)
                 .hasMessageContaining("deactivated");
+    }
+    @Test
+    void register_shouldHandleUsernameCollisionFallback() {
+        RegisterRequest request = new RegisterRequest("test@example.com", "password123");
+        when(otpService.isEmailVerified("test@example.com")).thenReturn(true);
+        when(userRepository.existsByEmail("test@example.com")).thenReturn(false);
+        
+        // First username 'test' exists
+        when(userRepository.existsByUsername("test")).thenReturn(true);
+        // Second username 'test.example.com' also exists -> should throw
+        when(userRepository.existsByUsername("test.example.com")).thenReturn(true);
+
+        assertThatThrownBy(() -> authService.register(request))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("Username derived from email already exists");
+    }
+
+    @Test
+    void register_shouldHandleUsernameCollisionSucceed() {
+        RegisterRequest request = new RegisterRequest("test@example.com", "password123");
+        when(otpService.isEmailVerified("test@example.com")).thenReturn(true);
+        when(userRepository.existsByEmail("test@example.com")).thenReturn(false);
+        when(userRepository.existsByUsername("test")).thenReturn(true);
+        when(userRepository.existsByUsername("test.example.com")).thenReturn(false); // Success on second try
+        when(passwordEncoder.encode(anyString())).thenReturn("p");
+        when(userRepository.save(any())).thenReturn(user);
+        when(jwtUtil.generateToken(any(), any(), any())).thenReturn("t");
+        when(jwtUtil.generateRefreshToken(any(), any(), any())).thenReturn("rt");
+
+        authService.register(request);
+        verify(userRepository).existsByUsername("test.example.com");
+    }
+
+    @Test
+    void login_shouldThrow_whenNotLocalProvider() {
+        user.setAuthProvider(com.skillsync.authservice.enums.AuthProvider.GOOGLE);
+        LoginRequest request = new LoginRequest("test@example.com", "p");
+        when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.of(user));
+
+        assertThatThrownBy(() -> authService.login(request))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("Please use the corresponding social login button");
+    }
+
+    @Test
+    void sendForgotPasswordOtp_shouldReturnSilently_whenUserNotFoundOrDeactivated() {
+        when(userRepository.findByEmail("ghost@example.com")).thenReturn(Optional.empty());
+        authService.sendForgotPasswordOtp("ghost@example.com");
+        verify(otpService, never()).sendPasswordResetOtp(any());
+
+        user.setIsActive(false);
+        when(userRepository.findByEmail("deactivated@example.com")).thenReturn(Optional.of(user));
+        authService.sendForgotPasswordOtp("deactivated@example.com");
+        verify(otpService, never()).sendPasswordResetOtp(any());
+    }
+
+    @Test
+    void resetPassword_shouldThrow_whenAccountDeactivated() {
+        when(otpService.isPasswordResetVerified("test@example.com")).thenReturn(true);
+        user.setIsActive(false);
+        when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.of(user));
+
+        assertThatThrownBy(() -> authService.resetPassword("test@example.com", "newPass"))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("deactivated");
+    }
+
+    @Test
+    void resetPassword_shouldSyncAuthProvider_whenNotLocal() {
+        when(otpService.isPasswordResetVerified("test@example.com")).thenReturn(true);
+        user.setAuthProvider(com.skillsync.authservice.enums.AuthProvider.GOOGLE);
+        when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.of(user));
+        when(passwordEncoder.encode(anyString())).thenReturn("encoded");
+
+        authService.resetPassword("test@example.com", "newPass");
+
+        assertThat(user.getAuthProvider()).isEqualTo(com.skillsync.authservice.enums.AuthProvider.LOCAL);
+        verify(userRepository).save(user);
     }
 }

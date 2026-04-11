@@ -3,11 +3,10 @@ package com.skillsync.authservice.controller.internal;
 import com.skillsync.authservice.entity.User;
 import com.skillsync.authservice.dto.AuthProfileUpdateDTO;
 import com.skillsync.authservice.repository.UserRepository;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import lombok.extern.slf4j.Slf4j;
+import lombok.RequiredArgsConstructor;
 
 import java.util.Optional;
 import java.util.Set;
@@ -19,12 +18,11 @@ import java.util.Arrays;
  */
 @RestController
 @RequestMapping("/internal/users")
+@Slf4j
+@RequiredArgsConstructor
 public class InternalUserController {
 
-    private static final Logger logger = LoggerFactory.getLogger(InternalUserController.class);
-
-    @Autowired
-    private UserRepository userRepository;
+    private final UserRepository userRepository;
 
     /**
      * Update user profile information in Auth Service
@@ -41,26 +39,29 @@ public class InternalUserController {
             @RequestHeader(value = "X-Internal-Service", required = false) String internalService,
             @RequestHeader(value = "X-Service-Auth", required = false) String serviceAuth) {
         
-        logger.info("Received profile update from: {}", internalService != null ? internalService : "unknown service");
-        logger.info("   userId={}, updates={}", userId, updates);
+        log.info("Received profile update from: {}", internalService != null ? internalService : "unknown service");
+        log.info("   userId={}, updates={}", userId, updates);
         
         Optional<User> userOpt = userRepository.findById(userId);
         if (userOpt.isEmpty()) {
-            logger.warn("User not found in Auth Service: userId={}", userId);
+            log.warn("User not found in Auth Service: userId={}", userId);
             return ResponseEntity.notFound().build();
         }
 
         User user = userOpt.get();
-        logger.info("   Current values: username={}", user.getUsername());
+        log.info("   Current values: username={}", user.getUsername());
 
         // Only allow updating username, NOT email
         if (updates.getUsername() != null && !updates.getUsername().isEmpty()) {
             user.setUsername(updates.getUsername());
-            logger.info("    Username updated to: {}", updates.getUsername());
+            log.info("    Username updated to: {}", updates.getUsername());
+            userRepository.save(user);
+            log.info("Profile successfully updated in Auth Service: userId={}", userId);
+        } else {
+            log.info("No profile fields updated in Auth Service: userId={}", userId);
         }
 
-        userRepository.save(user);
-        logger.info("Profile successfully updated in Auth Service: userId={}", userId);
+
         return ResponseEntity.ok().build();
     }
 
@@ -77,10 +78,10 @@ public class InternalUserController {
             @RequestParam String role,
             @RequestHeader(value = "X-Internal-Service", required = false) String internalService) {
         
-        logger.info("Received role update from: {}", internalService != null ? internalService : "unknown service");
+        log.info("Received role update from: {}", internalService != null ? internalService : "unknown service");
         Optional<User> userOpt = userRepository.findById(userId);
         if (userOpt.isEmpty()) {
-            logger.warn("User not found in Auth Service: userId={}", userId);
+            log.warn("User not found in Auth Service: userId={}", userId);
             return ResponseEntity.notFound().build();
         }
 
@@ -88,9 +89,9 @@ public class InternalUserController {
         if (!user.getRole().contains(role)) {
             user.setRole(user.getRole() + "," + role);
             userRepository.save(user);
-            logger.info("   Role {} added to user {}", role, userId);
+            log.info("   Role {} added to user {}", role, userId);
         } else {
-            logger.info("   User {} already has role {}", userId, role);
+            log.info("   User {} already has role {}", userId, role);
         }
         return ResponseEntity.ok().build();
     }
@@ -108,11 +109,11 @@ public class InternalUserController {
             @RequestHeader(value = "X-Internal-Service", required = false) String internalService,
             @RequestHeader(value = "X-Service-Auth", required = false) String serviceAuth) {
         
-        logger.info("Fetching roles for userId: {} (requested by: {})", userId, internalService != null ? internalService : "unknown service");
+        log.info("Fetching roles for userId: {} (requested by: {})", userId, internalService != null ? internalService : "unknown service");
         
         Optional<User> userOpt = userRepository.findById(userId);
         if (userOpt.isEmpty()) {
-            logger.warn("User not found in Auth Service: userId={}", userId);
+            log.warn("User not found in Auth Service: userId={}", userId);
             return ResponseEntity.notFound().build();
         }
 
@@ -124,7 +125,7 @@ public class InternalUserController {
             roles.addAll(Arrays.asList(roleArray));
         }
         
-        logger.info("   Retrieved roles for user {}: {}", userId, roles);
+        log.info("   Retrieved roles for user {}: {}", userId, roles);
         return ResponseEntity.ok(roles);
     }
 
@@ -142,12 +143,12 @@ public class InternalUserController {
             @RequestHeader(value = "X-Internal-Service", required = false) String internalService,
             @RequestHeader(value = "X-Service-Auth", required = false) String serviceAuth) {
         
-        logger.info("Received status update from: {} for userId: {}, isActive: {}", 
+        log.info("Received status update from: {} for userId: {}, isActive: {}", 
                 internalService != null ? internalService : "unknown service", userId, isActive);
         
         Optional<User> userOpt = userRepository.findById(userId);
         if (userOpt.isEmpty()) {
-            logger.warn("User not found in Auth Service: userId={}", userId);
+            log.warn("User not found in Auth Service: userId={}", userId);
             return ResponseEntity.notFound().build();
         }
 
@@ -155,7 +156,7 @@ public class InternalUserController {
         user.setIsActive(isActive);
         userRepository.save(user);
         
-        logger.info("User {} status updated to isActive={} in Auth Service", userId, isActive);
+        log.info("User {} status updated to isActive={} in Auth Service", userId, isActive);
         return ResponseEntity.ok().build();
     }
 }

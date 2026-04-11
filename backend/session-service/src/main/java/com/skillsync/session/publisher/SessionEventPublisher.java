@@ -4,22 +4,21 @@ import com.skillsync.session.event.SessionRequestedEvent;
 import com.skillsync.session.event.SessionAcceptedEvent;
 import com.skillsync.session.event.SessionRejectedEvent;
 import com.skillsync.session.event.SessionCancelledEvent;
-import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Component;
+import lombok.extern.slf4j.Slf4j;
+import lombok.RequiredArgsConstructor;
 
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.retry.annotation.Retry;
 
 @Component
+@Slf4j
+@RequiredArgsConstructor
 public class SessionEventPublisher {
     
-    private static final Logger log = LoggerFactory.getLogger(SessionEventPublisher.class);
-    
-    @Autowired
-    private RabbitTemplate rabbitTemplate;
+    private final RabbitTemplate rabbitTemplate;
     
     @CircuitBreaker(name = "sessionEventPublisher", fallbackMethod = "publishSessionRequestedFallback")
     @Retry(name = "sessionEventPublisher")

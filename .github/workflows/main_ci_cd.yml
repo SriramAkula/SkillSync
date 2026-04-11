@@ -13,9 +13,41 @@ on:
 
 jobs:
   # ───────────────
-  # JOB 1: BUILD & PUSH
+  # JOB 1: CODE QUALITY & SONAR
+  # ───────────────
+  lint-and-sonar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install Frontend Dependencies
+        working-directory: ./frontend
+        run: npm ci
+
+      - name: Run Frontend Lint
+        working-directory: ./frontend
+        run: npm run lint
+
+      # Example template for running Sonar in CI (requires SonarCloud/SonarQube server)
+      # - name: SonarQube Scan
+      #   uses: SonarSource/sonarqube-scan-action@master
+      #   env:
+      #     SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      #     SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+
+  # ───────────────
+  # JOB 2: BUILD & PUSH
   # ───────────────
   build-and-push:
+    needs: lint-and-sonar
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false

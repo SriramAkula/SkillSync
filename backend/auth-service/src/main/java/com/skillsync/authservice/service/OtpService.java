@@ -1,7 +1,5 @@
 package com.skillsync.authservice.service;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -9,6 +7,8 @@ import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 import org.thymeleaf.context.Context;
 import org.thymeleaf.spring6.SpringTemplateEngine;
+import lombok.extern.slf4j.Slf4j;
+import lombok.RequiredArgsConstructor;
 
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
@@ -17,9 +17,9 @@ import java.security.SecureRandom;
 import java.util.concurrent.TimeUnit;
 
 @Service
+@Slf4j
+@RequiredArgsConstructor
 public class OtpService {
-
-    private static final Logger log = LoggerFactory.getLogger(OtpService.class);
 
     private static final String OTP_PREFIX       = "otp:";
     private static final String VERIFIED_PREFIX  = "otp:verified:";
@@ -42,12 +42,6 @@ public class OtpService {
     private final JavaMailSender mailSender;
     private final SpringTemplateEngine templateEngine;
 
-    public OtpService(RedisTemplate<String, String> redisTemplate, JavaMailSender mailSender, SpringTemplateEngine templateEngine) {
-        this.redisTemplate = redisTemplate;
-        this.mailSender = mailSender;
-        this.templateEngine = templateEngine;
-    }
-
     public void sendOtp(String email) {
         String otp = String.format("%06d", new SecureRandom().nextInt(999999));
         redisTemplate.opsForValue().set(OTP_PREFIX + email, otp, otpTtlMinutes, TimeUnit.MINUTES);
@@ -55,7 +49,7 @@ public class OtpService {
         try {
             sendHtmlEmail(email, "SkillSync - Email Verification OTP", "otp-verification", otp, otpTtlMinutes);
             log.info("Registration OTP sent to email={}", email);
-        } catch (MessagingException | UnsupportedEncodingException e) {
+        } catch (Exception e) {
             log.error("Failed to send registration OTP to email={}: {}", email, e.getMessage());
             throw new RuntimeException("Failed to send email. Please try again later.");
         }
@@ -97,7 +91,7 @@ public class OtpService {
         try {
             sendHtmlEmail(email, "SkillSync - Password Reset OTP", "password-reset", otp, otpTtlMinutes);
             log.info("Password reset OTP sent to email={}", email);
-        } catch (MessagingException | UnsupportedEncodingException e) {
+        } catch (Exception e) {
             log.error("Failed to send password reset OTP to email={}: {}", email, e.getMessage());
             throw new RuntimeException("Failed to send email. Please try again later.");
         }
