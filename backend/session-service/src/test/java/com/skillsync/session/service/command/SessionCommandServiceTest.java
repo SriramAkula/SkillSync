@@ -57,7 +57,7 @@ class SessionCommandServiceTest {
 
     @Test
     void requestSession_ShouldSucceed_WhenNoConflict() {
-        when(userClient.getUserProfile(anyLong())).thenReturn(null); // Simple bypass for test
+        when(userClient.getUserProfile(anyLong())).thenReturn(null); 
         when(sessionRepository.findSessionsInTimeRange(anyLong(), any(), any())).thenReturn(List.of());
         when(sessionMapper.toEntity(eq(200L), any())).thenReturn(session);
         when(sessionRepository.save(any())).thenReturn(session);
@@ -68,6 +68,26 @@ class SessionCommandServiceTest {
         assertNotNull(response);
         verify(sessionRepository).save(any());
         verify(eventPublisher).publishSessionRequested(any());
+    }
+
+    @Test
+    void requestSession_ShouldThrow_WhenUserBlocked() {
+        com.skillsync.session.dto.response.UserProfileResponseDto profile = new com.skillsync.session.dto.response.UserProfileResponseDto();
+        profile.setIsBlocked(true);
+        com.skillsync.session.dto.ApiResponse<com.skillsync.session.dto.response.UserProfileResponseDto> apiResponse = new com.skillsync.session.dto.ApiResponse<>();
+        apiResponse.setData(profile);
+        
+        when(userClient.getUserProfile(200L)).thenReturn(apiResponse);
+
+        assertThrows(SessionConflictException.class, () -> sessionCommandService.requestSession(200L, requestDto));
+    }
+
+    @Test
+    void requestSession_ShouldThrow_WhenConflictExists() {
+        when(userClient.getUserProfile(anyLong())).thenReturn(null);
+        when(sessionRepository.findSessionsInTimeRange(anyLong(), any(), any())).thenReturn(List.of(new Session()));
+
+        assertThrows(SessionConflictException.class, () -> sessionCommandService.requestSession(200L, requestDto));
     }
 
     @Test
@@ -89,6 +109,26 @@ class SessionCommandServiceTest {
     }
 
     @Test
+    void acceptSession_ShouldThrow_WhenAlreadyAccepted() {
+        session.setStatus(SessionStatus.ACCEPTED);
+        when(sessionRepository.findById(1L)).thenReturn(Optional.of(session));
+        assertThrows(SessionConflictException.class, () -> sessionCommandService.acceptSession(1L));
+    }
+
+    @Test
+    void rejectSession_ShouldSuccess() {
+        when(sessionRepository.findById(1L)).thenReturn(Optional.of(session));
+        when(sessionRepository.save(any())).thenReturn(session);
+        when(sessionMapper.toDto(session)).thenReturn(new SessionResponseDto());
+
+        sessionCommandService.rejectSession(1L, "Busy");
+
+        assertEquals(SessionStatus.REJECTED, session.getStatus());
+        assertEquals("Busy", session.getRejectionReason());
+        verify(eventPublisher).publishSessionRejected(any());
+    }
+
+    @Test
     void cancelSession_ShouldSuccess() {
         session.setStatus(SessionStatus.ACCEPTED);
         when(sessionRepository.findById(1L)).thenReturn(Optional.of(session));
@@ -99,5 +139,20 @@ class SessionCommandServiceTest {
 
         assertEquals(SessionStatus.CANCELLED, session.getStatus());
         verify(eventPublisher).publishSessionCancelled(any());
+    }
+
+    @Test
+    void cancelSession_ShouldThrow_WhenRejected() {
+        session.setStatus(SessionStatus.REJECTED);
+        when(sessionRepository.findById(1L)).thenReturn(Optional.of(session));
+        assertThrows(SessionConflictException.class, () -> sessionCommandService.cancelSession(1L));
+    }
+
+    @Test
+    void updateStatus_ShouldSuccess() {
+        when(sessionRepository.findById(1L)).thenReturn(Optional.of(session));
+        sessionCommandService.updateStatus(1L, "COMPLETED");
+        assertEquals(SessionStatus.COMPLETED, session.getStatus());
+        verify(sessionRepository).save(session);
     }
 }

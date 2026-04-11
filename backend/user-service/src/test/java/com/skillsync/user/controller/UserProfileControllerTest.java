@@ -2,7 +2,9 @@ package com.skillsync.user.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.skillsync.user.dto.request.UpdateProfileRequestDto;
+import com.skillsync.user.dto.request.BlockUserRequest;
 import com.skillsync.user.dto.response.UserProfileResponseDto;
+import com.skillsync.user.dto.response.UserProfileAdminResponseDto;
 import com.skillsync.user.exception.UserProfileNotFoundException;
 import com.skillsync.user.service.UserProfileService;
 import org.junit.jupiter.api.BeforeEach;
@@ -14,9 +16,11 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
+import org.springframework.data.domain.Page;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -289,5 +293,96 @@ class UserProfileControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(userData)))
                 .andExpect(status().isInternalServerError());
+    }
+
+    // ─── GET /user/internal/users/{userId} ───────────────────────────────────
+
+    @Test
+    void getInternalUserProfile_shouldReturn200() throws Exception {
+        when(userProfileService.getProfileByUserId(10L)).thenReturn(responseDto);
+
+        mockMvc.perform(get("/user/internal/users/10")
+                        .header("X-Gateway-Request", "true"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.userId").value(10));
+    }
+
+    // ─── ADMIN ENDPOINTS ─────────────────────────────────────────────────────
+
+    @Test
+    void getAllUsers_shouldReturn200_whenAdmin() throws Exception {
+        when(userAdminService.getAllUsers(anyInt(), anyInt())).thenReturn(Page.empty());
+
+        mockMvc.perform(get("/user/admin/all")
+                        .header("roles", "ROLE_ADMIN")
+                        .header("X-Gateway-Request", "true"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void getAllUsers_shouldReturn403_whenNotAdmin() throws Exception {
+        mockMvc.perform(get("/user/admin/all")
+                        .header("roles", "ROLE_USER")
+                        .header("X-Gateway-Request", "true"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void getBlockedUsers_shouldReturn200_whenAdmin() throws Exception {
+        when(userAdminService.getBlockedUsers()).thenReturn(Collections.emptyList());
+
+        mockMvc.perform(get("/user/admin/blocked")
+                        .header("roles", "ROLE_ADMIN")
+                        .header("X-Gateway-Request", "true"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void blockUser_shouldReturn200_whenAdmin() throws Exception {
+        BlockUserRequest blockRequest = new BlockUserRequest("Spam");
+        UserProfileAdminResponseDto adminResponse = new UserProfileAdminResponseDto();
+        adminResponse.setUserId(10L);
+        adminResponse.setIsBlocked(true);
+
+        when(userAdminService.blockUser(anyLong(), anyString(), anyLong())).thenReturn(adminResponse);
+
+        mockMvc.perform(put("/user/admin/10/block")
+                        .header("X-User-Id", 1L)
+                        .header("roles", "ROLE_ADMIN")
+                        .header("X-Gateway-Request", "true")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(blockRequest)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.isBlocked").value(true));
+    }
+
+    @Test
+    void unblockUser_shouldReturn200_whenAdmin() throws Exception {
+        UserProfileAdminResponseDto adminResponse = new UserProfileAdminResponseDto();
+        adminResponse.setUserId(10L);
+        adminResponse.setIsBlocked(false);
+
+        when(userAdminService.unblockUser(anyLong(), anyLong())).thenReturn(adminResponse);
+
+        mockMvc.perform(put("/user/admin/10/unblock")
+                        .header("X-User-Id", 1L)
+                        .header("roles", "ROLE_ADMIN")
+                        .header("X-Gateway-Request", "true"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.isBlocked").value(false));
+    }
+
+    @Test
+    void getUserDetails_shouldReturn200_whenAdmin() throws Exception {
+        UserProfileAdminResponseDto adminResponse = new UserProfileAdminResponseDto();
+        adminResponse.setUserId(10L);
+
+        when(userAdminService.getUserDetails(10L)).thenReturn(adminResponse);
+
+        mockMvc.perform(get("/user/admin/10/details")
+                        .header("roles", "ROLE_ADMIN")
+                        .header("X-Gateway-Request", "true"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.userId").value(10));
     }
 }

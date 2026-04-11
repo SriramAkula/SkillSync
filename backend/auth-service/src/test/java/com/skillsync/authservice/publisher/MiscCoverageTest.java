@@ -495,8 +495,8 @@ class MiscCoverageTest {
         CustomUserDetails details = new CustomUserDetails(user);
         
         assertThat(details.getAuthorities()).isNull();
-        assertThat(details.getPassword()).isNull();
-        assertThat(details.getUsername()).isNull();
+        assertThat(details.getPassword()).isEqualTo("p");
+        assertThat(details.getUsername()).isEqualTo("e");
         // and some defaults from UserDetails interface that we didn't override but Jacoco might track
         assertThat(details.isAccountNonExpired()).isTrue();
         assertThat(details.isAccountNonLocked()).isTrue();

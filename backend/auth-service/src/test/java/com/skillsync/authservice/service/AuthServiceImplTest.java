@@ -301,4 +301,68 @@ class AuthServiceImplTest {
         assertThat(user.getAuthProvider()).isEqualTo(com.skillsync.authservice.enums.AuthProvider.LOCAL);
         verify(userRepository).save(user);
     }
+
+    // ─── Otp / Additional ───────────────────────────────────
+
+    @Test
+    void sendOtp_shouldSucceed_whenUserDoesNotExist() {
+        when(userRepository.existsByEmail("new@example.com")).thenReturn(false);
+        authService.sendOtp("new@example.com");
+        verify(otpService).sendOtp("new@example.com");
+    }
+
+    @Test
+    void sendOtp_shouldThrow_whenUserExists() {
+        when(userRepository.existsByEmail("exists@example.com")).thenReturn(true);
+        assertThatThrownBy(() -> authService.sendOtp("exists@example.com"))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("already registered");
+    }
+
+    @Test
+    void verifyOtp_shouldThrow_whenInvalid() {
+        when(otpService.verifyOtp("test@example.com", "123456")).thenReturn(false);
+        assertThatThrownBy(() -> authService.verifyOtp("test@example.com", "123456"))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("Invalid or expired OTP");
+    }
+
+    @Test
+    void verifyOtp_shouldSucceed_whenValid() {
+        when(otpService.verifyOtp("test@example.com", "123456")).thenReturn(true);
+        authService.verifyOtp("test@example.com", "123456");
+        // verify no exception
+    }
+
+    @Test
+    void sendForgotPasswordOtp_shouldSucceed_whenUserExists() {
+        when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.of(user));
+        authService.sendForgotPasswordOtp("test@example.com");
+        verify(otpService).sendPasswordResetOtp("test@example.com");
+    }
+
+    @Test
+    void verifyForgotPasswordOtp_shouldThrow_whenInvalid() {
+        when(otpService.verifyPasswordResetOtp("test@example.com", "123456")).thenReturn(false);
+        assertThatThrownBy(() -> authService.verifyForgotPasswordOtp("test@example.com", "123456"))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("Invalid or expired OTP");
+    }
+
+    @Test
+    void resetPassword_shouldThrow_whenOtpNotVerified() {
+        when(otpService.isPasswordResetVerified("test@example.com")).thenReturn(false);
+        assertThatThrownBy(() -> authService.resetPassword("test@example.com", "newPass"))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("OTP not verified");
+    }
+
+    @Test
+    void resetPassword_shouldThrow_whenUserNotFound() {
+        when(otpService.isPasswordResetVerified("test@example.com")).thenReturn(true);
+        when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.empty());
+        assertThatThrownBy(() -> authService.resetPassword("test@example.com", "newPass"))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("User not found");
+    }
 }

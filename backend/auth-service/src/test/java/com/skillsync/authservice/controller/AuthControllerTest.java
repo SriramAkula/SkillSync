@@ -244,4 +244,34 @@ class AuthControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(header().exists(HttpHeaders.SET_COOKIE));
     }
+
+    @Test
+    void forgotPassword_shouldReturn200() throws Exception {
+        OtpRequest req = new OtpRequest("test@example.com");
+        mockMvc.perform(post("/auth/forgot-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("If this email is registered, an OTP has been sent."));
+    }
+
+    @Test
+    void verifyForgotPasswordOtp_shouldReturn200() throws Exception {
+        OtpVerifyRequest req = new OtpVerifyRequest("test@example.com", "123456");
+        mockMvc.perform(post("/auth/verify-forgot-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("OTP verified. You may now reset your password."));
+    }
+
+    @Test
+    void resetPassword_shouldReturn200() throws Exception {
+        ResetPasswordRequest req = new ResetPasswordRequest("test@example.com", "new-password123");
+        mockMvc.perform(post("/auth/reset-password")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("Password reset successfully. Please login with your new password."));
+    }
 }

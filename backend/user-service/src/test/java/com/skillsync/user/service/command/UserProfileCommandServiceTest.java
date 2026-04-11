@@ -84,4 +84,21 @@ class UserProfileCommandServiceTest {
         userProfileCommandService.createProfile(10L, "user@example.com", "user");
         verify(userProfileRepository).save(any());
     }
+
+    @Test
+    void updateProfile_shouldNotThrow_whenAuthClientFails() {
+        UpdateProfileRequestDto request = new UpdateProfileRequestDto("newuser", "Name", "Bio", "123", "Java");
+        UserProfileResponseDto dto = new UserProfileResponseDto();
+        
+        when(userProfileRepository.findByUserId(10L)).thenReturn(Optional.of(profile));
+        when(userProfileRepository.save(any(UserProfile.class))).thenReturn(profile);
+        when(userProfileMapper.toDto(profile)).thenReturn(dto);
+        doThrow(new RuntimeException("Auth service down")).when(authClient).updateUserProfile(anyLong(), any());
+
+        // Should not throw exception, just log error
+        assertThatCode(() -> userProfileCommandService.updateProfile(10L, request))
+                .doesNotThrowAnyException();
+        
+        verify(userProfileRepository).save(profile);
+    }
 }

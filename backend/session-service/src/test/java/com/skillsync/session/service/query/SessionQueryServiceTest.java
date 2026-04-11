@@ -55,14 +55,37 @@ class SessionQueryServiceTest {
     }
 
     @Test
-    void getSessionsForMentor_ShouldReturnPage() {
-        Page<Session> page = new PageImpl<>(List.of(session));
+    void getSessionsForMentor_ShouldReturnEmptyPage_WhenNoSessions() {
+        Page<Session> page = Page.empty();
         when(sessionRepository.findByMentorId(eq(100L), any())).thenReturn(page);
-        when(sessionMapper.toDto(any())).thenReturn(new SessionResponseDto());
 
         PageResponse<SessionResponseDto> response = sessionQueryService.getSessionsForMentor(100L, 0, 10);
         
         assertNotNull(response);
+        assertEquals(0, response.getContent().size());
+        assertEquals(0, response.getTotalElements());
+    }
+
+    @Test
+    void getSessionsForLearner_ShouldReturnPage() {
+        Page<Session> page = new PageImpl<>(List.of(session));
+        when(sessionRepository.findByLearnerId(eq(200L), any())).thenReturn(page);
+        when(sessionMapper.toDto(any())).thenReturn(new SessionResponseDto());
+
+        PageResponse<SessionResponseDto> response = sessionQueryService.getSessionsForLearner(200L, 0, 10);
+        
+        assertNotNull(response);
         assertEquals(1, response.getContent().size());
+    }
+
+    @Test
+    void getPendingSessions_ShouldReturnList() {
+        when(sessionRepository.findPendingSessions()).thenReturn(List.of(session));
+        when(sessionMapper.toDto(any())).thenReturn(new SessionResponseDto());
+
+        List<SessionResponseDto> result = sessionQueryService.getPendingSessions();
+        
+        assertNotNull(result);
+        assertEquals(1, result.size());
     }
 }
