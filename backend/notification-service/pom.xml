@@ -224,10 +224,6 @@
 				<version>0.8.13</version>
 				<configuration>
     <excludes>
-        <exclude>**/dto/**</exclude>
-        <exclude>**/entity/**</exclude>
-        <exclude>**/config/**</exclude>
-        <exclude>**/exception/**</exclude>
         <exclude>**/*Application.class</exclude>
     </excludes>
 </configuration>

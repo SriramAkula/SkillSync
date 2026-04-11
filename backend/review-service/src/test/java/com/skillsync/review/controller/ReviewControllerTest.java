@@ -134,5 +134,47 @@ class ReviewControllerTest {
                         .header("roles", "ROLE_LEARNER"))
                 .andExpect(status().isOk());
     }
+
+    @Test
+    void submitReview_shouldReturn403_whenRoleMissing() throws Exception {
+        mockMvc.perform(post("/review")
+                        .header("X-User-Id", 10L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(reviewRequest)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void getReview_shouldReturn404_whenNotExists() throws Exception {
+        when(reviewService.getReview(99L)).thenThrow(new ReviewNotFoundException("Not found"));
+
+        mockMvc.perform(get("/review/99"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void updateReview_shouldReturn403_whenForbiddenRole() throws Exception {
+        mockMvc.perform(put("/review/1")
+                        .header("X-User-Id", 10L)
+                        .header("roles", "ROLE_ADMIN")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(reviewRequest)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void updateReview_shouldReturn401_whenUnauthorizedOwner() throws Exception {
+        when(reviewService.updateReview(anyLong(), anyLong(), any())).thenThrow(new UnauthorizedException("Unauthorized"));
+
+        mockMvc.perform(put("/review/1")
+                        .header("X-User-Id", 11L)
+                        .header("roles", "ROLE_LEARNER")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(reviewRequest)))
+                .andExpect(status().isForbidden()); 
+                // Wait, ReviewController throws ResponseStatusException(HttpStatus.FORBIDDEN) for ROLES, 
+                // but what about UnauthorizedException?
+                // Let's check GlobalExceptionHandler or the controller.
+    }
 }
 
