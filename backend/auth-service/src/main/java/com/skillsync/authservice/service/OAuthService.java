@@ -1,5 +1,6 @@
 package com.skillsync.authservice.service;
 
+import org.springframework.beans.factory.annotation.Value;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
 import com.google.api.client.http.javanet.NetHttpTransport;
@@ -100,9 +101,14 @@ public class OAuthService {
         // Dummy password - random UUID, unguessable, user will never know it
         String dummyPassword = passwordEncoder.encode(UUID.randomUUID().toString());
 
-        User user = new User(email, dummyPassword, username, "ROLE_LEARNER");
-        user.setAuthProvider(provider);
-        user.setProviderId(providerId);
+        User user = User.builder()
+                .email(email)
+                .password(dummyPassword)
+                .username(username)
+                .role("ROLE_LEARNER")
+                .authProvider(provider)
+                .providerId(providerId)
+                .build();
 
         User saved = userRepository.save(user);
         log.info("New OAuth user created: email={}, provider={}", email, provider);
@@ -162,3 +168,5 @@ public class OAuthService {
                 .build();
     }
 }
+
+

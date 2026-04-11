@@ -14,7 +14,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.thymeleaf.spring6.SpringTemplateEngine;
 import jakarta.mail.internet.MimeMessage;
-import java.util.concurrent.TimeUnit;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -204,3 +203,4 @@ class OtpServiceTest {
                 .hasMessageContaining("Failed to send email");
     }
 }
+

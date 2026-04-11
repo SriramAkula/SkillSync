@@ -20,6 +20,28 @@ import com.skillsync.authservice.repository.UserRepository;
 @RequiredArgsConstructor
 public class DataInitializer implements CommandLineRunner {
 
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final UserServiceClient userServiceClient;
+
+    @Value("${admin.email}")
+    private String adminEmail;
+
+    @Value("${admin.password}")
+    private String adminPassword;
+
+    @Value("${admin.username}")
+    private String adminUsername;
+
+    @Value("${superadmin.email}")
+    private String superAdminEmail;
+
+    @Value("${superadmin.password}")
+    private String superAdminPassword;
+
+    @Value("${superadmin.username}")
+    private String superAdminUsername;
+
     private static final String ROLE_ADMIN = "ROLE_ADMIN";
 
     @Override

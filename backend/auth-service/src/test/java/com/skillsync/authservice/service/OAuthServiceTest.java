@@ -246,3 +246,4 @@ class OAuthServiceTest {
         assertThat(v).isNotNull();
     }
 }
+

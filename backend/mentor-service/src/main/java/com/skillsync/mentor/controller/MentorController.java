@@ -1,5 +1,6 @@
 package com.skillsync.mentor.controller;
 
+import org.springframework.data.domain.Page;
 import com.skillsync.mentor.dto.ApiResponse;
 import com.skillsync.mentor.dto.PageResponse;
 import com.skillsync.mentor.dto.request.ApplyMentorRequestDto;
@@ -264,3 +265,5 @@ public class MentorController {
                 .build());
     }
 }
+
+

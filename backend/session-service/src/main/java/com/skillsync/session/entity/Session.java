@@ -8,7 +8,6 @@ import java.time.LocalDateTime;
 
 import com.skillsync.session.audit.Auditable;
 
-import com.skillsync.session.audit.Auditable;
 import lombok.*;
 
 @Entity
@@ -64,6 +63,5 @@ public class Session extends Auditable {
         updatedAt = LocalDateTime.now();
     }
 
-    @Column(nullable = false)
-    private LocalDateTime updatedAt;
 }
+

@@ -65,21 +65,5 @@ public class MentorProfile extends Auditable {
 
 	@Column(nullable = false)
 	private LocalDateTime updatedAt;
-
-	@PrePersist
-	protected void onCreate() {
-		this.createdAt = LocalDateTime.now();
-		this.updatedAt = LocalDateTime.now();
-		this.isApproved = false;
-		this.rating = 0.0;
-		this.totalStudents = 0;
-	}
-
-	@PreUpdate
-	protected void onUpdate() {
-		this.updatedAt = LocalDateTime.now();
-	}
-
-    @Column(nullable = false)
-    private LocalDateTime updatedAt;
 }
+

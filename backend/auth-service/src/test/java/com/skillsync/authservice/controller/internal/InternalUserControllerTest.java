@@ -133,3 +133,4 @@ class InternalUserControllerTest {
                 .andExpect(status().isNotFound());
     }
 }
+

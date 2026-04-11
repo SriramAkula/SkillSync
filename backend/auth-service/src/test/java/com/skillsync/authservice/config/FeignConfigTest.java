@@ -62,3 +62,4 @@ class FeignConfigTest {
         assertThat(exception.getMessage()).contains("Feign error: 400");
     }
 }
+

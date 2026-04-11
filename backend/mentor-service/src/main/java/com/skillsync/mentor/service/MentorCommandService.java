@@ -1,5 +1,6 @@
 package com.skillsync.mentor.service;
 
+import org.springframework.data.redis.core.RedisTemplate;
 import com.skillsync.mentor.client.AuthServiceClient;
 import com.skillsync.mentor.dto.request.ApplyMentorRequestDto;
 import com.skillsync.mentor.dto.request.UpdateAvailabilityRequestDto;
@@ -131,3 +132,5 @@ public class MentorCommandService {
                 .orElseThrow(() -> new MentorNotFoundException("Mentor not found with ID: " + mentorId));
     }
 }
+
+

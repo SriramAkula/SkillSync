@@ -42,8 +42,6 @@ public class Review extends Auditable {
     @Column(nullable = false)
     private LocalDateTime updatedAt;
     
-    @Column(nullable = false)
-    private LocalDateTime updatedAt;
     
     @PrePersist
     protected void onCreate() {

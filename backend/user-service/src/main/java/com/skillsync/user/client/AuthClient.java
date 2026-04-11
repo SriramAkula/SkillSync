@@ -34,3 +34,4 @@ public interface AuthClient {
             @RequestParam("isActive") boolean isActive
     );
 }
+

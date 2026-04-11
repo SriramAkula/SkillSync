@@ -1,5 +1,6 @@
 package com.skillsync.authservice.publisher;
 
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Component;
 import lombok.extern.slf4j.Slf4j;
 import lombok.RequiredArgsConstructor;
@@ -74,3 +75,5 @@ public class AuthEventPublisher {
         log.info("Event queued for retry: UserUpdatedEvent for userId: {}", event.getUserId());
     }
 }
+
+

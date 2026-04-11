@@ -151,3 +151,4 @@ class SessionControllerTest {
                 .andExpect(status().isOk());
     }
 }
+

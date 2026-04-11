@@ -17,6 +17,14 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 public class User extends Auditable {
+    public User(String email, String password, String username, String role) {
+        this.email = email;
+        this.password = password;
+        this.username = username;
+        this.role = role;
+        this.isActive = true;
+        this.authProvider = AuthProvider.LOCAL;
+    }
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

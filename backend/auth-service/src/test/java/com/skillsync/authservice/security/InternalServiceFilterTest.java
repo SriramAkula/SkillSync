@@ -95,3 +95,4 @@ class InternalServiceFilterTest {
         assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
     }
 }
+
