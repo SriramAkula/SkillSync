@@ -44,7 +44,7 @@ jobs:
         id: filter
         uses: dorny/paths-filter@v3
         with:
-          base: ${{ github.event.before != '0000000000000000000000000000000000000000' && github.event.before || github.ref_name }}
+          base: ${{ (github.ref_name == 'main' || github.ref_name == 'development') && (github.event.before != '0000000000000000000000000000000000000000' && github.event.before || github.ref_name) || 'development' }}
           filters: |
             changed:
               - '${{ matrix.service == 'frontend' && 'frontend/**' || format('backend/{0}/**', matrix.service) }}'
@@ -68,12 +68,6 @@ jobs:
 
       # --- BACKEND QUALITY ---
       - name: Set up JDK 17
-        if: matrix.service != 'frontend' && steps.filter.outputs.changed == 'true'
-        uses: actions/setup-node@v4 # Using setup-java instead
-        with:
-          node-version: '18' # Dummy wait, will replace with proper setup-java
-
-      - name: Clear Setup-Java Correctly
         if: matrix.service != 'frontend' && steps.filter.outputs.changed == 'true'
         uses: actions/setup-java@v4
         with:
@@ -130,7 +124,7 @@ jobs:
         uses: dorny/paths-filter@v3
         with:
           # Restoring specific paths for high-speed builds
-          base: ${{ github.event.before != '0000000000000000000000000000000000000000' && github.event.before || github.ref_name }}
+          base: ${{ (github.ref_name == 'main' || github.ref_name == 'development') && (github.event.before != '0000000000000000000000000000000000000000' && github.event.before || github.ref_name) || 'development' }}
           filters: |
             changed:
               - '${{ matrix.service == 'frontend' && 'frontend/**' || format('backend/{0}/**', matrix.service) }}'
