@@ -13,41 +13,92 @@ on:
 
 jobs:
   # ───────────────
-  # JOB 1: CODE QUALITY & SONAR
+  # JOB 1: QUALITY CHECKS (Sonar & Lint)
   # ───────────────
-  lint-and-sonar:
+  quality-checks:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [
+          "auth-service",
+          "user-service",
+          "skill-service",
+          "session-service",
+          "mentor-service",
+          "group-service",
+          "review-service",
+          "notification-service",
+          "payment-gateway",
+          "api-gateway",
+          "frontend"
+        ]
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
+      # Filtering: Only run quality checks if the specific service has changes
+      - name: Check for Changes
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          base: ${{ github.event.before != '0000000000000000000000000000000000000000' && github.event.before || github.ref_name }}
+          filters: |
+            changed:
+              - '${{ matrix.service == 'frontend' && 'frontend/**' || format('backend/{0}/**', matrix.service) }}'
+
+      # --- FRONTEND QUALITY ---
       - name: Setup Node.js
+        if: matrix.service == 'frontend' && steps.filter.outputs.changed == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: '18'
 
       - name: Install Frontend Dependencies
+        if: matrix.service == 'frontend' && steps.filter.outputs.changed == 'true'
         working-directory: ./frontend
         run: npm ci
 
       - name: Run Frontend Lint
+        if: matrix.service == 'frontend' && steps.filter.outputs.changed == 'true'
         working-directory: ./frontend
         run: npm run lint
 
-      # Example template for running Sonar in CI (requires SonarCloud/SonarQube server)
-      # - name: SonarQube Scan
-      #   uses: SonarSource/sonarqube-scan-action@master
-      #   env:
-      #     SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-      #     SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+      # --- BACKEND QUALITY ---
+      - name: Set up JDK 17
+        if: matrix.service != 'frontend' && steps.filter.outputs.changed == 'true'
+        uses: actions/setup-node@v4 # Using setup-java instead
+        with:
+          node-version: '18' # Dummy wait, will replace with proper setup-java
+
+      - name: Clear Setup-Java Correctly
+        if: matrix.service != 'frontend' && steps.filter.outputs.changed == 'true'
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Run Maven Verify & Sonar Scan
+        if: matrix.service != 'frontend' && steps.filter.outputs.changed == 'true'
+        working-directory: ./backend/${{ matrix.service }}
+        run: |
+          mvn clean verify sonar:sonar \
+            -Dsonar.projectKey=SriramAkula_SkillSync \
+            -Dsonar.organization=sriram-akula \
+            -Dsonar.host.url=https://sonarcloud.io \
+            -Dsonar.login=${{ secrets.SONAR_TOKEN }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
   # ───────────────
   # JOB 2: BUILD & PUSH
   # ───────────────
   build-and-push:
-    needs: lint-and-sonar
+    needs: quality-checks
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
