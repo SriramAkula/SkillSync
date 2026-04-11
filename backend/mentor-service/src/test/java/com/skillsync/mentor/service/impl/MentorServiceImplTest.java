@@ -47,6 +47,7 @@ class MentorServiceImplTest {
     @Mock private AuthServiceClient authServiceClient;
     @Mock private MentorMapper mentorMapper;
     @Mock private AuditService auditService;
+    @Mock private org.springframework.amqp.rabbit.core.RabbitTemplate rabbitTemplate;
     @InjectMocks private MentorServiceImpl mentorService;
 
     private MentorProfile pendingProfile;

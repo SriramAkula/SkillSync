@@ -87,7 +87,7 @@ jobs:
         run: |
           mvn clean verify sonar:sonar \
             -Dsonar.projectKey=SriramAkula_SkillSync \
-            -Dsonar.organization=sriram-akula \
+            -Dsonar.organization=sriramakula \
             -Dsonar.host.url=https://sonarcloud.io \
             -Dsonar.login=${{ secrets.SONAR_TOKEN }}
         env:
