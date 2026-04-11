@@ -93,8 +93,8 @@ class MiscCoverageTest {
     }
 
     @Test
-    void authEventPublisher_defaultConstructor_shouldWork() {
-        AuthEventPublisher publisher = new AuthEventPublisher();
+    void authEventPublisher_constructor_shouldWork() {
+        AuthEventPublisher publisher = new AuthEventPublisher(rabbitTemplate);
         assertThat(publisher).isNotNull();
     }
 
