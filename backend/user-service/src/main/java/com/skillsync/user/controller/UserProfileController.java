@@ -65,30 +65,19 @@ public class UserProfileController {
 			@Parameter(hidden = true) @RequestHeader(value = "roles", required = false) String roles,
 			HttpServletRequest request) {
 
-		// 1. Robust identification from JWT
-		Long userId = securityUtil.extractUserId(request);
-		String email = securityUtil.extractEmail(request);
-		
-		// Fallback to headers (only if secure/internal)
-		if (userId == null) userId = headerUserId;
-		if (email == null) email = headerEmail;
+		if (roles == null || roles.isEmpty()) {
+			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Missing roles");
+		}
 
-		if (userId == null && (email == null || email.isEmpty())) {
+		Long userId = securityUtil.extractUserId(request);
+		if (userId == null) userId = headerUserId;
+
+		if (userId == null) {
 			throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unidentified user");
 		}
-		log.info("Fetching profile for userId: {} (fallback email: {})", userId, email);
 
-		UserProfileResponseDto response;
-		try {
-			response = userProfileService.getProfileByUserId(userId);
-		} catch (Exception e) {
-			if (email != null && !email.trim().isEmpty()) {
-				log.info("Profile not found by userId, attempting fallback with email: {}", email);
-				response = userProfileService.getProfileByEmail(email);
-			} else {
-				throw e;
-			}
-		}
+		log.info("Fetching profile for userId: {}", userId);
+		UserProfileResponseDto response = userProfileService.getProfileByUserId(userId);
 
 		return ResponseEntity
 				.ok(new ApiResponse<>(
@@ -112,20 +101,7 @@ public class UserProfileController {
 			@PathVariable Long userId) {
 
 		log.info("Fetching public profile for userId: {}", userId);
-
-		UserProfileResponseDto response;
-		try {
-			response = userProfileService.getProfileByUserId(userId);
-		} catch (Exception e) {
-			log.warn("Public profile for userId={} not found. Returning placeholder.", userId);
-			UserProfileResponseDto placeholder = new UserProfileResponseDto();
-			placeholder.setUserId(userId);
-			placeholder.setUsername("User " + userId);
-			placeholder.setName("Unknown User");
-			placeholder.setEmail("unknown@skillsync.com");
-			placeholder.setBio("Profile details are currently unavailable.");
-			response = placeholder;
-		}
+		UserProfileResponseDto response = userProfileService.getProfileByUserId(userId);
 
 		return ResponseEntity
 				.ok(new ApiResponse<>(
@@ -150,43 +126,23 @@ public class UserProfileController {
 	@SecurityRequirement(name = "bearerAuth")
 	public ResponseEntity<ApiResponse<UserProfileResponseDto>> updateProfile(
 			@Parameter(hidden = true) @RequestHeader("X-User-Id") Long headerUserId,
-			@Parameter(hidden = true) @RequestHeader(value = "loggedInUser", required = false) String headerEmail,
 			@Parameter(hidden = true) @RequestHeader(value = "roles", required = false) String roles,
 			@Valid @RequestBody UpdateProfileRequestDto requestDto,
 			HttpServletRequest request) {
 
-		// 1. Robust identification from JWT
-		Long userId = securityUtil.extractUserId(request);
-		String email = securityUtil.extractEmail(request);
-		
-		// Fallback to headers (only if secure/internal)
-		if (userId == null) userId = headerUserId;
-		if (email == null) email = headerEmail;
+		if (roles == null || roles.isEmpty()) {
+			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Missing roles");
+		}
 
-		if (userId == null && (email == null || email.isEmpty())) {
+		Long userId = securityUtil.extractUserId(request);
+		if (userId == null) userId = headerUserId;
+
+		if (userId == null) {
 			throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unidentified user");
 		}
 
-		log.info("Updating profile for userId: {} (email: {})", userId, email);
-
-		UserProfileResponseDto response;
-		try {
-			if (userId != null) {
-				response = userProfileService.updateProfile(userId, requestDto);
-			} else {
-				// We have email but no ID (possibly older OAuth token format)
-				UserProfileResponseDto existing = userProfileService.getProfileByEmail(email);
-				response = userProfileService.updateProfile(existing.getUserId(), requestDto);
-			}
-		} catch (Exception e) {
-			if (email != null && !email.trim().isEmpty()) {
-				log.info("Profile update retry by email: {}", email);
-				UserProfileResponseDto profileByEmail = userProfileService.getProfileByEmail(email);
-				response = userProfileService.updateProfile(profileByEmail.getUserId(), requestDto);
-			} else {
-				throw e;
-			}
-		}
+		log.info("Updating profile for userId: {}", userId);
+		UserProfileResponseDto response = userProfileService.updateProfile(userId, requestDto);
 
 		return ResponseEntity
 				.ok(new ApiResponse<>(

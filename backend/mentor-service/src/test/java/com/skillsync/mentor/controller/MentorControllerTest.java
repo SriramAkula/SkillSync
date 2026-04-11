@@ -102,7 +102,7 @@ class MentorControllerTest {
 
         mockMvc.perform(post("/mentor/apply")
                         .header("X-User-Id", 10L)
-                        .header("roles", "ROLE_MENTOR")
+                        .header("roles", "ROLE_ADMIN")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isForbidden());
