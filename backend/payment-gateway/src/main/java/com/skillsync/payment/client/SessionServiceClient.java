@@ -3,8 +3,7 @@ package com.skillsync.payment.client;
 import com.skillsync.payment.client.dto.SessionDto;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.retry.annotation.Retry;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -20,8 +19,8 @@ public interface SessionServiceClient {
     @PutMapping("/session/{sessionId}/status")
     void updateSessionStatus(@PathVariable Long sessionId, @RequestParam String status);
 
+    @Slf4j
     class SessionServiceFallback implements SessionServiceClient {
-        private static final Logger log = LoggerFactory.getLogger(SessionServiceFallback.class);
 
         @Override
         public SessionDto getSession(Long sessionId) {

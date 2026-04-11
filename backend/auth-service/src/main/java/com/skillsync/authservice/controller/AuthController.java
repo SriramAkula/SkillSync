@@ -9,6 +9,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import lombok.extern.slf4j.Slf4j;
+import lombok.RequiredArgsConstructor;
 
 import com.skillsync.authservice.dto.request.LoginRequest;
 import com.skillsync.authservice.dto.request.OtpRequest;
@@ -30,17 +32,13 @@ import jakarta.validation.Valid;
 @RestController
 @RequestMapping("/auth")
 @Tag(name = "Authentication", description = "User authentication and token management")
+@Slf4j
+@RequiredArgsConstructor
 public class AuthController {
 
     private final AuthService authService;
     private final OAuthService oAuthService;
     private final JwtUtil jwtUtil;
-
-    public AuthController(AuthService authService, OAuthService oAuthService, JwtUtil jwtUtil) {
-        this.authService = authService;
-        this.oAuthService = oAuthService;
-        this.jwtUtil = jwtUtil;
-    }
 
     @PostMapping("/send-otp")
     @Operation(summary = "Send OTP", description = "Send a 6-digit OTP to the given email for verification")

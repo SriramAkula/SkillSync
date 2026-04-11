@@ -53,10 +53,10 @@ export class UserService {
         const placeholder: UserProfileDto = {
           userId,
           username: `User ${userId}`,
-          displayName: 'Unknown User',
+          name: 'Unknown User',
           email: `unknown${userId}@skillsync.com`,
           bio: 'Profile details are currently unavailable.'
-        } as any;
+        } as UserProfileDto;
         return of({ success: true, message: 'Placeholder loaded', data: placeholder });
       })
     );

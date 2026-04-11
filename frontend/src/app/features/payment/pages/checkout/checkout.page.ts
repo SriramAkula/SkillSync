@@ -6,8 +6,12 @@ import { PaymentStore } from '../../../../core/auth/payment.store';
 import { AuthStore } from '../../../../core/auth/auth.store';
 import { SessionStore } from '../../../../core/auth/session.store';
 import { effect } from '@angular/core';
+import { SagaResponse } from '../../../../shared/models';
 
-declare const Razorpay: any;
+declare class Razorpay {
+  constructor(options: unknown);
+  open(): void;
+}
 
 @Component({
   selector: 'app-checkout-page',
@@ -17,18 +21,18 @@ declare const Razorpay: any;
   styleUrl: './checkout.page.scss'
 })
 export class CheckoutPage implements OnInit, OnDestroy {
-  readonly paymentStore = inject(PaymentStore) as any;
-  private readonly authStore = inject(AuthStore) as any;
-  readonly sessionStore = inject(SessionStore) as any;
+  readonly paymentStore = inject(PaymentStore);
+  private readonly authStore = inject(AuthStore);
+  readonly sessionStore = inject(SessionStore);
   private readonly route = inject(ActivatedRoute);
   readonly router = inject(Router);
 
-  private pollingInterval?: any;
+  private pollingInterval?: ReturnType<typeof setInterval>;
 
   constructor() {
     // Proactive Saga Start logic
     effect(() => {
-      const session = this.sessionStore.selected() as any;
+      const session = this.sessionStore.selected();
       const saga = this.paymentStore.saga();
       const loading = this.paymentStore.loading();
 
@@ -38,17 +42,17 @@ export class CheckoutPage implements OnInit, OnDestroy {
       // Optimized check: Advance to startSaga if session is accepted but saga isn't pending yet.
       if (isPayableSession && needsSagaStart && !loading && !this.paymentStore.error()) {
         this.paymentStore.startSaga({
-          sessionId: (session as any).id,
-          mentorId: (session as any).mentorId,
-          learnerId: (session as any).learnerId,
-          durationMinutes: (session as any).durationMinutes
+          sessionId: session.id,
+          mentorId: session.mentorId,
+          learnerId: session.learnerId,
+          durationMinutes: session.durationMinutes
         });
       }
     }, { allowSignalWrites: true });
 
     // Guard Effect: Redirect if the session is not in a payable state
     effect(() => {
-      const session = this.sessionStore.selected() as any;
+      const session = this.sessionStore.selected();
       if (session && session.status !== 'ACCEPTED' && session.status !== 'CONFIRMED') {
         console.warn('[Checkout] Redirecting: session status is', session.status);
         this.router.navigate(['/sessions']);
@@ -99,7 +103,7 @@ export class CheckoutPage implements OnInit, OnDestroy {
   }
 
   retryPayment(): void {
-    const session = this.sessionStore.selected() as any;
+    const session = this.sessionStore.selected();
     if (!session) return;
     // Reset store state so the effect can trigger a fresh startSaga
     this.paymentStore.reset();
@@ -111,15 +115,15 @@ export class CheckoutPage implements OnInit, OnDestroy {
     });
   }
 
-  openRazorpay(saga: any): void {
+  openRazorpay(saga: SagaResponse): void {
     const options = {
       key: 'rzp_test_SWGUsISMJTk4IH',
-      amount: saga.amount * 100, currency: 'INR',
+      amount: (saga.amount ?? 0) * 100, currency: 'INR',
       name: 'SkillSync', description: `Session #${saga.sessionId}`,
       order_id: saga.paymentReference,
-      handler: (response: any) => {
+      handler: (response: { razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string }) => {
         this.paymentStore.verifyPayment({
-          sessionId: (saga as any).sessionId,
+          sessionId: saga.sessionId,
           razorpayOrderId: response.razorpay_order_id,
           razorpayPaymentId: response.razorpay_payment_id,
           razorpaySignature: response.razorpay_signature

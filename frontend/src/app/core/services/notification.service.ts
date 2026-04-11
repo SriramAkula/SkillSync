@@ -9,13 +9,13 @@ export class NotificationService {
   private readonly http = inject(HttpClient);
   private readonly base = `${environment.apiUrl}/notification`;
 
-  getAll(page: number = 0, size: number = 15): Observable<ApiResponse<PageResponse<NotificationDto>>> {
+  getAll(page = 0, size = 15): Observable<ApiResponse<PageResponse<NotificationDto>>> {
     return this.http.get<ApiResponse<PageResponse<NotificationDto>>>(this.base, {
       params: { page: page.toString(), size: size.toString() }
     });
   }
 
-  getUnread(page: number = 0, size: number = 15): Observable<ApiResponse<PageResponse<NotificationDto>>> {
+  getUnread(page = 0, size = 15): Observable<ApiResponse<PageResponse<NotificationDto>>> {
     return this.http.get<ApiResponse<PageResponse<NotificationDto>>>(`${this.base}/unread`, {
       params: { page: page.toString(), size: size.toString() }
     });

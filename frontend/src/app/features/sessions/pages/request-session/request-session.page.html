@@ -22,7 +22,7 @@
              <div class="w-24 h-24 bg-gradient-to-br from-primary-500 to-indigo-600 rounded-[2.5rem] p-1 shadow-xl">
                 <div class="w-full h-full bg-white rounded-[2.3rem] flex items-center justify-center overflow-hidden dark:bg-slate-950">
                    @if (mentor.profileImageUrl) {
-                     <img [src]="mentor.profileImageUrl" class="w-full h-full object-cover">
+                     <img [src]="mentor.profileImageUrl" [alt]="(mentor.name || mentor.username) + ' Profile'" class="w-full h-full object-cover">
                    } @else {
                      <span class="text-3xl font-extrabold text-primary-600">{{ mentorInitials() }}</span>
                    }
@@ -75,10 +75,10 @@
             </div>
 
             <div class="space-y-1.5">
-              <label class="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1 dark:text-slate-500">What do you want to learn? <span class="text-red-400">*</span></label>
+              <label for="skillId" class="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1 dark:text-slate-500">What do you want to learn? <span class="text-red-400">*</span></label>
               <div class="relative group">
                 <span class="material-icons-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-primary-500 transition-colors dark:text-slate-600">auto_stories</span>
-                <select formControlName="skillId" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-3.5 pl-12 pr-4 text-sm focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500/50 outline-none transition-all font-bold text-slate-700 cursor-pointer appearance-none dark:bg-slate-800/50 dark:border-slate-700 dark:text-slate-200">
+                <select id="skillId" formControlName="skillId" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-3.5 pl-12 pr-4 text-sm focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500/50 outline-none transition-all font-bold text-slate-700 cursor-pointer appearance-none dark:bg-slate-800/50 dark:border-slate-700 dark:text-slate-200">
                   <option [ngValue]="null" disabled>Select Specific Expertise...</option>
                   @for (cat of skillStore.groupedByCategory(); track cat.category) {
                     <optgroup [label]="cat.category">
@@ -101,17 +101,17 @@
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div class="space-y-1.5">
-                <label class="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1 dark:text-slate-500">Date</label>
+                <label for="schedDate" class="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1 dark:text-slate-500">Date</label>
                 <div class="relative group">
                   <span class="material-icons-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 transition-colors dark:text-slate-600">calendar_month</span>
-                  <input type="date" formControlName="scheduledDate" [min]="today" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-3.5 pl-12 pr-4 text-sm focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500/50 outline-none transition-all font-bold text-slate-700 cursor-pointer dark:bg-slate-800/50 dark:border-slate-700 dark:text-slate-200">
+                  <input type="date" id="schedDate" formControlName="scheduledDate" [min]="today" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-3.5 pl-12 pr-4 text-sm focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500/50 outline-none transition-all font-bold text-slate-700 cursor-pointer dark:bg-slate-800/50 dark:border-slate-700 dark:text-slate-200">
                 </div>
               </div>
               <div class="space-y-1.5">
-                <label class="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1 dark:text-slate-500">Time (IST)</label>
+                <label for="schedTime" class="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1 dark:text-slate-500">Time (IST)</label>
                 <div class="relative group">
                   <span class="material-icons-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 transition-colors dark:text-slate-600">schedule</span>
-                  <input type="time" formControlName="scheduledTime" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-3.5 pl-12 pr-4 text-sm focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500/50 outline-none transition-all font-bold text-slate-700 cursor-pointer dark:bg-slate-800/50 dark:border-slate-700 dark:text-slate-200">
+                  <input type="time" id="schedTime" formControlName="scheduledTime" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-3.5 pl-12 pr-4 text-sm focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500/50 outline-none transition-all font-bold text-slate-700 cursor-pointer dark:bg-slate-800/50 dark:border-slate-700 dark:text-slate-200">
                 </div>
               </div>
             </div>

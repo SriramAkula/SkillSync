@@ -1,9 +1,8 @@
-import { Component, signal, inject, HostListener } from '@angular/core';
+import { Component, signal, HostListener } from '@angular/core';
 import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { NavbarComponent } from '../navbar/navbar.component';
 import { SidebarComponent } from '../sidebar/sidebar.component';
-import { AuthStore } from '../../core/auth/auth.store';
 
 @Component({
   selector: 'app-shell',
@@ -17,8 +16,8 @@ export class ShellComponent {
   readonly mobileMenuOpen = signal(false);
   private lastWidth = window.innerWidth;
 
-  @HostListener('window:resize', ['$event'])
-  onResize(event: any) {
+  @HostListener('window:resize')
+  onResize(): void {
     if (window.innerWidth >= 1024 && this.lastWidth < 1024) {
       this.mobileMenuOpen.set(false);
     }

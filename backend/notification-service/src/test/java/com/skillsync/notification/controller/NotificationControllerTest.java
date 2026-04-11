@@ -217,3 +217,4 @@ class NotificationControllerTest {
                 .andExpect(status().isNotFound());
     }
 }
+

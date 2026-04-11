@@ -24,15 +24,15 @@
 
       <div class="form">
         <div class="input-group">
-          <label class="input-label">Session ID <span class="required">*</span></label>
+          <label for="sessionId" class="input-label">Session ID <span class="required">*</span></label>
           <div class="input-wrapper">
             <span class="material-icons input-icon">event</span>
-            <input type="number" [(ngModel)]="newReview.sessionId" placeholder="Your session ID" />
+            <input type="number" id="sessionId" [(ngModel)]="newReview.sessionId" placeholder="Your session ID" />
           </div>
         </div>
 
         <div class="input-group">
-          <label class="input-label">Rating <span class="required">*</span></label>
+          <span class="input-label">Rating <span class="required">*</span></span>
           <div class="star-picker">
             @for (i of [1,2,3,4,5]; track i) {
               <button type="button" class="star-btn" [class.active]="newReview.rating >= i"
@@ -45,9 +45,9 @@
         </div>
 
         <div class="input-group">
-          <label class="input-label">Comment <span class="required">*</span></label>
+          <label for="comment" class="input-label">Comment <span class="required">*</span></label>
           <div class="input-wrapper textarea-wrap">
-            <textarea [(ngModel)]="newReview.comment" placeholder="Describe your experience..." rows="4"></textarea>
+            <textarea id="comment" [(ngModel)]="newReview.comment" placeholder="Describe your experience..." rows="4"></textarea>
           </div>
         </div>
 
@@ -108,11 +108,13 @@
       }
 
       <!-- Load More Pagination -->
-      <div class="pagination-footer" *ngIf="currentPage() < totalPages() - 1">
-        <button class="btn-load-more" (click)="loadMore()" [disabled]="loading()">
-          @if (loading()) { <mat-spinner diameter="18" /> Loading... } @else { Load More Reviews }
-        </button>
-      </div>
+      @if (currentPage() < totalPages() - 1) {
+        <div class="pagination-footer">
+          <button class="btn-load-more" (click)="loadMore()" [disabled]="loading()">
+            @if (loading()) { <mat-spinner diameter="18" /> Loading... } @else { Load More Reviews }
+          </button>
+        </div>
+      }
     </div>
   }
 </div>

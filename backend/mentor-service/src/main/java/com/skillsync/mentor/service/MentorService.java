@@ -1,5 +1,6 @@
 package com.skillsync.mentor.service;
 
+import org.springframework.data.domain.Page;
 import com.skillsync.mentor.dto.request.ApplyMentorRequestDto;
 import com.skillsync.mentor.dto.request.UpdateAvailabilityRequestDto;
 import com.skillsync.mentor.dto.PageResponse;
@@ -32,3 +33,5 @@ public interface MentorService {
 
     void updateMentorRating(Long mentorId, Double newRating);
 }
+
+

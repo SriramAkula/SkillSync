@@ -16,7 +16,7 @@ export class MentorService {
 
   private readonly userService = inject(UserService);
 
-  getApprovedMentors(page: number = 0, size: number = 12): Observable<ApiResponse<PageResponse<MentorProfileDto>>> {
+  getApprovedMentors(page = 0, size = 12): Observable<ApiResponse<PageResponse<MentorProfileDto>>> {
     return this.http.get<ApiResponse<PageResponse<MentorProfileDto>>>(`${this.base}/approved`, {
       params: { page: page.toString(), size: size.toString() }
     }).pipe(
@@ -33,15 +33,15 @@ export class MentorService {
     page?: number;
     size?: number;
   }): Observable<ApiResponse<PageResponse<MentorProfileDto>>> {
-    let params: any = {};
-    if (filters.skill) params.skill = filters.skill;
-    if (filters.minExperience != null) params.minExperience = filters.minExperience;
-    if (filters.maxExperience != null) params.maxExperience = filters.maxExperience;
-    if (filters.maxRate != null) params.maxRate = filters.maxRate;
-    if (filters.minRating != null) params.minRating = filters.minRating;
+    const params: Record<string, string | number> = {};
+    if (filters.skill) params['skill'] = filters.skill;
+    if (filters.minExperience != null) params['minExperience'] = filters.minExperience;
+    if (filters.maxExperience != null) params['maxExperience'] = filters.maxExperience;
+    if (filters.maxRate != null) params['maxRate'] = filters.maxRate;
+    if (filters.minRating != null) params['minRating'] = filters.minRating;
 
-    if (filters.page != null) params.page = filters.page.toString();
-    if (filters.size != null) params.size = filters.size.toString();
+    if (filters.page != null) params['page'] = filters.page.toString();
+    if (filters.size != null) params['size'] = filters.size.toString();
 
     return this.http.get<ApiResponse<PageResponse<MentorProfileDto>>>(`${this.base}/search`, { params });
   }
@@ -54,7 +54,7 @@ export class MentorService {
     return this.http.get<ApiResponse<MentorProfileDto>>(`${this.base}/profile/me`);
   }
 
-  getPendingApplications(page: number = 0, size: number = 12): Observable<ApiResponse<PageResponse<MentorProfileDto>>> {
+  getPendingApplications(page = 0, size = 12): Observable<ApiResponse<PageResponse<MentorProfileDto>>> {
     return this.http.get<ApiResponse<PageResponse<MentorProfileDto>>>(`${this.base}/pending`, {
       params: { page: page.toString(), size: size.toString() }
     });

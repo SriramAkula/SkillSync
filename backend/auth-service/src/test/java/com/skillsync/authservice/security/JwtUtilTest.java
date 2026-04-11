@@ -17,6 +17,7 @@ class JwtUtilTest {
         JwtConfig config = new JwtConfig();
         config.setSecret("testSecretKey123456789012345678901234567890123456789");
         config.setExpiration(3600000L);
+        config.setRefreshExpiration(604800000L);
         jwtUtil = new JwtUtil(config);
     }
 
@@ -72,5 +73,32 @@ class JwtUtilTest {
     void isTokenExpired_shouldReturnFalse_forFreshToken() {
         String token = jwtUtil.generateToken(1L, "test@example.com", List.of("ROLE_LEARNER"));
         assertThat(jwtUtil.isTokenExpired(token)).isFalse();
+    }
+
+    @Test
+    void extractEmailIgnoreExpiry_shouldWorkForExpiredToken() {
+        JwtConfig config = new JwtConfig();
+        config.setSecret("testSecretKey123456789012345678901234567890123456789");
+        config.setExpiration(-1000L); // Already expired
+        config.setRefreshExpiration(604800000L);
+        JwtUtil shortUtl = new JwtUtil(config);
+        
+        String token = shortUtl.generateToken(1L, "expired@example.com", List.of("ROLE_LEARNER"));
+        
+        assertThat(shortUtl.isTokenValid(token)).isFalse();
+        assertThat(shortUtl.extractEmailIgnoreExpiry(token)).isEqualTo("expired@example.com");
+    }
+
+    @Test
+    void validateRefreshToken_shouldReturnFalse_whenExpired() {
+        JwtConfig config = new JwtConfig();
+        config.setSecret("testSecretKey123456789012345678901234567890123456789");
+        config.setExpiration(3600000L);
+        config.setRefreshExpiration(-1000L); // Already expired
+        JwtUtil shortUtl = new JwtUtil(config);
+        
+        String token = shortUtl.generateRefreshToken(1L, "expired@example.com", List.of("ROLE_LEARNER"));
+        
+        assertThat(shortUtl.validateRefreshToken(token)).isFalse();
     }
 }

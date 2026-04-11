@@ -1,10 +1,11 @@
-import { computed, inject, OnDestroy } from '@angular/core';
+import { computed, inject } from '@angular/core';
 import { signalStore, withState, withMethods, withComputed, patchState } from '@ngrx/signals';
 import { rxMethod } from '@ngrx/signals/rxjs-interop';
 import { tapResponse } from '@ngrx/operators';
 import { pipe, switchMap, mergeMap, tap, interval, Subscription } from 'rxjs';
 import { NotificationService } from '../services/notification.service';
-import { NotificationDto } from '../../shared/models';
+import type { NotificationDto } from '../../shared/models';
+import { HttpErrorResponse } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { AuthStore } from './auth.store';
 
@@ -73,7 +74,7 @@ export const NotificationStore = signalStore(
             svc.getUnreadCount().pipe(
               tapResponse({
                 next: (res) => patchState(store, { unreadCount: res.data }),
-                error: () => {}
+                error: (err: HttpErrorResponse) => console.error('Failed to refresh unread count', err)
               })
             )
           )
@@ -93,7 +94,7 @@ export const NotificationStore = signalStore(
                     unreadCount: Math.max(0, store.unreadCount() - 1)
                   });
                 },
-                error: () => {}
+                error: (err: HttpErrorResponse) => console.error('Failed to mark notification as read', err)
               })
             )
           )
@@ -102,7 +103,7 @@ export const NotificationStore = signalStore(
 
       deleteNotification: rxMethod<number>(
         pipe(
-          mergeMap(id =>
+          mergeMap((id: number) =>
             svc.delete(id).pipe(
               tapResponse({
                 next: () => patchState(store, {
@@ -111,7 +112,7 @@ export const NotificationStore = signalStore(
                     ? Math.max(0, store.unreadCount() - 1) 
                     : store.unreadCount()
                 }),
-                error: () => {}
+                error: (err: HttpErrorResponse) => console.error('Failed to delete notification', err)
               })
             )
           )
@@ -139,7 +140,7 @@ export const NotificationStore = signalStore(
               // Automatically sync role if mentor approval notification is detected
               const hasMentorApproval = unread.some(n => n.type === 'MENTOR_APPROVED');
               if (hasMentorApproval && !authStore.isMentor()) {
-                authStore.refreshToken(undefined);
+                authStore.refreshToken();
               }
             }
           });

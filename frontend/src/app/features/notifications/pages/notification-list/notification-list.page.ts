@@ -1,7 +1,7 @@
 import { Component, inject, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NotificationStore } from '../../../../core/auth/notification.store';
-import { NotificationDto } from '../../../../shared/models';
+
 import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
 
 type NotifFilter = 'all' | 'unread';

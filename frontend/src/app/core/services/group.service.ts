@@ -17,7 +17,7 @@ export class GroupService {
     return this.http.get<ApiResponse<GroupDto>>(`${this.base}/${id}`);
   }
 
-  getGroupsBySkill(skillId: number, page: number = 0, size: number = 10): Observable<ApiResponse<PageResponse<GroupDto>>> {
+  getGroupsBySkill(skillId: number, page = 0, size = 10): Observable<ApiResponse<PageResponse<GroupDto>>> {
     return this.http.get<ApiResponse<PageResponse<GroupDto>>>(`${this.base}/skill/${skillId}`, {
       params: { page: page.toString(), size: size.toString() }
     });
@@ -35,7 +35,7 @@ export class GroupService {
     return this.http.delete<ApiResponse<GroupDto>>(`${this.base}/${id}`);
   }
 
-  getRandomGroups(limit: number = 10): Observable<ApiResponse<GroupDto[]>> {
+  getRandomGroups(limit = 10): Observable<ApiResponse<GroupDto[]>> {
     return this.http.get<ApiResponse<GroupDto[]>>(`${this.base}/random?limit=${limit}`);
   }
 }

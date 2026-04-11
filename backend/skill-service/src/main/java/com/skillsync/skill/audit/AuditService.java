@@ -1,18 +1,15 @@
 package com.skillsync.skill.audit;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import lombok.extern.slf4j.Slf4j;
+import lombok.RequiredArgsConstructor;
 
 @Service
+@Slf4j
+@RequiredArgsConstructor
 public class AuditService {
 
-    private static final Logger log = LoggerFactory.getLogger(AuditService.class);
     private final AuditLogRepository auditLogRepository;
-
-    public AuditService(AuditLogRepository auditLogRepository) {
-        this.auditLogRepository = auditLogRepository;
-    }
 
     public void log(String entityName, Long entityId, String action, String performedBy, String details) {
         try {

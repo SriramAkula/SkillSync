@@ -12,9 +12,8 @@ import com.skillsync.mentor.exception.MentorAlreadyExistsException;
 import com.skillsync.mentor.exception.MentorNotFoundException;
 import com.skillsync.mentor.repository.MentorRepository;
 import com.skillsync.mentor.service.MentorService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.extern.slf4j.Slf4j;
+import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheConfig;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
@@ -35,28 +34,15 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 
 @Service
 @CacheConfig(cacheNames = "mentor")
+@Slf4j
+@RequiredArgsConstructor
 public class MentorServiceImpl implements MentorService {
-
-    private static final Logger log = LoggerFactory.getLogger(MentorServiceImpl.class);
 
     private final MentorRepository mentorRepository;
     private final AuthServiceClient authServiceClient;
     private final MentorMapper mentorMapper;
     private final AuditService auditService;
     private final RabbitTemplate rabbitTemplate;
-
-    @Autowired
-    public MentorServiceImpl(MentorRepository mentorRepository,
-            AuthServiceClient authServiceClient,
-            MentorMapper mentorMapper,
-            AuditService auditService,
-            RabbitTemplate rabbitTemplate) {
-        this.mentorRepository = mentorRepository;
-        this.authServiceClient = authServiceClient;
-        this.mentorMapper = mentorMapper;
-        this.auditService = auditService;
-        this.rabbitTemplate = rabbitTemplate;
-    }
 
     @Override
     @Transactional

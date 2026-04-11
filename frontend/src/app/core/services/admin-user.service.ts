@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
@@ -51,14 +51,13 @@ export interface PagedResponse<T> {
 export class AdminUserService {
   
   private apiUrl = `${environment.apiUrl}/user`;
-
-  constructor(private http: HttpClient) { }
+  private http = inject(HttpClient);
 
   /**
    * Get all users with pagination
    */
-  getAllUsers(page: number = 0, size: number = 20): Observable<ApiResponse<PagedResponse<UserProfile>>> {
-    let params = new HttpParams()
+  getAllUsers(page = 0, size = 20): Observable<ApiResponse<PagedResponse<UserProfile>>> {
+    const params = new HttpParams()
       .set('page', page.toString())
       .set('size', size.toString());
     

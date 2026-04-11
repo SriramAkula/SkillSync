@@ -13,3 +13,4 @@ public interface ReviewClient {
     @GetMapping("/mentors/{mentorId}/rating")
     ResponseEntity<ApiResponse<MentorRatingDto>> getMentorRating(@PathVariable("mentorId") Long mentorId);
 }
+

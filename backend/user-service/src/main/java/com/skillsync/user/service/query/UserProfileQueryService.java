@@ -22,18 +22,7 @@ public class UserProfileQueryService {
         log.info("Cache MISS - fetching profile for userId={} from DB", userId);
         return userProfileRepository.findByUserId(userId)
                 .map(userProfileMapper::toDto)
-                .orElseGet(() -> {
-                    log.warn("User profile not found for userId: {}. Returning default placeholder.", userId);
-                    String name = (userId == 1) ? "Admin" : "User " + userId;
-                    String email = (userId == 1) ? "admin@skillsync.com" : "user" + userId + "@skillsync.com";
-                    UserProfileResponseDto placeholder = new UserProfileResponseDto();
-                    placeholder.setUserId(userId);
-                    placeholder.setUsername(name);
-                    placeholder.setName(name);
-                    placeholder.setEmail(email);
-                    placeholder.setBio("I am a " + name + " in SkillSync");
-                    return placeholder;
-                });
+                .orElseThrow(() -> new UserProfileNotFoundException("User profile not found for userId: " + userId));
     }
 
     @Cacheable(value = "user", key = "'email_' + #email")

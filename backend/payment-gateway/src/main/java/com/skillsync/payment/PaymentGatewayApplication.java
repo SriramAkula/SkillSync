@@ -8,9 +8,10 @@ import org.springframework.cloud.openfeign.EnableFeignClients;
 @SpringBootApplication
 @EnableDiscoveryClient
 @EnableFeignClients
+@lombok.extern.slf4j.Slf4j
 public class PaymentGatewayApplication {
     public static void main(String[] args) {
         SpringApplication.run(PaymentGatewayApplication.class, args);
-        System.out.println("[OK] Payment Gateway Started on port 8089");
+        log.info("[OK] Payment Gateway Started on port 8089");
     }
 }

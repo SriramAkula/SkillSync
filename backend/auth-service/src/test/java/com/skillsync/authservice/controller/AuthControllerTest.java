@@ -5,6 +5,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -21,13 +22,15 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.skillsync.authservice.dto.request.LoginRequest;
-import com.skillsync.authservice.dto.request.RegisterRequest;
+import com.skillsync.authservice.dto.request.*;
+import com.skillsync.authservice.dto.response.ApiResponse;
 import com.skillsync.authservice.dto.response.AuthResponse;
 import com.skillsync.authservice.service.AuthService;
+import com.skillsync.authservice.service.OAuthService;
 import com.skillsync.authservice.security.JwtUtil;
 import com.skillsync.authservice.config.DataInitializer;
 import com.skillsync.authservice.client.UserServiceClient;
+import org.springframework.http.HttpHeaders;
 
 @WebMvcTest(
 	    controllers = AuthController.class,
@@ -145,6 +148,7 @@ class AuthControllerTest {
 
     @Test
     void refresh_shouldReturn200_whenValidBearerToken() throws Exception {
+        when(jwtUtil.validateRefreshToken("valid-token")).thenReturn(true);
         when(authService.refreshToken("valid-token")).thenReturn(authResponse);
 
         mockMvc.perform(post("/auth/refresh")
@@ -154,17 +158,90 @@ class AuthControllerTest {
     }
 
     @Test
-    void refresh_shouldReturn400_whenNoBearerPrefix() throws Exception {
+    void refresh_shouldReturn401_whenNoBearerPrefix() throws Exception {
         mockMvc.perform(post("/auth/refresh")
                         .header("Authorization", "invalid-token"))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isUnauthorized());
 
         verify(authService, never()).refreshToken(any());
     }
 
     @Test
-    void refresh_shouldReturn400_whenNoAuthHeader() throws Exception {
+    void refresh_shouldReturn401_whenNoAuthHeader() throws Exception {
         mockMvc.perform(post("/auth/refresh"))
-                .andExpect(status().isInternalServerError());
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void refresh_shouldUseCookie_whenHeaderMissing() throws Exception {
+        when(jwtUtil.validateRefreshToken("cookie-token")).thenReturn(true);
+        when(authService.refreshToken("cookie-token")).thenReturn(authResponse);
+
+        mockMvc.perform(post("/auth/refresh")
+                        .cookie(new jakarta.servlet.http.Cookie("refreshToken", "cookie-token")))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void refresh_shouldReturn401_whenValidTokenCheckFails() throws Exception {
+        when(jwtUtil.validateRefreshToken("invalid-token")).thenReturn(false);
+
+        mockMvc.perform(post("/auth/refresh")
+                        .header("Authorization", "Bearer invalid-token"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void refresh_shouldPreferCookieOverHeader() throws Exception {
+        when(jwtUtil.validateRefreshToken("cookie-token")).thenReturn(true);
+        when(authService.refreshToken("cookie-token")).thenReturn(authResponse);
+
+        mockMvc.perform(post("/auth/refresh")
+                        .cookie(new jakarta.servlet.http.Cookie("refreshToken", "cookie-token"))
+                        .header("Authorization", "Bearer header-token"))
+                .andExpect(status().isOk());
+        
+        verify(authService).refreshToken("cookie-token");
+        verify(authService, never()).refreshToken("header-token");
+    }
+
+    @Test
+    void logout_shouldReturn200AndClearCookie() throws Exception {
+        mockMvc.perform(post("/auth/logout"))
+                .andExpect(status().isOk())
+                .andExpect(header().exists(HttpHeaders.SET_COOKIE))
+                .andExpect(jsonPath("$.message").value("Logged out successfully"));
+    }
+
+    // ─── OTP / Password Reset ───────────────────────────────────
+
+    @Test
+    void sendOtp_shouldReturn200() throws Exception {
+        OtpRequest req = new OtpRequest("test@example.com");
+        mockMvc.perform(post("/auth/send-otp")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void verifyOtp_shouldReturn200() throws Exception {
+        OtpVerifyRequest req = new OtpVerifyRequest("test@example.com", "123456");
+        mockMvc.perform(post("/auth/verify-otp")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void googleLogin_shouldReturn200() throws Exception {
+        GoogleTokenRequest req = new GoogleTokenRequest("g-token");
+        when(oAuthService.loginWithGoogle("g-token")).thenReturn(authResponse);
+
+        mockMvc.perform(post("/auth/oauth/google")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isOk())
+                .andExpect(header().exists(HttpHeaders.SET_COOKIE));
     }
 }

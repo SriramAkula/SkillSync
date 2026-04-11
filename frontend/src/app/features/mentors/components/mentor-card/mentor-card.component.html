@@ -1,4 +1,4 @@
-<div class="card" (click)="view.emit(mentor.userId)">
+<div class="card" (click)="view.emit(mentor.userId)" (keyup.enter)="view.emit(mentor.userId)" tabindex="0" role="button" [attr.aria-label]="'View profile of ' + (mentor.name || mentor.username)">
   <div class="card-top">
     <div class="avatar">{{ initials() }}</div>
     <div class="avail-badge" [class]="'avail-' + mentor.availabilityStatus.toLowerCase()">

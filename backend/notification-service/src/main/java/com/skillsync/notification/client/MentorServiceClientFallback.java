@@ -1,17 +1,15 @@
 package com.skillsync.notification.client;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Fallback implementation for MentorServiceClient
  * Used when Mentor Service is unavailable
  */
 @Component
+@Slf4j
 public class MentorServiceClientFallback implements MentorServiceClient {
-    
-    private static final Logger log = LoggerFactory.getLogger(MentorServiceClientFallback.class);
     
     @Override
     public MentorProfileResponse getMentorbyId(Long mentorId) {
@@ -19,3 +17,4 @@ public class MentorServiceClientFallback implements MentorServiceClient {
         return null;
     }
 }
+

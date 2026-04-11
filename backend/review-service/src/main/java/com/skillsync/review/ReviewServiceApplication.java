@@ -9,9 +9,10 @@ import org.springframework.cloud.openfeign.EnableFeignClients;
 @EnableDiscoveryClient
 @EnableFeignClients
 @EnableCaching
+@lombok.extern.slf4j.Slf4j
 public class ReviewServiceApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(ReviewServiceApplication.class, args);
-		System.out.println("[OK] Review Service Started on port 8087");
+		log.info("[OK] Review Service Started on port 8087");
 	}
 }

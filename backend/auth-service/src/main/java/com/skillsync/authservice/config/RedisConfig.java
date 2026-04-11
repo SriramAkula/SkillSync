@@ -1,7 +1,7 @@
 package com.skillsync.authservice.config;
 
-import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
@@ -25,9 +25,8 @@ import java.time.Duration;
 
 @Configuration
 @EnableCaching
+@Slf4j
 public class RedisConfig implements CachingConfigurer {
-
-    private static final Logger logger = LoggerFactory.getLogger(RedisConfig.class);
 
     @Value("${spring.data.redis.host:localhost}")
     private String redisHost;
@@ -87,19 +86,19 @@ public class RedisConfig implements CachingConfigurer {
         return new CacheErrorHandler() {
             @Override
             public void handleCacheGetError(RuntimeException e, Cache cache, Object key) {
-                logger.warn("Cache GET failed for key={}: {}", key, e.getMessage());
+                log.warn("Cache GET failed for key={}: {}", key, e.getMessage());
             }
             @Override
             public void handleCachePutError(RuntimeException e, Cache cache, Object key, Object value) {
-                logger.warn("Cache PUT failed for key={}: {}", key, e.getMessage());
+                log.warn("Cache PUT failed for key={}: {}", key, e.getMessage());
             }
             @Override
             public void handleCacheEvictError(RuntimeException e, Cache cache, Object key) {
-                logger.warn("Cache EVICT failed for key={}: {}", key, e.getMessage());
+                log.warn("Cache EVICT failed for key={}: {}", key, e.getMessage());
             }
             @Override
             public void handleCacheClearError(RuntimeException e, Cache cache) {
-                logger.warn("Cache CLEAR failed: {}", e.getMessage());
+                log.warn("Cache CLEAR failed: {}", e.getMessage());
             }
         };
     }

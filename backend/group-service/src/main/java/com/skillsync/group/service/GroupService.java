@@ -15,3 +15,4 @@ public interface GroupService {
     GroupResponseDto leaveGroup(Long groupId, Long userId);
     List<GroupResponseDto> getRandomGroups(int limit, Long currentUserId);
 }
+

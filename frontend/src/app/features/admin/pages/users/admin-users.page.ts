@@ -18,10 +18,10 @@ import { ConfirmDialogComponent } from './confirm-dialog.component';
 })
 export class AdminUsersPage implements OnInit {
   
-  private adminUserService = inject(AdminUserService);
-  private snackBar = inject(MatSnackBar);
-  private dialog = inject(MatDialog);
-  private router = inject(Router);
+  private readonly adminUserService = inject(AdminUserService);
+  private readonly snackBar = inject(MatSnackBar);
+  private readonly dialog = inject(MatDialog);
+  private readonly router = inject(Router);
 
   tab = signal<'all' | 'blocked'>('all');
   loading = signal(false);
@@ -53,11 +53,11 @@ export class AdminUsersPage implements OnInit {
     return this.currentPage > 0;
   }
 
-  ngOnInit() {
+  ngOnInit(): void {
     this.loadAllUsers();
   }
 
-  loadAllUsers() {
+  loadAllUsers(): void {
     this.loading.set(true);
     this.adminUserService.getAllUsers(this.currentPage, this.pageSize).subscribe({
       next: (response) => {
@@ -68,14 +68,14 @@ export class AdminUsersPage implements OnInit {
         this.blockedCount = this.users.filter(u => u.isBlocked).length;
         this.loading.set(false);
       },
-      error: (err) => {
+      error: () => {
         this.snackBar.open('Failed to load users', 'Close', { duration: 3000 });
         this.loading.set(false);
       }
     });
   }
 
-  loadBlockedUsers() {
+  loadBlockedUsers(): void {
     this.loading.set(true);
     this.adminUserService.getBlockedUsers().subscribe({
       next: (response) => {
@@ -83,33 +83,33 @@ export class AdminUsersPage implements OnInit {
         this.blockedCount = this.blockedUsers.length;
         this.loading.set(false);
       },
-      error: (err) => {
+      error: () => {
         this.snackBar.open('Failed to load blocked users', 'Close', { duration: 3000 });
         this.loading.set(false);
       }
     });
   }
 
-  openBlockDialog(user: UserProfile) {
+  openBlockDialog(user: UserProfile): void {
     this.router.navigate(['/admin/users', user.userId, 'block']);
   }
 
-  openUnblockDialog(user: UserProfile) {
+  openUnblockDialog(user: UserProfile): void {
     this.router.navigate(['/admin/users', user.userId, 'unblock']);
   }
 
-  viewUserDetails(userId: number) {
+  viewUserDetails(userId: number): void {
     this.router.navigate(['/admin/users', userId]);
   }
 
-  nextPage() {
+  nextPage(): void {
     if (this.hasNextPage) {
       this.currentPage++;
       this.loadAllUsers();
     }
   }
 
-  previousPage() {
+  previousPage(): void {
     if (this.hasPreviousPage) {
       this.currentPage--;
       this.loadAllUsers();

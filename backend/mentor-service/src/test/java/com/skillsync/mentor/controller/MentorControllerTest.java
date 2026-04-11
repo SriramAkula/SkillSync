@@ -1,5 +1,6 @@
 package com.skillsync.mentor.controller;
 
+import org.springframework.data.domain.Page;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -101,7 +102,7 @@ class MentorControllerTest {
 
         mockMvc.perform(post("/mentor/apply")
                         .header("X-User-Id", 10L)
-                        .header("roles", "ROLE_MENTOR")
+                        .header("roles", "ROLE_ADMIN")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isForbidden());
@@ -410,3 +411,5 @@ class MentorControllerTest {
                 .andExpect(status().isNotFound());
     }
 }
+
+

@@ -6,6 +6,7 @@ import { pipe, switchMap, tap } from 'rxjs';
 import { MentorService } from '../services/mentor.service';
 import { AuthStore } from './auth.store';
 import { MentorProfileDto, ApplyMentorRequest, UpdateAvailabilityRequest } from '../../shared/models';
+import { HttpErrorResponse } from '@angular/common/http';
 
 interface MentorState {
   approved: MentorProfileDto[];
@@ -52,8 +53,8 @@ export const MentorStore = signalStore(
       pipe(
         tap(() => patchState(store, { loading: true, error: null })),
         switchMap((params) => {
-          const p = (params as any)?.page ?? 0;
-          const s = (params as any)?.size ?? 12;
+          const p = params && typeof params === 'object' ? params.page ?? 0 : 0;
+          const s = params && typeof params === 'object' ? params.size ?? 12 : 12;
           return svc.getApprovedMentors(p, s).pipe(
             tapResponse({
               next: (res) => patchState(store, { 
@@ -64,7 +65,7 @@ export const MentorStore = signalStore(
                 pageSize: res.data.pageSize,
                 loading: false 
               }),
-              error: (err: any) => patchState(store, { loading: false, error: err.error?.message ?? 'Failed to load mentors' })
+              error: (err: HttpErrorResponse) => patchState(store, { loading: false, error: err.error?.message ?? 'Failed to load mentors' })
             })
           );
         })
@@ -99,7 +100,7 @@ export const MentorStore = signalStore(
           svc.getMentor(id).pipe(
             tapResponse({
               next: (res) => patchState(store, { selected: res.data, loading: false }),
-              error: (err: any) => patchState(store, { loading: false, error: err.error?.message })
+              error: (err: HttpErrorResponse) => patchState(store, { loading: false, error: err.error?.message })
             })
           )
         )
@@ -124,8 +125,8 @@ export const MentorStore = signalStore(
       pipe(
         tap(() => patchState(store, { loading: true })),
         switchMap((params) => {
-          const p = (params as any)?.page ?? 0;
-          const s = (params as any)?.size ?? 12;
+          const p = params && typeof params === 'object' ? params.page ?? 0 : 0;
+          const s = params && typeof params === 'object' ? params.size ?? 12 : 12;
           return svc.getPendingApplications(p, s).pipe(
             tapResponse({
               next: (res) => patchState(store, { 
@@ -136,7 +137,7 @@ export const MentorStore = signalStore(
                 pageSize: res.data.pageSize,
                 loading: false 
               }),
-              error: (err: any) => patchState(store, { loading: false, error: err.error?.message })
+              error: (err: HttpErrorResponse) => patchState(store, { loading: false, error: err.error?.message })
             })
           );
         })
@@ -150,7 +151,7 @@ export const MentorStore = signalStore(
           svc.applyAsMentor(req).pipe(
             tapResponse({
               next: (res) => patchState(store, { myProfile: res.data, loading: false }),
-              error: (err: any) => patchState(store, { loading: false, error: err.error?.message ?? 'Application failed' })
+              error: (err: HttpErrorResponse) => patchState(store, { loading: false, error: err.error?.message ?? 'Application failed' })
             })
           )
         )
@@ -166,7 +167,7 @@ export const MentorStore = signalStore(
                 pending: store.pending().filter(m => m.id !== id),
                 approved: [...store.approved(), res.data]
               }),
-              error: () => {}
+              error: (err: HttpErrorResponse) => console.error('Approval failed', err)
             })
           )
         )
@@ -179,7 +180,7 @@ export const MentorStore = signalStore(
           svc.rejectMentor(id).pipe(
             tapResponse({
               next: () => patchState(store, { pending: store.pending().filter(m => m.id !== id) }),
-              error: () => {}
+              error: (err: HttpErrorResponse) => console.error('Rejection failed', err)
             })
           )
         )
@@ -195,10 +196,10 @@ export const MentorStore = signalStore(
                 myProfile: res.data,
                 approved: store.approved().map(m => m.id === res.data.id ? res.data : m)
               }),
-              error: (err: any) => {
+              error: (err: HttpErrorResponse) => {
                 // On 403, silently refresh the JWT token so the next toggle attempt succeeds
                 if (err?.status === 403) {
-                  authStore.refreshToken(undefined);
+                  authStore.refreshToken();
                 }
               }
             })

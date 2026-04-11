@@ -5,6 +5,7 @@ import { tapResponse } from '@ngrx/operators';
 import { pipe, switchMap, tap } from 'rxjs';
 import { SessionService } from '../services/session.service';
 import { SessionDto, RequestSessionRequest } from '../../shared/models';
+import { HttpErrorResponse } from '@angular/common/http';
 
 interface SessionState {
   learnerSessions: SessionDto[];
@@ -63,7 +64,7 @@ export const SessionStore = signalStore(
                 learnerSessions: [res.data, ...store.learnerSessions()],
                 loading: false
               }),
-              error: (err: any) => patchState(store, { loading: false, error: err.error?.message ?? 'Failed to request session' })
+              error: (err: HttpErrorResponse) => patchState(store, { loading: false, error: err.error?.message ?? 'Failed to request session' })
             })
           )
         )
@@ -86,7 +87,7 @@ export const SessionStore = signalStore(
                 learnerPageSize: res.data.pageSize,
                 loading: false 
               }),
-              error: (err: any) => patchState(store, { loading: false, error: err.error?.message })
+              error: (err: HttpErrorResponse) => patchState(store, { loading: false, error: err.error?.message })
             })
           );
         })
@@ -109,7 +110,7 @@ export const SessionStore = signalStore(
                 mentorPageSize: res.data.pageSize,
                 loading: false 
               }),
-              error: (err: any) => patchState(store, { loading: false, error: err.error?.message })
+              error: (err: HttpErrorResponse) => patchState(store, { loading: false, error: err.error?.message })
             })
           );
         })
@@ -138,7 +139,7 @@ export const SessionStore = signalStore(
               next: (res) => patchState(store, {
                 mentorSessions: store.mentorSessions().map(s => s.id === id ? res.data : s)
               }),
-              error: () => {}
+              error: (err: HttpErrorResponse) => console.error('Failed to accept session', err)
             })
           )
         )
@@ -153,7 +154,7 @@ export const SessionStore = signalStore(
               next: (res) => patchState(store, {
                 mentorSessions: store.mentorSessions().map(s => s.id === id ? res.data : s)
               }),
-              error: () => {}
+              error: (err: HttpErrorResponse) => console.error('Failed to reject session', err)
             })
           )
         )
@@ -169,11 +170,13 @@ export const SessionStore = signalStore(
                 learnerSessions: store.learnerSessions().map(s => s.id === id ? res.data : s),
                 mentorSessions: store.mentorSessions().map(s => s.id === id ? res.data : s)
               }),
-              error: () => {}
+              error: (err: HttpErrorResponse) => console.error('Failed to cancel session', err)
             })
           )
         )
       )
-    )
+    ),
+
+    clearError: () => patchState(store, { error: null })
   }))
 );

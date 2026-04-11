@@ -30,6 +30,7 @@
 	<properties>
 		<java.version>17</java.version>
 		<spring-cloud.version>2024.0.0</spring-cloud.version>
+		<lombok.version>1.18.36</lombok.version>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -212,19 +213,32 @@
 					</excludes>
 				</configuration>
 			</plugin>
-			<plugin>
+						<plugin>
 				<groupId>org.jacoco</groupId>
 				<artifactId>jacoco-maven-plugin</artifactId>
 				<version>0.8.13</version>
+				<configuration>
+    <excludes>
+        <exclude>**/dto/**</exclude>
+        <exclude>**/entity/**</exclude>
+        <exclude>**/config/**</exclude>
+        <exclude>**/exception/**</exclude>
+        <exclude>**/*Application.class</exclude>
+    </excludes>
+</configuration>
 				<executions>
 					<execution>
 						<id>prepare-agent</id>
-						<goals><goal>prepare-agent</goal></goals>
+						<goals>
+							<goal>prepare-agent</goal>
+						</goals>
 					</execution>
 					<execution>
 						<id>report</id>
 						<phase>verify</phase>
-						<goals><goal>report</goal></goals>
+						<goals>
+							<goal>report</goal>
+						</goals>
 					</execution>
 				</executions>
 			</plugin>
@@ -234,9 +248,10 @@
 				<configuration>
 					<annotationProcessorPaths>
 						<path>
-							<groupId>org.projectlombok</groupId>
-							<artifactId>lombok</artifactId>
-						</path>
+						<groupId>org.projectlombok</groupId>
+						<artifactId>lombok</artifactId>
+						<version>${lombok.version}</version>
+				</path>
 					</annotationProcessorPaths>
 				</configuration>
 			</plugin>
@@ -251,5 +266,8 @@
 	</build>
 
 </project>
+
+
+<!-- Force trigger backend build pipeline -->
 
 

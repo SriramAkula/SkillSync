@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, forkJoin, map, of, switchMap, catchError } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { ApiResponse, SessionDto, RequestSessionRequest, UserProfileDto, PageResponse } from '../../shared/models';
+import { ApiResponse, SessionDto, RequestSessionRequest, PageResponse } from '../../shared/models';
 import { UserService } from './user.service';
 import { SkillService } from './skill.service';
 
@@ -23,7 +23,7 @@ export class SessionService {
     );
   }
 
-  getMentorSessions(page: number = 0, size: number = 10): Observable<ApiResponse<PageResponse<SessionDto>>> {
+  getMentorSessions(page = 0, size = 10): Observable<ApiResponse<PageResponse<SessionDto>>> {
     return this.http.get<ApiResponse<PageResponse<SessionDto>>>(`${this.base}/mentor/list`, {
       params: { page: page.toString(), size: size.toString() }
     }).pipe(
@@ -31,7 +31,7 @@ export class SessionService {
     );
   }
 
-  getLearnerSessions(page: number = 0, size: number = 10): Observable<ApiResponse<PageResponse<SessionDto>>> {
+  getLearnerSessions(page = 0, size = 10): Observable<ApiResponse<PageResponse<SessionDto>>> {
     return this.http.get<ApiResponse<PageResponse<SessionDto>>>(`${this.base}/learner/list`, {
       params: { page: page.toString(), size: size.toString() }
     }).pipe(
@@ -78,9 +78,9 @@ export class SessionService {
 
     // Get all skills once (they are cached in service anyway)
     return this.skillService.getAll().pipe(
-      catchError(() => of({ data: [] })),
+      catchError(() => of({ data: [] as { id: number; skillName?: string; name?: string }[] })),
       switchMap(skillRes => {
-        const skills = (skillRes as any).data || [];
+        const skills = (skillRes.data ?? []) as { id: number; skillName?: string; name?: string }[];
         
         const requests = sessions.map(s => {
           // Fetch Mentor and Learner Profiles
@@ -96,11 +96,11 @@ export class SessionService {
             )
           }).pipe(
             map(({ mentor, learner }) => {
-              const skill = skills.find((sk: any) => sk.id === s.skillId);
+              const skill = skills.find(sk => sk.id === s.skillId);
               return {
                 ...s,
-                mentorName: (mentor as any)?.name || (mentor as any)?.username || `Mentor #${s.mentorId}`,
-                learnerName: (learner as any)?.name || (learner as any)?.username || `Learner #${s.learnerId}`,
+                mentorName: mentor?.name || mentor?.username || `Mentor #${s.mentorId}`,
+                learnerName: learner?.name || learner?.username || `Learner #${s.learnerId}`,
                 skillName: skill?.skillName || skill?.name || `Skill #${s.skillId}`
               } as SessionDto;
             })

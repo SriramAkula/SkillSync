@@ -14,19 +14,19 @@ import com.skillsync.payment.mapper.PaymentSagaMapper;
 import com.skillsync.payment.repository.PaymentSagaRepository;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.retry.annotation.Retry;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import lombok.extern.slf4j.Slf4j;
+import lombok.RequiredArgsConstructor;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.UUID;
 
 @Service
+@Slf4j
+@RequiredArgsConstructor
 public class SagaOrchestrator {
-
-    private static final Logger log = LoggerFactory.getLogger(SagaOrchestrator.class);
 
     private final PaymentSagaRepository sagaRepository;
     private final MentorServiceClient mentorServiceClient;
@@ -34,20 +34,6 @@ public class SagaOrchestrator {
     private final PaymentProcessor paymentProcessor;
     private final PaymentSagaMapper sagaMapper;
     private final AuditService auditService;
-
-    public SagaOrchestrator(PaymentSagaRepository sagaRepository,
-                             MentorServiceClient mentorServiceClient,
-                             SessionServiceClient sessionServiceClient,
-                             PaymentProcessor paymentProcessor,
-                             PaymentSagaMapper sagaMapper,
-                             AuditService auditService) {
-        this.sagaRepository = sagaRepository;
-        this.mentorServiceClient = mentorServiceClient;
-        this.sessionServiceClient = sessionServiceClient;
-        this.paymentProcessor = paymentProcessor;
-        this.sagaMapper = sagaMapper;
-        this.auditService = auditService;
-    }
 
     // ─────────────────────────────────────────────────────────────
     // STEP 1: Start Saga

@@ -1,5 +1,4 @@
-import { Component, inject, OnInit, signal, computed } from '@angular/core';
-import { patchState } from '@ngrx/signals';
+import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
@@ -15,9 +14,9 @@ import { SkillStore } from '../../../../core/auth/skill.store';
   styleUrl: './request-session.page.scss'
 })
 export class RequestSessionPage implements OnInit {
-  readonly sessionStore = inject(SessionStore) as any;
-  readonly mentorStore = inject(MentorStore) as any;
-  readonly skillStore = inject(SkillStore) as any;
+  readonly sessionStore = inject(SessionStore);
+  readonly mentorStore = inject(MentorStore);
+  readonly skillStore = inject(SkillStore);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly fb = inject(FormBuilder);
@@ -39,7 +38,7 @@ export class RequestSessionPage implements OnInit {
   });
 
   ngOnInit(): void {
-    patchState(this.sessionStore, { error: null });
+    this.sessionStore.clearError();
     const mentorId = Number(this.route.snapshot.queryParamMap.get('mentorId'));
     if (mentorId) this.mentorStore.loadById(mentorId);
     if (this.skillStore.skills().length === 0) {

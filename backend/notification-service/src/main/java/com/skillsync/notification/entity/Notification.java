@@ -2,9 +2,14 @@ package com.skillsync.notification.entity;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import lombok.*;
 
 @Entity
 @Table(name = "notifications")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Notification {
     
     @Id
@@ -28,42 +33,7 @@ public class Notification {
     
     @Column(nullable = false)
     private LocalDateTime sentAt;
-    
-    public Notification() {}
-    
-    public Notification(Long id, Long userId, String type, String message, String data, Boolean read, LocalDateTime sentAt) {
-        this.id = id;
-        this.userId = userId;
-        this.type = type;
-        this.message = message;
-        this.data = data;
-        this.read = read;
-        this.sentAt = sentAt;
-    }
-    
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-    
-    public Long getUserId() { return userId; }
-    public void setUserId(Long userId) { this.userId = userId; }
-    
-    public String getType() { return type; }
-    public void setType(String type) { this.type = type; }
-    
-    public String getMessage() { return message; }
-    public void setMessage(String message) { this.message = message; }
-    
-    public String getData() { return data; }
-    public void setData(String data) { this.data = data; }
-    
-    public Boolean getRead() {
-        return read;
-    }
 
-    public void setRead(Boolean read) {
-        this.read = read;
-    }
-    
     // Alias methods to support test expectations
     public Boolean getIsRead() {
         return read;
@@ -71,12 +41,6 @@ public class Notification {
     
     public void setIsRead(Boolean isRead) {
         this.read = isRead;
-    }
-    
-    public LocalDateTime getSentAt() { return sentAt; }
-
-    public void setSentAt(LocalDateTime sentAt) {
-        this.sentAt = sentAt;
     }
 }
 

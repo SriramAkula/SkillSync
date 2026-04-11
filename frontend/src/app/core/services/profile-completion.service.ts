@@ -40,10 +40,10 @@ export class ProfileCompletionService {
   getMissingFields(user: UserProfileDto | null): MissingField[] {
     if (!user) return [];
 
-    return this.CORE_FIELDS.filter(field => !this.isFilled((user as any)[field.key]));
+    return this.CORE_FIELDS.filter(field => !this.isFilled((user as UserProfileDto & Record<string, unknown>)[field.key]));
   }
 
-  private isFilled(value: any): boolean {
+  private isFilled(value: unknown): boolean {
     if (typeof value === 'string') return value.trim().length > 0;
     if (Array.isArray(value)) return value.length > 0;
     return !!value;

@@ -20,11 +20,12 @@ import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 @SpringBootApplication
 @EnableDiscoveryClient
 @EnableCaching
+@lombok.extern.slf4j.Slf4j
 public class SkillServiceApplication {
 
 	public static void main(String[] args) {
 		SpringApplication.run(SkillServiceApplication.class, args);
-		System.out.println("[OK] Skill Service Started on port 8083");
+		log.info("[OK] Skill Service Started on port 8083");
 	}
 
 }

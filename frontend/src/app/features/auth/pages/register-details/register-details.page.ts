@@ -33,7 +33,7 @@ export class RegisterDetailsPage implements OnInit {
       ? null : { mismatch: true };
   }
 
-  ngOnInit() {
+  ngOnInit(): void {
     this.email = sessionStorage.getItem('reg_email') ?? '';
     if (!this.email) {
       this.router.navigate(['/auth/register']);
@@ -50,7 +50,7 @@ export class RegisterDetailsPage implements OnInit {
     });
     
     // Check loading state to navigate to login after success
-    const checkInterval: any = window.setInterval(() => {
+    const checkInterval: number = window.setInterval(() => {
       if (!this.authStore.loading()) {
         window.clearInterval(checkInterval);
         if (!this.authStore.error() && this.authStore.isAuthenticated()) {

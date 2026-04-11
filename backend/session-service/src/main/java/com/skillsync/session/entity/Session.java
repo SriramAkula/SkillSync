@@ -8,11 +8,17 @@ import java.time.LocalDateTime;
 
 import com.skillsync.session.audit.Auditable;
 
+import lombok.*;
+
 @Entity
 @Table(name = "sessions", uniqueConstraints = {
     @UniqueConstraint(columnNames = {"mentor_id", "scheduled_at"}, 
                      name = "uk_mentor_scheduled_time")
 })
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Session extends Auditable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -57,25 +63,5 @@ public class Session extends Auditable {
         updatedAt = LocalDateTime.now();
     }
 
-    // Manual Getters and Setters
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-    public Long getMentorId() { return mentorId; }
-    public void setMentorId(Long mentorId) { this.mentorId = mentorId; }
-    public Long getLearnerId() { return learnerId; }
-    public void setLearnerId(Long learnerId) { this.learnerId = learnerId; }
-    public Long getSkillId() { return skillId; }
-    public void setSkillId(Long skillId) { this.skillId = skillId; }
-    public LocalDateTime getScheduledAt() { return scheduledAt; }
-    public void setScheduledAt(LocalDateTime scheduledAt) { this.scheduledAt = scheduledAt; }
-    public Integer getDurationMinutes() { return durationMinutes; }
-    public void setDurationMinutes(Integer durationMinutes) { this.durationMinutes = durationMinutes; }
-    public SessionStatus getStatus() { return status; }
-    public void setStatus(SessionStatus status) { this.status = status; }
-    public String getRejectionReason() { return rejectionReason; }
-    public void setRejectionReason(String rejectionReason) { this.rejectionReason = rejectionReason; }
-    public LocalDateTime getCreatedAt() { return createdAt; }
-    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
-    public LocalDateTime getUpdatedAt() { return updatedAt; }
-    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
 }
+

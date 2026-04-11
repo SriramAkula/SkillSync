@@ -17,7 +17,7 @@ export class ReviewService {
     return this.http.get<ApiResponse<ReviewDto>>(`${this.base}/${id}`);
   }
 
-  getMentorReviews(mentorId: number, page: number = 0, size: number = 10): Observable<ApiResponse<PageResponse<ReviewDto>>> {
+  getMentorReviews(mentorId: number, page = 0, size = 5): Observable<ApiResponse<PageResponse<ReviewDto>>> {
     return this.http.get<ApiResponse<PageResponse<ReviewDto>>>(`${this.base}/mentors/${mentorId}`, {
       params: { page: page.toString(), size: size.toString() }
     });

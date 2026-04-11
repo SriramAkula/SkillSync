@@ -39,3 +39,4 @@ public class EmailConfig {
         return messageSource;
     }
 }
+
