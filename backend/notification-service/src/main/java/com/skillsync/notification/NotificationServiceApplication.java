@@ -9,9 +9,10 @@ import org.springframework.cloud.openfeign.EnableFeignClients;
 @EnableDiscoveryClient
 @EnableFeignClients
 @EnableCaching
+@lombok.extern.slf4j.Slf4j
 public class NotificationServiceApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(NotificationServiceApplication.class, args);
-		System.out.println("[OK] Notification Service Started on port 8088");
+		log.info("[OK] Notification Service Started on port 8088");
 	}
 }

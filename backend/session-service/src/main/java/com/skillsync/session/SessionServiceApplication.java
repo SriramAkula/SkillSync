@@ -9,9 +9,10 @@ import org.springframework.cloud.openfeign.EnableFeignClients;
 @EnableDiscoveryClient
 @EnableCaching
 @EnableFeignClients
+@lombok.extern.slf4j.Slf4j
 public class SessionServiceApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(SessionServiceApplication.class, args);
-		System.out.println("[OK] Session Service Started on port 8085");
+		log.info("[OK] Session Service Started on port 8085");
 	}
 }

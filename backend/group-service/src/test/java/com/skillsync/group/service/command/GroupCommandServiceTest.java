@@ -105,6 +105,50 @@ class GroupCommandServiceTest {
     }
 
     @Test
+    void joinGroup_ShouldThrowException_WhenAlreadyMember() {
+        when(userServiceClient.getProfile(101L)).thenReturn(null);
+        when(groupRepository.findById(1L)).thenReturn(Optional.of(group));
+        when(groupMemberRepository.findByGroupIdAndUserId(1L, 101L)).thenReturn(Optional.of(new GroupMember()));
+
+        assertThrows(AlreadyMemberException.class, () -> groupCommandService.joinGroup(1L, 101L));
+    }
+
+    @Test
+    void createGroup_ShouldThrowException_WhenSkillServiceDown() {
+        when(skillServiceClient.getSkillById(10L)).thenThrow(new RuntimeException("Service down"));
+
+        assertThrows(GroupNotFoundException.class, () -> groupCommandService.createGroup(100L, createRequest));
+    }
+
+    @Test
+    void leaveGroup_ShouldSuccess_WhenNotCreator() {
+        GroupMember member = new GroupMember();
+        member.setUserId(101L);
+        member.setRole(MemberRole.MEMBER);
+
+        when(groupRepository.findById(1L)).thenReturn(Optional.of(group));
+        when(groupMemberRepository.findByGroupIdAndUserId(1L, 101L)).thenReturn(Optional.of(member));
+        when(groupMemberRepository.countByGroupId(1L)).thenReturn(1);
+        when(groupMapper.toDto(group, 1, false)).thenReturn(GroupResponseDto.builder().build());
+
+        groupCommandService.leaveGroup(1L, 101L);
+
+        verify(groupMemberRepository).delete(member);
+    }
+
+    @Test
+    void leaveGroup_ShouldThrowException_WhenCreator() {
+        GroupMember member = new GroupMember();
+        member.setUserId(100L);
+        member.setRole(MemberRole.CREATOR);
+
+        when(groupRepository.findById(1L)).thenReturn(Optional.of(group));
+        when(groupMemberRepository.findByGroupIdAndUserId(1L, 100L)).thenReturn(Optional.of(member));
+
+        assertThrows(org.springframework.web.server.ResponseStatusException.class, () -> groupCommandService.leaveGroup(1L, 100L));
+    }
+
+    @Test
     void deleteGroup_ShouldDeactivateGroup() {
         when(groupRepository.findById(1L)).thenReturn(Optional.of(group));
         when(groupRepository.save(group)).thenReturn(group);

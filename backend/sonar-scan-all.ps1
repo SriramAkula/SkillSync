@@ -3,7 +3,8 @@
 # Make sure to update the $token with strings generated from the SonarQube UI once it's up.
 
 $base = "C:\Users\srira\Desktop\SkillSync-Project\backend"
-$token = "sqa_f3f86ad9b85ace7ec46fbe8b8a5b390aecab07a3"
+# $token = "sqa_f3f86ad9b85ace7ec46fbe8b8a5b390aecab07a3"
+$token = $env:SONAR_TOKEN
 $services = @("auth-service","session-service","skill-service","user-service","mentor-service","group-service","notification-service","review-service")
 
 foreach ($svc in $services) {

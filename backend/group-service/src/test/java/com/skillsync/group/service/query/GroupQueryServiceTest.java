@@ -57,12 +57,31 @@ class GroupQueryServiceTest {
     }
 
     @Test
-    void getRandomGroups_ShouldReturnList() {
-        when(groupRepository.findRandomGroups(anyInt())).thenReturn(List.of(group));
+    void getGroupsBySkill_ShouldReturnPage() {
+        org.springframework.data.domain.Page<Group> mockPage = mock(org.springframework.data.domain.Page.class);
+        when(mockPage.getContent()).thenReturn(List.of(group));
+        when(mockPage.getNumber()).thenReturn(0);
+        when(mockPage.getTotalElements()).thenReturn(1L);
+        when(mockPage.getTotalPages()).thenReturn(1);
+        when(mockPage.getSize()).thenReturn(10);
+        
+        when(groupRepository.findBySkillId(eq(10L), any())).thenReturn(mockPage);
         when(groupMemberRepository.countByGroupId(anyLong())).thenReturn(1);
         when(groupMapper.toDto(any(), anyInt(), anyBoolean())).thenReturn(groupResponse);
 
-        List<GroupResponseDto> response = groupQueryService.getRandomGroups(5, 100L);
+        com.skillsync.group.dto.response.PageResponse<GroupResponseDto> response = 
+            groupQueryService.getGroupsBySkill(10L, 0, 10, 100L);
+
+        assertNotNull(response);
+    }
+
+    @Test
+    void getGroupsByCreator_ShouldReturnList() {
+        when(groupRepository.findByCreatorId(100L)).thenReturn(List.of(group));
+        when(groupMemberRepository.countByGroupId(anyLong())).thenReturn(1);
+        when(groupMapper.toDto(any(), anyInt(), anyBoolean())).thenReturn(groupResponse);
+
+        List<GroupResponseDto> response = groupQueryService.getGroupsByCreator(100L, 101L);
 
         assertNotNull(response);
         assertEquals(1, response.size());
