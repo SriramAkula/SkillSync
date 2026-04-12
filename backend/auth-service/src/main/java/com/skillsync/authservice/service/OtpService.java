@@ -25,6 +25,7 @@ public class OtpService {
     private static final String VERIFIED_PREFIX  = "otp:verified:";
     private static final String PWD_OTP_PREFIX   = "otp:pwd:";
     private static final String PWD_RESET_PREFIX = "otp:pwd-reset:";
+    private static final SecureRandom RANDOM     = new SecureRandom();
 
     @Value("${otp.ttl.minutes:5}")
     private long otpTtlMinutes;
@@ -43,7 +44,7 @@ public class OtpService {
     private final SpringTemplateEngine templateEngine;
 
     public void sendOtp(String email) {
-        String otp = String.format("%06d", new SecureRandom().nextInt(999999));
+        String otp = String.format("%06d", RANDOM.nextInt(999999));
         redisTemplate.opsForValue().set(OTP_PREFIX + email, otp, otpTtlMinutes, TimeUnit.MINUTES);
 
         try {
@@ -51,7 +52,7 @@ public class OtpService {
             log.info("Registration OTP sent to email={}", email);
         } catch (Exception e) {
             log.error("Failed to send registration OTP to email={}: {}", email, e.getMessage());
-            throw new RuntimeException("Failed to send email. Please try again later.");
+            throw new RuntimeException("Failed to send email. Please try again later.", e);
         }
     }
 
@@ -85,7 +86,7 @@ public class OtpService {
     }
 
     public void sendPasswordResetOtp(String email) {
-        String otp = String.format("%06d", new SecureRandom().nextInt(999999));
+        String otp = String.format("%06d", RANDOM.nextInt(999999));
         redisTemplate.opsForValue().set(PWD_OTP_PREFIX + email, otp, otpTtlMinutes, TimeUnit.MINUTES);
 
         try {
@@ -93,7 +94,7 @@ public class OtpService {
             log.info("Password reset OTP sent to email={}", email);
         } catch (Exception e) {
             log.error("Failed to send password reset OTP to email={}: {}", email, e.getMessage());
-            throw new RuntimeException("Failed to send email. Please try again later.");
+            throw new RuntimeException("Failed to send email. Please try again later.", e);
         }
     }
 
