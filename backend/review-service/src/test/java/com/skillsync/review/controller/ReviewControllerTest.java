@@ -153,28 +153,60 @@ class ReviewControllerTest {
     }
 
     @Test
-    void updateReview_shouldReturn403_whenForbiddenRole() throws Exception {
-        mockMvc.perform(put("/review/1")
+    void deleteReview_shouldReturn403_whenForbiddenRole() throws Exception {
+        mockMvc.perform(delete("/review/1")
                         .header("X-User-Id", 10L)
-                        .header("roles", "ROLE_ADMIN")
+                        .header("roles", "ROLE_ADMIN"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void deleteReview_shouldReturn403_whenRoleMissing() throws Exception {
+        mockMvc.perform(delete("/review/1")
+                        .header("X-User-Id", 100L))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void updateReview_shouldReturn403_whenRoleMissing() throws Exception {
+        mockMvc.perform(put("/review/1")
+                        .header("X-User-Id", 100L)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(reviewRequest)))
                 .andExpect(status().isForbidden());
     }
 
     @Test
-    void updateReview_shouldReturn401_whenUnauthorizedOwner() throws Exception {
-        when(reviewService.updateReview(anyLong(), anyLong(), any())).thenThrow(new UnauthorizedException("Unauthorized"));
+    void submitReview_shouldReturn201_whenMentorRole() throws Exception {
+        when(reviewService.submitReview(eq(10L), any())).thenReturn(reviewResponse);
 
-        mockMvc.perform(put("/review/1")
-                        .header("X-User-Id", 11L)
-                        .header("roles", "ROLE_LEARNER")
+        mockMvc.perform(post("/review")
+                        .header("X-User-Id", 10L)
+                        .header("roles", "ROLE_MENTOR")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(reviewRequest)))
-                .andExpect(status().isForbidden()); 
-                // Wait, ReviewController throws ResponseStatusException(HttpStatus.FORBIDDEN) for ROLES, 
-                // but what about UnauthorizedException?
-                // Let's check GlobalExceptionHandler or the controller.
+                .andExpect(status().isCreated());
+    }
+
+    @Test
+    void updateReview_shouldReturn200_whenMentorAndOwner() throws Exception {
+        when(reviewService.updateReview(eq(1L), eq(10L), any())).thenReturn(reviewResponse);
+
+        mockMvc.perform(put("/review/1")
+                        .header("X-User-Id", 10L)
+                        .header("roles", "ROLE_MENTOR")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(reviewRequest)))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void deleteReview_shouldReturn200_whenMentorAndOwner() throws Exception {
+        doNothing().when(reviewService).deleteReview(1L, 10L);
+
+        mockMvc.perform(delete("/review/1")
+                        .header("X-User-Id", 10L)
+                        .header("roles", "ROLE_MENTOR"))
+                .andExpect(status().isOk());
     }
 }
-

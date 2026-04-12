@@ -1,4 +1,4 @@
-package com.skillsync.skill.audit;
+package com.skillsync.group.audit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -23,13 +23,13 @@ class AuditServiceTest {
 
     @Test
     void log_shouldSaveAuditLog_whenExplicitPerformedByIsGiven() {
-        auditService.log("Skill", 1L, "CREATE", "user123", "Details");
+        auditService.log("Group", 1L, "CREATE", "user123", "Details");
 
         ArgumentCaptor<AuditLog> captor = ArgumentCaptor.forClass(AuditLog.class);
         verify(auditLogRepository).save(captor.capture());
 
         AuditLog saved = captor.getValue();
-        assertThat(saved.getEntityName()).isEqualTo("Skill");
+        assertThat(saved.getEntityName()).isEqualTo("Group");
         assertThat(saved.getEntityId()).isEqualTo(1L);
         assertThat(saved.getAction()).isEqualTo("CREATE");
         assertThat(saved.getPerformedBy()).isEqualTo("user123");
@@ -38,7 +38,7 @@ class AuditServiceTest {
 
     @Test
     void log_shouldSaveSystemAsPerformedBy_whenNullIsGiven() {
-        auditService.log("Skill", 1L, "CREATE", null, "Details");
+        auditService.log("Group", 1L, "CREATE", null, "Details");
 
         ArgumentCaptor<AuditLog> captor = ArgumentCaptor.forClass(AuditLog.class);
         verify(auditLogRepository).save(captor.capture());
@@ -51,7 +51,7 @@ class AuditServiceTest {
     void log_shouldNotPropagateException_whenRepositoryThrows() {
         when(auditLogRepository.save(any(AuditLog.class))).thenThrow(new RuntimeException("DB offline"));
 
-        auditService.log("Skill", 1L, "CREATE", "user123", "Details");
+        auditService.log("Group", 1L, "CREATE", "user123", "Details");
         
         verify(auditLogRepository).save(any(AuditLog.class));
     }

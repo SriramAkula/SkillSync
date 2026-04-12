@@ -1,6 +1,7 @@
 package com.skillsync.group.service.query;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
@@ -76,14 +77,81 @@ class GroupQueryServiceTest {
     }
 
     @Test
-    void getGroupsByCreator_ShouldReturnList() {
+    void getGroupDetails_ShouldReturnJoinedTrue_WhenMemberExists() {
+        when(groupRepository.findById(1L)).thenReturn(Optional.of(group));
+        when(groupMemberRepository.countByGroupId(1L)).thenReturn(3);
+        when(groupMemberRepository.findByGroupIdAndUserId(1L, 100L)).thenReturn(Optional.of(new com.skillsync.group.entity.GroupMember()));
+        when(groupMapper.toDto(group, 3, true)).thenReturn(groupResponse);
+
+        groupQueryService.getGroupDetails(1L, 100L);
+
+        verify(groupMapper).toDto(group, 3, true);
+    }
+
+    @Test
+    void getGroupDetails_ShouldReturnJoinedFalse_WhenAnonUser() {
+        when(groupRepository.findById(1L)).thenReturn(Optional.of(group));
+        when(groupMemberRepository.countByGroupId(1L)).thenReturn(3);
+        when(groupMapper.toDto(group, 3, false)).thenReturn(groupResponse);
+
+        groupQueryService.getGroupDetails(1L, null);
+
+        verify(groupMapper).toDto(group, 3, false);
+    }
+
+    @Test
+    void getGroupsBySkill_ShouldHandleDifferentUserStates() {
+        org.springframework.data.domain.Page<Group> mockPage = mock(org.springframework.data.domain.Page.class);
+        when(mockPage.getContent()).thenReturn(List.of(group));
+        when(groupRepository.findBySkillId(anyLong(), any())).thenReturn(mockPage);
+
+        // Path 1: User null
+        groupQueryService.getGroupsBySkill(10L, 0, 10, null);
+        
+        // Path 2: User not null, isMember
+        when(groupMemberRepository.findByGroupIdAndUserId(anyLong(), anyLong())).thenReturn(Optional.of(new com.skillsync.group.entity.GroupMember()));
+        groupQueryService.getGroupsBySkill(10L, 0, 10, 100L);
+
+        // Path 3: User not null, notMember
+        when(groupMemberRepository.findByGroupIdAndUserId(anyLong(), anyLong())).thenReturn(Optional.empty());
+        groupQueryService.getGroupsBySkill(10L, 0, 10, 100L);
+
+        verify(groupMapper, times(3)).toDto(any(), anyInt(), anyBoolean());
+    }
+
+    @Test
+    void getGroupsByCreator_ShouldHandleDifferentUserStates() {
         when(groupRepository.findByCreatorId(100L)).thenReturn(List.of(group));
-        when(groupMemberRepository.countByGroupId(anyLong())).thenReturn(1);
-        when(groupMapper.toDto(any(), anyInt(), anyBoolean())).thenReturn(groupResponse);
 
-        List<GroupResponseDto> response = groupQueryService.getGroupsByCreator(100L, 101L);
+        // Path 1: User null
+        groupQueryService.getGroupsByCreator(100L, null);
 
-        assertNotNull(response);
-        assertEquals(1, response.size());
+        // Path 2: User not null, isMember
+        when(groupMemberRepository.findByGroupIdAndUserId(anyLong(), anyLong())).thenReturn(Optional.of(new com.skillsync.group.entity.GroupMember()));
+        groupQueryService.getGroupsByCreator(100L, 101L);
+
+        verify(groupMapper, times(2)).toDto(any(), anyInt(), anyBoolean());
+    }
+
+    @Test
+    void getRandomGroups_ShouldHandleDifferentUserStates() {
+        when(groupRepository.findRandomGroups(5)).thenReturn(List.of(group));
+
+        // Path 1: User null
+        groupQueryService.getRandomGroups(5, null);
+
+        // Path 2: User not null, isMember
+        when(groupMemberRepository.findByGroupIdAndUserId(anyLong(), anyLong())).thenReturn(Optional.of(new com.skillsync.group.entity.GroupMember()));
+        groupQueryService.getRandomGroups(5, 100L);
+
+        verify(groupMapper, times(2)).toDto(any(), anyInt(), anyBoolean());
+    }
+
+    @Test
+    void getGroupDetails_ShouldThrowNotFound_WhenMissing() {
+        when(groupRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThrows(com.skillsync.group.exception.GroupNotFoundException.class, 
+            () -> groupQueryService.getGroupDetails(99L, 100L));
     }
 }

@@ -361,4 +361,28 @@ class SkillControllerTest {
                         .header("X-Gateway-Request", "true"))
                 .andExpect(status().isNotFound());
     }
+
+    // ─── PUT /skill/{id}/popularity ───────────────────────────────────────────
+
+    @Test
+    void updatePopularity_shouldReturn200_whenIncrementing() throws Exception {
+        when(skillService.updatePopularity(1L, true)).thenReturn(skillResponse);
+
+        mockMvc.perform(put("/skill/1/popularity")
+                        .header("X-Gateway-Request", "true")
+                        .param("increment", "true"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true));
+    }
+
+    @Test
+    void updatePopularity_shouldReturn200_whenDecrementing() throws Exception {
+        when(skillService.updatePopularity(1L, false)).thenReturn(skillResponse);
+
+        mockMvc.perform(put("/skill/1/popularity")
+                        .header("X-Gateway-Request", "true")
+                        .param("increment", "false"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true));
+    }
 }

@@ -166,4 +166,35 @@ class GroupCommandServiceTest {
 
         assertThrows(GroupNotFoundException.class, () -> groupCommandService.deleteGroup(1L, 999L));
     }
+
+    @Test
+    void createGroup_ShouldThrowException_WhenUserServiceDown() {
+        when(skillServiceClient.getSkillById(anyLong())).thenReturn(null);
+        when(userServiceClient.getProfile(anyLong())).thenThrow(new RuntimeException("User service down"));
+
+        assertThrows(GroupNotFoundException.class, () -> groupCommandService.createGroup(100L, createRequest));
+    }
+
+    @Test
+    void joinGroup_ShouldThrowException_WhenUserServiceDown() {
+        when(userServiceClient.getProfile(anyLong())).thenThrow(new RuntimeException("User service down"));
+
+        assertThrows(GroupNotFoundException.class, () -> groupCommandService.joinGroup(1L, 101L));
+    }
+
+    @Test
+    void joinGroup_ShouldThrowException_WhenGroupNotFound() {
+        when(userServiceClient.getProfile(anyLong())).thenReturn(null);
+        when(groupRepository.findById(anyLong())).thenReturn(Optional.empty());
+
+        assertThrows(GroupNotFoundException.class, () -> groupCommandService.joinGroup(1L, 101L));
+    }
+
+    @Test
+    void leaveGroup_ShouldThrowException_WhenMemberNotFound() {
+        when(groupRepository.findById(anyLong())).thenReturn(Optional.of(group));
+        when(groupMemberRepository.findByGroupIdAndUserId(anyLong(), anyLong())).thenReturn(Optional.empty());
+
+        assertThrows(GroupNotFoundException.class, () -> groupCommandService.leaveGroup(1L, 101L));
+    }
 }

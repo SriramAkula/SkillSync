@@ -70,4 +70,43 @@ class GatewayRequestFilterTest {
         verify(response).setStatus(HttpServletResponse.SC_FORBIDDEN);
         verify(filterChain, never()).doFilter(any(), any());
     }
+
+    @Test
+    void doFilter_shouldAllowActuator() throws ServletException, IOException {
+        when(request.getRequestURI()).thenReturn("/actuator/info");
+        gatewayRequestFilter.doFilter(request, response, filterChain);
+        verify(filterChain).doFilter(request, response);
+    }
+
+    @Test
+    void doFilter_shouldAllowSwagger() throws ServletException, IOException {
+        when(request.getRequestURI()).thenReturn("/v3/api-docs");
+        gatewayRequestFilter.doFilter(request, response, filterChain);
+        verify(filterChain).doFilter(request, response);
+    }
+
+    @Test
+    void doFilter_shouldDenyWithServiceAuthFalse() throws ServletException, IOException {
+        when(request.getRequestURI()).thenReturn("/review/1");
+        when(request.getHeader("X-Gateway-Request")).thenReturn(null);
+        when(request.getHeader("X-Service-Auth")).thenReturn("false");
+        
+        StringWriter stringWriter = new StringWriter();
+        PrintWriter writer = new PrintWriter(stringWriter);
+        when(response.getWriter()).thenReturn(writer);
+
+        gatewayRequestFilter.doFilter(request, response, filterChain);
+
+        verify(response).setStatus(HttpServletResponse.SC_FORBIDDEN);
+    }
+    @Test
+    void doFilter_shouldAllowWithBothHeaders() throws ServletException, IOException {
+        when(request.getRequestURI()).thenReturn("/review/1");
+        when(request.getHeader("X-Gateway-Request")).thenReturn("true");
+        when(request.getHeader("X-Service-Auth")).thenReturn("true");
+
+        gatewayRequestFilter.doFilter(request, response, filterChain);
+
+        verify(filterChain).doFilter(request, response);
+    }
 }
