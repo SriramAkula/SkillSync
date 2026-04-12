@@ -73,10 +73,10 @@ export class BlockUserPage implements OnInit {
 
   loadUserDetails(userId: number): void {
     this.adminUserService.getUserDetails(userId).subscribe({
-      next: (response: any) => {
+      next: (response: ApiResponse<UserProfile>) => {
         this.user = response.data;
       },
-      error: (err: any) => {
+      error: () => {
         this.snackBar.open('Failed to load user details', 'Close', { duration: 3000 });
         this.router.navigate(['/admin/users']);
       }
@@ -123,7 +123,7 @@ export class BlockUserPage implements OnInit {
         this.snackBar.open('User blocked successfully', 'Close', { duration: 3000 });
         this.router.navigate(['/admin/users']);
       },
-      error: (err: any) => {
+      error: () => {
         this.isLoading.set(false);
         this.snackBar.open('Failed to block user', 'Close', { duration: 3000 });
       }

@@ -31,11 +31,11 @@ export class UnblockUserPage implements OnInit {
   loadUser(userId: number) {
     this.isLoading = true;
     this.adminUserService.getUserDetails(userId).subscribe({
-      next: (response: any) => {
+      next: (response: ApiResponse<UserProfile>) => {
         this.user = response.data;
         this.isLoading = false;
       },
-      error: (err: any) => {
+      error: () => {
         this.snackBar.open('Failed to load user details', 'Close', { duration: 3000 });
         this.isLoading = false;
       }
@@ -69,7 +69,7 @@ export class UnblockUserPage implements OnInit {
         this.snackBar.open('User unblocked successfully', 'Close', { duration: 3000 });
         this.goBack();
       },
-      error: (err: any) => {
+      error: () => {
         this.snackBar.open('Failed to unblock user', 'Close', { duration: 3000 });
         this.isLoading = false;
       }

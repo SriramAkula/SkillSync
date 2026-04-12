@@ -68,7 +68,7 @@ export class AdminUsersPage implements OnInit {
         this.blockedCount = this.users.filter(u => u.isBlocked).length;
         this.loading.set(false);
       },
-      error: (err) => {
+      error: () => {
         this.snackBar.open('Failed to load users', 'Close', { duration: 3000 });
         this.loading.set(false);
       }
@@ -83,7 +83,7 @@ export class AdminUsersPage implements OnInit {
         this.blockedCount = this.blockedUsers.length;
         this.loading.set(false);
       },
-      error: (err) => {
+      error: () => {
         this.snackBar.open('Failed to load blocked users', 'Close', { duration: 3000 });
         this.loading.set(false);
       }
