@@ -60,7 +60,7 @@ public class UserProfileController {
 	})
 	@SecurityRequirement(name = "bearerAuth")
 	public ResponseEntity<ApiResponse<UserProfileResponseDto>> getProfile(
-			@Parameter(hidden = true) @RequestHeader("X-User-Id") Long headerUserId,
+			@Parameter(hidden = true) @RequestHeader(value = "X-User-Id", required = false) Long headerUserId,
 			@Parameter(hidden = true) @RequestHeader(value = "loggedInUser", required = false) String headerEmail,
 			@Parameter(hidden = true) @RequestHeader(value = "roles", required = false) String roles,
 			HttpServletRequest request) {
@@ -125,7 +125,7 @@ public class UserProfileController {
 	})
 	@SecurityRequirement(name = "bearerAuth")
 	public ResponseEntity<ApiResponse<UserProfileResponseDto>> updateProfile(
-			@Parameter(hidden = true) @RequestHeader("X-User-Id") Long headerUserId,
+			@Parameter(hidden = true) @RequestHeader(value = "X-User-Id", required = false) Long headerUserId,
 			@Parameter(hidden = true) @RequestHeader(value = "roles", required = false) String roles,
 			@Valid @RequestBody UpdateProfileRequestDto requestDto,
 			HttpServletRequest request) {
@@ -160,7 +160,7 @@ public class UserProfileController {
 	 */
 	@PostMapping("/internal/users")
 	public ResponseEntity<Void> createUserProfile(
-			@RequestBody java.util.Map<String, Object> userData) {
+			@RequestBody(required = false) java.util.Map<String, Object> userData) {
 
 		try {
 			// Safer extraction with null checks
@@ -179,7 +179,7 @@ public class UserProfileController {
 			String email = (String) userData.get("email");
 			String username = (String) userData.get("username");
 
-			if (userId == null || email == null) {
+			if (email == null) {
 				log.error("Missing required fields: userId={}, email={}", userId, email);
 				return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
 			}
@@ -310,7 +310,7 @@ public class UserProfileController {
 	public ResponseEntity<ApiResponse<UserProfileAdminResponseDto>> blockUser(
 			@PathVariable Long userId,
 			@Parameter(hidden = true) @RequestHeader(value = "roles", required = false) String roles,
-			@Parameter(hidden = true) @RequestHeader("X-User-Id") Long adminId,
+			@Parameter(hidden = true) @RequestHeader(value = "X-User-Id", required = false) Long adminId,
 			@RequestBody BlockUserRequest request) {
 
 		if (roles == null || !roles.contains("ROLE_ADMIN")) {
@@ -342,7 +342,7 @@ public class UserProfileController {
 	public ResponseEntity<ApiResponse<UserProfileAdminResponseDto>> unblockUser(
 			@PathVariable Long userId,
 			@Parameter(hidden = true) @RequestHeader(value = "roles", required = false) String roles,
-			@Parameter(hidden = true) @RequestHeader("X-User-Id") Long adminId) {
+			@Parameter(hidden = true) @RequestHeader(value = "X-User-Id", required = false) Long adminId) {
 
 		if (roles == null || !roles.contains("ROLE_ADMIN")) {
 			throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only admins can unblock users");

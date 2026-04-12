@@ -86,6 +86,34 @@ class UserProfileCommandServiceTest {
     }
 
     @Test
+    void updateProfile_shouldNotSyncWithAuth_whenUsernameIsNull() {
+        UpdateProfileRequestDto request = new UpdateProfileRequestDto(null, "Name", "Bio", "123", "Java");
+        UserProfileResponseDto dto = new UserProfileResponseDto();
+        
+        when(userProfileRepository.findByUserId(10L)).thenReturn(Optional.of(profile));
+        when(userProfileRepository.save(any(UserProfile.class))).thenReturn(profile);
+        when(userProfileMapper.toDto(profile)).thenReturn(dto);
+
+        userProfileCommandService.updateProfile(10L, request);
+
+        verify(authClient, never()).updateUserProfile(anyLong(), any());
+    }
+
+    @Test
+    void updateProfile_shouldNotSyncWithAuth_whenUsernameIsSame() {
+        UpdateProfileRequestDto request = new UpdateProfileRequestDto("user", "Name", "Bio", "123", "Java"); // "user" is the existing username
+        UserProfileResponseDto dto = new UserProfileResponseDto();
+        
+        when(userProfileRepository.findByUserId(10L)).thenReturn(Optional.of(profile));
+        when(userProfileRepository.save(any(UserProfile.class))).thenReturn(profile);
+        when(userProfileMapper.toDto(profile)).thenReturn(dto);
+
+        userProfileCommandService.updateProfile(10L, request);
+
+        verify(authClient, never()).updateUserProfile(anyLong(), any());
+    }
+
+    @Test
     void updateProfile_shouldNotThrow_whenAuthClientFails() {
         UpdateProfileRequestDto request = new UpdateProfileRequestDto("newuser", "Name", "Bio", "123", "Java");
         UserProfileResponseDto dto = new UserProfileResponseDto();

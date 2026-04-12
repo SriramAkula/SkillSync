@@ -144,6 +144,20 @@ class UserAdminServiceTest {
     }
 
     @Test
+    void unblockUser_shouldHandleAuthClientFailure() {
+        userProfile.setIsBlocked(true);
+        when(userProfileRepository.findByUserId(1L)).thenReturn(Optional.of(userProfile));
+        when(userProfileRepository.save(any(UserProfile.class))).thenReturn(userProfile);
+        when(userProfileMapper.toAdminDto(any(UserProfile.class))).thenReturn(adminResponseDto);
+        doThrow(new RuntimeException("Auth error")).when(authClient).updateUserStatus(anyLong(), anyBoolean());
+
+        // Should not rethrow
+        userAdminService.unblockUser(1L, 100L);
+
+        verify(userProfileRepository).save(any());
+    }
+
+    @Test
     void getUserDetails_shouldReturnDto() {
         when(userProfileRepository.findByUserId(1L)).thenReturn(Optional.of(userProfile));
         when(userProfileMapper.toAdminDto(any(UserProfile.class))).thenReturn(adminResponseDto);

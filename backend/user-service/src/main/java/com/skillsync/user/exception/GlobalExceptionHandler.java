@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.server.ResponseStatusException;
@@ -21,6 +22,19 @@ import lombok.extern.slf4j.Slf4j;
 @RestControllerAdvice
 @Slf4j
 public class GlobalExceptionHandler {
+
+	@ExceptionHandler(MissingRequestHeaderException.class)
+	public ResponseEntity<ErrorResponse> handleMissingHeaderException(MissingRequestHeaderException ex) {
+		log.error("Missing required header: {}", ex.getHeaderName());
+		ErrorResponse error = new ErrorResponse(
+			HttpStatus.BAD_REQUEST.value(),
+			"Missing required header: " + ex.getHeaderName(),
+			LocalDateTime.now(),
+			null,
+			"MISSING_HEADER"
+		);
+		return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+	}
 
 	@ExceptionHandler(UserProfileNotFoundException.class)
 	public ResponseEntity<ErrorResponse> handleUserProfileNotFoundException(
