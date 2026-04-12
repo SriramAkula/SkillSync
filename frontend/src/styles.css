@@ -48,6 +48,64 @@ body {
   @apply bg-slate-300 rounded-full hover:bg-slate-400 transition-colors;
 }
 
+.dark ::-webkit-scrollbar-thumb {
+  @apply bg-slate-700 hover:bg-slate-600;
+}
+
+/* Dark Mode Form Input Styling */
+input[type="text"],
+input[type="number"],
+input[type="email"],
+input[type="password"],
+textarea,
+select {
+  @apply transition-colors duration-200;
+}
+
+.dark input[type="text"],
+.dark input[type="number"],
+.dark input[type="email"],
+.dark input[type="password"],
+.dark textarea,
+.dark select {
+  @apply bg-slate-800 text-slate-100 border-slate-700;
+}
+
+.dark input[type="text"]:focus,
+.dark input[type="number"]:focus,
+.dark input[type="email"]:focus,
+.dark input[type="password"]:focus,
+.dark textarea:focus,
+.dark select:focus {
+  @apply border-primary-500 ring-primary-500/20 bg-slate-800 text-slate-100;
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+  @apply text-slate-500;
+}
+
+/* Dark mode label styling */
+.dark label {
+  @apply text-slate-300;
+}
+
+/* Dark mode background containers */
+.dark .bg-slate-50 {
+  @apply bg-slate-800;
+}
+
+.dark .border-slate-100 {
+  @apply border-slate-700;
+}
+
+.dark .text-slate-400 {
+  @apply text-slate-500;
+}
+
+.dark .text-slate-900 {
+  @apply text-slate-100;
+
 /* Animation Utilities */
 .page-transition {
   @apply transition-all duration-300 ease-out;

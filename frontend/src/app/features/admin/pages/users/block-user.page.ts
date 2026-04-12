@@ -59,10 +59,10 @@ export class BlockUserPage implements OnInit {
   isLoading = signal(false);
   submitted = signal(false);
 
-  private readonly adminUserService = inject(AdminUserService);
-  private readonly snackBar = inject(MatSnackBar);
-  private readonly router = inject(Router);
-  private readonly route = inject(ActivatedRoute);
+  private adminUserService = inject(AdminUserService);
+  private snackBar = inject(MatSnackBar);
+  private router = inject(Router);
+  private route = inject(ActivatedRoute);
 
   ngOnInit(): void {
     const userId = this.route.snapshot.paramMap.get('id');
@@ -73,10 +73,10 @@ export class BlockUserPage implements OnInit {
 
   loadUserDetails(userId: number): void {
     this.adminUserService.getUserDetails(userId).subscribe({
-      next: (response: { data: UserProfile }) => {
+      next: (response: any) => {
         this.user = response.data;
       },
-      error: () => {
+      error: (err: any) => {
         this.snackBar.open('Failed to load user details', 'Close', { duration: 3000 });
         this.router.navigate(['/admin/users']);
       }
@@ -123,7 +123,7 @@ export class BlockUserPage implements OnInit {
         this.snackBar.open('User blocked successfully', 'Close', { duration: 3000 });
         this.router.navigate(['/admin/users']);
       },
-      error: () => {
+      error: (err: any) => {
         this.isLoading.set(false);
         this.snackBar.open('Failed to block user', 'Close', { duration: 3000 });
       }
