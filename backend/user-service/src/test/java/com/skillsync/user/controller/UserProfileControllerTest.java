@@ -385,4 +385,184 @@ class UserProfileControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.userId").value(10));
     }
+
+    // ─── Missing Unidentified User Branches ───────────────────────────────────
+
+    @Test
+    void createUserProfile_shouldReturn201_whenProfileCheckReturnsNull() throws Exception {
+        Map<String, Object> userData = new HashMap<>();
+        userData.put("userId", 10);
+        userData.put("email", "user@example.com");
+        when(userProfileService.getProfileByUserId(10L)).thenReturn(null);
+
+        mockMvc.perform(post("/user/internal/users")
+                        .header("X-Gateway-Request", "true")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(userData)))
+                .andExpect(status().isCreated());
+
+        verify(userProfileService).createProfile(10L, "user@example.com", null);
+    }
+
+
+
+    @Test
+    void getProfile_shouldReturn401_whenUserIdUnidentified() throws Exception {
+        when(securityUtil.extractUserId(any())).thenReturn(null);
+        mockMvc.perform(get("/user/profile")
+                        .header("roles", "ROLE_USER")
+                        .header("X-Gateway-Request", "true"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void updateProfile_shouldReturn401_whenUserIdUnidentified() throws Exception {
+        UpdateProfileRequestDto request = new UpdateProfileRequestDto("jdoe", "Jane Doe", "bio", "1234567890", "Java");
+        when(securityUtil.extractUserId(any())).thenReturn(null);
+        mockMvc.perform(put("/user/profile")
+                        .header("roles", "ROLE_USER")
+                        .header("X-Gateway-Request", "true")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isUnauthorized());
+    }
+
+    // ─── Internal Endpoint Edge Cases ─────────────────────────────────────────
+
+    @Test
+    void createUserProfile_shouldReturn400_whenUserIdObjNull() throws Exception {
+        Map<String, Object> userData = new HashMap<>();
+        userData.put("email", "test@test.com");
+        mockMvc.perform(post("/user/internal/users")
+                        .header("X-Gateway-Request", "true")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(userData)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void createUserProfile_shouldReturn400_whenEmailInternalNull() throws Exception {
+        Map<String, Object> userData = new HashMap<>();
+        userData.put("userId", 10);
+        userData.put("email", null);
+        mockMvc.perform(post("/user/internal/users")
+                        .header("X-Gateway-Request", "true")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(userData)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void createUserProfile_shouldReturn400_whenNpeOccurs() throws Exception {
+        mockMvc.perform(post("/user/internal/users")
+                        .header("X-Gateway-Request", "true")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"userId\": null}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void createUserProfile_shouldReturn400_whenUserDataNull() throws Exception {
+        mockMvc.perform(post("/user/internal/users")
+                        .header("X-Gateway-Request", "true")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest());
+    }
+
+    // ─── Admin Role missing branches ─────────────────────────────────────────
+
+    @Test
+    void getAllUsers_shouldReturn403_whenRolesHeaderNull() throws Exception {
+        mockMvc.perform(get("/user/admin/all")
+                        .header("X-Gateway-Request", "true"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void getBlockedUsers_shouldReturn403_whenRolesHeaderNull() throws Exception {
+        mockMvc.perform(get("/user/admin/blocked")
+                        .header("X-Gateway-Request", "true"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void blockUser_shouldReturn403_whenRolesHeaderNull() throws Exception {
+        mockMvc.perform(put("/user/admin/10/block")
+                        .header("X-Gateway-Request", "true")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void unblockUser_shouldReturn403_whenRolesHeaderNull() throws Exception {
+        mockMvc.perform(put("/user/admin/10/unblock")
+                        .header("X-Gateway-Request", "true"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void getProfile_shouldFallbackToHeaderUserId_whenSecurityUtilReturnsNull() throws Exception {
+        when(securityUtil.extractUserId(any())).thenReturn(null);
+        when(userProfileService.getProfileByUserId(10L)).thenReturn(responseDto);
+
+        mockMvc.perform(get("/user/profile")
+                        .header("X-User-Id", 10L)
+                        .header("roles", "ROLE_USER")
+                        .header("X-Gateway-Request", "true"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.userId").value(10));
+    }
+
+    @Test
+    void getUserDetails_shouldReturn403_whenRolesHeaderNull() throws Exception {
+        mockMvc.perform(get("/user/admin/10/details")
+                        .header("X-Gateway-Request", "true"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void getAllUsers_shouldReturn403_whenRolesHeaderNotAdmin() throws Exception {
+        mockMvc.perform(get("/user/admin/all")
+                        .header("roles", "ROLE_USER")
+                        .header("X-Gateway-Request", "true"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void getBlockedUsers_shouldReturn403_whenRolesHeaderNotAdmin() throws Exception {
+        mockMvc.perform(get("/user/admin/blocked")
+                        .header("roles", "ROLE_USER")
+                        .header("X-Gateway-Request", "true"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void blockUser_shouldReturn403_whenRolesHeaderNotAdmin() throws Exception {
+        BlockUserRequest request = new BlockUserRequest();
+        request.setReason("Violation");
+
+        mockMvc.perform(put("/user/admin/10/block")
+                        .header("roles", "ROLE_USER")
+                        .header("X-Gateway-Request", "true")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void unblockUser_shouldReturn403_whenRolesHeaderNotAdmin() throws Exception {
+        mockMvc.perform(put("/user/admin/10/unblock")
+                        .header("roles", "ROLE_USER")
+                        .header("X-Gateway-Request", "true"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void getUserDetails_shouldReturn403_whenRolesHeaderNotAdmin() throws Exception {
+        mockMvc.perform(get("/user/admin/10/details")
+                        .header("roles", "ROLE_USER")
+                        .header("X-Gateway-Request", "true"))
+                .andExpect(status().isForbidden());
+    }
 }

@@ -149,6 +149,63 @@ class SessionCommandServiceTest {
     }
 
     @Test
+    void requestSession_ShouldSucceed_WhenUserNotBlocked() {
+        com.skillsync.session.dto.response.UserProfileResponseDto profile = new com.skillsync.session.dto.response.UserProfileResponseDto();
+        profile.setIsBlocked(false);
+        com.skillsync.session.dto.ApiResponse<com.skillsync.session.dto.response.UserProfileResponseDto> apiResponse = new com.skillsync.session.dto.ApiResponse<>();
+        apiResponse.setData(profile);
+        
+        when(userClient.getUserProfile(200L)).thenReturn(apiResponse);
+        when(sessionRepository.findSessionsInTimeRange(anyLong(), any(), any())).thenReturn(List.of());
+        when(sessionMapper.toEntity(eq(200L), any())).thenReturn(session);
+        when(sessionRepository.save(any())).thenReturn(session);
+        when(sessionMapper.toDto(session)).thenReturn(new SessionResponseDto());
+
+        sessionCommandService.requestSession(200L, requestDto);
+        verify(sessionRepository).save(any());
+    }
+
+    @Test
+    void requestSession_ShouldSucceed_WhenUserApiResponseDataNull() {
+        com.skillsync.session.dto.ApiResponse<com.skillsync.session.dto.response.UserProfileResponseDto> apiResponse = new com.skillsync.session.dto.ApiResponse<>();
+        apiResponse.setData(null);
+        
+        when(userClient.getUserProfile(200L)).thenReturn(apiResponse);
+        when(sessionRepository.findSessionsInTimeRange(anyLong(), any(), any())).thenReturn(List.of());
+        when(sessionMapper.toEntity(eq(200L), any())).thenReturn(session);
+        when(sessionRepository.save(any())).thenReturn(session);
+        when(sessionMapper.toDto(session)).thenReturn(new SessionResponseDto());
+
+        sessionCommandService.requestSession(200L, requestDto);
+        verify(sessionRepository).save(any());
+    }
+
+    @Test
+    void requestSession_ShouldLogWarning_WhenUserClientThrows() {
+        when(userClient.getUserProfile(200L)).thenThrow(new RuntimeException("API error"));
+        when(sessionRepository.findSessionsInTimeRange(anyLong(), any(), any())).thenReturn(List.of());
+        when(sessionMapper.toEntity(eq(200L), any())).thenReturn(session);
+        when(sessionRepository.save(any())).thenReturn(session);
+        when(sessionMapper.toDto(session)).thenReturn(new SessionResponseDto());
+
+        sessionCommandService.requestSession(200L, requestDto);
+        verify(sessionRepository).save(any());
+    }
+
+    @Test
+    void cancelSession_ShouldSucceed_WhenStatusRequested() {
+        session.setStatus(SessionStatus.REQUESTED);
+        when(sessionRepository.findById(1L)).thenReturn(Optional.of(session));
+        when(sessionRepository.save(any())).thenReturn(session);
+        when(sessionMapper.toDto(session)).thenReturn(new SessionResponseDto());
+
+        sessionCommandService.cancelSession(1L);
+
+        assertEquals(SessionStatus.CANCELLED, session.getStatus());
+        verify(eventPublisher).publishSessionCancelled(any());
+    }
+
+    @Test
     void updateStatus_ShouldSuccess() {
         when(sessionRepository.findById(1L)).thenReturn(Optional.of(session));
         sessionCommandService.updateStatus(1L, "COMPLETED");

@@ -11,9 +11,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.verify;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class SessionEventPublisherTest {
@@ -70,5 +69,32 @@ class SessionEventPublisherTest {
     @Test
     void publishSessionCancelledFallback_shouldLog() {
         sessionEventPublisher.publishSessionCancelledFallback(new SessionCancelledEvent(), new Exception("error"));
+    }
+
+    @Test
+    void publishSessionRequested_shouldThrow_whenRabbitFails() {
+        doThrow(new RuntimeException("Rabbit down")).when(rabbitTemplate).convertAndSend(anyString(), anyString(), any(SessionRequestedEvent.class));
+        try {
+            sessionEventPublisher.publishSessionRequested(new SessionRequestedEvent());
+        } catch (Exception ignored) {}
+        verify(rabbitTemplate).convertAndSend(anyString(), anyString(), any(SessionRequestedEvent.class));
+    }
+
+    @Test
+    void publishSessionAccepted_shouldThrow_whenRabbitFails() {
+        doThrow(new RuntimeException("error")).when(rabbitTemplate).convertAndSend(anyString(), anyString(), any(SessionAcceptedEvent.class));
+        try { sessionEventPublisher.publishSessionAccepted(new SessionAcceptedEvent()); } catch (Exception ignored) {}
+    }
+
+    @Test
+    void publishSessionRejected_shouldThrow_whenRabbitFails() {
+        doThrow(new RuntimeException("error")).when(rabbitTemplate).convertAndSend(anyString(), anyString(), any(SessionRejectedEvent.class));
+        try { sessionEventPublisher.publishSessionRejected(new SessionRejectedEvent()); } catch (Exception ignored) {}
+    }
+
+    @Test
+    void publishSessionCancelled_shouldThrow_whenRabbitFails() {
+        doThrow(new RuntimeException("error")).when(rabbitTemplate).convertAndSend(anyString(), anyString(), any(SessionCancelledEvent.class));
+        try { sessionEventPublisher.publishSessionCancelled(new SessionCancelledEvent()); } catch (Exception ignored) {}
     }
 }

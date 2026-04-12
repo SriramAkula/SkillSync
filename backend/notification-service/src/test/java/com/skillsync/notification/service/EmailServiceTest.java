@@ -219,4 +219,70 @@ class EmailServiceTest {
         emailService.sendMentorApprovedEmail(event);
         verify(mailSender, never()).send(any(MimeMessage.class));
     }
+
+    @Test
+    void sendSessionCancelledEmail_shouldSendOnlyToMentor_whenLearnerEmailIsNull() {
+        when(userServiceClient.getUserById(1L)).thenReturn(userResponse);
+        when(userServiceClient.getUserById(2L)).thenReturn(null);
+        when(templateEngine.process(anyString(), any(Context.class))).thenReturn("<html></html>");
+        
+        SessionCancelledEvent event = new SessionCancelledEvent();
+        event.setMentorId(1L);
+        event.setLearnerId(2L);
+        
+        emailService.sendSessionCancelledEmail(event);
+        
+        verify(mailSender, times(1)).send(any(MimeMessage.class));
+    }
+
+    @Test
+    void sendSessionCancelledEmail_shouldSendOnlyToLearner_whenMentorEmailIsNull() {
+        when(userServiceClient.getUserById(1L)).thenReturn(null);
+        when(userServiceClient.getUserById(2L)).thenReturn(userResponse);
+        when(templateEngine.process(anyString(), any(Context.class))).thenReturn("<html></html>");
+        
+        SessionCancelledEvent event = new SessionCancelledEvent();
+        event.setMentorId(1L);
+        event.setLearnerId(2L);
+        
+        emailService.sendSessionCancelledEmail(event);
+        
+        verify(mailSender, times(1)).send(any(MimeMessage.class));
+    }
+
+    @Test
+    void getEmailForUser_shouldReturnNull_whenEmailIsNull() {
+        UserDTO user = new UserDTO();
+        user.setEmail(null);
+        UserProfileResponse res = new UserProfileResponse();
+        res.setData(user);
+        when(userServiceClient.getUserById(anyLong())).thenReturn(res);
+        
+        emailService.sendMentorApprovedEmail(new MentorApprovedEvent(1L, 1L, "m")); // Indirect call
+        // sending email to null will return early
+        verify(mailSender, never()).send(any(MimeMessage.class));
+    }
+
+    @Test
+    void getEmailForUser_shouldReturnNull_whenDataIsNotNullButEmailNull() {
+        // Handled by above, but let's be explicit for branches
+        UserProfileResponse res = new UserProfileResponse();
+        UserDTO user = new UserDTO();
+        user.setEmail(null);
+        res.setData(user);
+        when(userServiceClient.getUserById(anyLong())).thenReturn(res);
+        
+        emailService.sendMentorApprovedEmail(new MentorApprovedEvent(1L, 10L, "m"));
+        verify(mailSender, never()).send(any(MimeMessage.class));
+    }
+
+    @Test
+    void getEmailForMentor_shouldReturnNull_whenDataIsNull() {
+        MentorProfileResponse res = new MentorProfileResponse();
+        res.setData(null);
+        when(mentorServiceClient.getMentorbyId(anyLong())).thenReturn(res);
+        
+        emailService.sendSessionRequestEmail(new SessionRequestedEvent(1L, 1L, 1L, LocalDateTime.now(), 60));
+        verify(mailSender, never()).send(any(MimeMessage.class));
+    }
 }

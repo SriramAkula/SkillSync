@@ -213,5 +213,75 @@ class SessionControllerTest {
                         .content(objectMapper.writeValueAsString(sessionRequest)))
                 .andExpect(status().isConflict());
     }
+
+    @Test
+    void requestSession_shouldReturn403_whenRolesNull() throws Exception {
+        mockMvc.perform(post("/session/request")
+                        .header("X-User-Id", 10L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(sessionRequest)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void getMentorSessions_shouldReturn403_whenRolesNull() throws Exception {
+        mockMvc.perform(get("/session/mentor/list")
+                        .header("X-User-Id", 5L))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void getLearnerSessions_shouldReturn403_whenRolesNull() throws Exception {
+        mockMvc.perform(get("/session/learner/list")
+                        .header("X-User-Id", 10L))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void acceptSession_shouldReturn403_whenRolesNull() throws Exception {
+        mockMvc.perform(put("/session/1/accept"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void rejectSession_shouldReturn403_whenRolesNull() throws Exception {
+        mockMvc.perform(put("/session/1/reject")
+                        .param("reason", "r"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void cancelSession_shouldReturn403_whenRolesNull() throws Exception {
+        mockMvc.perform(put("/session/1/cancel"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void requestSession_shouldReturn201_whenMentorRole() throws Exception {
+        when(sessionService.requestSession(eq(10L), any())).thenReturn(sessionResponse);
+        mockMvc.perform(post("/session/request")
+                        .header("X-User-Id", 10L)
+                        .header("roles", "ROLE_MENTOR")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(sessionRequest)))
+                .andExpect(status().isCreated());
+    }
+
+    @Test
+    void getLearnerSessions_shouldReturn200_whenMentorRole() throws Exception {
+        when(sessionService.getSessionsForLearner(anyLong(), anyInt(), anyInt())).thenReturn(new PageResponse<>());
+        mockMvc.perform(get("/session/learner/list")
+                        .header("X-User-Id", 10L)
+                        .header("roles", "ROLE_MENTOR"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void cancelSession_shouldReturn200_whenMentorRole() throws Exception {
+        when(sessionService.cancelSession(anyLong())).thenReturn(sessionResponse);
+        mockMvc.perform(put("/session/1/cancel")
+                        .header("roles", "ROLE_MENTOR"))
+                .andExpect(status().isOk());
+    }
 }
 

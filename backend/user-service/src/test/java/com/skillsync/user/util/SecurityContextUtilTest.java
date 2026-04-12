@@ -85,4 +85,69 @@ class SecurityContextUtilTest {
 
         assertThat(securityContextUtil.isTokenValid(request)).isFalse();
     }
+
+    @Test
+    void extractUserId_shouldReturnLong_whenInternalInteger() {
+        SecretKey key = Keys.hmacShaKeyFor(SECRET.getBytes());
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("userId", 123); // Integer
+        String token = Jwts.builder().claims(claims).signWith(key).compact();
+        when(request.getHeader("Authorization")).thenReturn("Bearer " + token);
+
+        Long userId = securityContextUtil.extractUserId(request);
+        assertThat(userId).isEqualTo(123L);
+    }
+
+    @Test
+    void extractUserId_shouldReturnNull_whenUserIdString() {
+        SecretKey key = Keys.hmacShaKeyFor(SECRET.getBytes());
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("userId", "invalid");
+        String token = Jwts.builder().claims(claims).signWith(key).compact();
+        when(request.getHeader("Authorization")).thenReturn("Bearer " + token);
+
+        assertThat(securityContextUtil.extractUserId(request)).isNull();
+    }
+
+    @Test
+    void extractUserId_shouldReturnNull_whenInvalidToken() {
+        when(request.getHeader("Authorization")).thenReturn("Bearer invalid.token.here");
+        assertThat(securityContextUtil.extractUserId(request)).isNull();
+    }
+
+    @Test
+    void extractEmail_shouldReturnNull_whenHeaderMissing() {
+        when(request.getHeader("Authorization")).thenReturn(null);
+        assertThat(securityContextUtil.extractEmail(request)).isNull();
+    }
+
+    @Test
+    void extractEmail_shouldReturnNull_whenInvalidToken() {
+        when(request.getHeader("Authorization")).thenReturn("Bearer invalid.token");
+        assertThat(securityContextUtil.extractEmail(request)).isNull();
+    }
+
+    @Test
+    void extractUserId_shouldReturnLong_whenInternalLong() {
+        SecretKey key = Keys.hmacShaKeyFor(SECRET.getBytes());
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("userId", 3000000000L); // Larger than max int to force Long type
+        String token = Jwts.builder().claims(claims).signWith(key).compact();
+        when(request.getHeader("Authorization")).thenReturn("Bearer " + token);
+
+        Long userId = securityContextUtil.extractUserId(request);
+        assertThat(userId).isEqualTo(3000000000L);
+    }
+
+    @Test
+    void extractUserId_shouldReturnNull_whenHeaderNotBearer() {
+        when(request.getHeader("Authorization")).thenReturn("Basic token");
+        assertThat(securityContextUtil.extractUserId(request)).isNull();
+    }
+
+    @Test
+    void isTokenValid_shouldReturnFalse_whenHeaderMissing() {
+        when(request.getHeader("Authorization")).thenReturn(null);
+        assertThat(securityContextUtil.isTokenValid(request)).isFalse();
+    }
 }

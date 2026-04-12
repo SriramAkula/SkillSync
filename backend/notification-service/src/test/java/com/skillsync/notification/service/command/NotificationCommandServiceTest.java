@@ -67,4 +67,20 @@ class NotificationCommandServiceTest {
 
         verify(notificationRepository).delete(notification);
     }
+
+    @Test
+    void deleteNotification_shouldThrow_whenNotOwner() {
+        when(notificationRepository.findById(1L)).thenReturn(Optional.of(notification));
+        
+        assertThatThrownBy(() -> notificationCommandService.deleteNotification(1L, 99L))
+                .isInstanceOf(UnauthorizedException.class);
+    }
+
+    @Test
+    void deleteNotification_shouldThrow_whenNotFound() {
+        when(notificationRepository.findById(1L)).thenReturn(Optional.empty());
+        
+        assertThatThrownBy(() -> notificationCommandService.deleteNotification(1L, 10L))
+                .isInstanceOf(NotificationNotFoundException.class);
+    }
 }

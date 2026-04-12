@@ -49,4 +49,17 @@ class AuditConfigTest {
 
         assertThat(auditor).isPresent().contains("system");
     }
+
+    @Test
+    void auditorProvider_shouldReturnSystem_whenHeaderBlank() {
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.addHeader("X-User-Id", " ");
+        RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
+
+        AuditorAware<String> auditorProvider = auditConfig.auditorProvider();
+        Optional<String> auditor = auditorProvider.getCurrentAuditor();
+
+        assertThat(auditor).isPresent().contains("system");
+        RequestContextHolder.resetRequestAttributes();
+    }
 }

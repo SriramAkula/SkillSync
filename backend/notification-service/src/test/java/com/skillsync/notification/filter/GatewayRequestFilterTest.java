@@ -60,6 +60,34 @@ class GatewayRequestFilterTest {
     }
 
     @Test
+    void doFilter_shouldAllowActuatorPaths() throws ServletException, IOException {
+        when(request.getRequestURI()).thenReturn("/actuator/health");
+        gatewayRequestFilter.doFilter(request, response, filterChain);
+        verify(filterChain).doFilter(request, response);
+    }
+
+    @Test
+    void doFilter_shouldAllowV3ApiDocsPaths() throws ServletException, IOException {
+        when(request.getRequestURI()).thenReturn("/v3/api-docs");
+        gatewayRequestFilter.doFilter(request, response, filterChain);
+        verify(filterChain).doFilter(request, response);
+    }
+
+    @Test
+    void doFilter_shouldAllowSwaggerUiPaths() throws ServletException, IOException {
+        when(request.getRequestURI()).thenReturn("/swagger-ui/index.html");
+        gatewayRequestFilter.doFilter(request, response, filterChain);
+        verify(filterChain).doFilter(request, response);
+    }
+
+    @Test
+    void doFilter_shouldAllowSwaggerResourcesPaths() throws ServletException, IOException {
+        when(request.getRequestURI()).thenReturn("/swagger-resources");
+        gatewayRequestFilter.doFilter(request, response, filterChain);
+        verify(filterChain).doFilter(request, response);
+    }
+
+    @Test
     void doFilterInternal_shouldHandleMissingEmailAndRole() throws ServletException, IOException {
         when(request.getRequestURI()).thenReturn("/api/notifications");
         when(request.getHeader("X-Gateway-Request")).thenReturn("true");

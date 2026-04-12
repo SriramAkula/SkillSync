@@ -28,4 +28,10 @@ class AuditServiceTest {
         auditService.log("User", 1L, "UPDATE", "admin", "details");
         verify(auditLogRepository).save(any());
     }
+
+    @Test
+    void log_shouldUseSystem_whenPerformedByNull() {
+        auditService.log("User", 1L, "UPDATE", null, "details");
+        verify(auditLogRepository).save(argThat(log -> "system".equals(log.getPerformedBy())));
+    }
 }

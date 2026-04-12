@@ -101,4 +101,120 @@ class UserProfileMapperTest {
         assertThat(result.getRating()).isEqualTo(4.5); // Fallback to local
         assertThat(result.getRoles()).isEmpty();
     }
+
+    @Test
+    void toEntity_shouldFallbackToEmailPrefix_whenUsernameNull() {
+        UserProfile result = userProfileMapper.toEntity(10L, "test@example.com", null);
+        assertThat(result.getUsername()).isEqualTo("test");
+    }
+
+    @Test
+    void toDto_shouldFallbackToEmailPrefix_whenUsernameInDbNull() {
+        profile.setUsername(null);
+        UserProfileResponseDto result = userProfileMapper.toDto(profile);
+        assertThat(result.getUsername()).isEqualTo("john.doe");
+    }
+
+    @Test
+    void updateEntity_shouldNotUpdateUsername_whenRequestUsernameBlank() {
+        UpdateProfileRequestDto request = new UpdateProfileRequestDto(" ", "Name", "Bio", "123", "Java");
+        userProfileMapper.updateEntity(profile, request);
+        assertThat(profile.getUsername()).isEqualTo("jdoe");
+    }
+
+    @Test
+    void updateEntity_shouldSetProfileIncomplete_whenSkillsEmpty() {
+        UpdateProfileRequestDto request = new UpdateProfileRequestDto("user", "Name", "Bio", "123", "");
+        userProfileMapper.updateEntity(profile, request);
+        assertThat(profile.getProfileComplete()).isFalse();
+    }
+
+    @Test
+    void updateEntity_shouldSetProfileIncomplete_whenSkillsNull() {
+        UpdateProfileRequestDto request = new UpdateProfileRequestDto("user", "Name", "Bio", "123", null);
+        userProfileMapper.updateEntity(profile, request);
+        assertThat(profile.getProfileComplete()).isFalse();
+    }
+
+    @Test
+    void toAdminDto_shouldUseLocalRating_whenClientDataNull() {
+        ApiResponse<MentorRatingDto> apiResponse = new ApiResponse<>(true, "Success", null, 200);
+        when(reviewClient.getMentorRating(anyLong())).thenReturn(apiResponse);
+        when(authClient.getUserRoles(anyLong())).thenReturn(Collections.emptySet());
+
+        UserProfileAdminResponseDto result = userProfileMapper.toAdminDto(profile);
+        assertThat(result.getRating()).isEqualTo(4.5);
+    }
+
+    @Test
+    void toAdminDto_shouldUseLocalRating_whenClientSuccessFalse() {
+        ApiResponse<MentorRatingDto> apiResponse = new ApiResponse<>(false, "Error", null, 400);
+        when(reviewClient.getMentorRating(anyLong())).thenReturn(apiResponse);
+        when(authClient.getUserRoles(anyLong())).thenReturn(Collections.emptySet());
+
+        UserProfileAdminResponseDto result = userProfileMapper.toAdminDto(profile);
+        assertThat(result.getRating()).isEqualTo(4.5);
+    }
+
+    @Test
+    void toAdminDto_shouldHandleNullRolesFromAuth() {
+        when(authClient.getUserRoles(anyLong())).thenReturn(null);
+        UserProfileAdminResponseDto result = userProfileMapper.toAdminDto(profile);
+        assertThat(result.getRoles()).isEmpty();
+    }
+
+    @Test
+    void updateEntity_shouldSetProfileIncomplete_whenNameNull() {
+        UpdateProfileRequestDto request = new UpdateProfileRequestDto("user", null, "Bio", "123", "Java");
+        userProfileMapper.updateEntity(profile, request);
+        assertThat(profile.getProfileComplete()).isFalse();
+    }
+
+    @Test
+    void toAdminDto_shouldHandleEmptyRolesFromAuth() {
+        when(authClient.getUserRoles(anyLong())).thenReturn(java.util.Collections.emptySet());
+        UserProfileAdminResponseDto result = userProfileMapper.toAdminDto(profile);
+        assertThat(result.getRoles()).isEmpty();
+    }
+
+    @Test
+    void toAdminDto_shouldHandleNullRatingResponse() {
+        when(reviewClient.getMentorRating(anyLong())).thenReturn(null);
+        when(authClient.getUserRoles(anyLong())).thenReturn(java.util.Collections.emptySet());
+        
+        UserProfileAdminResponseDto result = userProfileMapper.toAdminDto(profile);
+        assertThat(result.getRating()).isEqualTo(4.5);
+    }
+
+    @Test
+    void toAdminDto_shouldFallbackToEmailPrefix_whenUsernameNull() {
+        profile.setUsername(null);
+        when(reviewClient.getMentorRating(anyLong())).thenReturn(null);
+        when(authClient.getUserRoles(anyLong())).thenReturn(java.util.Collections.emptySet());
+        UserProfileAdminResponseDto result = userProfileMapper.toAdminDto(profile);
+        assertThat(result.getUsername()).isEqualTo("john.doe");
+    }
+
+    @Test
+    void toAdminDto_shouldFallbackToEmailPrefix_whenUsernameBlank() {
+        profile.setUsername("   ");
+        when(reviewClient.getMentorRating(anyLong())).thenReturn(null);
+        when(authClient.getUserRoles(anyLong())).thenReturn(java.util.Collections.emptySet());
+        UserProfileAdminResponseDto result = userProfileMapper.toAdminDto(profile);
+        assertThat(result.getUsername()).isEqualTo("john.doe");
+    }
+
+    @Test
+    void updateEntity_shouldNotUpdateUsername_whenRequestUsernameEmpty() {
+        UpdateProfileRequestDto request = new UpdateProfileRequestDto("", "Name", "Bio", "123", "Java");
+        userProfileMapper.updateEntity(profile, request);
+        assertThat(profile.getUsername()).isEqualTo("jdoe");
+    }
+
+    @Test
+    void toDto_shouldFallbackToEmailPrefix_whenUsernameBlank() {
+        profile.setUsername("   ");
+        UserProfileResponseDto result = userProfileMapper.toDto(profile);
+        assertThat(result.getUsername()).isEqualTo("john.doe");
+    }
 }
