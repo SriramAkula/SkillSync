@@ -17,6 +17,13 @@
 	<properties>
 		<java.version>17</java.version>
 		<spring-cloud.version>2025.0.1</spring-cloud.version>
+		<sonar.coverage.exclusions>
+			**/dto/**,
+			**/entity/**,
+			**/config/**,
+			**/exception/**,
+			**/*Application.java
+		</sonar.coverage.exclusions>
 	</properties>
 
 	<dependencies>

@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { AdminUserService, UserProfile } from '../../../../core/services/admin-user.service';
+import { ApiResponse } from '../../../../shared/models';
 
 @Component({
   selector: 'app-unblock-user-page',
@@ -13,25 +14,25 @@ import { AdminUserService, UserProfile } from '../../../../core/services/admin-u
   styleUrl: './unblock-user.page.scss'
 })
 export class UnblockUserPage implements OnInit {
-  private readonly route = inject(ActivatedRoute);
-  private readonly router = inject(Router);
-  private readonly adminUserService = inject(AdminUserService);
-  private readonly snackBar = inject(MatSnackBar);
+  private route = inject(ActivatedRoute);
+  private router = inject(Router);
+  private adminUserService: AdminUserService = inject(AdminUserService);
+  private snackBar: MatSnackBar = inject(MatSnackBar);
 
   user: UserProfile | null = null;
   isLoading = false;
 
-  ngOnInit(): void {
+  ngOnInit() {
     const userId = this.route.snapshot.paramMap.get('id');
     if (userId) {
       this.loadUser(+userId);
     }
   }
 
-  loadUser(userId: number): void {
+  loadUser(userId: number) {
     this.isLoading = true;
     this.adminUserService.getUserDetails(userId).subscribe({
-      next: (response: { data: UserProfile }) => {
+      next: (response: ApiResponse<UserProfile>) => {
         this.user = response.data;
         this.isLoading = false;
       },
@@ -76,7 +77,7 @@ export class UnblockUserPage implements OnInit {
     });
   }
 
-  goBack(): void {
+  goBack() {
     this.router.navigate(['/admin/users']);
   }
 }

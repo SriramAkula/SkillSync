@@ -6,6 +6,7 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatButtonModule } from '@angular/material/button';
 import { AdminUserService, UserProfile } from '../../../../core/services/admin-user.service';
+import { ApiResponse } from '../../../../shared/models';
 import { trigger, transition, style, animate } from '@angular/animations';
 
 @Component({
@@ -59,10 +60,10 @@ export class BlockUserPage implements OnInit {
   isLoading = signal(false);
   submitted = signal(false);
 
-  private readonly adminUserService = inject(AdminUserService);
-  private readonly snackBar = inject(MatSnackBar);
-  private readonly router = inject(Router);
-  private readonly route = inject(ActivatedRoute);
+  private adminUserService = inject(AdminUserService);
+  private snackBar = inject(MatSnackBar);
+  private router = inject(Router);
+  private route = inject(ActivatedRoute);
 
   ngOnInit(): void {
     const userId = this.route.snapshot.paramMap.get('id');
@@ -73,7 +74,7 @@ export class BlockUserPage implements OnInit {
 
   loadUserDetails(userId: number): void {
     this.adminUserService.getUserDetails(userId).subscribe({
-      next: (response: { data: UserProfile }) => {
+      next: (response: ApiResponse<UserProfile>) => {
         this.user = response.data;
       },
       error: () => {

@@ -18,10 +18,10 @@ import { ConfirmDialogComponent } from './confirm-dialog.component';
 })
 export class AdminUsersPage implements OnInit {
   
-  private readonly adminUserService = inject(AdminUserService);
-  private readonly snackBar = inject(MatSnackBar);
-  private readonly dialog = inject(MatDialog);
-  private readonly router = inject(Router);
+  private adminUserService = inject(AdminUserService);
+  private snackBar = inject(MatSnackBar);
+  private dialog = inject(MatDialog);
+  private router = inject(Router);
 
   tab = signal<'all' | 'blocked'>('all');
   loading = signal(false);
@@ -53,11 +53,11 @@ export class AdminUsersPage implements OnInit {
     return this.currentPage > 0;
   }
 
-  ngOnInit(): void {
+  ngOnInit() {
     this.loadAllUsers();
   }
 
-  loadAllUsers(): void {
+  loadAllUsers() {
     this.loading.set(true);
     this.adminUserService.getAllUsers(this.currentPage, this.pageSize).subscribe({
       next: (response) => {
@@ -75,7 +75,7 @@ export class AdminUsersPage implements OnInit {
     });
   }
 
-  loadBlockedUsers(): void {
+  loadBlockedUsers() {
     this.loading.set(true);
     this.adminUserService.getBlockedUsers().subscribe({
       next: (response) => {
@@ -90,26 +90,26 @@ export class AdminUsersPage implements OnInit {
     });
   }
 
-  openBlockDialog(user: UserProfile): void {
+  openBlockDialog(user: UserProfile) {
     this.router.navigate(['/admin/users', user.userId, 'block']);
   }
 
-  openUnblockDialog(user: UserProfile): void {
+  openUnblockDialog(user: UserProfile) {
     this.router.navigate(['/admin/users', user.userId, 'unblock']);
   }
 
-  viewUserDetails(userId: number): void {
+  viewUserDetails(userId: number) {
     this.router.navigate(['/admin/users', userId]);
   }
 
-  nextPage(): void {
+  nextPage() {
     if (this.hasNextPage) {
       this.currentPage++;
       this.loadAllUsers();
     }
   }
 
-  previousPage(): void {
+  previousPage() {
     if (this.hasPreviousPage) {
       this.currentPage--;
       this.loadAllUsers();

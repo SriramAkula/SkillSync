@@ -22,6 +22,7 @@ export class ApplyMentorPage implements OnInit {
   readonly checkingProfile = signal(true);
   readonly myProfile = this.mentorStore.myProfile;
   readonly selectedSkills = signal<string[]>([]);
+  readonly submissionError = signal<string | null>(null);
   
   skillSearch = '';
   form = { yearsOfExperience: null as number | null, hourlyRate: null as number | null, bio: '' };
@@ -76,6 +77,7 @@ export class ApplyMentorPage implements OnInit {
 
   submit(): void {
     if (!this.isFormValid()) return;
+    this.submissionError.set(null);
     const { yearsOfExperience, hourlyRate, bio } = this.form;
     const specialization = this.selectedSkills().join(', ');
     
@@ -87,10 +89,13 @@ export class ApplyMentorPage implements OnInit {
     });
 
     setTimeout(() => {
-      if (!this.mentorStore.error()) {
+      const error = this.mentorStore.error();
+      if (error) {
+        this.submissionError.set(error);
+      } else if (!error) {
         this.authStore.addRole('ROLE_MENTOR');
       }
-    }, 1000);
+    }, 1500);
   }
 
   statusIcon(status: string): string {
