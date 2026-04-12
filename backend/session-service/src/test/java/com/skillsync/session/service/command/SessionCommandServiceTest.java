@@ -212,4 +212,29 @@ class SessionCommandServiceTest {
         assertEquals(SessionStatus.COMPLETED, session.getStatus());
         verify(sessionRepository).save(session);
     }
+
+    @Test
+    void rejectSession_ShouldThrow_WhenNotFound() {
+        when(sessionRepository.findById(99L)).thenReturn(Optional.empty());
+        assertThrows(SessionNotFoundException.class, () -> sessionCommandService.rejectSession(99L, "Reason"));
+    }
+
+    @Test
+    void rejectSession_ShouldThrow_WhenStatusAlreadyChanged() {
+        session.setStatus(SessionStatus.ACCEPTED);
+        when(sessionRepository.findById(1L)).thenReturn(Optional.of(session));
+        assertThrows(SessionConflictException.class, () -> sessionCommandService.rejectSession(1L, "Reason"));
+    }
+
+    @Test
+    void cancelSession_ShouldThrow_WhenNotFound() {
+        when(sessionRepository.findById(99L)).thenReturn(Optional.empty());
+        assertThrows(SessionNotFoundException.class, () -> sessionCommandService.cancelSession(99L));
+    }
+
+    @Test
+    void updateStatus_ShouldThrow_WhenNotFound() {
+        when(sessionRepository.findById(99L)).thenReturn(Optional.empty());
+        assertThrows(SessionNotFoundException.class, () -> sessionCommandService.updateStatus(99L, "COMPLETED"));
+    }
 }

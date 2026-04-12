@@ -21,8 +21,7 @@
 			**/dto/**,
 			**/entity/**,
 			**/config/**,
-			**/exception/**,
-			**/*Application.java
+			**/exception/**
 		</sonar.coverage.exclusions>
 	</properties>
 
@@ -99,7 +98,6 @@
         <exclude>**/entity/**</exclude>
         <exclude>**/config/**</exclude>
         <exclude>**/exception/**</exclude>
-        <exclude>**/*Application.class</exclude>
     </excludes>
 </configuration>
 				<executions>

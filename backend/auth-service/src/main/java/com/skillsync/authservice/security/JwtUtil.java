@@ -64,22 +64,36 @@ public class JwtUtil {
             return extractClaims(token).getSubject();
         } catch (ExpiredJwtException e) {
             return e.getClaims().getSubject();
+        } catch (JwtException e) {
+            return null;
         }
     }
 
     // extract email
     public String extractEmail(String token) {
-        return extractClaims(token).getSubject();
+        try {
+            return extractClaims(token).getSubject();
+        } catch (JwtException e) {
+            return null;
+        }
     }
 
     // extract userId
     public Long extractUserId(String token) {
-        return extractClaims(token).get("userId", Long.class);
+        try {
+            return extractClaims(token).get("userId", Long.class);
+        } catch (JwtException e) {
+            return null;
+        }
     }
 
     // extract roles
     public List<String> extractRoles(String token) {
-        return extractClaims(token).get("roles", List.class);
+        try {
+            return extractClaims(token).get("roles", List.class);
+        } catch (JwtException e) {
+            return null;
+        }
     }
 
     // check expiration

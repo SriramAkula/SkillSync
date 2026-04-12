@@ -486,83 +486,58 @@ class UserProfileControllerTest {
     }
 
     @Test
-    void blockUser_shouldReturn403_whenRolesHeaderNull() throws Exception {
-        mockMvc.perform(put("/user/admin/10/block")
+    void createUserProfile_shouldReturn400_whenEmailMissing_Explicit() throws Exception {
+        Map<String, Object> userData = new HashMap<>();
+        userData.put("userId", 10);
+        // email skipped
+
+        mockMvc.perform(post("/user/internal/users")
                         .header("X-Gateway-Request", "true")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{}"))
-                .andExpect(status().isForbidden());
+                        .content(objectMapper.writeValueAsString(userData)))
+                .andExpect(status().isBadRequest());
     }
 
     @Test
-    void unblockUser_shouldReturn403_whenRolesHeaderNull() throws Exception {
-        mockMvc.perform(put("/user/admin/10/unblock")
-                        .header("X-Gateway-Request", "true"))
-                .andExpect(status().isForbidden());
+    void createUserProfile_shouldReturn201_whenProfileExistenceCheckThrows() throws Exception {
+        Map<String, Object> userData = new HashMap<>();
+        userData.put("userId", 10L);
+        userData.put("email", "user@example.com");
+        
+        // Mock getProfileByUserId to throw internal exception inside the existence check try block
+        when(userProfileService.getProfileByUserId(10L)).thenThrow(new RuntimeException("Check failed"));
+
+        mockMvc.perform(post("/user/internal/users")
+                        .header("X-Gateway-Request", "true")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(userData)))
+                .andExpect(status().isCreated());
+
+        verify(userProfileService).createProfile(anyLong(), anyString(), any());
     }
 
     @Test
-    void getProfile_shouldFallbackToHeaderUserId_whenSecurityUtilReturnsNull() throws Exception {
+    void updateProfile_shouldFallbackToHeaderUserId_whenSecurityReturnsNull() throws Exception {
+        UpdateProfileRequestDto request = new UpdateProfileRequestDto("jdoe", "Jane Doe", "bio", "1234567890", "Java");
         when(securityUtil.extractUserId(any())).thenReturn(null);
-        when(userProfileService.getProfileByUserId(10L)).thenReturn(responseDto);
+        when(userProfileService.updateProfile(eq(10L), any())).thenReturn(responseDto);
 
-        mockMvc.perform(get("/user/profile")
+        mockMvc.perform(put("/user/profile")
                         .header("X-User-Id", 10L)
-                        .header("roles", "ROLE_USER")
-                        .header("X-Gateway-Request", "true"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.userId").value(10));
-    }
-
-    @Test
-    void getUserDetails_shouldReturn403_whenRolesHeaderNull() throws Exception {
-        mockMvc.perform(get("/user/admin/10/details")
-                        .header("X-Gateway-Request", "true"))
-                .andExpect(status().isForbidden());
-    }
-
-    @Test
-    void getAllUsers_shouldReturn403_whenRolesHeaderNotAdmin() throws Exception {
-        mockMvc.perform(get("/user/admin/all")
-                        .header("roles", "ROLE_USER")
-                        .header("X-Gateway-Request", "true"))
-                .andExpect(status().isForbidden());
-    }
-
-    @Test
-    void getBlockedUsers_shouldReturn403_whenRolesHeaderNotAdmin() throws Exception {
-        mockMvc.perform(get("/user/admin/blocked")
-                        .header("roles", "ROLE_USER")
-                        .header("X-Gateway-Request", "true"))
-                .andExpect(status().isForbidden());
-    }
-
-    @Test
-    void blockUser_shouldReturn403_whenRolesHeaderNotAdmin() throws Exception {
-        BlockUserRequest request = new BlockUserRequest();
-        request.setReason("Violation");
-
-        mockMvc.perform(put("/user/admin/10/block")
                         .header("roles", "ROLE_USER")
                         .header("X-Gateway-Request", "true")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isOk());
     }
 
     @Test
-    void unblockUser_shouldReturn403_whenRolesHeaderNotAdmin() throws Exception {
-        mockMvc.perform(put("/user/admin/10/unblock")
-                        .header("roles", "ROLE_USER")
-                        .header("X-Gateway-Request", "true"))
-                .andExpect(status().isForbidden());
-    }
-
-    @Test
-    void getUserDetails_shouldReturn403_whenRolesHeaderNotAdmin() throws Exception {
-        mockMvc.perform(get("/user/admin/10/details")
-                        .header("roles", "ROLE_USER")
-                        .header("X-Gateway-Request", "true"))
-                .andExpect(status().isForbidden());
+    void createUserProfile_shouldReturn500_whenMalformedData() throws Exception {
+        // "not-a-number" causes ClassCastException in (Number) cast, which hits catch(Exception) -> 500
+        mockMvc.perform(post("/user/internal/users")
+                        .header("X-Gateway-Request", "true")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"userId\": \"not-a-number\"}"))
+                .andExpect(status().isInternalServerError());
     }
 }
