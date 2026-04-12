@@ -131,6 +131,14 @@ class ReviewCommandServiceTest {
     }
 
     @Test
+    void deleteReview_shouldThrowNotFound() {
+        when(reviewRepository.findById(1L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> reviewCommandService.deleteReview(1L, 10L))
+                .isInstanceOf(ReviewNotFoundException.class);
+    }
+
+    @Test
     void syncMentorRating_shouldHandleNullAverageRating() {
         when(reviewMapper.toEntity(anyLong(), any())).thenReturn(review);
         when(reviewRepository.save(any())).thenReturn(review);

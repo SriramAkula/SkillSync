@@ -10,6 +10,7 @@ import com.skillsync.notification.event.*;
 import jakarta.mail.internet.MimeMessage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -282,6 +283,83 @@ class EmailServiceTest {
         res.setData(null);
         when(mentorServiceClient.getMentorbyId(anyLong())).thenReturn(res);
         
+        emailService.sendSessionRequestEmail(new SessionRequestedEvent(1L, 1L, 1L, LocalDateTime.now(), 60));
+        verify(mailSender, never()).send(any(MimeMessage.class));
+    }
+
+    @Test
+    void sendHtmlEmail_shouldHandleMessagingException_CatchBlock() throws Exception {
+        // Trigger MessagingException via MimeMessageHelper
+        when(userServiceClient.getUserById(anyLong())).thenReturn(userResponse);
+        when(templateEngine.process(anyString(), any(Context.class))).thenReturn("<html></html>");
+        
+        // Mock setSubject to throw MessagingException
+        doThrow(new jakarta.mail.MessagingException("test")).when(mimeMessage).setSubject(anyString(), anyString());
+        
+        MentorApprovedEvent event = new MentorApprovedEvent();
+        event.setUserId(1L);
+        
+        emailService.sendMentorApprovedEmail(event);
+        verify(mailSender, never()).send(any(MimeMessage.class));
+    }
+
+    @Test
+    void sendSessionRequestEmail_shouldHandleException() {
+        when(mentorServiceClient.getMentorbyId(anyLong())).thenThrow(new RuntimeException("API Down"));
+        assertDoesNotThrow(() -> emailService.sendSessionRequestEmail(new SessionRequestedEvent()));
+    }
+
+    @Test
+    void sendMentorApprovedEmail_shouldHandleException() {
+        when(userServiceClient.getUserById(anyLong())).thenThrow(new RuntimeException("API Down"));
+        assertDoesNotThrow(() -> emailService.sendMentorApprovedEmail(new MentorApprovedEvent()));
+    }
+
+    @Test
+    void sendReviewNotificationEmail_shouldHandleException() {
+        when(mentorServiceClient.getMentorbyId(anyLong())).thenThrow(new RuntimeException("API Down"));
+        assertDoesNotThrow(() -> emailService.sendReviewNotificationEmail(new ReviewSubmittedEvent()));
+    }
+
+    @Test
+    void sendSessionAcceptedEmail_shouldHandleException() {
+        when(userServiceClient.getUserById(anyLong())).thenThrow(new RuntimeException("API Down"));
+        assertDoesNotThrow(() -> emailService.sendSessionAcceptedEmail(new SessionAcceptedEvent()));
+    }
+
+    @Test
+    void sendSessionRejectedEmail_shouldHandleException() {
+        when(userServiceClient.getUserById(anyLong())).thenThrow(new RuntimeException("API Down"));
+        assertDoesNotThrow(() -> emailService.sendSessionRejectedEmail(new SessionRejectedEvent()));
+    }
+
+    @Test
+    void sendSessionCancelledEmail_shouldHandleException() {
+        when(userServiceClient.getUserById(anyLong())).thenThrow(new RuntimeException("API Down"));
+        assertDoesNotThrow(() -> emailService.sendSessionCancelledEmail(new SessionCancelledEvent()));
+    }
+
+    @Test
+    void sendSessionCancelledEmail_shouldReturnEarly_whenBothEmailsAreNull() {
+        when(userServiceClient.getUserById(anyLong())).thenReturn(null);
+        SessionCancelledEvent event = new SessionCancelledEvent();
+        event.setMentorId(1L);
+        event.setLearnerId(2L);
+        emailService.sendSessionCancelledEmail(event);
+        verify(mailSender, never()).send(any(MimeMessage.class));
+    }
+    
+    @Test
+    void getEmailForUser_shouldHandleException() {
+        when(userServiceClient.getUserById(anyLong())).thenThrow(new RuntimeException("Feign Error"));
+        // This is private but called via public methods
+        emailService.sendMentorApprovedEmail(new MentorApprovedEvent(1L, 1L, "m"));
+        verify(mailSender, never()).send(any(MimeMessage.class));
+    }
+
+    @Test
+    void getEmailForMentor_shouldHandleException() {
+        when(mentorServiceClient.getMentorbyId(anyLong())).thenThrow(new RuntimeException("Feign Error"));
         emailService.sendSessionRequestEmail(new SessionRequestedEvent(1L, 1L, 1L, LocalDateTime.now(), 60));
         verify(mailSender, never()).send(any(MimeMessage.class));
     }

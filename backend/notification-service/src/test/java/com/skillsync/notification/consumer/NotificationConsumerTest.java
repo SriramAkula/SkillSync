@@ -12,6 +12,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -95,5 +96,48 @@ class NotificationConsumerTest {
         sessionRequestedConsumer.handleSessionRequested(event);
         verify(notificationRepository).save(any(Notification.class));
         verify(emailService).sendSessionRequestEmail(event);
+    }
+
+    @Test
+    void handleSessionRequested_shouldHandleGeneralError() {
+        when(notificationRepository.save(any())).thenThrow(new RuntimeException("DB Error"));
+        assertDoesNotThrow(() -> sessionRequestedConsumer.handleSessionRequested(new SessionRequestedEvent()));
+    }
+
+    @Test
+    void handleSessionRejected_shouldHandleGeneralError() {
+        when(notificationRepository.save(any())).thenThrow(new RuntimeException("DB Error"));
+        assertDoesNotThrow(() -> sessionRejectedConsumer.handleSessionRejected(new SessionRejectedEvent()));
+    }
+
+    @Test
+    void handleSessionAccepted_shouldHandleGeneralError() {
+        when(notificationRepository.save(any())).thenThrow(new RuntimeException("DB Error"));
+        assertDoesNotThrow(() -> sessionAcceptedConsumer.handleSessionAccepted(new SessionAcceptedEvent()));
+    }
+
+    @Test
+    void handleMentorApproved_shouldHandleGeneralError() {
+        when(notificationRepository.save(any())).thenThrow(new RuntimeException("DB Error"));
+        assertDoesNotThrow(() -> mentorApprovedConsumer.handleMentorApproved(new MentorApprovedEvent()));
+    }
+
+    @Test
+    void handleReviewSubmitted_shouldHandleGeneralError() {
+        when(notificationRepository.save(any())).thenThrow(new RuntimeException("DB Error"));
+        assertDoesNotThrow(() -> reviewSubmittedConsumer.handleReviewSubmitted(new ReviewSubmittedEvent()));
+    }
+
+    @Test
+    void handleSessionCancelled_shouldHandleGeneralError() {
+        when(notificationRepository.save(any())).thenThrow(new RuntimeException("DB Error"));
+        assertDoesNotThrow(() -> sessionCancelledConsumer.handleSessionCancelled(new SessionCancelledEvent()));
+    }
+
+    @Test
+    void handleSessionRejected_shouldHandleEmailError() {
+        SessionRejectedEvent event = new SessionRejectedEvent();
+        doThrow(new RuntimeException("Email error")).when(emailService).sendSessionRejectedEmail(any());
+        assertDoesNotThrow(() -> sessionRejectedConsumer.handleSessionRejected(event));
     }
 }

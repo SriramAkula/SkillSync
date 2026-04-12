@@ -19,18 +19,22 @@ class AuditServiceTest {
     private AuditService auditService;
 
     @Test
-    void log_shouldSaveAuditLog() {
-        auditService.log("Payment", 1L, "CREATE", "user1", "details");
-        verify(auditLogRepository).save(any(AuditLog.class));
+    void log_shouldSaveEntry_whenPerformedByProvided() {
+        auditService.log("Order", 1L, "CREATE", "user1", "details");
+        verify(auditLogRepository).save(argThat(log -> "user1".equals(log.getPerformedBy())));
     }
 
     @Test
-    void log_shouldHandleException_whenRepositoryFails() {
-        when(auditLogRepository.save(any())).thenThrow(new RuntimeException("DB error"));
-        
+    void log_shouldSaveEntryWithSystem_whenPerformedByNull() {
+        auditService.log("Order", 1L, "CREATE", null, "details");
+        verify(auditLogRepository).save(argThat(log -> "system".equals(log.getPerformedBy())));
+    }
+
+    @Test
+    void log_shouldCatchException_whenSaveFails() {
+        doThrow(new RuntimeException("DB error")).when(auditLogRepository).save(any());
         // Should not throw exception
-        auditService.log("Payment", 1L, "CREATE", "user1", "details");
-        
+        auditService.log("Order", 1L, "CREATE", "user1", "details");
         verify(auditLogRepository).save(any());
     }
 }

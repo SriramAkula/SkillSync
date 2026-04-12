@@ -65,9 +65,12 @@ class AuditConfigTest {
 
     @Test
     void auditorProvider_shouldReturnSystem_whenExceptionThrown() {
-        // Set attributes to something that might cause a cast exception if handled poorly
-        RequestContextHolder.setRequestAttributes(null);
+        // Set attributes to something that is NOT ServletRequestAttributes to cause ClassCastException
+        org.springframework.web.context.request.RequestAttributes mockAttrs = mock(org.springframework.web.context.request.RequestAttributes.class);
+        RequestContextHolder.setRequestAttributes(mockAttrs);
+        
         Optional<String> result = auditConfig.auditorProvider().getCurrentAuditor();
+        
         assertThat(result).isPresent().contains("system");
     }
 }

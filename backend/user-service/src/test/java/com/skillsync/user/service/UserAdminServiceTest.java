@@ -174,4 +174,20 @@ class UserAdminServiceTest {
         assertThatThrownBy(() -> userAdminService.blockUser(99L, "Reason", 100L))
                 .isInstanceOf(UserProfileNotFoundException.class);
     }
+
+    @Test
+    void unblockUser_shouldThrow_whenUserNotFound() {
+        when(userProfileRepository.findByUserId(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> userAdminService.unblockUser(99L, 100L))
+                .isInstanceOf(UserProfileNotFoundException.class);
+    }
+
+    @Test
+    void getUserDetails_shouldThrow_whenUserNotFound() {
+        when(userProfileRepository.findByUserId(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> userAdminService.getUserDetails(99L))
+                .isInstanceOf(UserProfileNotFoundException.class);
+    }
 }

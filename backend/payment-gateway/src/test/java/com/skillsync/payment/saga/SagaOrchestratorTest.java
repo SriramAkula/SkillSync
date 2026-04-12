@@ -379,4 +379,100 @@ class SagaOrchestratorTest {
         sagaOrchestrator.onSessionRejected(100L);
         assertThat(saga.getStatus()).isEqualTo(SagaStatus.PAYMENT_PENDING);
     }
+    @Test
+    void startSaga_shouldHandleSessionServiceException_AndProceed() {
+        StartSagaRequest request = new StartSagaRequest();
+        request.setSessionId(100L);
+        request.setMentorId(10L); 
+        request.setLearnerId(50L);
+
+        when(sessionServiceClient.getSession(100L)).thenThrow(new RuntimeException("Socket timeout"));
+        when(sagaRepository.findBySessionId(100L)).thenReturn(Optional.empty());
+
+        // This should fail because sessionStatus will be UNKNOWN, hence not ACCEPTED
+        assertThrows(RuntimeException.class, () -> sagaOrchestrator.startSaga(request));
+    }
+
+    @Test
+    void getSagaBySessionId_shouldHandleSessionServiceException_DuringProactiveCheck() {
+        when(sagaRepository.findBySessionId(100L)).thenReturn(Optional.of(saga));
+        when(sessionServiceClient.getSession(100L)).thenThrow(new RuntimeException("Internal Service Error"));
+        when(sagaMapper.toDto(saga)).thenReturn(sagaResponse);
+        
+        SagaResponse result = sagaOrchestrator.getSagaBySessionId(100L);
+        assertThat(result.getStatus()).isEqualTo(SagaStatus.INITIATED);
+    }
+
+    @Test
+    void fetchMentorRate_shouldThrow_WhenDataNull() {
+        MentorRateDto rateDto = new MentorRateDto();
+        rateDto.setData(null);
+        when(mentorServiceClient.fetchMentorProfileForSaga(10L)).thenReturn(rateDto);
+        when(sagaRepository.findBySessionId(100L)).thenReturn(Optional.of(saga));
+        
+        sagaOrchestrator.onSessionAccepted(100L, 10L, 50L);
+        assertThat(saga.getStatus()).isEqualTo(SagaStatus.FAILED);
+    }
+
+    @Test
+    void fetchMentorRate_shouldThrow_WhenHourlyRateNull() {
+        MentorRateDto.MentorData mData = new MentorRateDto.MentorData();
+        mData.setHourlyRate(null);
+        MentorRateDto rateDto = new MentorRateDto();
+        rateDto.setData(mData);
+        when(mentorServiceClient.fetchMentorProfileForSaga(10L)).thenReturn(rateDto);
+        when(sagaRepository.findBySessionId(100L)).thenReturn(Optional.of(saga));
+        
+        sagaOrchestrator.onSessionAccepted(100L, 10L, 50L);
+        assertThat(saga.getStatus()).isEqualTo(SagaStatus.FAILED);
+    }
+
+    @Test
+    void verifyAndCompletePayment_shouldHandleSessionServiceException_OnFailurePath() {
+        VerifyPaymentRequest request = new VerifyPaymentRequest();
+        request.setSessionId(100L);
+        saga.setStatus(SagaStatus.PAYMENT_PENDING);
+        when(sagaRepository.findBySessionId(100L)).thenReturn(Optional.of(saga));
+        
+        doThrow(new RuntimeException("Sig fail")).when(paymentProcessor).verifySignature(any(), any(), any());
+        doThrow(new RuntimeException("Session service down")).when(sessionServiceClient).updateSessionStatus(anyLong(), anyString());
+
+        sagaOrchestrator.verifyAndCompletePayment(request);
+
+        assertThat(saga.getStatus()).isEqualTo(SagaStatus.FAILED);
+    }
+
+    @Test
+    void initiateRefund_shouldHandleSessionServiceException() {
+        saga.setStatus(SagaStatus.COMPLETED);
+        saga.setPaymentReference("pay_1");
+        saga.setAmount(BigDecimal.TEN);
+        when(sagaRepository.findBySessionId(100L)).thenReturn(Optional.of(saga));
+        when(paymentProcessor.refund(any(), any())).thenReturn("rfnd_1");
+        doThrow(new RuntimeException("Session service down")).when(sessionServiceClient).updateSessionStatus(anyLong(), anyString());
+
+        sagaOrchestrator.initiateRefund(100L);
+
+        // If updateSessionStatus fails, it hits the catch block and sets COMPENSATION_FAILED
+        assertThat(saga.getStatus()).isEqualTo(SagaStatus.COMPENSATION_FAILED);
+    }
+
+    @Test
+    void onSessionAccepted_shouldLogWarning_WhenNoSagaFound() {
+        when(sagaRepository.findBySessionId(100L)).thenReturn(Optional.empty());
+        when(sagaRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        lenient().when(sagaMapper.toDto(any())).thenReturn(sagaResponse);
+        
+        // Mock deps for try block
+        MentorRateDto.MentorData mData = new MentorRateDto.MentorData();
+        mData.setHourlyRate(50.0);
+        MentorRateDto rateDto = new MentorRateDto();
+        rateDto.setData(mData);
+        lenient().when(mentorServiceClient.fetchMentorProfileForSaga(anyLong())).thenReturn(rateDto);
+        lenient().when(paymentProcessor.createOrder(anyString(), any())).thenReturn("order_1");
+
+        sagaOrchestrator.onSessionAccepted(100L, 10L, 50L);
+        
+        verify(sagaRepository, atLeastOnce()).save(any());
+    }
 }

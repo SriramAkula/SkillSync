@@ -150,4 +150,20 @@ class SecurityContextUtilTest {
         when(request.getHeader("Authorization")).thenReturn(null);
         assertThat(securityContextUtil.isTokenValid(request)).isFalse();
     }
+
+    @Test
+    void extractUserId_shouldReturnNull_whenUserIdClaimNull() {
+        SecretKey key = Keys.hmacShaKeyFor(SECRET.getBytes());
+        Map<String, Object> claims = new HashMap<>(); // No userId
+        String token = Jwts.builder().claims(claims).signWith(key).compact();
+        when(request.getHeader("Authorization")).thenReturn("Bearer " + token);
+
+        assertThat(securityContextUtil.extractUserId(request)).isNull();
+    }
+
+    @Test
+    void isTokenValid_shouldReturnFalse_whenMalformedToken() {
+        when(request.getHeader("Authorization")).thenReturn("Bearer invalid.token.here");
+        assertThat(securityContextUtil.isTokenValid(request)).isFalse();
+    }
 }

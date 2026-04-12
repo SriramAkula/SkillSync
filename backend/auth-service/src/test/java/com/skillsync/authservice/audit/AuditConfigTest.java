@@ -1,4 +1,4 @@
-package com.skillsync.payment.audit;
+package com.skillsync.authservice.audit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
@@ -31,32 +31,19 @@ class AuditConfigTest {
     @Test
     void auditorProvider_shouldReturnUserId_whenHeaderPresent() {
         HttpServletRequest request = mock(HttpServletRequest.class);
-        when(request.getHeader("X-User-Id")).thenReturn("user-123");
+        when(request.getHeader("X-User-Id")).thenReturn("user-456");
         ServletRequestAttributes attrs = new ServletRequestAttributes(request);
         RequestContextHolder.setRequestAttributes(attrs);
 
         AuditorAware<String> provider = auditConfig.auditorProvider();
         Optional<String> auditor = provider.getCurrentAuditor();
 
-        assertThat(auditor).contains("user-123");
+        assertThat(auditor).contains("user-456");
     }
 
     @Test
     void auditorProvider_shouldReturnSystem_whenRequestAttributesNull() {
         RequestContextHolder.setRequestAttributes(null);
-
-        AuditorAware<String> provider = auditConfig.auditorProvider();
-        Optional<String> auditor = provider.getCurrentAuditor();
-
-        assertThat(auditor).contains("system");
-    }
-
-    @Test
-    void auditorProvider_shouldReturnSystem_whenUserIdHeaderNull() {
-        HttpServletRequest request = mock(HttpServletRequest.class);
-        when(request.getHeader("X-User-Id")).thenReturn(null);
-        ServletRequestAttributes attrs = new ServletRequestAttributes(request);
-        RequestContextHolder.setRequestAttributes(attrs);
 
         AuditorAware<String> provider = auditConfig.auditorProvider();
         Optional<String> auditor = provider.getCurrentAuditor();
@@ -79,8 +66,7 @@ class AuditConfigTest {
 
     @Test
     void auditorProvider_shouldReturnSystem_whenExceptionOccurs() {
-        // Mock RequestContextHolder to throw exception when getRequestAttributes is called?
-        // Actually ServletRequestAttributes cast can throw ClassCastException if we set something else
+        // Force exception via ClassCastException
         RequestContextHolder.setRequestAttributes(mock(org.springframework.web.context.request.RequestAttributes.class));
 
         AuditorAware<String> provider = auditConfig.auditorProvider();

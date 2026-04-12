@@ -101,4 +101,12 @@ class JwtUtilTest {
         
         assertThat(shortUtl.validateRefreshToken(token)).isFalse();
     }
+
+    @Test
+    void malformedTokens_shouldReturnNull() {
+        assertThat(jwtUtil.extractEmail("invalid")).isNull();
+        assertThat(jwtUtil.extractUserId("invalid")).isNull();
+        assertThat(jwtUtil.extractRoles("invalid")).isNull();
+        assertThat(jwtUtil.extractEmailIgnoreExpiry("invalid")).isNull();
+    }
 }
