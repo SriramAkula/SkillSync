@@ -129,4 +129,16 @@ class ReviewCommandServiceTest {
         assertThatThrownBy(() -> reviewCommandService.deleteReview(1L, 99L))
                 .isInstanceOf(UnauthorizedException.class);
     }
+
+    @Test
+    void syncMentorRating_shouldHandleNullAverageRating() {
+        when(reviewMapper.toEntity(anyLong(), any())).thenReturn(review);
+        when(reviewRepository.save(any())).thenReturn(review);
+        when(reviewMapper.toDto(any())).thenReturn(response);
+        when(reviewRepository.getAverageRating(5L)).thenReturn(null);
+
+        reviewCommandService.submitReview(10L, request);
+
+        verify(mentorServiceClient, never()).updateMentorRating(anyLong(), anyDouble());
+    }
 }

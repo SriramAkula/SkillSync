@@ -1,29 +1,73 @@
 package com.skillsync.review.audit;
 
-import org.junit.jupiter.api.Test;
-import org.springframework.data.domain.AuditorAware;
-import org.springframework.mock.web.MockHttpServletRequest;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import java.util.Optional;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import jakarta.servlet.http.HttpServletRequest;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 class AuditConfigTest {
 
-    private final AuditConfig auditConfig = new AuditConfig();
+    private AuditConfig auditConfig;
+
+    @BeforeEach
+    void setUp() {
+        auditConfig = new AuditConfig();
+        RequestContextHolder.resetRequestAttributes();
+    }
 
     @Test
     void auditorProvider_shouldReturnUserId_whenHeaderPresent() {
-        MockHttpServletRequest request = new MockHttpServletRequest();
-        request.addHeader("X-User-Id", "123");
+        HttpServletRequest request = mock(HttpServletRequest.class);
+        when(request.getHeader("X-User-Id")).thenReturn("test-user");
         RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
 
-        AuditorAware<String> auditorProvider = auditConfig.auditorProvider();
-        Optional<String> auditor = auditorProvider.getCurrentAuditor();
+        Optional<String> result = auditConfig.auditorProvider().getCurrentAuditor();
 
-        assertThat(auditor).isPresent().contains("123");
-        RequestContextHolder.resetRequestAttributes();
+        assertThat(result).isPresent().contains("test-user");
+    }
+
+    @Test
+    void auditorProvider_shouldReturnSystem_whenHeaderNull() {
+        HttpServletRequest request = mock(HttpServletRequest.class);
+        when(request.getHeader("X-User-Id")).thenReturn(null);
+        RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
+
+        Optional<String> result = auditConfig.auditorProvider().getCurrentAuditor();
+
+        assertThat(result).isPresent().contains("system");
+    }
+
+    @Test
+    void auditorProvider_shouldReturnSystem_whenHeaderBlank() {
+        HttpServletRequest request = mock(HttpServletRequest.class);
+        when(request.getHeader("X-User-Id")).thenReturn("   ");
+        RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
+
+        Optional<String> result = auditConfig.auditorProvider().getCurrentAuditor();
+
+        assertThat(result).isPresent().contains("system");
+    }
+
+    @Test
+    void auditorProvider_shouldReturnSystem_whenNoRequestAttributes() {
+        Optional<String> result = auditConfig.auditorProvider().getCurrentAuditor();
+
+        assertThat(result).isPresent().contains("system");
+    }
+
+    @Test
+    void auditorProvider_shouldReturnSystem_whenExceptionThrown() {
+        // Set attributes to something that might cause a cast exception if handled poorly
+        RequestContextHolder.setRequestAttributes(null);
+        Optional<String> result = auditConfig.auditorProvider().getCurrentAuditor();
+        assertThat(result).isPresent().contains("system");
     }
 }

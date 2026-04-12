@@ -70,4 +70,48 @@ class GatewayRequestFilterTest {
         verify(response).setStatus(HttpServletResponse.SC_FORBIDDEN);
         verify(filterChain, never()).doFilter(any(), any());
     }
+
+    @Test
+    void doFilter_shouldDenyWithInvalidAuthHeader() throws ServletException, IOException {
+        when(request.getRequestURI()).thenReturn("/skill/1");
+        when(request.getHeader("X-Gateway-Request")).thenReturn(null);
+        when(request.getHeader("Authorization")).thenReturn("Basic token");
+        
+        StringWriter stringWriter = new StringWriter();
+        PrintWriter writer = new PrintWriter(stringWriter);
+        when(response.getWriter()).thenReturn(writer);
+
+        gatewayRequestFilter.doFilter(request, response, filterChain);
+
+        verify(response).setStatus(HttpServletResponse.SC_FORBIDDEN);
+        verify(filterChain, never()).doFilter(any(), any());
+    }
+
+    @Test
+    void doFilter_shouldAllowActuator() throws ServletException, IOException {
+        when(request.getRequestURI()).thenReturn("/actuator/health");
+        gatewayRequestFilter.doFilter(request, response, filterChain);
+        verify(filterChain).doFilter(request, response);
+    }
+
+    @Test
+    void doFilter_shouldAllowSwaggerApiDocs() throws ServletException, IOException {
+        when(request.getRequestURI()).thenReturn("/v3/api-docs");
+        gatewayRequestFilter.doFilter(request, response, filterChain);
+        verify(filterChain).doFilter(request, response);
+    }
+
+    @Test
+    void doFilter_shouldAllowSwaggerUi() throws ServletException, IOException {
+        when(request.getRequestURI()).thenReturn("/swagger-ui/index.html");
+        gatewayRequestFilter.doFilter(request, response, filterChain);
+        verify(filterChain).doFilter(request, response);
+    }
+
+    @Test
+    void doFilter_shouldAllowSwaggerResources() throws ServletException, IOException {
+        when(request.getRequestURI()).thenReturn("/swagger-resources/configuration/ui");
+        gatewayRequestFilter.doFilter(request, response, filterChain);
+        verify(filterChain).doFilter(request, response);
+    }
 }

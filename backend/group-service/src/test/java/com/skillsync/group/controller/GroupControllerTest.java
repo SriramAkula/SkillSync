@@ -265,4 +265,73 @@ class GroupControllerTest {
                         .header("roles", "ROLE_MENTOR"))
                 .andExpect(status().isNotFound());
     }
+
+    @Test
+    void createGroup_shouldReturn201_whenAdminRole() throws Exception {
+        CreateGroupRequestDto request = new CreateGroupRequestDto();
+        request.setName("Admin Group");
+        request.setSkillId(5L);
+        request.setMaxMembers(10);
+        when(groupService.createGroup(eq(100L), any())).thenReturn(groupResponse);
+
+        mockMvc.perform(post("/group")
+                        .header("X-User-Id", 100L)
+                        .header("roles", "ROLE_ADMIN")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated());
+    }
+
+    @Test
+    void joinGroup_shouldReturn200_whenAdminRole() throws Exception {
+        when(groupService.joinGroup(1L, 200L)).thenReturn(groupResponse);
+
+        mockMvc.perform(post("/group/1/join")
+                        .header("X-User-Id", 200L)
+                        .header("roles", "ROLE_ADMIN"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void leaveGroup_shouldReturn200_whenAdminRole() throws Exception {
+        when(groupService.leaveGroup(1L, 200L)).thenReturn(groupResponse);
+
+        mockMvc.perform(delete("/group/1/leave")
+                        .header("X-User-Id", 200L)
+                        .header("roles", "ROLE_ADMIN"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void deleteGroup_shouldReturn200_whenAdminRole() throws Exception {
+        doNothing().when(groupService).deleteGroup(1L, 100L);
+
+        mockMvc.perform(delete("/group/1")
+                        .header("X-User-Id", 100L)
+                        .header("roles", "ROLE_ADMIN"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void createGroup_shouldReturn403_whenRolesNull() throws Exception {
+        CreateGroupRequestDto request = new CreateGroupRequestDto();
+        request.setName("Valid Name");
+        request.setSkillId(5L);
+        request.setMaxMembers(10);
+
+        mockMvc.perform(post("/group")
+                        .header("X-User-Id", 100L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void getRandomGroups_shouldReturn200() throws Exception {
+        when(groupService.getRandomGroups(eq(5), any())).thenReturn(List.of(groupResponse));
+
+        mockMvc.perform(get("/group/random").param("limit", "5"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data").isArray());
+    }
 }

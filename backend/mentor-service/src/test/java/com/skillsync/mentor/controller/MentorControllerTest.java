@@ -410,6 +410,109 @@ class MentorControllerTest {
         mockMvc.perform(put("/mentor/99/rating").param("newRating", "4.5"))
                 .andExpect(status().isNotFound());
     }
+
+    @Test
+    void applyAsMentor_shouldReturn201_whenMentorRole() throws Exception {
+        ApplyMentorRequestDto request = new ApplyMentorRequestDto();
+        request.setSpecialization("Java Developer");
+        request.setYearsOfExperience(5);
+        request.setHourlyRate(50.0);
+        request.setBio("This is a long enough bio for validation.");
+        when(mentorService.applyAsMentor(eq(10L), any())).thenReturn(mentorResponse);
+
+        mockMvc.perform(post("/mentor/apply")
+                        .header("X-User-Id", 10L)
+                        .header("roles", "ROLE_MENTOR")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated());
+    }
+
+    @Test
+    void applyAsMentor_shouldReturn403_whenRolesNull() throws Exception {
+        ApplyMentorRequestDto request = new ApplyMentorRequestDto();
+        request.setSpecialization("Java Developer");
+        request.setYearsOfExperience(5);
+        request.setHourlyRate(50.0);
+        request.setBio("This is a long enough bio for validation.");
+
+        mockMvc.perform(post("/mentor/apply")
+                        .header("X-User-Id", 10L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void getInternalMentorProfile_shouldReturn200() throws Exception {
+        when(mentorService.getMentorProfile(1L)).thenReturn(mentorResponse);
+
+        mockMvc.perform(get("/mentor/internal/1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.id").value(1));
+    }
+
+    @Test
+    void getPendingApplications_shouldReturn403_whenRolesNull() throws Exception {
+        mockMvc.perform(get("/mentor/pending"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void approveMentor_shouldReturn403_whenRolesNull() throws Exception {
+        mockMvc.perform(put("/mentor/1/approve").header("X-User-Id", 1L))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void applyAsMentor_shouldReturn201_whenLearnerAndMentorRole() throws Exception {
+        ApplyMentorRequestDto request = new ApplyMentorRequestDto();
+        request.setSpecialization("Java Developer");
+        request.setYearsOfExperience(5);
+        request.setHourlyRate(50.0);
+        request.setBio("This is a long enough bio for validation.");
+        when(mentorService.applyAsMentor(eq(10L), any())).thenReturn(mentorResponse);
+
+        mockMvc.perform(post("/mentor/apply")
+                        .header("X-User-Id", 10L)
+                        .header("roles", "ROLE_LEARNER,ROLE_MENTOR")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated());
+    }
+
+    @Test
+    void applyAsMentor_shouldReturn403_whenRoleIsAdminOnly() throws Exception {
+        ApplyMentorRequestDto request = new ApplyMentorRequestDto();
+        request.setSpecialization("Java Developer");
+        request.setYearsOfExperience(5);
+        request.setHourlyRate(50.0);
+        request.setBio("This is a long enough bio for validation.");
+
+        mockMvc.perform(post("/mentor/apply")
+                        .header("X-User-Id", 10L)
+                        .header("roles", "ROLE_ADMIN")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void applyAsMentor_shouldReturn201_whenRoleIsLearnerOnly() throws Exception {
+        ApplyMentorRequestDto request = new ApplyMentorRequestDto();
+        request.setSpecialization("Java Developer");
+        request.setYearsOfExperience(5);
+        request.setHourlyRate(50.0);
+        request.setBio("This is a long enough bio for validation.");
+        when(mentorService.applyAsMentor(eq(10L), any())).thenReturn(mentorResponse);
+
+        mockMvc.perform(post("/mentor/apply")
+                        .header("X-User-Id", 10L)
+                        .header("roles", "ROLE_LEARNER")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated());
+    }
 }
 
 

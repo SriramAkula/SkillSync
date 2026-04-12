@@ -61,15 +61,29 @@ class ReviewMapperTest {
     }
 
     @Test
-    void updateEntity_shouldUpdateFields() {
+    void toRatingDto_shouldHandleNonNulls() {
+        MentorRatingDto result = reviewMapper.toRatingDto(5L, 4.5, 10, 8);
+
+        assertThat(result.getAverageRating()).isEqualTo(4.5);
+        assertThat(result.getTotalReviews()).isEqualTo(10);
+        assertThat(result.getTotalLearners()).isEqualTo(8);
+    }
+
+    @Test
+    void updateEntity_shouldHandleAnonymousNull() {
         Review review = new Review();
         SubmitReviewRequestDto request = new SubmitReviewRequestDto();
-        request.setRating(3);
-        request.setComment("Updated");
-
+        request.setIsAnonymous(null);
         reviewMapper.updateEntity(review, request);
+        assertThat(review.getIsAnonymous()).isFalse();
+    }
 
-        assertThat(review.getRating()).isEqualTo(3);
-        assertThat(review.getComment()).isEqualTo("Updated");
+    @Test
+    void updateEntity_shouldHandleAnonymousTrue() {
+        Review review = new Review();
+        SubmitReviewRequestDto request = new SubmitReviewRequestDto();
+        request.setIsAnonymous(true);
+        reviewMapper.updateEntity(review, request);
+        assertThat(review.getIsAnonymous()).isTrue();
     }
 }

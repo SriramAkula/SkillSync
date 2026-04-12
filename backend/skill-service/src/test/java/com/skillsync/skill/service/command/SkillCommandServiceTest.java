@@ -114,4 +114,32 @@ class SkillCommandServiceTest {
 
         assertThat(skill.getPopularityScore()).isEqualTo(0);
     }
+
+    @Test
+    void updatePopularity_shouldHandleNullScore() {
+        skill.setPopularityScore(null);
+        when(skillRepository.findById(1L)).thenReturn(Optional.of(skill));
+        when(skillRepository.save(any())).thenReturn(skill);
+        when(skillMapper.toDto(any())).thenReturn(new SkillResponseDto());
+
+        skillCommandService.updatePopularity(1L, true);
+
+        assertThat(skill.getPopularityScore()).isEqualTo(1);
+    }
+
+    @Test
+    void deleteSkill_shouldThrow_whenNotFound() {
+        when(skillRepository.findById(99L)).thenReturn(Optional.empty());
+        assertThatThrownBy(() -> skillCommandService.deleteSkill(99L))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessage("Skill not found");
+    }
+
+    @Test
+    void updatePopularity_shouldThrow_whenNotFound() {
+        when(skillRepository.findById(99L)).thenReturn(Optional.empty());
+        assertThatThrownBy(() -> skillCommandService.updatePopularity(99L, true))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessage("Skill not found");
+    }
 }
