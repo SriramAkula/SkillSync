@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { AdminUserService, UserProfile } from '../../../../core/services/admin-user.service';
+import { ApiResponse } from '../../../../shared/models';
 
 @Component({
   selector: 'app-unblock-user-page',
