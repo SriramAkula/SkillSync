@@ -59,11 +59,5 @@ public class MentorProfile extends Auditable {
 
 	@Column
 	private Integer totalStudents = 0;
-
-	@Column(nullable = false, updatable = false)
-	private LocalDateTime createdAt;
-
-	@Column(nullable = false)
-	private LocalDateTime updatedAt;
 }
 
