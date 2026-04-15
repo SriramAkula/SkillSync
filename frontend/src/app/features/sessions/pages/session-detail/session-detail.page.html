@@ -88,7 +88,7 @@
             </button>
           }
 
-          @if (authStore.isMentor()) {
+          @if (isMentorForThisSession) {
             @if (s.status === 'REQUESTED') {
               <button class="action-btn success" (click)="accept(s.id)">
                 <span class="material-icons">check_circle</span>
