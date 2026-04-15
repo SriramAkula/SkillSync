@@ -64,11 +64,6 @@ function addToken(req: HttpRequest<unknown>, token: string): HttpRequest<unknown
   return req.clone({ setHeaders: { Authorization: `Bearer ${token}` } });
 }
 
-function isProtectedEndpoint(url: string): boolean {
-  const publicPaths = ['/auth/login', '/auth/register', '/auth/refresh', '/auth/oauth'];
-  return !publicPaths.some(path => url.includes(path));
-}
-
 function handle401(
   req: HttpRequest<unknown>,
   next: HttpHandlerFn,
