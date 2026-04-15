@@ -29,8 +29,8 @@ class GroupServiceImplTest {
         groupService.leaveGroup(1L, 2L);
         verify(commandService).leaveGroup(1L, 2L);
 
-        groupService.deleteGroup(1L, 2L);
-        verify(commandService).deleteGroup(1L, 2L);
+        groupService.deleteGroup(1L, 2L, false);
+        verify(commandService).deleteGroup(1L, 2L, false);
 
         groupService.getGroupDetails(1L, 2L);
         verify(queryService).getGroupDetails(1L, 2L);

@@ -118,8 +118,10 @@ export class CheckoutPage implements OnInit, OnDestroy {
   openRazorpay(saga: SagaResponse): void {
     const options = {
       key: 'rzp_test_SWGUsISMJTk4IH',
-      amount: (saga.amount ?? 0) * 100, currency: 'INR',
-      name: 'SkillSync', description: `Session #${saga.sessionId}`,
+      // Amount and currency are automatically fetched from order_id on Razorpay servers
+      // Removing them here prevents 400 Bad Request if there are tiny rounding differences.
+      name: 'SkillSync', 
+      description: `Session #${saga.sessionId}`,
       order_id: saga.paymentReference,
       handler: (response: { razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string }) => {
         this.paymentStore.verifyPayment({
@@ -129,7 +131,11 @@ export class CheckoutPage implements OnInit, OnDestroy {
           razorpaySignature: response.razorpay_signature
         });
       },
-      prefill: { email: this.authStore.email() ?? '' },
+      prefill: { 
+        email: this.authStore.email() ?? '',
+        contact: '9999999999',
+        vpa: 'success@razorpay' // Automates the success simulator for test mode
+      },
       theme: { color: '#4f46e5' }
     };
     new Razorpay(options).open();

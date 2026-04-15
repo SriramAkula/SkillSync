@@ -117,7 +117,7 @@ public class OAuthService {
 
         try {
             UserCreatedEvent event = new UserCreatedEvent(
-                saved.getId(), saved.getEmail(), null,
+                saved.getId(), saved.getEmail(), name,
                 saved.getUsername(), saved.getRole(), System.currentTimeMillis()
             );
             eventPublisher.publishUserCreated(event);
@@ -131,6 +131,8 @@ public class OAuthService {
             userData.put("userId", saved.getId());
             userData.put("email", saved.getEmail());
             userData.put("username", saved.getUsername());
+            userData.put("name", name);
+            userData.put("role", saved.getRole());
             userServiceClient.createProfile(userData);
             log.info("UserProfile created via Feign for OAuth userId={}", saved.getId());
         } catch (Exception e) {

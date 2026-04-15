@@ -102,6 +102,7 @@ export const AuthStore = signalStore(
                   username: res.username ?? claims.sub ?? null,
                   loading: false, error: null
                 });
+                router.navigate(['/auth/verify-otp'], { queryParams: { email: res.email ?? claims.sub } });
               },
               error: (err: HttpErrorResponse) => patchState(store, { loading: false, error: err.error?.message ?? 'Registration failed' })
             })

@@ -1,9 +1,9 @@
 <div class="max-w-7xl mx-auto space-y-10 animate-fade-in pb-20 px-2 lg:px-4">
 
   <!-- Premium Dashboard Header -->
-  <div class="flex flex-col lg:flex-row lg:items-end justify-between gap-8 pb-4 border-b border-slate-50">
+  <div class="flex flex-col lg:flex-row lg:items-end justify-between gap-8 pb-4 border-b border-slate-50 dark:border-slate-800">
     <div class="space-y-4">
-      <div class="flex items-center gap-3 text-primary-600 font-bold text-xs uppercase tracking-[0.2em] mb-2">
+      <div class="flex items-center gap-3 text-primary-600 dark:text-primary-400 font-bold text-xs uppercase tracking-[0.2em] mb-2">
          <span class="material-icons text-sm">verified_user</span>
          Verified Expert Dashboard
       </div>
@@ -84,7 +84,6 @@
       </div>
     </div>
 
-    <!-- ... -->
   </div>
 
   <!-- Content Area -->
@@ -112,7 +111,7 @@
     @if (sessionStore.loading()) {
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           @for (i of [1,2,3]; track i) {
-            <div class="h-64 bg-slate-50 rounded-[2.5rem] animate-pulse"></div>
+            <div class="h-64 bg-slate-50 dark:bg-slate-800/50 rounded-[2.5rem] animate-pulse"></div>
           }
         </div>
     } @else {
@@ -148,33 +147,32 @@
   <div class="fixed inset-0 z-[200] flex items-center justify-center p-4 animate-fade-in">
     <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" 
          (click)="rejectingSession.set(null)" (keyup.enter)="rejectingSession.set(null)"
-         tabindex="0" role="button" aria-label="Close modal backdrop"></div>
+         tabindex="0" role="button" aria-label="Close modal"></div>
     
-    <div class="bg-white rounded-[2.5rem] w-full max-w-lg p-10 relative z-10 shadow-2xl animate-drop-in border border-slate-100">
+    <div class="bg-white dark:bg-slate-900 rounded-[2.5rem] w-full max-w-lg p-10 relative z-10 shadow-2xl animate-drop-in border border-slate-100 dark:border-slate-800">
        <div class="flex items-center gap-4 mb-8">
-          <div class="w-14 h-14 bg-red-50 rounded-2xl flex items-center justify-center text-red-500 shadow-sm border border-red-100">
+          <div class="w-14 h-14 bg-red-50 dark:bg-red-950/20 rounded-2xl flex items-center justify-center text-red-500 dark:text-red-400 shadow-sm border border-red-100 dark:border-red-900/50">
              <span class="material-icons">block</span>
           </div>
           <div class="space-y-0.5">
-             <h2 class="text-xl font-black text-slate-800 tracking-tight">Decline Session Request</h2>
-             <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">Session #{{ rejectingSession()!.id }}</p>
+             <h2 class="text-xl font-black text-slate-800 dark:text-white tracking-tight">Decline Session Request</h2>
+             <p class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Session #{{ rejectingSession()!.id }}</p>
           </div>
        </div>
 
-       <p class="text-sm text-slate-500 font-medium leading-relaxed mb-8 italic">Let the learner know why you are unable to fulfill this request. This keeps our community transparent and helpful.</p>
+       <p class="text-sm text-slate-500 font-medium leading-relaxed mb-8 italic">Let the learner know why you are unable to fulfill this request.</p>
 
        <!-- Quick Reasons Chips -->
        <div class="flex flex-wrap gap-2 mb-8">
          @for (r of quickReasons; track r) {
-           <button 
+           <button type="button" 
              (click)="rejectReason = r"
+             class="px-4 py-2.5 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all active:scale-95"
              [class.bg-red-500]="rejectReason === r"
              [class.text-white]="rejectReason === r"
-             [class.ring-4]="rejectReason === r"
-             [class.ring-red-100]="rejectReason === r"
              [class.bg-slate-50]="rejectReason !== r"
-             [class.text-slate-500]="rejectReason !== r"
-             class="px-4 py-2.5 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all active:scale-95">
+             [class.dark:bg-slate-800]="rejectReason !== r"
+             [class.text-slate-500]="rejectReason !== r">
              {{ r }}
            </button>
          }
@@ -182,16 +180,13 @@
 
        <!-- Custom Input -->
        <div class="relative group mb-10">
-          <span class="material-icons absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-red-500 transition-colors">edit_note</span>
-          <input type="text" [(ngModel)]="rejectReason" placeholder="Or provide a custom reason..." class="w-full bg-slate-50 border border-slate-200 rounded-xl py-4 pl-12 pr-4 text-sm focus:ring-4 focus:ring-red-500/10 focus:border-red-500/50 outline-none transition-all font-bold text-slate-700">
+          <span class="material-icons absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 dark:text-slate-600">edit_note</span>
+          <input type="text" [(ngModel)]="rejectReason" placeholder="Or provide a custom reason..." class="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl py-4 pl-12 pr-4 text-sm focus:border-red-500 outline-none transition-all font-bold text-slate-700 dark:text-slate-200">
        </div>
 
        <div class="flex gap-4">
-          <button (click)="rejectingSession.set(null)" class="flex-1 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest hover:text-slate-600 transition-colors">Cancel Interaction</button>
-          <button 
-             (click)="confirmReject()" 
-             [disabled]="!rejectReason.trim()"
-             class="flex-[2] bg-red-600 text-white rounded-2xl py-4 text-xs font-black uppercase tracking-[0.2em] shadow-xl hover:bg-red-700 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2">
+          <button (click)="rejectingSession.set(null)" class="flex-1 py-4 text-xs font-bold text-slate-400 uppercase tracking-widest hover:text-slate-600 transition-colors">Cancel</button>
+          <button (click)="confirmReject()" [disabled]="!rejectReason.trim()" class="flex-[2] bg-red-600 text-white rounded-2xl py-4 text-xs font-black uppercase tracking-[0.2em] shadow-xl hover:bg-red-700 transition-all active:scale-95 disabled:opacity-50">
              Confirm Rejection
           </button>
        </div>

@@ -32,6 +32,32 @@
   padding: 80px;
 }
 
+.error-banner {
+  padding: 24px;
+  background: #fee2e2;
+  border: 1px solid #fecaca;
+  border-radius: 12px;
+  color: #991b1b;
+  margin-bottom: 24px;
+
+  .error-title {
+    margin: 0;
+    font-weight: 600;
+  }
+
+  .error-message {
+    margin: 8px 0 0;
+    font-size: 14px;
+    opacity: 0.8;
+  }
+
+  .back-btn.retry {
+    margin-top: 12px;
+    margin-bottom: 0;
+    color: #dc2626;
+  }
+}
+
 .layout {
   display: grid;
   grid-template-columns: 1fr 280px;
@@ -286,3 +312,149 @@
     flex: 1;
   }
 }
+
+/* Dark Mode Styles */
+:host-context(.dark) {
+  .back-btn {
+    color: #94a3b8;
+
+    &:hover {
+      color: #818cf8;
+    }
+  }
+
+  .detail-card {
+    background: #1e293b;
+    border-color: #334155;
+  }
+
+  .detail-header {
+    background-color: #0f172a;
+    border-bottom: 1px solid #334155;
+
+    &[data-status='REQUESTED'] { background-color: rgba(217, 119, 6, 0.1); }
+    &[data-status='ACCEPTED']  { background-color: rgba(37, 99, 235, 0.1); }
+    &[data-status='CONFIRMED'] { background-color: rgba(22, 163, 74, 0.1); }
+    &[data-status='CANCELLED'],
+    &[data-status='REJECTED']  { background-color: rgba(107, 114, 128, 0.15); }
+
+    h2 {
+      color: #f1f5f9;
+    }
+  }
+
+  .info-label {
+    color: #64748b;
+  }
+
+  .info-value {
+    color: #f1f5f9;
+  }
+
+  .info-sub {
+    color: #94a3b8;
+  }
+
+  .rejection-box {
+    background: #450a0a;
+    border-color: #7f1d1d;
+
+    .material-icons {
+      color: #fca5a5;
+    }
+
+    strong {
+      color: #fca5a5;
+    }
+
+    p {
+      color: #fecaca;
+    }
+  }
+
+  .error-banner {
+    background: #450a0a;
+    border-color: #7f1d1d;
+    color: #fecaca;
+
+    .back-btn.retry {
+      color: #fca5a5;
+    }
+  }
+
+  .actions-card {
+    background: #1e293b;
+    border-color: #334155;
+
+    h3 {
+      color: #f1f5f9;
+    }
+  }
+
+  .action-btn {
+    &.primary {
+      background: linear-gradient(135deg, #4f46e5, #7c3aed);
+      color: white;
+    }
+
+    &.success {
+      background: #065f46;
+      color: #d1fae5;
+
+      &:hover {
+        background: #047857;
+      }
+    }
+
+    &.danger {
+      background: #7f1d1d;
+      color: #fca5a5;
+
+      &:hover {
+        background: #991b1b;
+      }
+    }
+
+    &.secondary {
+      background: #334155;
+      color: #e2e8f0;
+
+      &:hover {
+        background: #475569;
+      }
+    }
+
+    &.outline {
+      background: #1e293b;
+      color: #818cf8;
+      border-color: #4f46e5;
+
+      &:hover {
+        background: #334155;
+      }
+    }
+  }
+
+  .reject-card {
+    background: #1e293b;
+    border-color: #7f1d1d;
+
+    h4 {
+      color: #fca5a5;
+    }
+  }
+
+  .input-wrapper {
+    background: #0f172a;
+    border-color: #334155;
+
+    input {
+      color: #f1f5f9;
+
+      &::placeholder {
+        color: #64748b;
+      }
+    }
+  }
+}
+

@@ -112,6 +112,18 @@ public class UserProfileController {
 	}
 
 	/**
+	 * GET /api/user/exists/{username}
+	 * Check if a username already exists
+	 */
+	@GetMapping("/exists/{username}")
+	@Operation(summary = "Check username existence", description = "Check if a username is already taken by another user")
+	public ResponseEntity<ApiResponse<Boolean>> checkUsernameExists(@PathVariable String username) {
+		log.info("Checking existence for username: {}", username);
+		boolean exists = userProfileService.existsByUsername(username);
+		return ResponseEntity.ok(new ApiResponse<>(true, "Username check completed", exists, 200));
+	}
+
+	/**
 	 * PUT /api/user/profile
 	 * Update user's profile
 	 */
@@ -178,13 +190,15 @@ public class UserProfileController {
 			Long userId = ((Number) userIdObj).longValue();
 			String email = (String) userData.get("email");
 			String username = (String) userData.get("username");
+			String name = (String) userData.get("name");
+			String role = (String) userData.get("role");
 
 			if (email == null) {
 				log.error("Missing required fields: userId={}, email={}", userId, email);
 				return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
 			}
 
-			log.info("Creating user profile for userId: {} with email: {}, username: {}", userId, email, username);
+			log.info("Creating user profile for userId: {} with email: {}, username: {}, role: {}", userId, email, username, role);
 
 			// Check if profile already exists
 			try {
@@ -197,7 +211,11 @@ public class UserProfileController {
 			}
 
 			// Create new UserProfile via service
-			userProfileService.createProfile(userId, email, username);
+			if (name == null && role == null) {
+				userProfileService.createProfile(userId, email, username);
+			} else {
+				userProfileService.createProfile(userId, email, username, name, role);
+			}
 			log.info("UserProfile created successfully for userId: {}", userId);
 
 			return ResponseEntity.status(HttpStatus.CREATED).build();

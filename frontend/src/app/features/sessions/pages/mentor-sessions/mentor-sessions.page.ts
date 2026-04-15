@@ -8,7 +8,6 @@ import { AuthStore } from '../../../../core/auth/auth.store';
 import { SkillStore } from '../../../../core/auth/skill.store';
 import { SessionCardComponent } from '../../components/session-card/session-card.component';
 import { SessionDto } from '../../../../shared/models';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
 
 type DashTab = 'pending' | 'upcoming' | 'all' | 'confirmed';
@@ -16,7 +15,7 @@ type DashTab = 'pending' | 'upcoming' | 'all' | 'confirmed';
 @Component({
   selector: 'app-mentor-sessions-page',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, SessionCardComponent, MatSnackBarModule, PaginationComponent],
+  imports: [CommonModule, FormsModule, RouterModule, SessionCardComponent, PaginationComponent],
   templateUrl: './mentor-sessions.page.html',
   styleUrl: './mentor-sessions.page.scss'
 })
@@ -26,7 +25,6 @@ export class MentorSessionsPage implements OnInit {
   readonly authStore = inject(AuthStore);
   readonly skillStore = inject(SkillStore);
   readonly router = inject(Router);
-  private readonly snack = inject(MatSnackBar);
 
   readonly activeTab = signal<DashTab>('pending');
   readonly rejectingSession = signal<SessionDto | null>(null);

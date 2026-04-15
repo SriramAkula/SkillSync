@@ -1,4 +1,4 @@
-<div class="fixed bottom-4 right-4 z-50 flex flex-col gap-2">
+<div class="fixed top-20 right-4 z-50 flex flex-col gap-2">
   @for (toast of toastService.toasts$ | async; track toast.id) {
     <div
          class="px-4 py-3 rounded-md shadow-lg flex items-center justify-between min-w-[300px] text-white transition-all transform translate-y-0"
@@ -8,9 +8,11 @@
            'bg-indigo-500': toast.type === 'info'
          }">
       <span>{{ toast.message }}</span>
-      <button (click)="toastService.remove(toast.id!)" class="ml-4 text-white hover:text-gray-200" aria-label="Close notification">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+      <button (click)="toastService.remove(toast.id!)" 
+              class="close-btn"
+              type="button">
+        <svg viewBox="0 0 24 24">
+          <path d="M6 18L18 6M6 6l12 12"></path>
         </svg>
       </button>
     </div>

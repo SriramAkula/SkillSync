@@ -154,7 +154,7 @@ class GroupCommandServiceTest {
         when(groupRepository.save(group)).thenReturn(group);
         when(groupMemberRepository.findByGroupId(1L)).thenReturn(List.of());
 
-        groupCommandService.deleteGroup(1L, 100L);
+        groupCommandService.deleteGroup(1L, 100L, false);
 
         verify(groupRepository).save(group);
         assertFalse(group.getIsActive());
@@ -164,7 +164,7 @@ class GroupCommandServiceTest {
     void deleteGroup_ShouldThrowException_WhenNotCreator() {
         when(groupRepository.findById(1L)).thenReturn(Optional.of(group));
 
-        assertThrows(GroupNotFoundException.class, () -> groupCommandService.deleteGroup(1L, 999L));
+        assertThrows(org.springframework.web.server.ResponseStatusException.class, () -> groupCommandService.deleteGroup(1L, 999L, false));
     }
 
     @Test

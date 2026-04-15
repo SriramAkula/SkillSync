@@ -3,22 +3,22 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { ReviewService } from '../../../../core/services/review.service';
+import { ToastService } from '../../../../core/services/toast.service';
 import { AuthStore } from '../../../../core/auth/auth.store';
 import { ReviewDto, MentorRatingDto } from '../../../../shared/models';
 
 @Component({
   selector: 'app-mentor-reviews-page',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatProgressSpinnerModule, MatSnackBarModule],
+  imports: [CommonModule, FormsModule, MatProgressSpinnerModule],
   templateUrl: './mentor-reviews.page.html',
   styleUrl: './mentor-reviews.page.scss'
 })
 export class MentorReviewsPage implements OnInit {
   private readonly reviewService = inject(ReviewService);
   private readonly route = inject(ActivatedRoute);
-  private readonly snack = inject(MatSnackBar);
+  private readonly toast = inject(ToastService);
   readonly authStore = inject(AuthStore);
   readonly router = inject(Router);
 
@@ -84,10 +84,10 @@ export class MentorReviewsPage implements OnInit {
         this.reviews.update(list => [r.data, ...list]);
         this.newReview = { sessionId: null, rating: 0, comment: '' };
         this.submitting.set(false);
-        this.snack.open('Review submitted!', 'OK', { duration: 3000 });
+        this.toast.success('Review submitted!');
         this.reviewService.getMentorRating(this.mentorId()).subscribe(r => this.rating.set(r.data));
       },
-      error: (e) => { this.submitting.set(false); this.snack.open(e.error?.message ?? 'Failed', 'OK', { duration: 3000 }); }
+      error: (e) => { this.submitting.set(false); this.toast.error(e.error?.message ?? 'Failed'); }
     });
   }
 
@@ -95,15 +95,15 @@ export class MentorReviewsPage implements OnInit {
 
   saveEdit(r: ReviewDto): void {
     this.reviewService.updateReview(r.id, { mentorId: r.mentorId, sessionId: r.sessionId, rating: r.rating, comment: this.editComment }).subscribe({
-      next: (res) => { this.reviews.update(list => list.map(x => x.id === r.id ? res.data : x)); this.editingId.set(null); this.snack.open('Review updated!', 'OK', { duration: 3000 }); },
-      error: (e) => this.snack.open(e.error?.message ?? 'Failed', 'OK', { duration: 3000 })
+      next: (res) => { this.reviews.update(list => list.map(x => x.id === r.id ? res.data : x)); this.editingId.set(null); this.toast.success('Review updated!'); },
+      error: (e) => this.toast.error(e.error?.message ?? 'Failed')
     });
   }
 
   deleteReview(id: number): void {
     this.reviewService.deleteReview(id).subscribe({
-      next: () => { this.reviews.update(list => list.filter(r => r.id !== id)); this.snack.open('Review deleted.', 'OK', { duration: 3000 }); },
-      error: (e) => this.snack.open(e.error?.message ?? 'Failed', 'OK', { duration: 3000 })
+      next: () => { this.reviews.update(list => list.filter(r => r.id !== id)); this.toast.success('Review deleted.'); },
+      error: (e) => this.toast.error(e.error?.message ?? 'Failed')
     });
   }
 

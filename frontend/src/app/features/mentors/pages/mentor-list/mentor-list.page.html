@@ -6,12 +6,12 @@
       <p>Connect with industry experts and accelerate your career</p>
     </div>
     <form [formGroup]="filterForm">
-      <div class="search-bar">
+      <div class="search-bar dark:bg-slate-800/80 dark:border-slate-700 dark:shadow-none">
         <span class="material-icons search-icon">auto_stories</span>
-        <select formControlName="skill" class="search-input skill-select">
+        <select formControlName="skill" class="search-input skill-select dark:text-slate-200">
           <option value="">All Skills / Specializations</option>
           @for (cat of skillStore.groupedByCategory(); track cat.category) {
-            <optgroup [label]="cat.category">
+            <optgroup [label]="cat.category" class="dark:bg-slate-900">
               @for (s of cat.skills; track s.id) {
                 <option [value]="s.name">{{ s.name }}</option>
               }
@@ -19,12 +19,12 @@
           }
         </select>
         @if (filterForm.value.skill) {
-          <button type="button" class="icon-btn clear-btn" (click)="filterForm.patchValue({ skill: '' })">
+          <button type="button" class="icon-btn clear-btn dark:text-slate-400 dark:hover:bg-slate-700" (click)="filterForm.patchValue({ skill: '' })">
             <span class="material-icons">close</span>
           </button>
         }
-        <div class="divider-v"></div>
-        <button type="button" class="icon-btn filter-toggle" [class.active]="isFilterOpen()" (click)="isFilterOpen.set(!isFilterOpen())" title="Advanced Filters">
+        <div class="divider-v dark:bg-slate-700"></div>
+        <button type="button" class="icon-btn filter-toggle dark:text-slate-400 dark:hover:bg-slate-700" [class.active]="isFilterOpen()" (click)="isFilterOpen.set(!isFilterOpen())" title="Advanced Filters">
           <span class="material-icons">tune</span>
           <span class="filter-lbl">Filters</span>
         </button>
@@ -69,15 +69,15 @@
   </div>
 
   <!-- Stats Bar -->
-  <div class="stats-bar">
+  <div class="stats-bar dark:bg-slate-800/50 dark:border-slate-700">
     <div class="stat-item">
-      <span class="stat-num">{{ mentorStore.approvedCount() }}</span>
-      <span class="stat-lbl">Mentors</span>
+      <span class="stat-num dark:text-primary-400">{{ mentorStore.approvedCount() }}</span>
+      <span class="stat-lbl dark:text-slate-400">Mentors</span>
     </div>
-    <div class="divider-v"></div>
+    <div class="divider-v dark:bg-slate-700"></div>
     <div class="stat-item">
-      <span class="stat-num">{{ filteredMentors().length }}</span>
-      <span class="stat-lbl">Showing</span>
+      <span class="stat-num dark:text-primary-400">{{ filteredMentors().length }}</span>
+      <span class="stat-lbl dark:text-slate-400">Showing</span>
     </div>
   </div>
 
@@ -91,7 +91,7 @@
 
   <!-- Error -->
   @if (mentorStore.error()) {
-    <div class="error-banner">
+    <div class="error-banner dark:bg-red-950/20 dark:border-red-900/50 dark:text-red-300">
       <span class="material-icons">error_outline</span>
       {{ mentorStore.error() }}
     </div>
@@ -110,9 +110,9 @@
       }
       @empty {
         <div class="empty-state">
-          <div class="empty-icon"><span class="material-icons">search_off</span></div>
-          <h3>No mentors found</h3>
-          <p>Try a different skill or remove filters</p>
+          <div class="empty-icon dark:bg-slate-800"><span class="material-icons dark:text-slate-600">search_off</span></div>
+          <h3 class="dark:text-slate-200">No mentors found</h3>
+          <p class="dark:text-slate-400">Try a different skill or remove filters</p>
           <button class="btn-reset" (click)="reset()">Clear Search</button>
         </div>
       }

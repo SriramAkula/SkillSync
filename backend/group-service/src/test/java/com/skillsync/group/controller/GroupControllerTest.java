@@ -75,24 +75,28 @@ class GroupControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.name").value("Java Learners"));
+        verify(groupService).createGroup(eq(100L), any());
     }
 
     @Test
-    void createGroup_shouldReturn403_whenNotMentor() throws Exception {
+    void createGroup_shouldReturn201_whenLearnerRole() throws Exception {
         CreateGroupRequestDto request = new CreateGroupRequestDto();
         request.setName("Java Learners");
         request.setSkillId(5L);
         request.setMaxMembers(10);
+        when(groupService.createGroup(eq(100L), any())).thenReturn(groupResponse);
 
         mockMvc.perform(post("/group")
                         .header("X-User-Id", 100L)
                         .header("roles", "ROLE_LEARNER")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isForbidden());
-
-        verify(groupService, never()).createGroup(anyLong(), any());
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.name").value("Java Learners"));
+        verify(groupService).createGroup(eq(100L), any());
     }
+
+
 
     @Test
     void createGroup_shouldReturn400_whenNameBlank() throws Exception {
@@ -239,7 +243,7 @@ class GroupControllerTest {
 
     @Test
     void deleteGroup_shouldReturn200_whenMentorRole() throws Exception {
-        doNothing().when(groupService).deleteGroup(1L, 100L);
+        doNothing().when(groupService).deleteGroup(eq(1L), eq(100L), anyBoolean());
 
         mockMvc.perform(delete("/group/1")
                         .header("X-User-Id", 100L)
@@ -249,16 +253,27 @@ class GroupControllerTest {
     }
 
     @Test
-    void deleteGroup_shouldReturn403_whenNotMentor() throws Exception {
+    void deleteGroup_shouldReturn200_whenLearnerRole() throws Exception {
+        doNothing().when(groupService).deleteGroup(eq(1L), eq(100L), anyBoolean());
+
         mockMvc.perform(delete("/group/1")
                         .header("X-User-Id", 100L)
                         .header("roles", "ROLE_LEARNER"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("Group deleted successfully"));
+    }
+
+    @Test
+    void deleteGroup_shouldReturn403_whenInvalidRole() throws Exception {
+        mockMvc.perform(delete("/group/1")
+                        .header("X-User-Id", 100L)
+                        .header("roles", "ROLE_GUEST"))
                 .andExpect(status().isForbidden());
     }
 
     @Test
     void deleteGroup_shouldReturn404_whenGroupNotFound() throws Exception {
-        doThrow(new GroupNotFoundException("Not found")).when(groupService).deleteGroup(99L, 100L);
+        doThrow(new GroupNotFoundException("Not found")).when(groupService).deleteGroup(eq(99L), eq(100L), anyBoolean());
 
         mockMvc.perform(delete("/group/99")
                         .header("X-User-Id", 100L)
@@ -304,7 +319,7 @@ class GroupControllerTest {
 
     @Test
     void deleteGroup_shouldReturn200_whenAdminRole() throws Exception {
-        doNothing().when(groupService).deleteGroup(1L, 100L);
+        doNothing().when(groupService).deleteGroup(eq(1L), eq(100L), anyBoolean());
 
         mockMvc.perform(delete("/group/1")
                         .header("X-User-Id", 100L)

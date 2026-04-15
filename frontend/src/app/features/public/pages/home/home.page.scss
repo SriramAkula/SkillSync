@@ -13,3 +13,47 @@
 .animate-bounce-slow {
   animation: bounce-slow 4s infinite;
 }
+
+/* Category Cards Styling */
+.category-card {
+  @apply bg-gradient-to-br text-center;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  position: relative;
+  overflow: hidden;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.05);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    z-index: 0;
+  }
+
+  &:hover::before {
+    opacity: 1;
+  }
+
+  > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Shadow effect on hover */
+  &:hover {
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2), 0 0 60px rgba(124, 58, 237, 0.15);
+  }
+
+  /* Responsive font sizes */
+  @media (max-width: 640px) {
+    padding: 1rem !important;
+    
+    .material-icons-outlined {
+      font-size: 1.5rem !important;
+    }
+  }
+}

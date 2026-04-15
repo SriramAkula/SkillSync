@@ -101,6 +101,10 @@
                tabindex="0" role="group" aria-label="Group actions">
             @if (!isCreator(g)) {
               @if (g.isJoined) {
+                <button class="btn-chat" (click)="openChat(g)">
+                  <span class="material-icons">chat</span>
+                  Chat
+                </button>
                 <button class="btn-leave" (click)="leave(g.id)">
                   <span class="material-icons">exit_to_app</span>
                   Leave
@@ -118,6 +122,10 @@
               }
             }
             @if (isCreator(g)) {
+              <button class="btn-chat" (click)="openChat(g)">
+                <span class="material-icons">chat</span>
+                Chat
+              </button>
               <span class="creator-badge">
                 <span class="material-icons">star</span> Creator
               </span>

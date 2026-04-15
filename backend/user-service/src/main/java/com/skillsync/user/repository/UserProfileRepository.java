@@ -19,4 +19,8 @@ public interface UserProfileRepository extends JpaRepository<UserProfile, Long> 
 	Optional<UserProfile> findByEmail(String email);
 	
 	List<UserProfile> findByIsBlockedTrue();
+
+	boolean existsByUsername(String username);
+
+	boolean existsByUsernameAndUserIdNot(String username, Long userId);
 }

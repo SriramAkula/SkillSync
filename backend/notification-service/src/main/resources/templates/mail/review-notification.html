@@ -16,7 +16,7 @@
             <p th:text="${comment}">No comment provided.</p>
         </div>
         <p>Your feedback helps us maintain a high standard of quality on SkillSync.</p>
-        <a href="http://localhost:3000/profile" class="button">View My Reviews</a>
+        <a th:href="${frontendUrl} + '/profile'" class="button">View My Reviews</a>
     </div>
 </body>
 </html>

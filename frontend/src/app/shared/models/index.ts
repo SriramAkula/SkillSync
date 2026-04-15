@@ -206,5 +206,21 @@ export interface VerifyPaymentRequest {
   razorpaySignature: string;
 }
 
+// ─── Messaging ─────────────────────────────────────────────────────────────
+export type MessageType = 'CHAT' | 'JOIN' | 'LEAVE';
+
+export interface ChatMessage {
+  id?: number;
+  senderId: number;
+  receiverId?: number; // Backend uses receiverId
+  recipientId?: number; // For backward compatibility
+  groupId?: number;
+  content: string;
+  createdAt?: string; // Backend uses createdAt
+  timestamp?: string; // For backward compatibility
+  type: MessageType;
+  isRead?: boolean;
+}
+
 export * from './skill.models';
 export * from './page.models';

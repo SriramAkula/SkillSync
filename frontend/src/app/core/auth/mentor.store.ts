@@ -109,12 +109,19 @@ export const MentorStore = signalStore(
 
     loadMyProfile: rxMethod<void>(
       pipe(
-        tap(() => patchState(store, { loading: true })),
+        tap(() => patchState(store, { loading: true, error: null })),
         switchMap(() =>
           svc.getMyMentorProfile().pipe(
             tapResponse({
-              next: (res) => patchState(store, { myProfile: res.data, loading: false }),
-              error: () => patchState(store, { loading: false })
+              next: (res) => patchState(store, { myProfile: res.data, loading: false, error: null }),
+              error: (err: HttpErrorResponse) => {
+                // 404 = User doesn't have a mentor profile yet (not an error condition)
+                if (err.status === 404) {
+                  patchState(store, { myProfile: null, loading: false, error: null });
+                } else {
+                  patchState(store, { loading: false, error: err.error?.message ?? 'Failed to load profile' });
+                }
+              }
             })
           )
         )

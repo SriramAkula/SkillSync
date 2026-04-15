@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   # ─── Infrastructure Layer ──────────────────────────────────────────────────
 
@@ -25,6 +23,11 @@ services:
     networks:
       - private-network
       - proxy-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   zipkin-mysql:
     image: mysql:8.0
@@ -41,7 +44,12 @@ services:
       - ./zipkin-schema.sql:/docker-entrypoint-initdb.d/zipkin-schema.sql
     networks:
       - private-network
-    command: --default-authentication-plugin=mysql_native_password
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    command: ["--default-authentication-plugin=mysql_native_password", "--skip-log-bin"]
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 10s
@@ -63,7 +71,12 @@ services:
       - auth-db-data:/var/lib/mysql
     networks:
       - private-network
-    command: --default-authentication-plugin=mysql_native_password
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    command: ["--default-authentication-plugin=mysql_native_password", "--skip-log-bin"]
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 10s
@@ -83,7 +96,12 @@ services:
       - user-db-data:/var/lib/mysql
     networks:
       - private-network
-    command: --default-authentication-plugin=mysql_native_password
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    command: ["--default-authentication-plugin=mysql_native_password", "--skip-log-bin"]
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 10s
@@ -103,7 +121,12 @@ services:
       - skill-db-data:/var/lib/mysql
     networks:
       - private-network
-    command: --default-authentication-plugin=mysql_native_password
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    command: ["--default-authentication-plugin=mysql_native_password", "--skip-log-bin"]
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 10s
@@ -123,7 +146,12 @@ services:
       - session-db-data:/var/lib/mysql
     networks:
       - private-network
-    command: --default-authentication-plugin=mysql_native_password
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    command: ["--default-authentication-plugin=mysql_native_password", "--skip-log-bin"]
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 10s
@@ -143,7 +171,12 @@ services:
       - mentor-db-data:/var/lib/mysql
     networks:
       - private-network
-    command: --default-authentication-plugin=mysql_native_password
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    command: ["--default-authentication-plugin=mysql_native_password", "--skip-log-bin"]
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 10s
@@ -163,7 +196,12 @@ services:
       - group-db-data:/var/lib/mysql
     networks:
       - private-network
-    command: --default-authentication-plugin=mysql_native_password
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    command: ["--default-authentication-plugin=mysql_native_password", "--skip-log-bin"]
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 10s
@@ -183,7 +221,12 @@ services:
       - review-db-data:/var/lib/mysql
     networks:
       - private-network
-    command: --default-authentication-plugin=mysql_native_password
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    command: ["--default-authentication-plugin=mysql_native_password", "--skip-log-bin"]
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 10s
@@ -203,7 +246,12 @@ services:
       - notification-db-data:/var/lib/mysql
     networks:
       - private-network
-    command: --default-authentication-plugin=mysql_native_password
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    command: ["--default-authentication-plugin=mysql_native_password", "--skip-log-bin"]
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 10s
@@ -223,19 +271,56 @@ services:
       - payment-db-data:/var/lib/mysql
     networks:
       - private-network
-    command: --default-authentication-plugin=mysql_native_password
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    command: ["--default-authentication-plugin=mysql_native_password", "--skip-log-bin"]
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 10s
       timeout: 5s
       retries: 5
 
+  messaging-db:
+    image: mysql:8.0
+    container_name: messaging-db
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: skill_messaging
+      MYSQL_ROOT_HOST: ${MYSQL_ROOT_HOST}
+    volumes:
+      - messaging-db-data:/var/lib/mysql
+    networks:
+      - private-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    command: ["--default-authentication-plugin=mysql_native_password", "--skip-log-bin"]
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+
   rabbitmq:
     image: rabbitmq:3-management
     container_name: rabbitmq
     restart: unless-stopped
+    command: [ "sh", "-c", "rabbitmq-plugins enable --offline rabbitmq_stomp; rabbitmq-server" ]
     networks:
       - private-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
       interval: 10s
@@ -267,6 +352,11 @@ services:
     networks:
       - private-network
       - proxy-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   zipkin:
     image: openzipkin/zipkin:latest
@@ -307,4 +397,5 @@ volumes:
   review-db-data:
   notification-db-data:
   payment-db-data:
+  messaging-db-data:
   zipkin-mysql-data:

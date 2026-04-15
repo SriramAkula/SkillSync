@@ -1,15 +1,23 @@
+# Trigger build for Messaging Service and Frontend UI Integration
 name: SkillSync CI/CD Pipeline
 
 on:
   push:
     branches:
       - main
-      - development
-      - 'feature/**'
+      # - development
+      # - 'feature/**'
     paths:
       - 'backend/**'
       - 'frontend/**'
       - '.github/workflows/**'
+  workflow_dispatch:
+    inputs:
+      force_rebuild:
+        description: 'Force rebuild all service images (Bypass path filter)'
+        required: false
+        type: boolean
+        default: false
 
 jobs:
   # ───────────────
@@ -33,15 +41,15 @@ jobs:
               - 'backend/**'
 
       - name: Set up JDK 21
-        if: steps.filter.outputs.changed == 'true'
+        if: github.event.inputs.force_rebuild == 'true' || steps.filter.outputs.changed == 'true'
         uses: actions/setup-java@v4
         with:
           java-version: '21'
           distribution: 'temurin'
           cache: 'maven'
 
-      - name: Run Maven Verify & Sonar Scan (Aggregated)
-        if: steps.filter.outputs.changed == 'true'
+      - name: Run Maven Verify & Sonar Scan
+        if: github.event.inputs.force_rebuild == 'true' || steps.filter.outputs.changed == 'true'
         working-directory: ./backend
         run: |
           mvn clean verify sonar:sonar \
@@ -72,18 +80,18 @@ jobs:
               - 'frontend/**'
 
       - name: Setup Node.js
-        if: steps.filter.outputs.changed == 'true'
+        if: github.event.inputs.force_rebuild == 'true' || steps.filter.outputs.changed == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: '18'
 
       - name: Install Frontend Dependencies
-        if: steps.filter.outputs.changed == 'true'
+        if: github.event.inputs.force_rebuild == 'true' || steps.filter.outputs.changed == 'true'
         working-directory: ./frontend
         run: npm ci
 
       - name: Run Frontend Lint
-        if: steps.filter.outputs.changed == 'true'
+        if: github.event.inputs.force_rebuild == 'true' || steps.filter.outputs.changed == 'true'
         working-directory: ./frontend
         run: npm run lint
 
@@ -97,19 +105,10 @@ jobs:
       fail-fast: false
       matrix:
         service: [
-          "api-gateway",
-          "auth-service",
-          "user-service",
-          "skill-service",
-          "session-service",
-          "mentor-service",
-          "group-service",
-          "review-service",
-          "notification-service",
-          "payment-gateway",
-          "eureka-server",
-          "config-server",
-          "frontend"
+          "api-gateway", "auth-service", "user-service", "skill-service",
+          "session-service", "mentor-service", "group-service", "review-service",
+          "notification-service", "payment-gateway", "messaging-service",
+          "eureka-server", "config-server", "frontend"
         ]
     
     steps:
@@ -122,20 +121,19 @@ jobs:
         id: filter
         uses: dorny/paths-filter@v3
         with:
-          # Restoring specific paths for high-speed builds
           base: ${{ (github.ref_name == 'main' || github.ref_name == 'development') && (github.event.before != '0000000000000000000000000000000000000000' && github.event.before || github.ref_name) || 'development' }}
           filters: |
             changed:
               - '${{ matrix.service == 'frontend' && 'frontend/**' || format('backend/{0}/**', matrix.service) }}'
 
       - name: Azure Login
-        if: steps.filter.outputs.changed == 'true'
+        if: github.event.inputs.force_rebuild == 'true' || steps.filter.outputs.changed == 'true'
         uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
       - name: Login to ACR
-        if: steps.filter.outputs.changed == 'true'
+        if: github.event.inputs.force_rebuild == 'true' || steps.filter.outputs.changed == 'true'
         uses: azure/docker-login@v1
         with:
           login-server: ${{ secrets.ACR_LOGIN_SERVER }}
@@ -143,7 +141,7 @@ jobs:
           password: ${{ secrets.ACR_PASSWORD }}
 
       - name: Build and Push Docker Image
-        if: steps.filter.outputs.changed == 'true'
+        if: github.event.inputs.force_rebuild == 'true' || steps.filter.outputs.changed == 'true'
         uses: docker/build-push-action@v5
         with:
           context: ${{ matrix.service == 'frontend' && './frontend' || format('./backend/{0}', matrix.service) }}
@@ -153,29 +151,25 @@ jobs:
             ${{ secrets.ACR_LOGIN_SERVER }}/skillsync-${{ matrix.service }}:${{ github.sha }}
 
       - name: Cleanup Old ACR Tags
-        if: steps.filter.outputs.changed == 'true'
+        if: github.event.inputs.force_rebuild == 'true' || steps.filter.outputs.changed == 'true'
+        continue-on-error: true
         run: |
           REPO="skillsync-${{ matrix.service }}"
-          echo "Cleaning up repository: $REPO"
-          
-          # Get all tags except 'latest' and keep the 5 most recent commit tags
           TAGS_TO_DELETE=$(az acr repository show-tags -n ${{ secrets.ACR_LOGIN_SERVER_NAME }} --repository $REPO --orderby time_desc --output tsv | grep -v "latest" | tail -n +6)
-          
-          if [ -z "$TAGS_TO_DELETE" ]; then
-            echo "No old tags to delete."
-          else
+          if [ ! -z "$TAGS_TO_DELETE" ]; then
             for tag in $TAGS_TO_DELETE; do
-              echo "Deleting old tag: $tag"
               az acr repository delete -n ${{ secrets.ACR_LOGIN_SERVER_NAME }} --image $REPO:$tag --yes
             done
           fi
 
   # ───────────────
-  # JOB 2: DEPLOY
+  # JOB 3: DEPLOY
   # ───────────────
   deploy:
     needs: build-and-push
     runs-on: ubuntu-latest
+    env:
+      FORCE_REBUILD: ${{ github.event.inputs.force_rebuild }}
     steps:
       - name: SSH to Azure VM and Deploy
         uses: appleboy/ssh-action@v1.0.3
@@ -183,32 +177,61 @@ jobs:
           host: ${{ secrets.VM_IP }}
           username: ${{ secrets.VM_USER }}
           key: ${{ secrets.VM_SSH_KEY }}
+          envs: FORCE_REBUILD
           script: |
             cd /home/azureuser/SkillSync
             
-            # Ensure the proxy network exists to prevent dependency errors
+            # 1. NETWORK & INFRA PREP (CRITICAL: Must be before Compose commands)
             docker network create skillsync-proxy || true
             
-            # Ensure we have the latest .yml files
+            # 2. DISK PRE-FLIGHT CHECK
+            FREE_SPACE=$(df / --output=avail -h | tail -1 | sed "s/[^0-9.]//g")
+            echo "Current Free Space: ${FREE_SPACE}G"
+            if [ "$(echo "$FREE_SPACE < 1.0" | bc -l)" -eq 1 ]; then
+                echo "DISK PRESSURE DETECTED: Running emergency cleanup..."
+                sudo journalctl --vacuum-time=1h
+                docker system prune -af
+            fi
+
+            # 3. HEAVY CLEANUP (If explicitly requested)
+            if [ "$FORCE_REBUILD" == "true" ]; then
+                echo "FORCE REBUILD: Full system purge..."
+                sudo sh -c 'truncate -s 0 /var/lib/docker/containers/*/*-json.log' || true
+                sudo apt-get clean
+                sudo rm -rf /tmp/*
+                docker system prune -af
+            fi
+
+            # 4. CODE SYNC
+            rm -f .git/index.lock
             git fetch origin ${{ github.ref_name }}
             git reset --hard origin/${{ github.ref_name }}
             
-            # Login to ACR on the VM
+            # 5. REGISTRY LOGIN
             echo "${{ secrets.ACR_PASSWORD }}" | docker login ${{ secrets.ACR_LOGIN_SERVER }} -u ${{ secrets.ACR_USERNAME }} --password-stdin
             
-            # Pull latest images
-            docker compose -f backend/docker-compose.infra.yml -f backend/docker-compose.monitoring.yml -f backend/docker-compose.services.yml -f frontend/docker-compose.yml pull
+            # 6. PULL & DEPLOY
+            echo "Pulling latest images..."
+            docker compose -f backend/docker-compose.infra.yml \
+                           -f backend/docker-compose.monitoring.yml \
+                           -f backend/docker-compose.services.yml \
+                           -f frontend/docker-compose.yml pull
             
-            # Restart services
-            docker compose -f backend/docker-compose.infra.yml -f backend/docker-compose.monitoring.yml -f backend/docker-compose.services.yml -f frontend/docker-compose.yml up -d
+            echo "Starting containers..."
+            docker compose -f backend/docker-compose.infra.yml \
+                           -f backend/docker-compose.monitoring.yml \
+                           -f backend/docker-compose.services.yml \
+                           -f frontend/docker-compose.yml up -d --force-recreate --remove-orphans
             
-            # Re-pull and force-recreate Nginx Proxy to ensure it recovers from disk-full cleanups
-            cd /home/azureuser/nginx-proxy
-            docker compose pull
-            docker compose up -d --force-recreate
+            # 7. RECOVER GATEWAY (Nginx Proxy)
+            if [ -d "/home/azureuser/nginx-proxy" ]; then
+                cd /home/azureuser/nginx-proxy
+                docker compose up -d --force-recreate
+                cd /home/azureuser/SkillSync
+            fi
             
-            # Print running containers for debugging
+            # 8. POST-DEPLOY STATUS
             docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
-            
-            # Aggressive cleanup to prevent 29GB disk from filling up
-            docker system prune -af
+            df -h /
+            docker system prune -f
+            echo "Deployment completed successfully."

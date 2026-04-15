@@ -2,14 +2,14 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { ToastService } from '../../../../core/services/toast.service';
 import { AdminUserService, UserProfile } from '../../../../core/services/admin-user.service';
 import { ApiResponse } from '../../../../shared/models';
 
 @Component({
   selector: 'app-unblock-user-page',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatSnackBarModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './unblock-user.page.html',
   styleUrl: './unblock-user.page.scss'
 })
@@ -17,7 +17,7 @@ export class UnblockUserPage implements OnInit {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private adminUserService: AdminUserService = inject(AdminUserService);
-  private snackBar: MatSnackBar = inject(MatSnackBar);
+  private toast: ToastService = inject(ToastService);
 
   user: UserProfile | null = null;
   isLoading = false;
@@ -37,7 +37,7 @@ export class UnblockUserPage implements OnInit {
         this.isLoading = false;
       },
       error: () => {
-        this.snackBar.open('Failed to load user details', 'Close', { duration: 3000 });
+        this.toast.error('Failed to load user details');
         this.isLoading = false;
       }
     });
@@ -67,11 +67,11 @@ export class UnblockUserPage implements OnInit {
     this.isLoading = true;
     this.adminUserService.unblockUser(this.user.userId).subscribe({
       next: () => {
-        this.snackBar.open('User unblocked successfully', 'Close', { duration: 3000 });
+        this.toast.success('User unblocked successfully');
         this.goBack();
       },
       error: () => {
-        this.snackBar.open('Failed to unblock user', 'Close', { duration: 3000 });
+        this.toast.error('Failed to unblock user');
         this.isLoading = false;
       }
     });

@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <springProfile name="default,docker">
+        <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+        
+        <property name="LOG_FILE" value="logs/messaging-service.log"/>
+
+        <!-- ===== CONSOLE APPENDER ===== -->
+        <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder>
+                <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+                <charset>utf8</charset>
+            </encoder>
+        </appender>
+
+        <!-- ===== FILE APPENDER (Rolling) ===== -->
+        <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+            <file>${LOG_FILE}</file>
+            <encoder>
+                <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+                <charset>utf8</charset>
+            </encoder>
+            <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+                <fileNamePattern>logs/messaging-service-%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+                <maxFileSize>10MB</maxFileSize>
+                <maxHistory>7</maxHistory>
+            </rollingPolicy>
+        </appender>
+
+        <!-- ===== JSON STRUCTURED LOGGING FOR LOKI ===== -->
+        <appender name="LOGSTASH_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+            <file>logs/messaging-service-json.log</file>
+            <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+                <customFields>{"service":"messaging-service"}</customFields>
+            </encoder>
+            <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+                <fileNamePattern>logs/messaging-service-json-%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+                <maxFileSize>10MB</maxFileSize>
+                <maxHistory>7</maxHistory>
+            </rollingPolicy>
+        </appender>
+
+        <!-- ===== ASYNC APPENDER ===== -->
+        <appender name="ASYNC_LOGSTASH" class="ch.qos.logback.classic.AsyncAppender">
+            <queueSize>512</queueSize>
+            <discardingThreshold>0</discardingThreshold>
+            <appender-ref ref="LOGSTASH_FILE"/>
+        </appender>
+
+        <!-- ===== ROOT LOGGER ===== -->
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
+            <appender-ref ref="FILE"/>
+            <appender-ref ref="ASYNC_LOGSTASH"/>
+        </root>
+
+        <!-- ===== SERVICE LOGGERS ===== -->
+        <logger name="com.skillsync.messaging" level="DEBUG"/>
+        <logger name="com.skillsync.messaging.command" level="DEBUG"/>
+        <logger name="com.skillsync.messaging.query" level="DEBUG"/>
+        <logger name="com.skillsync.messaging.service" level="DEBUG"/>
+        <logger name="com.skillsync.messaging.controller" level="DEBUG"/>
+        <logger name="com.skillsync.messaging.event" level="DEBUG"/>
+
+        <!-- ===== FRAMEWORK LOGGERS ===== -->
+        <logger name="org.springframework" level="INFO"/>
+        <logger name="org.springframework.cloud" level="INFO"/>
+        <logger name="org.springframework.security" level="DEBUG"/>
+        <logger name="org.springframework.data" level="INFO"/>
+        <logger name="org.hibernate" level="WARN"/>
+        
+        <!-- ===== EXTERNAL LIBRARY LOGGERS ===== -->
+        <logger name="org.apache.http" level="WARN"/>
+        <logger name="io.micrometer" level="INFO"/>
+    </springProfile>
+
+    <!-- ===== DEV PROFILE ===== -->
+    <springProfile name="dev">
+        <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+        
+        <property name="LOG_FILE" value="logs/messaging-service.log"/>
+
+        <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder>
+                <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+                <charset>utf8</charset>
+            </encoder>
+        </appender>
+
+        <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+            <file>${LOG_FILE}</file>
+            <encoder>
+                <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+                <charset>utf8</charset>
+            </encoder>
+            <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+                <fileNamePattern>logs/messaging-service-%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+                <maxFileSize>10MB</maxFileSize>
+                <maxHistory>7</maxHistory>
+            </rollingPolicy>
+        </appender>
+
+        <root level="DEBUG">
+            <appender-ref ref="CONSOLE"/>
+            <appender-ref ref="FILE"/>
+        </root>
+
+        <logger name="com.skillsync.messaging" level="DEBUG"/>
+        <logger name="org.springframework" level="INFO"/>
+        <logger name="org.springframework.security" level="DEBUG"/>
+        <logger name="org.hibernate.SQL" level="DEBUG"/>
+        <logger name="org.hibernate.type.descriptor.sql.BasicBinder" level="TRACE"/>
+    </springProfile>
+
+    <!-- ===== PROD PROFILE ===== -->
+    <springProfile name="prod">
+        <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+        
+        <property name="LOG_FILE" value="logs/messaging-service.log"/>
+
+        <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder>
+                <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+                <charset>utf8</charset>
+            </encoder>
+        </appender>
+
+        <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+            <file>${LOG_FILE}</file>
+            <encoder>
+                <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+                <charset>utf8</charset>
+            </encoder>
+            <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+                <fileNamePattern>logs/messaging-service-%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+                <maxFileSize>50MB</maxFileSize>
+                <maxHistory>30</maxHistory>
+            </rollingPolicy>
+        </appender>
+
+        <!-- ===== JSON STRUCTURED LOGGING FOR LOKI ===== -->
+        <appender name="LOGSTASH_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+            <file>logs/messaging-service-json.log</file>
+            <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+                <customFields>{"service":"messaging-service","environment":"prod"}</customFields>
+            </encoder>
+            <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+                <fileNamePattern>logs/messaging-service-json-%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+                <maxFileSize>50MB</maxFileSize>
+                <maxHistory>30</maxHistory>
+            </rollingPolicy>
+        </appender>
+
+        <!-- ===== ASYNC APPENDER FOR JSON ===== -->
+        <appender name="ASYNC_LOGSTASH" class="ch.qos.logback.classic.AsyncAppender">
+            <queueSize>512</queueSize>
+            <discardingThreshold>0</discardingThreshold>
+            <appender-ref ref="LOGSTASH_FILE"/>
+        </appender>
+
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
+            <appender-ref ref="FILE"/>
+            <appender-ref ref="ASYNC_LOGSTASH"/>
+        </root>
+
+        <logger name="com.skillsync.messaging" level="INFO"/>
+        <logger name="org.springframework" level="WARN"/>
+        <logger name="org.springframework.security" level="WARN"/>
+        <logger name="org.hibernate" level="WARN"/>
+    </springProfile>
+
+    <!-- ===== TEST PROFILE ===== -->
+    <springProfile name="test">
+        <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+
+        <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+            <encoder>
+                <pattern>%d{HH:mm:ss.SSS} %-5level %logger{36} - %msg%n</pattern>
+                <charset>utf8</charset>
+            </encoder>
+        </appender>
+
+        <root level="WARN">
+            <appender-ref ref="CONSOLE"/>
+        </root>
+
+        <logger name="com.skillsync.messaging" level="DEBUG"/>
+        <logger name="org.springframework" level="WARN"/>
+    </springProfile>
+</configuration>

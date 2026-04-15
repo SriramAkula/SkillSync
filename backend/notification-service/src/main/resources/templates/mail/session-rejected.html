@@ -10,7 +10,7 @@
             <p style="margin: 10px 0 0 0; color: #b91c1c; font-style: italic;" th:text="${reason}">Reason not specified.</p>
         </div>
         <p>You can browse other sessions or mentors available on SkillSync.</p>
-        <a href="http://localhost:3000/mentors" class="button" style="background-color: #ef4444;">Browse Mentors</a>
+        <a th:href="${frontendUrl} + '/mentors'" class="button" style="background-color: #ef4444;">Browse Mentors</a>
     </div>
 </body>
 </html>

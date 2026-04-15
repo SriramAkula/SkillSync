@@ -6,7 +6,8 @@ import { ToastService } from '../../services/toast.service';
   selector: 'app-toast',
   standalone: true,
   imports: [CommonModule],
-  templateUrl: './toast.component.html'
+  templateUrl: './toast.component.html',
+  styleUrl: './toast.component.scss'
 })
 export class ToastComponent {
   toastService = inject(ToastService);

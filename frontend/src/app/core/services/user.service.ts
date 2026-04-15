@@ -43,6 +43,10 @@ export class UserService {
     );
   }
 
+  checkUsernameAvailability(username: string): Observable<ApiResponse<boolean>> {
+    return this.http.get<ApiResponse<boolean>>(`${this.base}/exists/${username}`);
+  }
+
   getProfile(userId: number): Observable<ApiResponse<UserProfileDto>> {
     return this.http.get<ApiResponse<UserProfileDto>>(`${this.base}/profile/${userId}`, { headers: NO_CACHE_HEADERS }).pipe(
       map(res => {

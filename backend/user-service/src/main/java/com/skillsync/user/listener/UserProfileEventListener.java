@@ -44,8 +44,10 @@ public class UserProfileEventListener {
             UserProfile userProfile = new UserProfile();
             userProfile.setUserId(event.getUserId());
             userProfile.setEmail(event.getEmail());
-            userProfile.setName(event.getName());  // Can be null initially - to be filled when user updates profile
-            userProfile.setProfileComplete(false);  // Profile is not complete until user adds name and skills
+            userProfile.setUsername(event.getUsername());
+            userProfile.setName(event.getName());
+            userProfile.setRole(event.getRole());
+            userProfile.setProfileComplete(event.getName() != null && !event.getName().trim().isEmpty());
             userProfile.setRating(0.0);
             userProfile.setTotalReviews(0);
 

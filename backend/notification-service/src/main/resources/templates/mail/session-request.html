@@ -10,7 +10,7 @@
             <p style="margin: 10px 0 0 0;"><strong>Duration:</strong> <span th:text="${durationMinutes}">60</span> minutes</p>
         </div>
         <p>Please log in to your dashboard to accept or reject this request.</p>
-        <a href="http://localhost:3000/dashboard" class="button">View Dashboard</a>
+        <a th:href="${frontendUrl} + '/dashboard'" class="button">View Dashboard</a>
     </div>
 </body>
 </html>

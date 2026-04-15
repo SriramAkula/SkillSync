@@ -40,4 +40,11 @@ export class SessionCardComponent {
   }
 
   get s() { return STATUS_MAP[this.session.status] ?? STATUS_MAP['CANCELLED']; }
+  
+  get scheduledAtUtc(): string {
+    if (!this.session.scheduledAt) return '';
+    return this.session.scheduledAt.endsWith('Z') || this.session.scheduledAt.includes('+') 
+      ? this.session.scheduledAt 
+      : this.session.scheduledAt + 'Z';
+  }
 }

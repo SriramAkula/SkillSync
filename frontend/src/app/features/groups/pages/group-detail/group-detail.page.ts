@@ -2,8 +2,8 @@ import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { GroupService } from '../../../../core/services/group.service';
+import { ToastService } from '../../../../core/services/toast.service';
 import { AuthStore } from '../../../../core/auth/auth.store';
 import { SkillStore } from '../../../../core/auth/skill.store';
 import { GroupDto } from '../../../../shared/models';
@@ -11,14 +11,14 @@ import { GroupDto } from '../../../../shared/models';
 @Component({
   selector: 'app-group-detail-page',
   standalone: true,
-  imports: [CommonModule, MatProgressSpinnerModule, MatSnackBarModule],
+  imports: [CommonModule, MatProgressSpinnerModule],
   templateUrl: './group-detail.page.html',
   styleUrl: './group-detail.page.scss'
 })
 export class GroupDetailPage implements OnInit {
   private readonly groupService = inject(GroupService);
   private readonly route = inject(ActivatedRoute);
-  private readonly snack = inject(MatSnackBar);
+  private readonly toast = inject(ToastService);
   readonly authStore = inject(AuthStore);
   readonly skillStore = inject(SkillStore);
   readonly router = inject(Router);
@@ -64,22 +64,22 @@ export class GroupDetailPage implements OnInit {
 
   join(id: number): void {
     this.groupService.joinGroup(id).subscribe({
-      next: (r) => { this.group.set(r.data); this.snack.open('Joined group!', 'OK', { duration: 3000 }); },
-      error: (e) => this.snack.open(e.error?.message ?? 'Failed to join', 'OK', { duration: 3000 })
+      next: (r) => { this.group.set(r.data); this.toast.success('Joined group!'); },
+      error: (e) => this.toast.error(e.error?.message ?? 'Failed to join')
     });
   }
 
   leave(id: number): void {
     this.groupService.leaveGroup(id).subscribe({
-      next: (r) => { this.group.set(r.data); this.snack.open('Left group.', 'OK', { duration: 3000 }); },
-      error: (e) => this.snack.open(e.error?.message ?? 'Failed to leave', 'OK', { duration: 3000 })
+      next: (r) => { this.group.set(r.data); this.toast.success('Left group.'); },
+      error: (e) => this.toast.error(e.error?.message ?? 'Failed to leave')
     });
   }
 
   deleteGroup(id: number): void {
     this.groupService.deleteGroup(id).subscribe({
-      next: () => { this.snack.open('Group deleted.', 'OK', { duration: 3000 }); this.router.navigate(['/groups']); },
-      error: (e) => this.snack.open(e.error?.message ?? 'Failed to delete', 'OK', { duration: 3000 })
+      next: () => { this.toast.success('Group deleted.'); this.router.navigate(['/groups']); },
+      error: (e) => this.toast.error(e.error?.message ?? 'Failed to delete')
     });
   }
 }

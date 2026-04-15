@@ -13,6 +13,7 @@ import com.skillsync.notification.event.ReviewSubmittedEvent;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Value;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 import lombok.extern.slf4j.Slf4j;
@@ -31,12 +32,16 @@ public class EmailService {
     private final UserServiceClient userServiceClient;
     private final MentorServiceClient mentorServiceClient;
 
+    @Value("${app.frontend.url:https://skillssync.me}")
+    private String frontendUrl;
+
     private void sendHtmlEmail(String to, String subject, String templateName, Context context) {
         try {
             MimeMessage mimeMessage = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
             
             // Set the main layout template and the content fragment
+            context.setVariable("frontendUrl", frontendUrl);
             context.setVariable("template", templateName);
             String htmlContent = templateEngine.process("base-layout", context);
             

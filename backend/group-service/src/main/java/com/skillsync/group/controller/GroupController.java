@@ -48,9 +48,9 @@ public class GroupController {
             @Parameter(hidden = true) @RequestHeader(value = "roles", required = false) String roles,
             @Valid @RequestBody CreateGroupRequestDto request) {
 
-        if (roles == null || (!roles.contains("ROLE_MENTOR") && !roles.contains("ROLE_ADMIN"))) {
+        if (roles == null || (!roles.contains("ROLE_MENTOR") && !roles.contains("ROLE_ADMIN") && !roles.contains("ROLE_LEARNER"))) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN,
-                    "Only mentors and admins can create learning groups.");
+                    "Only learners, mentors and admins can create learning groups.");
         }
         log.info("POST / - User {} creating group", creatorId);
         GroupResponseDto response = groupService.createGroup(creatorId, request);
@@ -165,14 +165,17 @@ public class GroupController {
     })
     public ResponseEntity<ApiResponse<GroupResponseDto>> deleteGroup(
             @PathVariable Long groupId,
-            @Parameter(hidden = true) @RequestHeader("X-User-Id") Long creatorId,
+            @Parameter(hidden = true) @RequestHeader("X-User-Id") Long userId,
             @Parameter(hidden = true) @RequestHeader(value = "roles", required = false) String roles) {
 
-        if (roles == null || (!roles.contains("ROLE_MENTOR") && !roles.contains("ROLE_ADMIN"))) {
+        boolean isAdmin = roles != null && roles.contains("ROLE_ADMIN");
+        boolean isMentorOrLearner = roles != null && (roles.contains("ROLE_MENTOR") || roles.contains("ROLE_LEARNER"));
+
+        if (!isAdmin && !isMentorOrLearner) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Access denied.");
         }
-        log.info("DELETE /{} - Creator {} deleting group", groupId, creatorId);
-        groupService.deleteGroup(groupId, creatorId);
+        log.info("DELETE /{} - User {} (isAdmin={}) deleting group", groupId, userId, isAdmin);
+        groupService.deleteGroup(groupId, userId, isAdmin);
         return ResponseEntity.ok(ApiResponse.<GroupResponseDto>builder()
                 .success(true)
                 .message("Group deleted successfully")

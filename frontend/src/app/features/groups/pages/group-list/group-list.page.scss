@@ -108,6 +108,11 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
   flex-wrap: wrap;
 
+  &:host-context(.dark) & {
+    background: rgba(15, 23, 42, 0.6);
+    border-color: #334155;
+  }
+
   @media (min-width: 640px) {
     flex-wrap: nowrap;
     padding: 0.75rem 1rem;
@@ -122,6 +127,10 @@
   gap: 0.625rem;
   border-right: 1px solid #f3f4f6;
   padding-right: 0.75rem;
+
+  &:host-context(.dark) & {
+    border-color: #1e293b;
+  }
 
   @media (min-width: 640px) {
     min-width: auto;
@@ -158,6 +167,15 @@
 
   &:disabled {
     cursor: not-allowed;
+  }
+}
+
+:host-context(.dark) .search-select {
+  color: #f1f5f9;
+  
+  option {
+    background-color: #0f172a;
+    color: #f1f5f9;
   }
 }
 
@@ -333,6 +351,16 @@
     box-shadow: 0 8px 24px rgba(79, 70, 229, 0.1);
     border-color: #c7d2fe;
   }
+
+  &:host-context(.dark) & {
+    background: rgba(15, 23, 42, 0.4);
+    border-color: #1e293b;
+
+    &:hover {
+      background: rgba(30, 41, 59, 0.6);
+      border-color: #4f46e5;
+    }
+  }
 }
 
 .group-top {
@@ -385,6 +413,11 @@
   }
 }
 
+:host-context(.dark) .group-info {
+  h3 { color: #f1f5f9; }
+  p { color: #64748b; }
+}
+
 .member-badge {
   display: flex;
   align-items: center;
@@ -418,6 +451,10 @@
   overflow: hidden;
 }
 
+:host-context(.dark) .group-desc {
+  color: #94a3b8;
+}
+
 .spots-row {
   display: flex;
   flex-direction: column;
@@ -429,6 +466,10 @@
   background: #e5e7eb;
   border-radius: 3px;
   overflow: hidden;
+}
+
+:host-context(.dark) .capacity-bar {
+  background: #1e293b;
 }
 
 .capacity-fill {
@@ -506,6 +547,11 @@
   }
 }
 
+:host-context(.dark) .creator-badge {
+  background: rgba(245, 158, 11, 0.1);
+  color: #fbbf24;
+}
+
 .btn-delete {
   margin-left: auto;
   width: 34px;
@@ -550,6 +596,40 @@
 
   .material-icons {
     font-size: 15px;
+  }
+}
+
+.btn-chat {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  height: 34px;
+  padding: 0 14px;
+  border-radius: 8px;
+  background: #ecfdf5;
+  color: #059669;
+  border: none;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+
+  &:hover {
+    background: #d1fae5;
+    transform: translateY(-1px);
+  }
+
+  .material-icons {
+    font-size: 15px;
+  }
+
+  &:host-context(.dark) & {
+    background: rgba(16, 185, 129, 0.1);
+    color: #10b981;
+
+    &:hover {
+      background: rgba(16, 185, 129, 0.2);
+    }
   }
 }
 

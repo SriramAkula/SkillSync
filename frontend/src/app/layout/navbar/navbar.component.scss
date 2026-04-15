@@ -13,6 +13,30 @@
   animation: drop-in 0.2s cubic-bezier(0, 0, 0.2, 1);
 }
 
+/* Premium Navbar Glassmorphism */
+.navbar-glass {
+  backdrop-filter: blur(12px);
+  background: rgba(255, 255, 255, 0.7); // Light mode default
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.8);
+  }
+}
+
+:host-context(.dark) {
+  .navbar-glass {
+    background: linear-gradient(135deg, rgba(124, 58, 237, 0.15) 0%, rgba(139, 92, 246, 0.15) 50%, rgba(167, 139, 250, 0.08) 100%);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1), inset 0 1px 1px rgba(255, 255, 255, 0.2);
+
+    &:hover {
+      background: linear-gradient(135deg, rgba(124, 58, 237, 0.2) 0%, rgba(139, 92, 246, 0.2) 50%, rgba(167, 139, 250, 0.12) 100%);
+    }
+  }
+}
+
 :host ::ng-deep .active {
   color: #7c3aed !important;
 }

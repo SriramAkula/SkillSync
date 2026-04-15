@@ -1,1 +1,13 @@
+<app-toast></app-toast>
+
 <router-outlet />
+
+@if (chatConfig$ | async; as config) {
+  <app-chat-drawer 
+    [isOpen]="config.isOpen"
+    [title]="config.title"
+    [recipientId]="config.recipientId"
+    [groupId]="config.groupId"
+    (closeDrawer)="closeChat()"
+  ></app-chat-drawer>
+}

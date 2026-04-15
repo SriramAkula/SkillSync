@@ -37,7 +37,12 @@
   <!-- Notifications List -->
   <main class="notifications-list">
     @for (n of notifStore.notifications(); track n.id) {
-      <div class="notif-card" [class.unread]="!n.isRead">
+      <div class="notif-card" 
+           [class.unread]="!n.isRead" 
+           (click)="onNotifClick(n)" 
+           (keyup.enter)="onNotifClick(n)"
+           tabindex="0"
+           style="cursor: pointer;">
         <div class="notif-icon-wrap" [ngClass]="notifIcon(n.type).class">
           <span class="material-icons">{{ notifIcon(n.type).icon }}</span>
         </div>
@@ -45,9 +50,9 @@
         <div class="notif-content">
           <div class="notif-header">
             <span class="notif-type">{{ n.type.replace('_', ' ') }}</span>
-            <span class="notif-time">{{ n.createdAt | date:'shortTime' }}</span>
+            <span class="notif-time">{{ n.createdAt | date:'h:mm a' }}</span>
           </div>
-          <p class="notif-message">{{ n.message }}</p>
+          <p class="notif-message">{{ formatMessage(n.message) }}</p>
           <span class="notif-date">{{ n.createdAt | date:'longDate' }}</span>
         </div>
 

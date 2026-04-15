@@ -54,6 +54,23 @@ public class GlobalExceptionHandler {
 			.body(error);
 	}
 
+	@ExceptionHandler(UsernameAlreadyExistsException.class)
+	public ResponseEntity<ErrorResponse> handleUsernameAlreadyExistsException(UsernameAlreadyExistsException ex) {
+		log.error("Username already exists: {}", ex.getMessage());
+
+		ErrorResponse error = new ErrorResponse(
+			HttpStatus.CONFLICT.value(),
+			ex.getMessage(),
+			LocalDateTime.now(),
+			null,
+			"USERNAME_ALREADY_EXISTS"
+		);
+
+		return ResponseEntity
+			.status(HttpStatus.CONFLICT)
+			.body(error);
+	}
+
 	@ExceptionHandler(UnauthorizedException.class)
 	public ResponseEntity<ErrorResponse> handleUnauthorizedException(UnauthorizedException ex) {
 		log.error("Unauthorized: {}", ex.getMessage());

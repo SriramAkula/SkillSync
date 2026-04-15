@@ -32,6 +32,7 @@ export class SidebarComponent {
     // --- Personal / Interaction ---
     { label: 'My Sessions', icon: 'event_note', route: '/sessions', roles: ['ROLE_LEARNER'] },
     { label: 'Notifications', icon: 'notifications_none', route: '/notifications' },
+    { label: 'Messages', icon: 'chat_bubble_outline', route: '/messages', excludeRoles: ['ROLE_ADMIN'] },
     { label: 'Profile', icon: 'person_outline', route: '/profile', excludeRoles: ['ROLE_ADMIN'] },
     
     // --- Mentor Specific ---

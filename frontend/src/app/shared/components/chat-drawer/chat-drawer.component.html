@@ -1,0 +1,47 @@
+<div class="chat-drawer" [class.open]="isOpen">
+  <!-- Header -->
+  <div class="chat-header">
+    <h3>{{ title }}</h3>
+    <button class="close-btn" (click)="onClose()">
+      <i class="fas fa-times"></i>
+    </button>
+  </div>
+
+  <!-- Messages -->
+  <div class="chat-body" #scrollContainer>
+    @for (msg of (messages$ | async); track msg.id || msg.timestamp) {
+      <div class="message-wrapper" [class.sent]="msg.senderId === currentUserId">
+        <div class="message-bubble">
+          <p class="content">{{ msg.content }}</p>
+          <span class="time">{{ (msg.createdAt || msg.timestamp) | date:'h:mm a' }}</span>
+        </div>
+      </div>
+    }
+    
+    @if ((messages$ | async)?.length === 0) {
+      <div class="empty-state">
+        <i class="far fa-comments"></i>
+        <p>No messages yet. Say hello!</p>
+      </div>
+    }
+  </div>
+
+  <!-- Input -->
+  <div class="chat-footer">
+    <input 
+      type="text" 
+      [(ngModel)]="newMessage" 
+      (keyup.enter)="sendMessage()" 
+      placeholder="Type a message..."
+      class="message-input"
+    />
+    <button class="send-btn" (click)="sendMessage()" [disabled]="!newMessage.trim() || (connected$ | async) === false">
+      <i class="fas fa-paper-plane"></i>
+    </button>
+  </div>
+</div>
+
+<!-- Backdrop -->
+@if (isOpen) {
+  <div class="chat-backdrop" (click)="onClose()" (keyup.escape)="onClose()" role="button" tabindex="0" aria-label="Close Chat"></div>
+}
