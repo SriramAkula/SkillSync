@@ -32,6 +32,8 @@ public class PaymentSagaMapper {
         response.setLearnerId(saga.getLearnerId());
         response.setMentorId(saga.getMentorId());
         response.setAmount(saga.getAmount());
+        response.setHourlyRate(saga.getHourlyRate());
+        response.setDurationMinutes(saga.getDurationMinutes());
         response.setStatus(saga.getStatus());
         response.setPaymentReference(saga.getPaymentReference());
         response.setRefundReference(saga.getRefundReference());

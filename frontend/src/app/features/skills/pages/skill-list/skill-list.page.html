@@ -66,7 +66,7 @@
       @for (skill of pagedSkills(); track skill.id) {
         <div class="skill-card" 
              (click)="selectSkill(skill)" (keyup.enter)="selectSkill(skill)"
-             tabindex="0" role="button" [aria-label]="'View details for ' + skill.skillName">
+             tabindex="0" role="button" [attr.aria-label]="'View details for ' + skill.skillName">
           <!-- ... existing skill card content ... -->
           <div class="skill-top">
             <div class="skill-icon">{{ skill.skillName[0].toUpperCase() }}</div>
@@ -147,7 +147,7 @@
          tabindex="0" role="button" aria-label="Close details drawer">
       <div class="drawer" 
            (click)="$event.stopPropagation()" (keyup.enter)="$event.stopPropagation()"
-           tabindex="0" role="dialog" aria-modal="true" [aria-label]="selectedSkill()!.skillName + ' Details'">
+           tabindex="0" role="dialog" aria-modal="true" [attr.aria-label]="selectedSkill()!.skillName + ' Details'">
         <div class="drawer-header">
           <div class="drawer-icon">{{ selectedSkill()!.skillName[0].toUpperCase() }}</div>
           <div>
@@ -203,7 +203,7 @@
          tabindex="0" role="button" aria-label="Close modal">
       <div class="modal-card" 
            (click)="$event.stopPropagation()" (keyup.enter)="$event.stopPropagation()"
-           tabindex="0" role="dialog" aria-modal="true" [aria-label]="editingSkill() ? 'Edit Skill' : 'Add New Skill'">
+           tabindex="0" role="dialog" aria-modal="true" [attr.aria-label]="editingSkill() ? 'Edit Skill' : 'Add New Skill'">
         <div class="modal-header">
           <h3>{{ editingSkill() ? 'Edit Skill' : 'Add New Skill' }}</h3>
           <button class="modal-close" (click)="showForm.set(false)">

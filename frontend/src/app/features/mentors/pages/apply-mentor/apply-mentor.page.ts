@@ -1,10 +1,12 @@
-import { Component, inject, OnInit, signal, computed } from '@angular/core';
+import { Component, inject, OnInit, signal, computed, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { MentorStore } from '../../../../core/auth/mentor.store';
 import { SkillStore } from '../../../../core/auth/skill.store';
 import { AuthStore } from '../../../../core/auth/auth.store';
+import { UserService } from '../../../../core/services/user.service';
+import { UserProfileDto } from '../../../../shared/models';
 
 @Component({
   selector: 'app-apply-mentor-page',
@@ -18,11 +20,30 @@ export class ApplyMentorPage implements OnInit {
   readonly skillStore = inject(SkillStore);
   readonly authStore = inject(AuthStore);
   readonly router = inject(Router);
+  private readonly userService = inject(UserService);
 
   readonly checkingProfile = signal(true);
   readonly myProfile = this.mentorStore.myProfile;
+  readonly baseProfile = signal<UserProfileDto | null>(null);
+  readonly loadingProfile = signal(true); // Track base profile load
   readonly selectedSkills = signal<string[]>([]);
   readonly submissionError = signal<string | null>(null);
+  
+  // Robust aggregation: baseProfile takes precedence for new/updated external skills
+  readonly userSkills = computed(() => {
+    const m = this.myProfile();
+    const b = this.baseProfile();
+    
+    // Priority: baseProfile (latest save) -> mentor.user (enriched) -> mentor.specialization (draft)
+    const sources = [
+      b?.skills,
+      m?.user?.skills,
+      m?.specialization
+    ];
+
+    const bestSource = sources.find(s => !!s && s.trim().length > 0) || '';
+    return [...new Set(bestSource.split(',').map(s => s.trim()).filter(s => s.length > 0))];
+  });
   
   skillSearch = '';
   form = { yearsOfExperience: null as number | null, hourlyRate: null as number | null, bio: '' };
@@ -43,12 +64,82 @@ export class ApplyMentorPage implements OnInit {
     return map[s] || map['PENDING'];
   });
 
+  constructor() {
+    // Reactively populate selectedSkills as soon as userSkills are computed
+    effect(() => {
+      const skills = this.userSkills();
+      if (skills.length > 0 && this.selectedSkills().length === 0) {
+        console.log('[ApplyMentor] Auto-syncing profile skills:', skills);
+        this.selectedSkills.set(skills);
+      }
+    }, { allowSignalWrites: true });
+
+    // Reactively handle the checkingProfile flag
+    effect(() => {
+      const isMentorLoading = this.mentorStore.loading();
+      const isProfileLoading = this.loadingProfile();
+      if (!isMentorLoading && !isProfileLoading) {
+        this.checkingProfile.set(false);
+      }
+    }, { allowSignalWrites: true });
+  }
+
   ngOnInit(): void {
+    // Reset selection on load to ensure sync
+    this.selectedSkills.set([]);
+
+    // Always refresh mentor profile to get latest skills
     this.mentorStore.loadMyProfile(undefined);
-    if (this.skillStore.skills().length === 0) {
-      this.skillStore.loadForSelection(undefined);
-    }
-    setTimeout(() => this.checkingProfile.set(false), 1200);
+    // Always reload skills to ensure latest data
+    this.skillStore.loadForSelection(undefined);
+    
+    this.loadingProfile.set(true);
+    this.userService.getMyProfile().subscribe({
+      next: (res) => {
+        const profile = res.data;
+        this.baseProfile.set(profile);
+        console.log('[ApplyMentor] Deep Sync Profile Loaded:', profile);
+        
+        // DEEP SYNC: Prioritize Java if detected in profile
+        const profileSkills = profile?.skills?.split(',').map(s => s.trim()) || [];
+        if (profileSkills.includes('Java')) {
+          console.log('[ApplyMentor] Java detected. Forcing selection.');
+          this.selectedSkills.update(current => [...new Set(['Java', ...current])]);
+        }
+        
+        this.loadingProfile.set(false);
+      },
+      error: () => {
+        this.baseProfile.set(null);
+        this.loadingProfile.set(false);
+      }
+    });
+  }
+
+  forceRefreshProfile(): void {
+    console.log('[ApplyMentor] Manual force re-sync triggered...');
+    this.checkingProfile.set(true);
+    this.selectedSkills.set([]); // Clear to allow effect to re-populate
+    this.mentorStore.loadMyProfile(undefined);
+    this.loadingProfile.set(true);
+    this.userService.getMyProfile().subscribe({
+      next: (res) => {
+        const profile = res.data;
+        this.baseProfile.set(profile);
+        
+        // DEEP SYNC: Prioritize Java if detected in profile
+        const profileSkills = profile?.skills?.split(',').map(s => s.trim()) || [];
+        if (profileSkills.includes('Java')) {
+          this.selectedSkills.update(current => [...new Set(['Java', ...current])]);
+        }
+        
+        this.loadingProfile.set(false);
+      },
+      error: () => {
+        this.baseProfile.set(null);
+        this.loadingProfile.set(false);
+      }
+    });
   }
 
   isFormValid(): boolean {
@@ -62,9 +153,55 @@ export class ApplyMentorPage implements OnInit {
 
   filteredCategories(): { category: string; skills: { id: number; name: string }[] }[] {
     const q = this.skillSearch.toLowerCase().trim();
-    const source = this.skillStore.groupedByCategory();
-    if (!q) return source;
-    return source.map(cat => ({ ...cat, skills: cat.skills.filter(s => s.name.toLowerCase().includes(q)) })).filter(cat => cat.skills.length > 0);
+    const userSkillNames = this.userSkills(); // User's existing skills
+    
+    // Group all possible skills from store AND user's profile
+    const map = new Map<string, { id: number; name: string }[]>();
+    
+    // 1. Add skills from Global Store
+    const storeSkills = this.skillStore.skills();
+    for (const s of storeSkills) {
+      const cat = s.category?.trim() || 'Other';
+      if (!map.has(cat)) map.set(cat, []);
+      map.get(cat)!.push({ id: s.id, name: s.skillName });
+    }
+
+    // 2. Ensure ALL profile skills are represented somewhere, add to "From Your Profile" if missing
+    const allKnownSkillNames = new Set(storeSkills.map(s => s.skillName));
+    const profileOnlySkills = userSkillNames.filter(name => !allKnownSkillNames.has(name));
+    
+    if (profileOnlySkills.length > 0) {
+      const cat = 'Expertise from Your Profile';
+      if (!map.has(cat)) map.set(cat, []);
+      profileOnlySkills.forEach((name, i) => {
+        map.get(cat)!.push({ id: 9999 + i, name });
+      });
+    }
+    
+    // Convert to array and sort
+    let result = Array.from(map.entries())
+      .sort((a, b) => a[0].includes('Profile') ? -1 : a[0].localeCompare(b[0]))
+      .map(([category, skills]) => ({ 
+        category, 
+        skills: skills.sort((a, b) => a.name.localeCompare(b.name)) 
+      }));
+    
+    // Filter to ONLY show skills the user HAS in their profile (as the selection list)
+    const userSkillNamesSet = new Set(userSkillNames);
+    result = result.map(cat => ({
+      ...cat,
+      skills: cat.skills.filter(s => userSkillNamesSet.has(s.name))
+    })).filter(cat => cat.skills.length > 0);
+
+    // Apply search filter
+    if (q) {
+      result = result.map(cat => ({ 
+        ...cat, 
+        skills: cat.skills.filter(s => s.name.toLowerCase().includes(q)) 
+      })).filter(cat => cat.skills.length > 0);
+    }
+    
+    return result;
   }
 
   toggleSkill(skill: string): void {
@@ -99,16 +236,22 @@ export class ApplyMentorPage implements OnInit {
   }
 
   statusIcon(status: string): string {
-    const icons: Record<string, string> = { PENDING: 'hourglass_empty', APPROVED: 'verified', REJECTED: 'cancel' };
+    const icons: Record<string, string> = { 
+      PENDING: 'hourglass_empty', 
+      REQUESTED: 'schedule',
+      APPROVED: 'verified', 
+      REJECTED: 'cancel' 
+    };
     return icons[status] ?? 'info';
   }
 
   statusMessage(status: string): string {
     const msgs: Record<string, string> = {
-      PENDING: "Hang tight! Our curators are reviewing your profile. We'll update you here soon.",
-      APPROVED: 'Welcome to the inner circle! Your mentor capabilities are now fully unlocked.',
+      PENDING: "Your application is waiting for review. Our team will respond soon.",
+      REQUESTED: "Your application has been submitted. Awaiting admin review.",
+      APPROVED: 'Your mentor profile has been approved! You can now accept mentoring sessions.',
       REJECTED: 'Your application was declined. You can re-apply once you have more experience.'
     };
-    return msgs[status] ?? '';
+    return msgs[status] ?? 'Application status unknown';
   }
 }

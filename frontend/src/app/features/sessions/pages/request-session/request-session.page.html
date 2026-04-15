@@ -19,18 +19,18 @@
       @if (mentorStore.selected(); as mentor) {
         <div class="glass-card p-8 border border-white/40 shadow-2xl space-y-8 animate-drop-in dark:border-white/10">
           <div class="flex flex-col items-center text-center space-y-4">
-             <div class="w-24 h-24 bg-gradient-to-br from-primary-500 to-indigo-600 rounded-[2.5rem] p-1 shadow-xl">
-                <div class="w-full h-full bg-white rounded-[2.3rem] flex items-center justify-center overflow-hidden dark:bg-slate-950">
-                   @if (mentor.profileImageUrl) {
-                     <img [src]="mentor.profileImageUrl" [alt]="(mentor.name || mentor.username) + ' Profile'" class="w-full h-full object-cover">
+             <div class="w-24 h-24 bg-gradient-to-br from-primary-600 to-indigo-700 rounded-2xl p-0.5 shadow-2xl">
+                <div class="w-full h-full bg-slate-100 rounded-[0.9rem] flex items-center justify-center overflow-hidden dark:bg-slate-900 border border-white/10">
+                   @if (mentor.user?.avatarUrl || mentor.profileImageUrl) {
+                     <img [src]="mentor.user?.avatarUrl || mentor.profileImageUrl" [alt]="mentorName() + ' Profile'" class="w-full h-full object-cover">
                    } @else {
-                     <span class="text-3xl font-extrabold text-primary-600">{{ mentorInitials() }}</span>
+                     <span class="text-3xl font-black bg-gradient-to-br from-primary-600 to-indigo-600 bg-clip-text text-transparent">{{ mentorInitials() }}</span>
                    }
                 </div>
              </div>
              <div>
-                <h3 class="text-xl font-extrabold text-slate-900 tracking-tight dark:text-white">{{ mentor.name || mentor.username }}</h3>
-                <p class="text-xs font-bold text-primary-600 uppercase tracking-widest mt-1 dark:text-primary-400">{{ mentor.specialization }}</p>
+                <h3 class="text-xl font-black text-slate-900 tracking-tight dark:text-white leading-tight">{{ mentorName() }}</h3>
+                <p class="text-[10px] font-extrabold text-primary-600 uppercase tracking-[0.2em] mt-2 dark:text-primary-400 opacity-80">{{ mentor.specialization }}</p>
              </div>
           </div>
 
@@ -49,9 +49,9 @@
              </div>
           </div>
 
-          <div class="p-4 bg-emerald-50 rounded-2xl flex items-center gap-3 dark:bg-emerald-950/30">
+          <div class="p-4 bg-emerald-50 dark:bg-emerald-950/20 rounded-2xl border border-emerald-100 dark:border-emerald-900/50 flex items-center gap-3">
              <span class="material-icons text-emerald-500 text-sm dark:text-emerald-400">security</span>
-             <p class="text-[9px] font-bold text-emerald-700 uppercase tracking-[0.15em] leading-tight dark:text-emerald-300">Secure Payment: You'll only be charged after the mentor accepts the session.</p>
+             <p class="text-[9px] font-bold text-emerald-700 dark:text-emerald-300 uppercase tracking-[0.15em] leading-tight">Secure Payment: You'll only be charged after the mentor accepts the session.</p>
           </div>
         </div>
       } @else {

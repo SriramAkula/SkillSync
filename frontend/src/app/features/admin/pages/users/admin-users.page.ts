@@ -3,8 +3,8 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { ToastService } from '../../../../core/services/toast.service';
 import { AdminUserService, UserProfile, PagedResponse } from '../../../../core/services/admin-user.service';
 import { BlockUserDialogComponent } from './block-user-dialog.component';
 import { ConfirmDialogComponent } from './confirm-dialog.component';
@@ -12,14 +12,14 @@ import { ConfirmDialogComponent } from './confirm-dialog.component';
 @Component({
   selector: 'app-admin-users-page',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatProgressSpinnerModule, MatSnackBarModule, MatDialogModule, BlockUserDialogComponent, ConfirmDialogComponent],
+  imports: [CommonModule, FormsModule, MatProgressSpinnerModule, MatDialogModule, BlockUserDialogComponent, ConfirmDialogComponent],
   templateUrl: './admin-users.page.html',
   styleUrl: './admin-users.page.scss'
 })
 export class AdminUsersPage implements OnInit {
   
   private adminUserService = inject(AdminUserService);
-  private snackBar = inject(MatSnackBar);
+  private toast = inject(ToastService);
   private dialog = inject(MatDialog);
   private router = inject(Router);
 
@@ -69,7 +69,7 @@ export class AdminUsersPage implements OnInit {
         this.loading.set(false);
       },
       error: () => {
-        this.snackBar.open('Failed to load users', 'Close', { duration: 3000 });
+        this.toast.error('Failed to load users');
         this.loading.set(false);
       }
     });
@@ -84,7 +84,7 @@ export class AdminUsersPage implements OnInit {
         this.loading.set(false);
       },
       error: () => {
-        this.snackBar.open('Failed to load blocked users', 'Close', { duration: 3000 });
+        this.toast.error('Failed to load blocked users');
         this.loading.set(false);
       }
     });

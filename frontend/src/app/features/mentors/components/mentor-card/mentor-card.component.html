@@ -14,11 +14,15 @@
     <div class="stats">
       <div class="stat">
         <span class="material-icons stat-icon">star</span>
-        <span class="stat-val">{{ overrideRating !== undefined ? (overrideRating | number:'1.1-1') : (mentor.rating | number:'1.1-1') }}</span>
+        <span class="stat-val">
+          {{ (enrichedRating() !== null ? enrichedRating() : (overrideRating !== undefined ? overrideRating : mentor.rating)) | number:'1.1-1' }}
+        </span>
       </div>
       <div class="stat">
-        <span class="material-icons stat-icon">people</span>
-        <span class="stat-val">{{ overrideLearnersCount !== undefined ? overrideLearnersCount : mentor.totalStudents }}</span>
+        <span class="material-icons stat-icon">reviews</span>
+        <span class="stat-val">
+          {{ enrichedReviewCount() !== null ? enrichedReviewCount() : (overrideLearnersCount !== undefined ? overrideLearnersCount : mentor.totalStudents) }}
+        </span>
       </div>
       <div class="stat">
         <span class="material-icons stat-icon">payments</span>
@@ -40,8 +44,11 @@
               [disabled]="mentor.availabilityStatus !== 'AVAILABLE'">
         Book Session
       </button>
-      <button class="btn-view" (click)="$event.stopPropagation(); view.emit(mentor.userId)">
-        View Profile
+      <button class="btn-view" (click)="$event.stopPropagation(); view.emit(mentor.userId)" title="View Profile">
+        View
+      </button>
+      <button class="btn-chat" (click)="$event.stopPropagation(); openChat()" title="Send Message">
+        <span class="material-icons">chat</span>
       </button>
     }
   </div>

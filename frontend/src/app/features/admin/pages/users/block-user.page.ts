@@ -2,9 +2,9 @@ import { Component, OnInit, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatButtonModule } from '@angular/material/button';
+import { ToastService } from '../../../../core/services/toast.service';
 import { AdminUserService, UserProfile } from '../../../../core/services/admin-user.service';
 import { ApiResponse } from '../../../../shared/models';
 import { trigger, transition, style, animate } from '@angular/animations';
@@ -15,7 +15,6 @@ import { trigger, transition, style, animate } from '@angular/animations';
   imports: [
     CommonModule,
     FormsModule,
-    MatSnackBarModule,
     MatProgressSpinnerModule,
     MatButtonModule
   ],
@@ -61,7 +60,7 @@ export class BlockUserPage implements OnInit {
   submitted = signal(false);
 
   private adminUserService = inject(AdminUserService);
-  private snackBar = inject(MatSnackBar);
+  private toast = inject(ToastService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
 
@@ -78,7 +77,7 @@ export class BlockUserPage implements OnInit {
         this.user = response.data;
       },
       error: () => {
-        this.snackBar.open('Failed to load user details', 'Close', { duration: 3000 });
+        this.toast.error('Failed to load user details');
         this.router.navigate(['/admin/users']);
       }
     });
@@ -121,12 +120,12 @@ export class BlockUserPage implements OnInit {
     this.isLoading.set(true);
     this.adminUserService.blockUser(this.user.userId, this.blockReason.trim()).subscribe({
       next: () => {
-        this.snackBar.open('User blocked successfully', 'Close', { duration: 3000 });
+        this.toast.success('User blocked successfully');
         this.router.navigate(['/admin/users']);
       },
       error: () => {
         this.isLoading.set(false);
-        this.snackBar.open('Failed to block user', 'Close', { duration: 3000 });
+        this.toast.error('Failed to block user');
       }
     });
   }

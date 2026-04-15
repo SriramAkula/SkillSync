@@ -90,25 +90,51 @@ select {
   @apply text-slate-300;
 }
 
-/* Dark mode background containers */
+/* Dark mode background containers - Direct CSS override */
 .dark .bg-slate-50 {
-  @apply bg-slate-800;
+  background-color: rgb(30, 41, 59) !important;
 }
 
 .dark .bg-slate-50\/50 {
-  @apply bg-slate-800/50;
+  background-color: rgba(30, 41, 59, 0.5) !important;
 }
 
 .dark .bg-slate-100 {
-  @apply bg-slate-800;
+  background-color: rgb(30, 41, 59) !important;
+}
+
+.dark .bg-white {
+  background-color: rgb(30, 41, 59) !important;
+  color: rgb(241, 245, 249) !important;
 }
 
 .dark .border-slate-50 {
-  @apply border-slate-700;
+  border-color: rgb(51, 65, 85) !important;
 }
 
 .dark .border-slate-100 {
-  @apply border-slate-700;
+  border-color: rgb(51, 65, 85) !important;
+}
+
+/* Force glass-card styling in dark mode */
+.dark .glass-card {
+  background-color: rgba(15, 23, 42, 0.85) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* AGGRESSIVE override for cards with specific selectors */
+html.dark div[class*="bg-slate-50"] {
+  background-color: rgb(30, 41, 59) !important;
+}
+
+html.dark div[class*="bg-slate-100"] {
+  background-color: rgb(30, 41, 59) !important;
+}
+
+html.dark div.glass-card,
+html.dark [class*="glass-card"] {
+  background-color: rgba(15, 23, 42, 0.85) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
 }
 
 /* Dark mode text colors - Fix visibility */
@@ -172,6 +198,60 @@ select {
   @apply text-slate-300 !important;
 }
 
+/* PROFESSIONAL BACKGROUND AND CARD STYLING - Dark Mode */
+.dark .bg-slate-50 {
+  @apply bg-slate-800;
+}
+
+.dark .bg-slate-50\/50 {
+  @apply bg-slate-800/50;
+}
+
+.dark .bg-slate-100 {
+  @apply bg-slate-800;
+}
+
+/* Dark mode specific card backgrounds */
+.dark [class*="bg-slate-50"] {
+  @apply bg-slate-800/50;
+}
+
+.dark .border-slate-100,
+.dark [class*="border-slate-100"] {
+  @apply border-slate-700;
+}
+
+.dark .border-slate-50 {
+  @apply border-slate-700;
+}
+
+/* White buttons should be dark in dark mode */
+.dark .bg-white {
+  @apply bg-slate-800 text-slate-100;
+}
+
+.dark .text-slate-700 {
+  @apply text-slate-200;
+}
+
+.dark .text-slate-600 {
+  @apply text-slate-300;
+}
+
+/* Empty states and placeholders */
+.dark [class*="border-dashed"] {
+  @apply border-slate-600;
+}
+
+/* Avatar backgrounds */
+.dark .bg-slate-100 {
+  @apply bg-slate-700;
+}
+
+.dark .text-slate-400 {
+  @apply text-slate-400;
+}
+
 /* Animation Utilities */
 .page-transition {
   @apply transition-all duration-300 ease-out;
@@ -230,4 +310,263 @@ select {
   .mat-mdc-dialog-container {
     max-height: calc(100vh - 64px) !important;
   }
+}
+
+/* Material Snackbar - FORCE TOP POSITIONING */
+.mat-mdc-snack-bar-container {
+  position: fixed !important;
+  top: 80px !important;
+  bottom: auto !important;
+  right: 16px !important;
+  left: auto !important;
+  z-index: 1000 !important;
+  margin: 0 !important;
+}
+
+::ng-deep .cdk-overlay-pane:has(.mat-mdc-snack-bar-container) {
+  position: fixed !important;
+  top: 80px !important;
+  bottom: auto !important;
+  right: 16px !important;
+  left: auto !important;
+}
+
+/* Force remove ALL Material hover/state layers */
+.mdc-button--raised:hover::before {
+  display: none !important;
+}
+
+.mdc-button__state-layer {
+  display: none !important;
+  background: none !important;
+}
+
+/* Disable ALL Material Ripple Effects Globally */
+.mdc-ripple-surface {
+  overflow: hidden !important;
+}
+
+.mat-ripple {
+  display: none !important;
+}
+
+.mdc-ripple--surface::before,
+.mdc-ripple--surface::after {
+  display: none !important;
+}
+
+/* AGGRESSIVE Material Snackbar Button Override */
+.mat-mdc-snack-bar-container .mat-mdc-button,
+.mat-mdc-snack-bar-container .mdc-button,
+.mat-mdc-snack-bar-container button,
+.snackbar-container button,
+.mdc-snackbar__action {
+  background-color: transparent !important;
+  background: transparent !important;
+  color: white !important;
+  border: none !important;
+  padding: 8px !important;
+  min-width: auto !important;
+  font-size: 14px !important;
+  transition: none !important;
+}
+
+/* Override all hover states */
+.mat-mdc-snack-bar-container .mat-mdc-button:hover,
+.mat-mdc-snack-bar-container .mdc-button:hover,
+.mat-mdc-snack-bar-container button:hover,
+.snackbar-container button:hover,
+.mdc-snackbar__action:hover {
+  background-color: transparent !important;
+  background: transparent !important;
+  color: white !important;
+  opacity: 0.8;
+}
+
+/* Override focus states */
+.mat-mdc-snack-bar-container .mat-mdc-button:focus,
+.mat-mdc-snack-bar-container .mdc-button:focus,
+.mat-mdc-snack-bar-container button:focus,
+.snackbar-container button:focus,
+.mdc-snackbar__action:focus {
+  background-color: transparent !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Hide any overlay/state layer */
+.mat-mdc-snack-bar-container .mdc-button__ripple,
+.mat-mdc-snack-bar-container .mat-ripple-element,
+.mat-mdc-snack-bar-container .mdc-states-layer {
+  display: none !important;
+}
+
+/* Close Button - Remove all borders globally */
+.close-btn {
+  border: none !important;
+  border-width: 0 !important;
+  border-color: transparent !important;
+  outline: none !important;
+  outline-width: 0 !important;
+  box-shadow: none !important;
+}
+
+.close-btn:hover,
+.close-btn:focus,
+.close-btn:focus-visible,
+.close-btn:active {
+  border: none !important;
+  border-width: 0 !important;
+  outline: none !important;
+  outline-width: 0 !important;
+  box-shadow: none !important;
+}
+
+/* Dark mode - explicitly hide any border */
+.dark .close-btn {
+  border: none !important;
+  border-width: 0 !important;
+  border-color: transparent !important;
+  outline: none !important;
+}
+
+/* Global Material button border removal */
+button, 
+.mdc-button,
+.mat-mdc-button {
+  border: none !important;
+  border-width: 0 !important;
+  border-color: transparent !important;
+}
+
+/* Material snackbar button specifically */
+.mat-mdc-snack-bar-container button {
+  border: none !important;
+  border-width: 0 !important;
+  border-color: transparent !important;
+  border-radius: 0 !important;
+}
+
+/* Remove Material's dark mode button border */
+.dark button,
+.dark .mdc-button,
+.dark .mat-mdc-button,
+.dark .mat-mdc-snack-bar-container button,
+.dark .close-btn {
+  border: none !important;
+  border-width: 0 !important;
+  border-color: transparent !important;
+  border-radius: 0 !important;
+}
+
+/* Override Material Design theme border for snackbar action buttons */
+.mat-mdc-snack-bar-container .mdc-button {
+  border: none !important;
+  border-width: 0 !important;
+}
+
+.mdc-button--raised {
+  border: none !important;
+  border-width: 0 !important;
+}
+
+/* Hide Material's internal border elements */
+.mdc-button::before,
+.mdc-button::after,
+.mat-mdc-button::before,
+.mat-mdc-button::after,
+button::before,
+button::after {
+  border: none !important !important;
+  border-width: 0 !important !important;
+}
+
+/* Target dark theme border specifically */
+:root {
+  --mdc-button-label-text-color: white !important;
+}
+
+.dark {
+  --mdc-button-label-text-color: white !important;
+  --mdc-button-container-color: transparent !important;
+  --mdc-button-outline-color: transparent !important;
+}
+
+/* AGGRESSIVE Fixes for Specific Pages */
+html.dark .page .search-bar,
+html.dark .page .stats-bar,
+html.dark [class*="mentor-list"] .search-bar,
+html.dark [class*="mentor-list"] .stats-bar {
+  background-color: rgba(30, 41, 59, 0.8) !important;
+  border-color: rgba(51, 65, 85, 0.5) !important;
+  box-shadow: none !important;
+}
+
+html.dark .page .stats-bar span.stat-num {
+  color: #a78bfa !important; /* primary-400 */
+}
+
+html.dark .page .stats-bar span.stat-lbl {
+  color: #94a3b8 !important; /* slate-400 */
+}
+
+html.dark .page .stats-bar .divider-v {
+  background-color: #334155 !important;
+}
+
+/* Ensure mentor profile application page also respects dark mode for cat list */
+html.dark div[class*="apply-mentor"] div[class*="max-h-[300px]"] {
+  border-color: #1e293b !important;
+  background-color: rgba(15, 23, 42, 0.2) !important;
+}
+
+/* Global Dark Mode Overrides for Skills & Groups */
+html.dark .toolbar .search-bar,
+html.dark .category-search .search-bar {
+  background-color: rgba(15, 23, 42, 0.6) !important;
+  border-color: #334155 !important;
+  backdrop-filter: blur(8px) !important;
+}
+
+html.dark .skill-card,
+html.dark .group-card {
+  background-color: rgba(15, 23, 42, 0.4) !important;
+  border-color: #1e293b !important;
+}
+
+html.dark .skill-card:hover,
+html.dark .group-card:hover {
+  background-color: rgba(30, 41, 59, 0.6) !important;
+  border-color: #4f46e5 !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3) !important;
+}
+
+html.dark .modal-card,
+html.dark .drawer {
+  background-color: #0f172a !important;
+  border-color: #1e293b !important;
+  color: #f1f5f9 !important;
+}
+
+html.dark .modal-header h3,
+html.dark .drawer-header h2 {
+  color: #f8fafc !important;
+}
+
+html.dark .input-label,
+html.dark label {
+  color: #94a3b8 !important;
+}
+
+html.dark .input-wrapper,
+html.dark .select-wrapper,
+html.dark .search-select {
+  background-color: rgba(2, 6, 23, 0.5) !important;
+  border-color: #1e293b !important;
+  color: #f1f5f9 !important;
+}
+
+html.dark .input-wrapper input,
+html.dark .input-wrapper textarea {
+  color: #f1f5f9 !important;
 }

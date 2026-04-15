@@ -1,3 +1,5 @@
+@import '@angular/material/prebuilt-themes/indigo-pink.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -44,15 +46,32 @@ body {
   @apply transition-transform duration-200 hover:-translate-y-1;
 }
 
-/* Material Overrides */
+/* Material Overrides - FORCE TOP POSITIONING */
 .mat-mdc-snack-bar-container {
   border-radius: 1rem !important;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
   border: 1px solid rgba(255, 255, 255, 0.2) !important;
   background: white !important;
+  position: fixed !important;
+  top: 80px !important;
+  bottom: auto !important;
+  right: 16px !important;
+  left: auto !important;
+  z-index: 1000 !important;
+  margin: 0 !important;
 }
 
 .mat-mdc-snack-bar-label {
   font-weight: 700 !important;
   letter-spacing: 0.025em !important;
+}
+
+/* Force top positioning in overlay container */
+::ng-deep .cdk-overlay-pane {
+  &:has(.mat-mdc-snack-bar-container) {
+    top: 80px !important;
+    bottom: auto !important;
+    right: 16px !important;
+    left: auto !important;
+  }
 }

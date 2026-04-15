@@ -11,6 +11,8 @@ public class SagaResponse {
     private Long learnerId;
     private Long mentorId;
     private BigDecimal amount;
+    private BigDecimal hourlyRate;
+    private Integer durationMinutes;
     private SagaStatus status;
     private String paymentReference;
     private String refundReference;
@@ -30,6 +32,10 @@ public class SagaResponse {
     public void setMentorId(Long mentorId) { this.mentorId = mentorId; }
     public BigDecimal getAmount() { return amount; }
     public void setAmount(BigDecimal amount) { this.amount = amount; }
+    public BigDecimal getHourlyRate() { return hourlyRate; }
+    public void setHourlyRate(BigDecimal hourlyRate) { this.hourlyRate = hourlyRate; }
+    public Integer getDurationMinutes() { return durationMinutes; }
+    public void setDurationMinutes(Integer durationMinutes) { this.durationMinutes = durationMinutes; }
     public SagaStatus getStatus() { return status; }
     public void setStatus(SagaStatus status) { this.status = status; }
     public String getPaymentReference() { return paymentReference; }

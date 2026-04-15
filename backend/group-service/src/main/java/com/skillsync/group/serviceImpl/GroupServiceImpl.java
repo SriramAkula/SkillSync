@@ -33,8 +33,8 @@ public class GroupServiceImpl implements GroupService {
     }
 
     @Override
-    public void deleteGroup(Long groupId, Long currentUserId) {
-        groupCommandService.deleteGroup(groupId, currentUserId);
+    public void deleteGroup(Long groupId, Long userId, boolean isAdmin) {
+        groupCommandService.deleteGroup(groupId, userId, isAdmin);
     }
 
     @Override

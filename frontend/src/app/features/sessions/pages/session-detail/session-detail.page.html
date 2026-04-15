@@ -7,13 +7,23 @@
     <div class="loading-center"><mat-spinner diameter="48" /></div>
   }
 
+  @if (sessionStore.error()) {
+    <div class="error-banner">
+      <p class="error-title">Error loading session</p>
+      <p class="error-message">{{ sessionStore.error() }}</p>
+      <button class="back-btn retry" (click)="router.navigate(['/sessions'])">
+        <span class="material-icons">arrow_back</span> Go Back
+      </button>
+    </div>
+  }
+
   @if (sessionStore.selected(); as s) {
     <div class="layout">
       <!-- Main Card -->
       <div class="main-col">
         <div class="detail-card">
-          <div class="detail-header" [style.background]="cfg(s.status).bg">
-            <div class="status-icon" [style.background]="cfg(s.status).color + '20'">
+          <div class="detail-header" [attr.data-status]="s.status">
+            <div class="status-icon" [style.background]="cfg(s.status).color + '20'" [style.borderColor]="cfg(s.status).color + '40'" style="border: 1px solid">
               <span class="material-icons" [style.color]="cfg(s.status).color">{{ cfg(s.status).icon }}</span>
             </div>
             <div>
@@ -28,8 +38,8 @@
             <div class="info-grid">
               <div class="info-item">
                 <span class="info-label">Scheduled</span>
-                <span class="info-value">{{ s.scheduledAt | date:'EEEE, MMM d, y' }}</span>
-                <span class="info-sub">{{ s.scheduledAt | date:'h:mm a' }}</span>
+                <span class="info-value">{{ scheduledAtUtc | date:'EEEE, MMM d, y' }}</span>
+                <span class="info-sub">{{ scheduledAtUtc | date:'h:mm a' }}</span>
               </div>
               <div class="info-item">
                 <span class="info-label">Duration</span>
@@ -91,7 +101,16 @@
             }
           }
 
-          @if (s.status === 'REQUESTED' || s.status === 'ACCEPTED') {
+          @if (s.status === 'REQUESTED') {
+            @if (isLearnerForThisSession) {
+              <button class="action-btn secondary" (click)="cancel(s.id)">
+                <span class="material-icons">block</span>
+                Cancel Session
+              </button>
+            }
+          }
+
+          @if (s.status === 'ACCEPTED') {
             <button class="action-btn secondary" (click)="cancel(s.id)">
               <span class="material-icons">block</span>
               Cancel Session
@@ -105,10 +124,12 @@
             </button>
           }
 
-          <button class="action-btn outline" (click)="router.navigate(['/mentors', s.mentorId])">
-            <span class="material-icons">person</span>
-            View Mentor Profile
-          </button>
+          @if (!isMentorForThisSession) {
+            <button class="action-btn outline" (click)="router.navigate(['/mentors', s.mentorId])">
+              <span class="material-icons">person</span>
+              View Mentor Profile
+            </button>
+          }
         </div>
 
         <!-- Reject Form -->

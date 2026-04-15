@@ -44,6 +44,9 @@ public class UserProfile extends Auditable {
 	private String email;
 
 	@Column
+	private String role;
+
+	@Column
 	private String name;
 
 	@Column(length = 500)

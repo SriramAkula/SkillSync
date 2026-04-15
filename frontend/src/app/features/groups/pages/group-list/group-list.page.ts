@@ -3,18 +3,19 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { GroupService } from '../../../../core/services/group.service';
+import { ToastService } from '../../../../core/services/toast.service';
 import { AuthStore } from '../../../../core/auth/auth.store';
 import { SkillStore } from '../../../../core/auth/skill.store';
 import { GroupDto } from '../../../../shared/models';
+import { MessagingService } from '../../../../core/services/messaging.service';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
 @Component({
   selector: 'app-group-list-page',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatProgressSpinnerModule, MatSnackBarModule],
+  imports: [CommonModule, FormsModule, MatProgressSpinnerModule],
   templateUrl: './group-list.page.html',
   styleUrl: './group-list.page.scss'
 })
@@ -23,7 +24,12 @@ export class GroupListPage implements OnInit {
   readonly authStore = inject(AuthStore);
   readonly skillStore = inject(SkillStore);
   readonly router = inject(Router);
-  private readonly snack = inject(MatSnackBar);
+  private readonly toast = inject(ToastService);
+  protected readonly messagingService = inject(MessagingService);
+
+  openChat(g: GroupDto): void {
+    this.messagingService.openGroupChat(g.id, g.name);
+  }
 
   readonly groups = signal<GroupDto[]>([]);
   readonly loading = signal(false);
@@ -158,7 +164,7 @@ export class GroupListPage implements OnInit {
           this.groupService.deleteGroup(g.id).subscribe({
             next: () => {
               this.groups.update(curr => curr.filter(item => item.id !== g.id));
-              this.snack.open(`Group '${g.name}' was automatically deleted (remained < 2 members for 7 days)`, 'OK', { duration: 6000 });
+              this.toast.info(`Group '${g.name}' was automatically deleted (remained < 2 members for 7 days)`);
             }
           });
         }
@@ -169,7 +175,7 @@ export class GroupListPage implements OnInit {
 
   openCreate(): void {
     if (this.authStore.isAdmin()) {
-      this.snack.open('Admins cannot create groups.', 'OK', { duration: 3000 });
+      this.toast.error('Admins cannot create groups.');
       return;
     }
     this.newGroupCategory = '';
@@ -180,22 +186,34 @@ export class GroupListPage implements OnInit {
 
   join(id: number): void {
     this.groupService.joinGroup(id).subscribe({
-      next: (r) => { this.groups.update(list => list.map(g => g.id === id ? r.data : g)); this.snack.open('Joined group!', 'OK', { duration: 3000 }); },
-      error: (e: HttpErrorResponse) => this.snack.open(e.error?.message ?? 'Failed to join', 'OK', { duration: 3000 })
+      next: () => { 
+        this.toast.success('Joined group!');
+        if (this.searched()) this.loadGroups(this.currentPage());
+        else this.loadRandomGroups();
+      },
+      error: (e: HttpErrorResponse) => this.toast.error(e.error?.message ?? 'Failed to join')
     });
   }
 
   leave(id: number): void {
     this.groupService.leaveGroup(id).subscribe({
-      next: (r) => { this.groups.update(list => list.map(g => g.id === id ? r.data : g)); this.snack.open('Left group.', 'OK', { duration: 3000 }); },
-      error: (e: HttpErrorResponse) => this.snack.open(e.error?.message ?? 'Failed to leave', 'OK', { duration: 3000 })
+      next: () => { 
+        this.toast.success('Left group.');
+        if (this.searched()) this.loadGroups(this.currentPage());
+        else this.loadRandomGroups();
+      },
+      error: (e: HttpErrorResponse) => this.toast.error(e.error?.message ?? 'Failed to leave')
     });
   }
 
   deleteGroup(id: number): void {
     this.groupService.deleteGroup(id).subscribe({
-      next: () => { this.groups.update(list => list.filter(g => g.id !== id)); this.snack.open('Group deleted.', 'OK', { duration: 3000 }); },
-      error: (e: HttpErrorResponse) => this.snack.open(e.error?.message ?? 'Failed', 'OK', { duration: 3000 })
+      next: () => { 
+        this.toast.success('Group deleted.');
+        if (this.searched()) this.loadGroups(this.currentPage());
+        else this.loadRandomGroups();
+      },
+      error: (e: HttpErrorResponse) => this.toast.error(e.error?.message ?? 'Failed')
     });
   }
 
@@ -204,15 +222,15 @@ export class GroupListPage implements OnInit {
     const { name, skillId, maxMembers, description } = this.newGroup;
     
     if (!name || !name.trim()) {
-      this.snack.open('Group Name is required.', 'OK', { duration: 3000 });
+      this.toast.error('Group Name is required.');
       return;
     }
     if (!skillId) {
-      this.snack.open('Please select a skill.', 'OK', { duration: 3000 });
+      this.toast.error('Please select a skill.');
       return;
     }
     if (!maxMembers || maxMembers < 2) {
-      this.snack.open('Max members must be at least 2.', 'OK', { duration: 3000 });
+      this.toast.error('Max members must be at least 2.');
       return;
     }
 
@@ -229,16 +247,19 @@ export class GroupListPage implements OnInit {
     this.groupService.createGroup(payload).subscribe({
       next: (r) => {
         console.log('Group created successfully:', r.data);
-        this.groups.update(list => [r.data, ...list]);
         this.showCreate.set(false);
         this.creating.set(false);
         this.newGroup = { name: '', skillId: null, maxMembers: null, description: '' };
-        this.snack.open('Group created successfully!', 'OK', { duration: 3000 });
+        this.toast.success('Group created successfully!');
+        
+        // Refresh to show the new group and update pagination
+        if (this.searched()) this.loadGroups(0);
+        else this.loadRandomGroups();
       },
       error: (e: HttpErrorResponse) => { 
         console.error('Group creation failed:', e);
         this.creating.set(false); 
-        this.snack.open(e.error?.message ?? 'Failed to create group', 'OK', { duration: 3000 }); 
+        this.toast.error(e.error?.message ?? 'Failed to create group'); 
       }
     });
   }

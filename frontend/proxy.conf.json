@@ -7,6 +7,5 @@
     "cookiepathRewrite": {
       "/auth": "/api/auth"
     }
-
   }
 }

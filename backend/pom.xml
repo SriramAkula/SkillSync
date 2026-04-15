@@ -23,5 +23,6 @@
     <module>session-service</module>
     <module>skill-service</module>
     <module>user-service</module>
+    <module>messaging-service</module>
   </modules>
 </project>

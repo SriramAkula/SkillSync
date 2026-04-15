@@ -32,4 +32,8 @@ public class UserProfileQueryService {
                 .map(userProfileMapper::toDto)
                 .orElseThrow(() -> new UserProfileNotFoundException("User profile not found for email: " + email));
     }
+
+    public boolean existsByUsername(String username) {
+        return userProfileRepository.existsByUsername(username);
+    }
 }

@@ -34,4 +34,14 @@ public class UserProfileServiceImpl implements UserProfileService {
     public void createProfile(Long userId, String email, String username) {
         userProfileCommandService.createProfile(userId, email, username);
     }
+
+    @Override
+    public void createProfile(Long userId, String email, String username, String name, String role) {
+        userProfileCommandService.createProfile(userId, email, username, name, role);
+    }
+
+    @Override
+    public boolean existsByUsername(String username) {
+        return userProfileQueryService.existsByUsername(username);
+    }
 }

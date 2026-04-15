@@ -11,3 +11,77 @@
     display: none;
   }
 }
+
+/* Dark Mode Overrides */
+:host-context(.dark) {
+  ::ng-deep {
+    /* Text colors */
+    .text-slate-900 {
+      color: #f1f5f9 !important;
+    }
+    
+    .text-slate-800 {
+      color: #f1f5f9 !important;
+    }
+    
+    .text-slate-500 {
+      color: #94a3b8 !important;
+    }
+    
+    .text-slate-400 {
+      color: #64748b !important;
+    }
+
+    /* Background colors */
+    .bg-slate-50 {
+      background-color: #1e293b !important;
+    }
+
+    .bg-slate-100 {
+      background-color: #0f172a !important;
+    }
+
+    /* Border colors */
+    .border-slate-100 {
+      border-color: #334155 !important;
+    }
+
+    /* Card backgrounds */
+    .glass-card {
+      background-color: rgba(30, 41, 59, 0.5) !important;
+    }
+
+    /* Form inputs */
+    input[type="text"],
+    input[type="email"],
+    input[type="number"],
+    textarea,
+    select {
+      background-color: #0f172a !important;
+      color: #f1f5f9 !important;
+      border-color: #334155 !important;
+    }
+
+    input::placeholder,
+    textarea::placeholder {
+      color: #64748b !important;
+    }
+
+    /* Labels */
+    label {
+      color: #cbd5e1 !important;
+    }
+
+    /* Benefits section */
+    .text-slate-700,
+    .text-slate-600 {
+      color: #cbd5e1 !important;
+    }
+
+    /* Back button */
+    .text-slate-400 {
+      color: #94a3b8 !important;
+    }
+  }
+}
+

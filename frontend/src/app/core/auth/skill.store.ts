@@ -81,15 +81,16 @@ export const SkillStore = signalStore(
 
     loadForSelection: rxMethod<void>(
       pipe(
-        tap(() => patchState(store, { loading: true })),
+        tap(() => patchState(store, { loading: true, error: null })),
         switchMap(() =>
-          svc.getAll(0, 500).pipe(
+          svc.getAll(0, 12).pipe(
             tapResponse({
               next: (res) => patchState(store, { 
                 skills: res.data.content ?? [], 
-                loading: false 
+                loading: false,
+                error: null
               }),
-              error: () => patchState(store, { loading: false })
+              error: (err: HttpErrorResponse) => patchState(store, { loading: false, error: err.error?.message ?? 'Failed to load skills' })
             })
           )
         )

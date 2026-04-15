@@ -19,6 +19,8 @@ public interface UserProfileService {
 	 */
 	UserProfileResponseDto updateProfile(Long userId, UpdateProfileRequestDto requestDto);
 
+	boolean existsByUsername(String username);
+
 	/**
 	 * Get profile by email
 	 */
@@ -27,5 +29,13 @@ public interface UserProfileService {
 	/**
 	 * Create user profile from internal endpoint (Auth Service)
 	 */
+	/**
+	 * Create user profile from internal endpoint (Auth Service) - backward compatibility
+	 */
 	void createProfile(Long userId, String email, String username);
+
+	/**
+	 * Create user profile from internal endpoint (Auth Service)
+	 */
+	void createProfile(Long userId, String email, String username, String name, String role);
 }

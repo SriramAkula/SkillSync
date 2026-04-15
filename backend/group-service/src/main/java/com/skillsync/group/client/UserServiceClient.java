@@ -19,6 +19,6 @@ public interface UserServiceClient {
         private Long userId;
         private String email;
         private String username;
-        private String roles;
+        private String role;
     }
 }

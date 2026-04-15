@@ -22,7 +22,7 @@
     <div class="space-y-4">
       <div class="flex items-center gap-3 text-slate-600 dark:text-slate-400">
          <span class="material-icons-outlined text-lg text-slate-300 dark:text-slate-600">event</span>
-         <p class="text-sm font-medium tracking-tight">{{ session.scheduledAt | date:'MMM d, y · h:mm a' }}</p>
+         <p class="text-sm font-medium tracking-tight">{{ scheduledAtUtc | date:'MMM d, y · h:mm a' }}</p>
       </div>
       <div class="flex items-center gap-3 text-slate-600 dark:text-slate-400">
          <span class="material-icons-outlined text-lg text-slate-300 dark:text-slate-600">school</span>
@@ -36,15 +36,15 @@
 
     <!-- Status Context Message -->
     @if (session.status === 'REQUESTED' && isLearner) {
-       <div class="p-4 bg-amber-50/50 rounded-2xl border border-amber-100 flex items-center gap-3 animate-pulse">
-          <span class="material-icons text-amber-500 text-sm">hourglass_top</span>
-          <p class="text-[10px] font-bold text-amber-700 uppercase tracking-widest">Waiting for Approval</p>
+       <div class="p-4 bg-amber-50/50 dark:bg-amber-950/20 rounded-2xl border border-amber-100 dark:border-amber-900/50 flex items-center gap-3 animate-pulse">
+          <span class="material-icons text-amber-500 dark:text-amber-400 text-sm">hourglass_top</span>
+          <p class="text-[10px] font-bold text-amber-700 dark:text-amber-300 uppercase tracking-widest">Waiting for Approval</p>
        </div>
     }
     @if (session.status === 'ACCEPTED' && isLearner) {
-       <div class="p-4 bg-primary-50/50 rounded-2xl border border-primary-100 flex items-center gap-3 animate-bounce-subtle">
-          <span class="material-icons text-primary-600 text-sm">payments</span>
-          <p class="text-[10px] font-bold text-primary-700 uppercase tracking-widest">Action Required: Pay Now</p>
+       <div class="p-4 bg-primary-50/50 dark:bg-primary-950/20 rounded-2xl border border-primary-100 dark:border-primary-900/50 flex items-center gap-3 animate-bounce-subtle">
+          <span class="material-icons text-primary-600 dark:text-primary-400 text-sm">payments</span>
+          <p class="text-[10px] font-bold text-primary-700 dark:text-primary-300 uppercase tracking-widest">Action Required: Pay Now</p>
        </div>
     }
   </div>

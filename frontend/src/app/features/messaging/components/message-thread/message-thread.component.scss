@@ -1,0 +1,129 @@
+.message-thread {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding-bottom: 20px;
+  background: transparent;
+  overflow-y: auto;
+  position: relative;
+  
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+    
+    &:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+  }
+}
+
+.loading-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 20px;
+  color: #94a3b8;
+  font-size: 0.8rem;
+  font-weight: 500;
+  position: sticky;
+  top: 0;
+  background: linear-gradient(to bottom, rgba(15, 15, 30, 0.95), transparent);
+  z-index: 5;
+  backdrop-filter: blur(5px);
+}
+
+.spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(111, 66, 193, 0.2);
+  border-top-color: #6f42c1;
+  border-radius: 50%;
+  animation: spin 0.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.messages-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 24px 24px 40px;
+  flex: 1;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 40px;
+  text-align: center;
+  
+  .icon {
+    font-size: 3rem;
+    margin-bottom: 1.5rem;
+    filter: drop-shadow(0 0 20px rgba(111, 66, 193, 0.3));
+    opacity: 0.8;
+  }
+  
+  h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #f1f5f9;
+    margin-bottom: 0.5rem;
+  }
+  
+  p {
+    font-size: 0.9rem;
+    color: #64748b;
+    max-width: 250px;
+    line-height: 1.5;
+  }
+}
+
+.scroll-to-bottom {
+  position: absolute;
+  bottom: 24px;
+  right: 24px;
+  padding: 8px 16px;
+  background: rgba(111, 66, 193, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(111, 66, 193, 0.3);
+  color: #a78bfa;
+  border-radius: 30px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  z-index: 10;
+  
+  &:hover {
+    background: rgba(111, 66, 193, 0.2);
+    border-color: rgba(111, 66, 193, 0.5);
+    transform: translateY(-2px);
+    color: #fff;
+  }
+}
+
+@media (max-width: 768px) {
+  .messages-list {
+    padding: 16px;
+  }
+}

@@ -54,6 +54,10 @@ export const routes: Routes = [
         loadChildren: () => import('./features/profile/profile.routes').then(m => m.PROFILE_ROUTES)
       },
       {
+        path: 'messages',
+        loadChildren: () => import('./features/messaging/messaging.routes').then(m => m.MESSAGING_ROUTES)
+      },
+      {
         path: 'payment',
         loadChildren: () => import('./features/payment/payment.routes').then(m => m.PAYMENT_ROUTES)
       },

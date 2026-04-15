@@ -1,0 +1,106 @@
+:host {
+  display: contents;
+}
+
+.close-btn {
+  all: unset !important;
+  background: transparent !important;
+  border: none !important;
+  border-width: 0 !important;
+  border-style: none !important;
+  border-color: transparent !important;
+  padding: 4px !important;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin-left: 8px !important;
+  outline: none !important;
+  outline-width: 0 !important;
+  box-shadow: none !important;
+  width: 24px !important;
+  height: 24px !important;
+  min-width: 24px !important;
+  min-height: 24px !important;
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  font-size: 0 !important;
+  line-height: 0 !important;
+  overflow: hidden !important;
+  -webkit-tap-highlight-color: transparent !important;
+
+  &::before,
+  &::after {
+    display: none !important;
+    content: none !important;
+    border: none !important;
+  }
+
+  &:hover {
+    background: transparent !important;
+    outline: none !important;
+    outline-width: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  &:focus {
+    background: transparent !important;
+    outline: none !important;
+    outline-width: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+  
+  &:focus-visible {
+    background: transparent !important;
+    outline: none !important;
+    outline-width: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  &:focus-within {
+    outline: none !important;
+    border: none !important;
+  }
+
+  &:active {
+    background: transparent !important;
+    outline: none !important;
+    outline-width: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  svg {
+    width: 20px !important;
+    height: 20px !important;
+    stroke: white !important;
+    fill: none !important;
+    stroke-width: 2 !important;
+    display: block !important;
+    flex-shrink: 0 !important;
+    border: none !important;
+  }
+}
+
+/* Completely override Material Design if it applies to close-btn */
+::ng-deep {
+  .close-btn,
+  .close-btn * {
+    all: unset !important;
+  }
+
+  .close-btn {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 24px !important;
+    height: 24px !important;
+    cursor: pointer !important;
+    padding: 4px !important;
+    margin-left: 8px !important;
+  }
+}

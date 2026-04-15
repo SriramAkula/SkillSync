@@ -71,11 +71,11 @@ export class ProfilePage implements OnInit, OnDestroy {
   });
 
   readonly form = this.fb.group({
-    username:    ['', [Validators.required]],
-    firstName:   ['', [Validators.required]],
-    lastName:    [''],
-    bio:         [''],
-    phoneNumber: ['', [Validators.pattern('^[0-9]*$'), Validators.minLength(10), Validators.maxLength(10)]],
+    username:    ['', [Validators.required, Validators.minLength(2), Validators.maxLength(50)]],
+    firstName:   ['', [Validators.required, Validators.minLength(2), Validators.maxLength(100)]],
+    lastName:    ['', [Validators.minLength(2), Validators.maxLength(100)]],
+    bio:         ['', [Validators.maxLength(500)]],
+    phoneNumber: ['', [Validators.pattern('^[0-9]{10}$')]],
     skills:      [[] as string[]]
   });
 
@@ -165,13 +165,53 @@ export class ProfilePage implements OnInit, OnDestroy {
 
   toggleVisibility() { this.isPrivate.set(!this.isPrivate()); this.toast.success('Visibility Updated'); }
   copyToClipboard(text: string) { navigator.clipboard.writeText(text).then(() => this.toast.success("Copied!")); }
+  
+  isInvalid(field: string): boolean {
+    const c = this.form.get(field);
+    return !!(c?.invalid && (c?.dirty || c?.touched));
+  }
+
+  getErrorMessage(field: string): string {
+    const control = this.form.get(field);
+    if (!control?.errors || (!control.dirty && !control.touched)) return '';
+
+    const errors = control.errors;
+    if (errors['required']) return `${this.formatFieldName(field)} is required`;
+    if (errors['minlength']) return `${this.formatFieldName(field)} must be at least ${errors['minlength'].requiredLength} characters`;
+    if (errors['maxlength']) return `${this.formatFieldName(field)} can be maximum ${errors['maxlength'].requiredLength} characters`;
+    if (errors['pattern']) return this.getPatternErrorMessage(field);
+    return 'Invalid input';
+  }
+
+  private getPatternErrorMessage(field: string): string {
+    if (field === 'phoneNumber') return 'Phone number must be exactly 10 digits and contain only numbers';
+    return 'Invalid format';
+  }
+
+  private formatFieldName(field: string): string {
+    return field.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()).trim();
+  }
+  
   toggleEdit(): void { if (!this.profile()) return; this.isEditing.update(v => !v); if (!this.isEditing()) this.patchFormValues(this.profile()!); }
   cancelEdit() { this.isEditing.set(false); if (this.profile()) this.patchFormValues(this.profile()!); }
 
   patchFormValues(p: UserProfileDto) {
+    let fName = p.firstName || '';
+    let lName = p.lastName || '';
+    
+    // Fallback for OAuth profiles that only have a 'name' field
+    if (!fName && p.name) {
+      const parts = p.name.trim().split(' ');
+      fName = parts[0];
+      lName = parts.slice(1).join(' ');
+    }
+
     this.form.patchValue({
-      username: p.username || '', firstName: p.firstName || '', lastName: p.lastName || '',
-      bio: p.bio || '', phoneNumber: p.phoneNumber || '',
+      username: p.username || '', 
+      firstName: fName, 
+      lastName: lName,
+      bio: p.bio || '', 
+      phoneNumber: p.phoneNumber || '',
       skills: (p.skills ? p.skills.split(',').map(s => s.trim()) : [])
     });
   }

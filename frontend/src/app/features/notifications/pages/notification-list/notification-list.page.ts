@@ -1,6 +1,9 @@
 import { Component, inject, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
 import { NotificationStore } from '../../../../core/auth/notification.store';
+import { AuthStore } from '../../../../core/auth/auth.store';
+import { NotificationDto } from '../../../../shared/models';
 
 import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
 
@@ -45,5 +48,39 @@ export class NotificationListPage implements OnInit {
       case 'PAYMENT_SUCCESSFUL': return { icon: 'payments', class: 'success' };
       default: return { icon: 'notifications', class: 'warning' };
     }
+  }
+
+  readonly authStore = inject(AuthStore);
+  private readonly router = inject(Router);
+
+  onNotifClick(n: NotificationDto): void {
+    if (!n.isRead) {
+      this.notifStore.markRead(n.id);
+    }
+    
+    const type = n.type.toUpperCase();
+    if (type === 'SESSION_REQUESTED' && this.authStore.isMentor()) {
+      this.router.navigate(['/mentor-dashboard']);
+    } else if (type.includes('SESSION')) {
+      this.router.navigate(['/sessions']);
+    } else if (type.includes('PROFILE')) {
+      this.router.navigate(['/profile']);
+    }
+  }
+
+  formatMessage(msg: string): string {
+    if (!msg) return '';
+    const isoRegex = /(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?)/g;
+    return msg.replace(isoRegex, (match) => {
+      try {
+        // Append 'Z' to treat as UTC if no timezone indicator exists
+        const d = new Date(match.endsWith('Z') || match.includes('+') ? match : match + 'Z');
+        const datePart = d.toLocaleDateString('en-GB').replace(/\//g, '-');
+        const timePart = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+        return `${datePart} ${timePart}`;
+      } catch {
+        return match;
+      }
+    });
   }
 }

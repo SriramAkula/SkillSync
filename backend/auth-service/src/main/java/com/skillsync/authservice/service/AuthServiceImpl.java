@@ -104,6 +104,7 @@ public class AuthServiceImpl implements AuthService {
             userData.put("userId", user.getId());
             userData.put("email", user.getEmail());
             userData.put("username", user.getUsername());
+            userData.put("role", user.getRole());
             userServiceClient.createProfile(userData);
             log.info("UserProfile created via Feign for userId={}", user.getId());
         } catch (Exception e) {

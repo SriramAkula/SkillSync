@@ -18,6 +18,7 @@ public class UserProfileResponseDto {
 	private Long userId;
 	private String username;
 	private String email;
+	private String role;
 	private String name;
 	private String bio;
 	private String phoneNumber;

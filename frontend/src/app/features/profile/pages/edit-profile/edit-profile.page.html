@@ -20,6 +20,20 @@
   } @else {
     <div class="glass-card p-8 md:p-12 border border-white/40 shadow-2xl shadow-primary-900/5 animate-drop-in">
       
+      <!-- Error Alert -->
+      @if (saveError()) {
+        <div class="mb-6 p-4 bg-red-50 border-l-4 border-red-500 rounded-lg animate-fade-in">
+          <div class="flex gap-3">
+            <span class="material-icons text-red-600 flex-shrink-0 mt-0.5">error_outline</span>
+            <div class="flex-1">
+              <p class="text-sm font-semibold text-red-800">Update Failed</p>
+              <p class="text-sm text-red-600 mt-1">{{ saveError() }}</p>
+              <button type="button" (click)="saveError.set(null)" class="text-xs text-red-600 hover:text-red-800 font-semibold mt-2 transition-colors">Dismiss</button>
+            </div>
+          </div>
+        </div>
+      }
+      
       <form [formGroup]="form" (ngSubmit)="save()" class="space-y-10">
         
         <!-- Section: Identity -->
@@ -33,21 +47,40 @@
             <div class="space-y-1.5">
               <label for="firstName" class="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">First Name</label>
               <input formControlName="firstName" id="firstName" type="text" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 px-4 text-sm focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500/50 outline-none transition-all font-medium text-slate-700" [class.border-red-300]="isInvalid('firstName')">
+              @if (isInvalid('firstName')) {
+                <p class="text-xs text-red-600 font-semibold">{{ getErrorMessage('firstName') }}</p>
+              }
             </div>
             <div class="space-y-1.5">
               <label for="lastName" class="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Last Name</label>
-              <input formControlName="lastName" id="lastName" type="text" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 px-4 text-sm focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500/50 outline-none transition-all font-medium text-slate-700">
+              <input formControlName="lastName" id="lastName" type="text" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 px-4 text-sm focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500/50 outline-none transition-all font-medium text-slate-700" [class.border-red-300]="isInvalid('lastName')">
+              @if (isInvalid('lastName')) {
+                <p class="text-xs text-red-600 font-semibold">{{ getErrorMessage('lastName') }}</p>
+              }
             </div>
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="space-y-1.5">
+              <label for="username" class="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Username</label>
+              <input formControlName="username" id="username" type="text" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 px-4 text-sm focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500/50 outline-none transition-all font-medium text-slate-700 font-mono" [class.border-red-300]="isInvalid('username')">
+              @if (isInvalid('username')) {
+                <p class="text-xs text-red-600 font-semibold">{{ getErrorMessage('username') }}</p>
+              }
+            </div>
             <div class="space-y-1.5 opacity-60">
               <label for="email" class="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Email (Immutable)</label>
               <input formControlName="email" id="email" type="email" class="w-full bg-slate-100 border border-slate-200 rounded-xl py-3 px-4 text-sm cursor-not-allowed font-mono" readonly>
             </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div class="space-y-1.5">
               <label for="phoneNumber" class="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Phone Number</label>
               <input formControlName="phoneNumber" id="phoneNumber" type="text" class="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 px-4 text-sm focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500/50 outline-none transition-all font-medium text-slate-700 font-mono" [class.border-red-300]="isInvalid('phoneNumber')">
+              @if (isInvalid('phoneNumber')) {
+                <p class="text-xs text-red-600 font-semibold">{{ getErrorMessage('phoneNumber') }}</p>
+              }
             </div>
           </div>
         </div>
@@ -61,9 +94,12 @@
 
           <div class="space-y-1.5">
             <label for="bio" class="text-[10px] font-bold uppercase tracking-widest text-slate-400 ml-1">Tell your story</label>
-            <textarea formControlName="bio" id="bio" rows="5" class="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3 px-4 text-sm focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500/50 outline-none transition-all font-medium text-slate-700 leading-relaxed resize-none" placeholder="Share your experience, passions, and goals..."></textarea>
-            <div class="flex justify-end px-1">
+            <textarea formControlName="bio" id="bio" rows="5" class="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3 px-4 text-sm focus:ring-4 focus:ring-primary-500/10 focus:border-primary-500/50 outline-none transition-all font-medium text-slate-700 leading-relaxed resize-none" [class.border-red-300]="isInvalid('bio')" placeholder="Share your experience, passions, and goals..."></textarea>
+            <div class="flex justify-between px-1">
                <span class="text-[10px] font-bold text-slate-300 uppercase tracking-widest">500 Characters Max</span>
+               @if (isInvalid('bio')) {
+                 <p class="text-xs text-red-600 font-semibold">{{ getErrorMessage('bio') }}</p>
+               }
             </div>
           </div>
         </div>

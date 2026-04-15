@@ -84,22 +84,39 @@ export class NavbarComponent implements OnInit {
     }
     this.notifPanelOpen.set(false);
 
-    if (n.type.includes('SESSION')) {
+    const type = n.type.toUpperCase();
+    if (type === 'SESSION_REQUESTED' && this.authStore.isMentor()) {
+      this.router.navigate(['/mentor-dashboard']);
+    } else if (type.includes('SESSION')) {
       this.router.navigate(['/sessions']);
-    } else if (n.type.includes('PROFILE')) {
+    } else if (type.includes('PROFILE')) {
       this.router.navigate(['/profile']);
     }
   }
 
   formatTime(iso: string | null | undefined): string {
-    if (!iso) return 'now';
-    const diff = Date.now() - new Date(iso).getTime();
-    const mins = Math.floor(diff / 60000);
-    if (mins < 1) return 'now';
-    if (mins < 60) return mins + 'm ago';
-    const hrs = Math.floor(mins / 60);
-    if (hrs < 24) return hrs + 'h ago';
-    return Math.floor(hrs / 24) + 'd ago';
+    if (!iso) return '';
+    // Append 'Z' to treat as UTC if no timezone indicator exists
+    const date = new Date(iso.endsWith('Z') || iso.includes('+') ? iso : iso + 'Z');
+    return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true });
+  }
+
+  formatMessage(msg: string): string {
+    if (!msg) return '';
+    // RegEx to find ISO strings like 2026-04-17T08:08
+    const isoRegex = /(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?)/g;
+    return msg.replace(isoRegex, (match) => {
+      try {
+        // Append 'Z' to treat as UTC if no timezone indicator exists
+        const d = new Date(match.endsWith('Z') || match.includes('+') ? match : match + 'Z');
+        // Format to 17-04-2026 08:08 AM
+        const datePart = d.toLocaleDateString('en-GB').replace(/\//g, '-'); // en-GB gives DD/MM/YYYY
+        const timePart = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+        return `${datePart} ${timePart}`;
+      } catch {
+        return match;
+      }
+    });
   }
 
   logout(): void {

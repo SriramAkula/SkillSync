@@ -193,3 +193,26 @@
     background: #e5e7eb;
   }
 }
+
+.btn-chat {
+  height: 40px;
+  width: 40px;
+  border-radius: 10px;
+  background: #f3f4f6;
+  color: #10b981;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+
+  &:hover {
+    background: #ecfdf5;
+    transform: scale(1.05);
+  }
+
+  .material-icons {
+    font-size: 20px;
+  }
+}

@@ -96,12 +96,12 @@ public class GroupCommandService {
 
     @Transactional
     @CacheEvict(value = "group", allEntries = true)
-    public void deleteGroup(Long groupId, Long creatorId) {
-        log.info("Deleting group {} by creator {}", groupId, creatorId);
+    public void deleteGroup(Long groupId, Long userId, boolean isAdmin) {
+        log.info("Deleting group {} by user {} (isAdmin={})", groupId, userId, isAdmin);
         Group group = groupRepository.findById(groupId)
                 .orElseThrow(() -> new GroupNotFoundException("Group not found"));
-        if (!group.getCreatorId().equals(creatorId)) {
-            throw new GroupNotFoundException("Only creator can delete the group");
+        if (!isAdmin && !group.getCreatorId().equals(userId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only creator or admin can delete the group");
         }
         group.setIsActive(false);
         groupRepository.save(group);

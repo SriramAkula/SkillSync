@@ -18,9 +18,18 @@ services:
         condition: service_healthy
       zipkin:
         condition: service_started
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
     networks:
       - private-network
       - proxy-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   auth-service:
     image: skillsyncadmin.azurecr.io/skillsync-auth-service:latest
@@ -42,9 +51,18 @@ services:
     dns:
       - 8.8.8.8
       - 8.8.4.4
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
     networks:
       - private-network
       - proxy-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   user-service:
     image: skillsyncadmin.azurecr.io/skillsync-user-service:latest
@@ -65,8 +83,17 @@ services:
         condition: service_started
       config-server:
         condition: service_healthy
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
     networks:
       - private-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   skill-service:
     image: skillsyncadmin.azurecr.io/skillsync-skill-service:latest
@@ -85,8 +112,17 @@ services:
         condition: service_started
       config-server:
         condition: service_healthy
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
     networks:
       - private-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   session-service:
     image: skillsyncadmin.azurecr.io/skillsync-session-service:latest
@@ -107,8 +143,17 @@ services:
         condition: service_started
       config-server:
         condition: service_healthy
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
     networks:
       - private-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   mentor-service:
     image: skillsyncadmin.azurecr.io/skillsync-mentor-service:latest
@@ -129,8 +174,17 @@ services:
         condition: service_started
       config-server:
         condition: service_healthy
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
     networks:
       - private-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   group-service:
     image: skillsyncadmin.azurecr.io/skillsync-group-service:latest
@@ -149,8 +203,17 @@ services:
         condition: service_started
       config-server:
         condition: service_healthy
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
     networks:
       - private-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   review-service:
     image: skillsyncadmin.azurecr.io/skillsync-review-service:latest
@@ -171,8 +234,17 @@ services:
         condition: service_started
       config-server:
         condition: service_healthy
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
     networks:
       - private-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   notification-service:
     image: skillsyncadmin.azurecr.io/skillsync-notification-service:latest
@@ -194,9 +266,18 @@ services:
     dns:
       - 8.8.8.8
       - 8.8.4.4
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
     networks:
       - private-network
       - proxy-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   payment-gateway:
     image: skillsyncadmin.azurecr.io/skillsync-payment-gateway:latest
@@ -218,9 +299,50 @@ services:
     dns:
       - 8.8.8.8
       - 8.8.4.4
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
     networks:
       - private-network
       - proxy-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  messaging-service:
+    image: skillsyncadmin.azurecr.io/skillsync-messaging-service:latest
+    container_name: messaging-service
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: ${EUREKA_DEFAULT_ZONE}
+    depends_on:
+      messaging-db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+      config-server:
+        condition: service_healthy
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    networks:
+      - private-network
+      - proxy-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 networks:
   private-network:

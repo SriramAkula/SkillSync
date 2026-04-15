@@ -73,10 +73,25 @@ export class RequestSessionPage implements OnInit {
 
   back(): void { this.router.navigate(['/mentors']); }
   
+  mentorName(): string {
+    const m = this.mentorStore.selected();
+    if (!m) return 'Loading...';
+    // Prioritize full name from user profile, then mentor name, then username
+    return m.user?.name || m.name || m.username || 'Mentor';
+  }
+
   mentorInitials(): string {
     const m = this.mentorStore.selected();
     if (!m) return 'M';
-    const name = (m.name || m.username || '') as string;
-    return name.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase();
+    const nameStr = this.mentorName();
+    if (nameStr === 'Mentor') return 'M';
+    
+    return nameStr
+      .split(' ')
+      .filter(part => part.length > 0)
+      .map(part => part[0])
+      .join('')
+      .slice(0, 2)
+      .toUpperCase();
   }
 }

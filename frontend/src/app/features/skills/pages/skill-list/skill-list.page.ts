@@ -3,8 +3,8 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { SkillService } from '../../../../core/services/skill.service';
+import { ToastService } from '../../../../core/services/toast.service';
 import { AuthStore } from '../../../../core/auth/auth.store';
 import { SkillStore } from '../../../../core/auth/skill.store';
 import { UserService } from '../../../../core/services/user.service';
@@ -15,7 +15,7 @@ import { PaginationComponent } from '../../../../shared/components/pagination/pa
 @Component({
   selector: 'app-skill-list-page',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatProgressSpinnerModule, MatSnackBarModule, PaginationComponent],
+  imports: [CommonModule, FormsModule, MatProgressSpinnerModule, PaginationComponent],
   templateUrl: './skill-list.page.html',
   styleUrl: './skill-list.page.scss'
 })
@@ -25,7 +25,7 @@ export class SkillListPage implements OnInit {
   readonly authStore = inject(AuthStore);
   readonly skillStore = inject(SkillStore);
   private readonly router = inject(Router);
-  private readonly snack = inject(MatSnackBar);
+  private readonly toast = inject(ToastService);
 
   readonly allSkills = this.skillStore.skills;
   readonly loading = this.skillStore.loading;
@@ -152,11 +152,12 @@ export class SkillListPage implements OnInit {
       next: (res) => {
         const profile = res.data;
         this.userService.updateProfile({ 
+          username: profile.username,
           name: profile.name || profile.username,
           skills: updated.join(',') 
         }).subscribe({
           next: () => {
-             this.snack.open(`${actionStr} your profile 🎉`, 'OK', { duration: 2500 });
+             this.toast.success(`${actionStr} your profile 🎉`);
              
              // 4. Update Popularity Count (Skill Service)
              this.skillService.updatePopularity(skill.id, isAdding).subscribe({
@@ -171,7 +172,7 @@ export class SkillListPage implements OnInit {
              });
           },
           error: (err) => {
-            this.snack.open(err.error?.message ?? 'Failed to update skills', 'OK', { duration: 3000 });
+            this.toast.error(err.error?.message ?? 'Failed to update skills');
             // Revert all optimistic changes on actual failure
             this.selectedSkills.set(list);
             this.skillStore.loadAll(undefined); // Full refresh to be safe
@@ -217,10 +218,10 @@ export class SkillListPage implements OnInit {
         // Update shared store — apply-mentor page will reflect immediately
         if (this.editingSkill()) {
           this.skillStore.updateSkill(r.data);
-          this.snack.open('Skill updated!', 'OK', { duration: 3000 });
+          this.toast.success('Skill updated!');
         } else {
           this.skillStore.addSkill(r.data);
-          this.snack.open('Skill created! It is now available in the mentor application form.', 'OK', { duration: 4000 });
+          this.toast.success('Skill created! It is now available in the mentor application form.');
         }
         // Refresh categories
         const cats = [...new Set(this.skillStore.skills().map(s => s.category).filter(Boolean) as string[])].sort();
@@ -228,14 +229,14 @@ export class SkillListPage implements OnInit {
         this.saving.set(false);
         this.showForm.set(false);
       },
-      error: (e) => { this.saving.set(false); this.snack.open(e.error?.message ?? 'Failed', 'OK', { duration: 3000 }); }
+      error: (e) => { this.saving.set(false); this.toast.error(e.error?.message ?? 'Failed'); }
     });
   }
 
   deleteSkill(id: number): void {
     this.skillService.delete(id).subscribe({
-      next: () => { this.skillStore.removeSkill(id); this.snack.open('Skill deleted.', 'OK', { duration: 3000 }); },
-      error: (e) => this.snack.open(e.error?.message ?? 'Failed', 'OK', { duration: 3000 })
+      next: () => { this.skillStore.removeSkill(id); this.toast.success('Skill deleted.'); },
+      error: (e) => this.toast.error(e.error?.message ?? 'Failed')
     });
   }
 }

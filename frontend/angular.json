@@ -30,6 +30,7 @@
               "src/assets"
             ],
             "styles": [
+              "node_modules/@angular/material/prebuilt-themes/indigo-pink.css",
               "src/styles/styles.scss"
             ],
             "scripts": []
@@ -86,6 +87,33 @@
               "src/**/*.ts",
               "src/**/*.html"
             ]
+          }
+        },
+        "test": {
+          "builder": "@angular-devkit/build-angular:karma",
+          "options": {
+            "codeCoverage": true,
+            "codeCoverageExclude": [
+              "src/app/core/services/messaging.service.ts",
+              "src/app/layout/**/*",
+              "src/app/app.component.ts",
+              "src/app/shared/components/chat-drawer/**/*"
+            ],
+            "polyfills": [
+              "zone.js",
+              "zone.js/testing"
+            ],
+            "tsConfig": "tsconfig.spec.json",
+            "karmaConfig": "karma.conf.js",
+            "inlineStyleLanguage": "scss",
+            "assets": [
+              "src/favicon.ico",
+              "src/assets"
+            ],
+            "styles": [
+              "src/styles/styles.scss"
+            ],
+            "scripts": []
           }
         }
       }

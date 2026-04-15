@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, forkJoin, map, of, switchMap, catchError } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { ApiResponse, SessionDto, RequestSessionRequest, PageResponse } from '../../shared/models';
+import { ApiResponse, SessionDto, RequestSessionRequest, PageResponse, SkillDto } from '../../shared/models';
 import { UserService } from './user.service';
 import { SkillService } from './skill.service';
 
@@ -74,17 +74,20 @@ export class SessionService {
   }
 
   private enrichSessionsList(sessions: SessionDto[]): Observable<SessionDto[]> {
-    if (sessions.length === 0) return of(sessions);
+    if (!sessions || sessions.length === 0) return of(sessions);
 
-    // Get all skills once (they are cached in service anyway)
-    return this.skillService.getAll().pipe(
-      catchError(() => of({ data: [] as { id: number; skillName?: string; name?: string }[] })),
+    // Get skills (using a larger size to ensure we find matches for enrichment)
+    return this.skillService.getAll(0, 50).pipe(
+      catchError(err => {
+        console.warn('[SessionService] Skill enrichment failed, continuing without names:', err);
+        return of({ data: { content: [] } });
+      }),
       switchMap(skillRes => {
-        const skills = (skillRes.data ?? []) as { id: number; skillName?: string; name?: string }[];
+        // Correctly access .content from the PageResponse
+        const skillsData = skillRes.data as PageResponse<SkillDto>;
+        const skills = Array.isArray(skillsData?.content) ? skillsData.content : [];
         
         const requests = sessions.map(s => {
-          // Fetch Mentor and Learner Profiles
-          // Use catchError so one missing profile doesn't break the whole list
           return forkJoin({
             mentor: this.userService.getProfile(s.mentorId).pipe(
               map(r => r.data),
@@ -96,12 +99,12 @@ export class SessionService {
             )
           }).pipe(
             map(({ mentor, learner }) => {
-              const skill = skills.find(sk => sk.id === s.skillId);
+              const skill = skills.find((sk: SkillDto) => sk.id === s.skillId);
               return {
                 ...s,
                 mentorName: mentor?.name || mentor?.username || `Mentor #${s.mentorId}`,
                 learnerName: learner?.name || learner?.username || `Learner #${s.learnerId}`,
-                skillName: skill?.skillName || skill?.name || `Skill #${s.skillId}`
+                skillName: skill?.skillName || `Skill #${s.skillId}`
               } as SessionDto;
             })
           );

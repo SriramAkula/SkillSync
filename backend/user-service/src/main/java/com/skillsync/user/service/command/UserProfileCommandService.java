@@ -6,6 +6,7 @@ import com.skillsync.user.dto.request.UpdateProfileRequestDto;
 import com.skillsync.user.dto.response.UserProfileResponseDto;
 import com.skillsync.user.entity.UserProfile;
 import com.skillsync.user.exception.UserProfileNotFoundException;
+import com.skillsync.user.exception.UsernameAlreadyExistsException;
 import com.skillsync.user.mapper.UserProfileMapper;
 import com.skillsync.user.repository.UserProfileRepository;
 import lombok.RequiredArgsConstructor;
@@ -38,6 +39,14 @@ public class UserProfileCommandService {
                 .orElseThrow(() -> new UserProfileNotFoundException("User profile not found for userId: " + userId));
 
         String oldUsername = profile.getUsername();
+        
+        // If username is changing, check for uniqueness
+        if (requestDto.getUsername() != null && !requestDto.getUsername().equalsIgnoreCase(oldUsername)) {
+            if (userProfileRepository.existsByUsernameAndUserIdNot(requestDto.getUsername(), userId)) {
+                throw new UsernameAlreadyExistsException("Username '" + requestDto.getUsername() + "' is already taken");
+            }
+        }
+
         userProfileMapper.updateEntity(profile, requestDto);
         UserProfile updated = userProfileRepository.save(profile);
 
@@ -60,8 +69,17 @@ public class UserProfileCommandService {
         @CacheEvict(value = "user", key = "'email_' + #email")
     })
     public void createProfile(Long userId, String email, String username) {
-        log.info("Creating profile for userId: {}, email: {}, username: {}", userId, email, username);
-        userProfileRepository.save(userProfileMapper.toEntity(userId, email, username));
+        createProfile(userId, email, username, null, "ROLE_LEARNER");
+    }
+
+    @Transactional
+    @Caching(evict = {
+        @CacheEvict(value = "user", key = "'userId_' + #userId"),
+        @CacheEvict(value = "user", key = "'email_' + #email")
+    })
+    public void createProfile(Long userId, String email, String username, String name, String role) {
+        log.info("Creating profile for userId: {}, email: {}, username: {}, role: {}", userId, email, username, role);
+        userProfileRepository.save(userProfileMapper.toEntity(userId, email, username, name, role));
         log.info("UserProfile created successfully for userId: {}", userId);
     }
 }

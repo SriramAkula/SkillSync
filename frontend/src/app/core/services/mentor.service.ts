@@ -43,15 +43,46 @@ export class MentorService {
     if (filters.page != null) params['page'] = filters.page.toString();
     if (filters.size != null) params['size'] = filters.size.toString();
 
-    return this.http.get<ApiResponse<PageResponse<MentorProfileDto>>>(`${this.base}/search`, { params });
+    return this.http.get<ApiResponse<PageResponse<MentorProfileDto>>>(`${this.base}/search`, { params }).pipe(
+      switchMap(res => this.enrichMentors(res))
+    );
   }
 
   getMentor(id: number): Observable<ApiResponse<MentorProfileDto>> {
-    return this.http.get<ApiResponse<MentorProfileDto>>(`${this.base}/${id}`);
+    return this.http.get<ApiResponse<MentorProfileDto>>(`${this.base}/${id}`).pipe(
+      switchMap(res => this.enrichSingleMentor(res))
+    );
   }
 
-  getMyMentorProfile(): Observable<ApiResponse<MentorProfileDto>> {
-    return this.http.get<ApiResponse<MentorProfileDto>>(`${this.base}/profile/me`);
+  getMyMentorProfile(): Observable<ApiResponse<MentorProfileDto | null>> {
+    return this.http.get<ApiResponse<MentorProfileDto>>(`${this.base}/profile/me`).pipe(
+      switchMap(res => {
+        if (!res.data) return of(res as ApiResponse<MentorProfileDto | null>);
+        return this.enrichSingleMentor(res).pipe(
+          map(enriched => enriched as ApiResponse<MentorProfileDto | null>)
+        );
+      })
+    );
+  }
+
+  private enrichSingleMentor(res: ApiResponse<MentorProfileDto>): Observable<ApiResponse<MentorProfileDto>> {
+    const mentor = res.data;
+    if (!mentor) return of(res);
+
+    return this.userService.getProfile(mentor.userId).pipe(
+      map(uRes => {
+        const user = uRes.data;
+        return {
+          ...res,
+          data: {
+            ...mentor,
+            user,
+            username: user?.username,
+            name: user?.name || user?.username || 'Mentor'
+          }
+        };
+      })
+    );
   }
 
   getPendingApplications(page = 0, size = 12): Observable<ApiResponse<PageResponse<MentorProfileDto>>> {
