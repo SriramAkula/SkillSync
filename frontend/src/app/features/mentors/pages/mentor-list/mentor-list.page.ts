@@ -130,8 +130,11 @@ export class MentorListPage implements OnInit, OnDestroy {
     const size = this.mentorStore.pageSize();
     
     this.mentorStore.loadApproved({ page, size });
-    // Also refresh myProfile to sync updated mentor profile data
-    this.mentorStore.loadMyProfile(undefined);
+    
+    // Also refresh myProfile only if user is a mentor to avoid 404 errors for non-mentors
+    if (this.authStore.isMentor()) {
+      this.mentorStore.loadMyProfile(undefined);
+    }
     
     // Load my rating and reviews if I'm a mentor
     const myId = this.authStore.userId();
