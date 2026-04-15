@@ -2,7 +2,7 @@ import { computed, inject } from '@angular/core';
 import { signalStore, withState, withMethods, withComputed, patchState } from '@ngrx/signals';
 import { rxMethod } from '@ngrx/signals/rxjs-interop';
 import { tapResponse } from '@ngrx/operators';
-import { pipe, switchMap, tap } from 'rxjs';
+import { pipe, switchMap, tap, of } from 'rxjs';
 import { MentorService } from '../services/mentor.service';
 import { AuthStore } from './auth.store';
 import { MentorProfileDto, ApplyMentorRequest, UpdateAvailabilityRequest } from '../../shared/models';
@@ -110,8 +110,12 @@ export const MentorStore = signalStore(
     loadMyProfile: rxMethod<void>(
       pipe(
         tap(() => patchState(store, { loading: true, error: null })),
-        switchMap(() =>
-          svc.getMyMentorProfile().pipe(
+        switchMap(() => {
+          if (!authStore.roles().includes('ROLE_MENTOR')) {
+            patchState(store, { myProfile: null, loading: false, error: null });
+            return of(null);
+          }
+          return svc.getMyMentorProfile().pipe(
             tapResponse({
               next: (res) => patchState(store, { myProfile: res.data, loading: false, error: null }),
               error: (err: HttpErrorResponse) => {
@@ -123,8 +127,8 @@ export const MentorStore = signalStore(
                 }
               }
             })
-          )
-        )
+          );
+        })
       )
     ),
 
