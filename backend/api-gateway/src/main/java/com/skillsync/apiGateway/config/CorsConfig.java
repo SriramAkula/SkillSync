@@ -21,7 +21,8 @@ public class CorsConfig {
                 "http://localhost:4201",
                 "http://127.0.0.1:4200",
                 "https://skillssync.me",
-                "https://www.skillssync.me"));
+                "https://www.skillssync.me",
+                "http://localhost:5173"));
 
         config.setAllowedMethods(List.of(
                 "GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
