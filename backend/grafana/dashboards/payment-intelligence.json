@@ -1,0 +1,149 @@
+{
+  "title": "Payment Intelligence",
+  "uid": "payment-intelligence",
+  "timezone": "browser",
+  "schemaVersion": 38,
+  "panels": [
+    {
+      "id": 1,
+      "title": "Order Creation Rate",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "rate(http_server_requests_seconds_count{job=\"payment-gateway\", uri=\"/payments/create-order\", status=\"201\"}[5m])"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Payment Confirmation Rate",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "rate(http_server_requests_seconds_count{job=\"payment-gateway\", uri=\"/payments/confirm\", status=\"200\"}[5m])"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Payment Failure Rate",
+      "type": "stat",
+      "gridPos": {
+        "x": 0,
+        "y": 8,
+        "w": 4,
+        "h": 5
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "rate(http_server_requests_seconds_count{job=\"payment-gateway\", uri=\"/payments/confirm\", status=~\"4..|5..\"}[5m])"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Signature Failures Log",
+      "type": "logs",
+      "gridPos": {
+        "x": 12,
+        "y": 8,
+        "w": 24,
+        "h": 10
+      },
+      "datasource": {
+        "type": "loki",
+        "uid": "loki-skillsync"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "{service=\"payment-gateway\"} |= \"Invalid payment\""
+        }
+      ],
+      "options": {
+        "showTime": true,
+        "showLabels": false
+      }
+    },
+    {
+      "id": 5,
+      "title": "Success Logs",
+      "type": "logs",
+      "gridPos": {
+        "x": 0,
+        "y": 16,
+        "w": 24,
+        "h": 10
+      },
+      "datasource": {
+        "type": "loki",
+        "uid": "loki-skillsync"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "{service=\"payment-gateway\"} |= \"Payment confirmed\""
+        }
+      ],
+      "options": {
+        "showTime": true,
+        "showLabels": false
+      }
+    },
+    {
+      "id": 6,
+      "title": "Wallet Failures",
+      "type": "logs",
+      "gridPos": {
+        "x": 12,
+        "y": 16,
+        "w": 24,
+        "h": 10
+      },
+      "datasource": {
+        "type": "loki",
+        "uid": "loki-skillsync"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "{service=\"payment-gateway\"} |= \"Failed to credit\""
+        }
+      ],
+      "options": {
+        "showTime": true,
+        "showLabels": false
+      }
+    }
+  ],
+  "templating": {
+    "list": []
+  }
+}
