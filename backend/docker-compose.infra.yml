@@ -29,33 +29,6 @@ services:
         max-size: "10m"
         max-file: "3"
 
-  zipkin-mysql:
-    image: mysql:8.0
-    container_name: zipkin-mysql
-    restart: unless-stopped
-    env_file: .env
-    environment:
-      MYSQL_ROOT_PASSWORD: ${ZIPKIN_MYSQL_ROOT_PASSWORD}
-      MYSQL_DATABASE: ${ZIPKIN_MYSQL_DATABASE}
-      MYSQL_USER: ${ZIPKIN_MYSQL_USER}
-      MYSQL_PASSWORD: ${ZIPKIN_MYSQL_PASSWORD}
-    volumes:
-      - zipkin-mysql-data:/var/lib/mysql
-      - ./zipkin-schema.sql:/docker-entrypoint-initdb.d/zipkin-schema.sql
-    networks:
-      - private-network
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
-    command: ["--default-authentication-plugin=mysql_native_password", "--skip-log-bin"]
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
   # --- Independent Databases ---
 
   auth-db:
@@ -364,15 +337,7 @@ services:
     restart: unless-stopped
     env_file: .env
     environment:
-      STORAGE_TYPE: mysql
-      MYSQL_HOST: zipkin-mysql
-      MYSQL_PORT: 3306
-      MYSQL_USER: ${ZIPKIN_MYSQL_USER}
-      MYSQL_PASS: ${ZIPKIN_MYSQL_PASSWORD}
-      MYSQL_DB: ${ZIPKIN_MYSQL_DATABASE}
-    depends_on:
-      zipkin-mysql:
-        condition: service_healthy
+      STORAGE_TYPE: mem
     networks:
       - private-network
       - proxy-network
@@ -398,4 +363,3 @@ volumes:
   notification-db-data:
   payment-db-data:
   messaging-db-data:
-  zipkin-mysql-data:

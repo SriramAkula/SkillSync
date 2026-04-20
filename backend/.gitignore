@@ -82,3 +82,6 @@ compile_error.log
 test_output.txt
 *.txt
 !README.txt
+
+.metadata/
+.sonarlint/

@@ -20,6 +20,7 @@ services:
     restart: unless-stopped
     volumes:
       - ./promtail-config.yml:/etc/promtail/promtail-config.yml
+      - /var/run/docker.sock:/var/run/docker.sock
     command: -config.file=/etc/promtail/promtail-config.yml
     depends_on:
       - loki

@@ -129,7 +129,9 @@ export const AuthStore = signalStore(
                   username: res.username ?? claims.sub ?? null,
                   loading: false, error: null
                 });
-                if (userRoles.includes('ROLE_MENTOR')) {
+                if (userRoles.includes('ROLE_ADMIN')) {
+                  router.navigate(['/admin/users']);
+                } else if (userRoles.includes('ROLE_MENTOR')) {
                   router.navigate(['/mentor-dashboard']);
                 } else {
                   router.navigate(['/mentors']);
@@ -172,7 +174,9 @@ export const AuthStore = signalStore(
                   username: res.username ?? claims.sub ?? null,
                   loading: false, error: null
                 });
-                if (userRoles.includes('ROLE_MENTOR')) {
+                if (userRoles.includes('ROLE_ADMIN')) {
+                  router.navigate(['/admin/users']);
+                } else if (userRoles.includes('ROLE_MENTOR')) {
                   router.navigate(['/mentor-dashboard']);
                 } else {
                   router.navigate(['/mentors']);

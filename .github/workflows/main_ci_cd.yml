@@ -210,7 +210,13 @@ jobs:
             # 5. REGISTRY LOGIN
             echo "${{ secrets.ACR_PASSWORD }}" | docker login ${{ secrets.ACR_LOGIN_SERVER }} -u ${{ secrets.ACR_USERNAME }} --password-stdin
             
-            # 6. PULL & DEPLOY
+            # 6. SHUTDOWN, PULL & DEPLOY
+            echo "Shutting down existing containers..."
+            docker compose -f backend/docker-compose.infra.yml \
+                           -f backend/docker-compose.monitoring.yml \
+                           -f backend/docker-compose.services.yml \
+                           -f frontend/docker-compose.yml down
+            
             echo "Pulling latest images..."
             docker compose -f backend/docker-compose.infra.yml \
                            -f backend/docker-compose.monitoring.yml \
@@ -226,6 +232,8 @@ jobs:
             # 7. RECOVER GATEWAY (Nginx Proxy)
             if [ -d "/home/azureuser/nginx-proxy" ]; then
                 cd /home/azureuser/nginx-proxy
+                docker compose down
+                docker compose pull
                 docker compose up -d --force-recreate
                 cd /home/azureuser/SkillSync
             fi
@@ -233,5 +241,5 @@ jobs:
             # 8. POST-DEPLOY STATUS
             docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
             df -h /
-            docker system prune -f
+            docker system prune -af
             echo "Deployment completed successfully."

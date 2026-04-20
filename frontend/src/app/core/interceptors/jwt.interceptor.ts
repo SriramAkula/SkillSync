@@ -3,6 +3,7 @@ import { inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { catchError, switchMap, throwError, BehaviorSubject, filter, take } from 'rxjs';
 import { AuthService } from '../services/auth.service';
+import { environment } from '../../../environments/environment';
 
 let isRefreshing = false;
 const refreshSubject = new BehaviorSubject<string | null>(null);
@@ -10,19 +11,36 @@ const refreshSubject = new BehaviorSubject<string | null>(null);
 export const jwtInterceptor: HttpInterceptorFn = (req, next) => {
   const router = inject(Router);
   const authService = inject(AuthService);
-  const token = localStorage.getItem('token');
-
-  // Verify token exists for protected endpoints
-  if (!token && isProtectedEndpoint(req.url)) {
-    console.warn('JWT Interceptor: No token found for protected endpoint', req.url);
+  
+  // Standardize URL: Only prepend environment.apiUrl if the request is relative 
+  // AND doesn't already start with the API prefix.
+  const apiUrl = environment.apiUrl;
+  let finalUrl = req.url;
+  
+  if (!req.url.startsWith('http')) {
+    if (apiUrl.startsWith('http')) {
+      // Production: environment.apiUrl is absolute (e.g., https://api.skillssync.me/api)
+      if (!req.url.startsWith(apiUrl)) {
+        if (req.url.startsWith('/api') && apiUrl.endsWith('/api')) {
+          finalUrl = apiUrl.slice(0, -4) + req.url;
+        } else {
+          finalUrl = apiUrl + (req.url.startsWith('/') ? '' : '/') + req.url;
+        }
+      }
+    } else {
+      // Local: environment.apiUrl is relative (e.g., /api)
+      if (!req.url.startsWith(apiUrl)) {
+        finalUrl = apiUrl + (req.url.startsWith('/') ? '' : '/') + req.url;
+      }
+    }
   }
 
-  const authReq = token ? addToken(req, token) : req;
+  const token = localStorage.getItem('token');
+  const authReq = token ? addToken(req.clone({ url: finalUrl }), token) : req.clone({ url: finalUrl });
 
   return next(authReq).pipe(
     catchError((err: HttpErrorResponse) => {
-      // Log all errors for debugging
-      console.error(`HTTP Error ${err.status}:`, err.message, 'URL:', req.url);
+      console.error(`HTTP Error ${err.status}:`, err.message, 'URL:', finalUrl);
       
       if (err.status === 401) {
         if (req.url.includes('/auth/')) {
@@ -36,7 +54,6 @@ export const jwtInterceptor: HttpInterceptorFn = (req, next) => {
         console.warn('Access forbidden for:', req.url);
         return throwError(() => err);
       }
-      // Pass through all other errors (400, 404, 500, etc.)
       console.error('HTTP request failed:', err.status, err.statusText);
       return throwError(() => err);
     })
@@ -44,13 +61,7 @@ export const jwtInterceptor: HttpInterceptorFn = (req, next) => {
 };
 
 function addToken(req: HttpRequest<unknown>, token: string): HttpRequest<unknown> {
-  console.debug('Adding JWT token to request:', req.url.substring(req.url.lastIndexOf('/') + 1));
   return req.clone({ setHeaders: { Authorization: `Bearer ${token}` } });
-}
-
-function isProtectedEndpoint(url: string): boolean {
-  const publicPaths = ['/auth/login', '/auth/register', '/auth/refresh', '/auth/oauth'];
-  return !publicPaths.some(path => url.includes(path));
 }
 
 function handle401(
@@ -73,15 +84,12 @@ function handle401(
   return authService.refreshToken().pipe(
     switchMap(res => {
       isRefreshing = false;
-      console.log('Token refreshed successfully');
       localStorage.setItem('token', res.token);
-      // refreshToken is automatically handled by HttpOnly cookie
       refreshSubject.next(res.token);
       return next(addToken(req, res.token));
     }),
     catchError(err => {
       isRefreshing = false;
-      console.error('Token refresh failed, redirecting to login');
       localStorage.clear();
       router.navigate(['/auth/login']);
       return throwError(() => err);
