@@ -2,6 +2,7 @@ package com.skillsync.user.service;
 
 import com.skillsync.user.dto.request.UpdateProfileRequestDto;
 import com.skillsync.user.dto.response.UserProfileResponseDto;
+import org.springframework.web.multipart.MultipartFile;
 import java.util.Map;
 
 /**
@@ -38,4 +39,19 @@ public interface UserProfileService {
 	 * Create user profile from internal endpoint (Auth Service)
 	 */
 	void createProfile(Long userId, String email, String username, String name, String role);
+
+	/**
+	 * Upload Profile Image
+	 */
+	UserProfileResponseDto uploadProfileImage(Long userId, MultipartFile file);
+
+	/**
+	 * Upload Resume
+	 */
+	void uploadResume(Long userId, MultipartFile file);
+
+	/**
+	 * Get pre-signed resume URL
+	 */
+	String getResumeUrl(Long userId);
 }

@@ -165,6 +165,80 @@ public class UserProfileController {
 	}
 
 	/**
+	 * POST /api/user/profile/image
+	 * Upload user's profile image
+	 */
+	@PostMapping(value = "/profile/image", consumes = org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE)
+	@Operation(summary = "Upload profile picture", description = "Upload a profile picture for the authenticated user")
+	@SecurityRequirement(name = "bearerAuth")
+	public ResponseEntity<ApiResponse<UserProfileResponseDto>> uploadProfileImage(
+			@Parameter(hidden = true) @RequestHeader(value = "X-User-Id", required = false) Long headerUserId,
+			@RequestParam("file") org.springframework.web.multipart.MultipartFile file,
+			HttpServletRequest request) {
+
+		Long userId = securityUtil.extractUserId(request);
+		if (userId == null) userId = headerUserId;
+
+		if (userId == null) {
+			throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unidentified user");
+		}
+
+		log.info("Uploading profile image for userId: {}", userId);
+		UserProfileResponseDto response = userProfileService.uploadProfileImage(userId, file);
+
+		return ResponseEntity.ok(new ApiResponse<>(true, "Profile image uploaded successfully", response, 200));
+	}
+
+	/**
+	 * POST /api/user/profile/resume
+	 * Upload user's resume
+	 */
+	@PostMapping(value = "/profile/resume", consumes = org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE)
+	@Operation(summary = "Upload resume", description = "Upload a resume (PDF/DOC) for the authenticated user")
+	@SecurityRequirement(name = "bearerAuth")
+	public ResponseEntity<ApiResponse<Void>> uploadResume(
+			@Parameter(hidden = true) @RequestHeader(value = "X-User-Id", required = false) Long headerUserId,
+			@RequestParam("file") org.springframework.web.multipart.MultipartFile file,
+			HttpServletRequest request) {
+
+		Long userId = securityUtil.extractUserId(request);
+		if (userId == null) userId = headerUserId;
+
+		if (userId == null) {
+			throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unidentified user");
+		}
+
+		log.info("Uploading resume for userId: {}", userId);
+		userProfileService.uploadResume(userId, file);
+
+		return ResponseEntity.ok(new ApiResponse<>(true, "Resume uploaded successfully", null, 200));
+	}
+
+	/**
+	 * GET /api/user/profile/resume-url
+	 * Get temporary pre-signed URL to view resume
+	 */
+	@GetMapping("/profile/resume-url")
+	@Operation(summary = "Get resume URL", description = "Get a secure, temporary URL to download/view the resume")
+	@SecurityRequirement(name = "bearerAuth")
+	public ResponseEntity<ApiResponse<String>> getResumeUrl(
+			@Parameter(hidden = true) @RequestHeader(value = "X-User-Id", required = false) Long headerUserId,
+			HttpServletRequest request) {
+
+		Long userId = securityUtil.extractUserId(request);
+		if (userId == null) userId = headerUserId;
+
+		if (userId == null) {
+			throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unidentified user");
+		}
+
+		log.info("Fetching resume URL for userId: {}", userId);
+		String url = userProfileService.getResumeUrl(userId);
+
+		return ResponseEntity.ok(new ApiResponse<>(true, "Resume URL fetched", url, 200));
+	}
+
+	/**
 	 * POST /user/internal/users
 	 * Internal endpoint for creating profile after registration
 	 * Called by Auth Service via Feign
