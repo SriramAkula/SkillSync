@@ -1,0 +1,124 @@
+{
+  "title": "Security & Auth Monitoring",
+  "uid": "security-monitoring",
+  "timezone": "browser",
+  "schemaVersion": 38,
+  "panels": [
+    {
+      "id": 1,
+      "title": "Login Attempts",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "rate(http_server_requests_seconds_count{job=\"auth-service\", uri=\"/auth/login\"}[1m])"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Failed Login Rate",
+      "type": "stat",
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 4,
+        "h": 5
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "rate(http_server_requests_seconds_count{job=\"auth-service\", uri=\"/auth/login\", status=\"401\"}[1m])"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Auth Invalid Logs",
+      "type": "logs",
+      "gridPos": {
+        "x": 0,
+        "y": 8,
+        "w": 24,
+        "h": 10
+      },
+      "datasource": {
+        "type": "loki",
+        "uid": "loki-skillsync"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "{service=\"auth-service\"} |= \"Invalid credentials\" or {service=\"auth-service\"} |= \"401\""
+        }
+      ],
+      "options": {
+        "showTime": true,
+        "showLabels": false
+      }
+    },
+    {
+      "id": 4,
+      "title": "Gateway JWT Failures",
+      "type": "logs",
+      "gridPos": {
+        "x": 12,
+        "y": 8,
+        "w": 24,
+        "h": 10
+      },
+      "datasource": {
+        "type": "loki",
+        "uid": "loki-skillsync"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "{service=\"api-gateway\"} |= \"JWT\" |= \"invalid\""
+        }
+      ],
+      "options": {
+        "showTime": true,
+        "showLabels": false
+      }
+    },
+    {
+      "id": 5,
+      "title": "Registration Rate",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 0,
+        "y": 16,
+        "w": 12,
+        "h": 8
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "rate(http_server_requests_seconds_count{job=\"auth-service\", uri=\"/auth/register\", status=\"201\"}[5m])"
+        }
+      ]
+    }
+  ],
+  "templating": {
+    "list": []
+  }
+}
