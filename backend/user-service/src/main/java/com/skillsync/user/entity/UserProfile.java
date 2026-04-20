@@ -58,6 +58,9 @@ public class UserProfile extends Auditable {
 	@Column
 	private String profileImageUrl;
 
+	@Column
+	private String resumeUrl;
+
 	@Column(length = 500)
 	private String skills;
 
