@@ -4,7 +4,7 @@
     <div class="sidebar-header">
       <div class="header-top">
         <h1>Messages</h1>
-        <button class="btn-new" (click)="searchQuery.set('')">
+        <button class="btn-new">
           <span class="material-icons">add</span> New
         </button>
       </div>
@@ -12,7 +12,7 @@
         <span class="material-icons search-icon">search</span>
         <input 
           type="text" 
-          placeholder="Search for messages" 
+          placeholder="Search items..." 
           [value]="searchQuery()"
           (input)="onSearch($event)"
         >
@@ -52,16 +52,12 @@
                 (keydown.enter)="openDirectChat(entry.userId)"
                 role="button"
                 tabindex="0">
-                <div class="avatar-circle">
-                  @if (entry.avatar) {
-                    <img [src]="entry.avatar" [alt]="entry.name">
-                  } @else {
-                    <span class="initials">{{ getInitials(entry.name) }}</span>
-                  }
+                <div class="avatar-card">
+                  <span class="initials">{{ getInitials(entry.name) }}</span>
                 </div>
                 <div class="chat-info">
                   <div class="chat-name">{{ entry.name }}</div>
-                  <div class="chat-preview">{{ entry.email || 'Direct Message' }}</div>
+                  <div class="chat-preview">{{ entry.email || 'Direct message' }}</div>
                 </div>
               </div>
             }

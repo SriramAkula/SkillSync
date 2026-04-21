@@ -2,133 +2,40 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px 24px;
-  background: rgba(11, 12, 16, 0.4);
-  backdrop-filter: blur(20px);
+  padding: 1.25rem 2rem;
+  background: #0b0b14;
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-  min-height: 80px;
+  min-height: 72px;
   z-index: 10;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-
-  &.empty {
-    justify-content: flex-start;
-    color: #64748b;
-    font-size: 0.9rem;
-    padding-left: 24px;
-  }
 }
 
 .header-left {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 1.25rem;
   flex: 1;
-  min-width: 0;
 }
 
-.avatar {
-  width: 48px;
-  height: 48px;
-  border-radius: 40%; /* Modern squircle */
+.avatar-card {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #7c5cff, #5a4fb8);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 700;
-  color: white;
-  font-size: 15px;
   flex-shrink: 0;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  font-weight: 700;
+  color: #fff;
+  font-size: 1.1rem;
 }
 
 .info {
-  min-width: 0;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-}
-
-.name {
-  margin: 0;
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: #ffffff;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  letter-spacing: -0.3px;
-}
-
-.subtitle {
-  margin: 2px 0 0 0;
-  font-size: 0.8rem;
-  color: #a78bfa;
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-
-  &.offline {
-    color: #64748b;
-  }
-}
-
-.status-dot {
-  width: 8px;
-  height: 8px;
-  background: #10b981;
-  border-radius: 50%;
-  box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
-}
-
-.header-actions {
-  display: flex;
-  gap: 12px;
-  flex-shrink: 0;
-}
-
-.action-btn {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  cursor: pointer;
-  color: #94a3b8;
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-
-  &:hover {
-    background: rgba(111, 66, 193, 0.1);
-    border-color: rgba(111, 66, 193, 0.3);
-    color: #a78bfa;
-    transform: translateY(-2px);
-  }
-
-  &:active {
-    transform: scale(0.95);
-  }
-  
-  svg {
-    width: 20px;
-    height: 20px;
-  }
-}
-
-@media (max-width: 768px) {
-  .chat-header {
-    padding: 12px 16px;
-    min-height: 70px;
-  }
-
-  .avatar {
-    width: 40px;
-    height: 40px;
-    font-size: 13px;
-  }
-
   .name {
-    font-size: 1rem;
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: -0.5px;
   }
 }
