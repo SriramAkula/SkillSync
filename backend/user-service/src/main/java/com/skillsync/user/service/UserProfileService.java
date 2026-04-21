@@ -45,13 +45,4 @@ public interface UserProfileService {
 	 */
 	UserProfileResponseDto uploadProfileImage(Long userId, MultipartFile file);
 
-	/**
-	 * Upload Resume
-	 */
-	void uploadResume(Long userId, MultipartFile file);
-
-	/**
-	 * Get pre-signed resume URL
-	 */
-	String getResumeUrl(Long userId);
 }
