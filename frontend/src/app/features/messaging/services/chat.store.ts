@@ -281,38 +281,77 @@ export class ChatStore {
 
   /**
    * Add message to current conversation
+   * Handles reconciliation of optimistic updates
    */
   addMessage(conversationId: string, message: UIMessage): void {
     this.messagesSignal.update(msgs => {
       const messages = msgs.get(conversationId) || [];
-      // Check for duplicates
-      if (messages.some(m => m.id === message.id)) {
-        return msgs;
-      }
       const newMessages = new Map(msgs);
-      newMessages.set(conversationId, [...messages, message].sort((a, b) =>
-        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-      ));
+
+      // 1. Check if this is a real message replacing an optimistic one
+      // Match by tempId if available, OR by content/sender for recently sent optimistic messages
+      let existingIndex = -1;
+      
+      if (message.tempId) {
+        existingIndex = messages.findIndex(m => m.id === message.tempId || m.tempId === message.tempId);
+      } else if (!message.isOptimistic) {
+        // Fallback: match by content and sender for very recent optimistic messages
+        existingIndex = messages.findIndex(m => 
+          m.isOptimistic && 
+          m.senderId === message.senderId && 
+          m.content === message.content
+        );
+      } else {
+        // Standard duplicate check for non-optimistic replacements
+        if (messages.some(m => m.id === message.id)) {
+          return msgs;
+        }
+      }
+
+      if (existingIndex > -1) {
+        // Replace existing optimistic message
+        const updatedMessages = [...messages];
+        updatedMessages[existingIndex] = message;
+        newMessages.set(conversationId, updatedMessages.sort((a, b) =>
+          new Date(a.createdAt).valueOf() - new Date(b.createdAt).valueOf()
+        ));
+      } else {
+        // Add as new message
+        newMessages.set(conversationId, [...messages, message].sort((a, b) =>
+          new Date(a.createdAt).valueOf() - new Date(b.createdAt).valueOf()
+        ));
+      }
+
       return newMessages;
     });
   }
 
   /**
-   * Add multiple messages (for history)
+   * Add multiple messages (for history/polling)
    */
   addMessages(conversationId: string, newMessages: UIMessage[]): void {
     this.messagesSignal.update(msgs => {
       const existing = msgs.get(conversationId) || [];
-      const combined = [...existing, ...newMessages];
       
-      // Remove duplicates
+      // Filter out optimistic messages from 'existing' if they are now present in 'newMessages'
+      // (Matched by content/sender consistency)
+      const filteredExisting = existing.filter(ex => {
+        if (!ex.isOptimistic) return true;
+        return !newMessages.some(nw => 
+          nw.senderId === ex.senderId && nw.content === ex.content
+        );
+      });
+
+      const combined = [...filteredExisting, ...newMessages];
+      
+      // Remove duplicates by ID
       const unique = Array.from(
         new Map(combined.map(m => [m.id, m])).values()
       );
       
       // Sort by createdAt
       unique.sort((a, b) =>
-        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        new Date(a.createdAt).valueOf() - new Date(b.createdAt).valueOf()
       );
 
       const newMsgs = new Map(msgs);

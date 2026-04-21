@@ -7,7 +7,7 @@
 
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams, HttpHeaders } from '@angular/common/http';
-import { Observable, Subject, firstValueFrom, tap, map, catchError, of } from 'rxjs';
+import { Observable, Subject, firstValueFrom, tap, map, catchError, of, Subscription } from 'rxjs';
 import { ChatStore } from './chat.store';
 import { AuthService } from '../../../core/services/auth.service';
 import { AuthStore } from '../../../core/auth/auth.store';
@@ -38,6 +38,9 @@ export class ChatMessageService {
   // Message send status for optimistic updates
   private messageSendingSubject = new Subject<UIMessage>();
   public messageSending$ = this.messageSendingSubject.asObservable();
+
+  private pollingSubscription: Subscription | null = null;
+  private currentPollingConversationId: string | null = null;
 
   /**
    * Headers are handled by jwt.interceptor.ts
@@ -153,7 +156,8 @@ export class ChatMessageService {
             type: 'CHAT',
             createdAt: new Date(response.createdAt),
             isRead: false,
-            status: 'SENT' as const
+            status: 'SENT' as const,
+            tempId: request.tempId // Pass along the tempId for store reconciliation
           };
           return {
             id: response.id.toString(),
@@ -211,7 +215,11 @@ export class ChatMessageService {
       groupId: request.groupId,
       status: 'SENDING',
       isOptimistic: true,
+      tempId: `temp-${Date.now()}` // Set a stable tempId for reconciliation
     };
+
+    // Update request with tempId so the API handler can return it
+    request.tempId = tempMessage.tempId;
 
     this.chatStore.addMessage(conversationId, tempMessage);
     this.messageSendingSubject.next(tempMessage);
@@ -454,9 +462,46 @@ export class ChatMessageService {
   }
 
   /**
+   * Start polling for a specific conversation
+   */
+  startPolling(conversationId: string, intervalMs = 15000): void {
+    if (this.currentPollingConversationId === conversationId) return;
+
+    this.stopPolling();
+    this.currentPollingConversationId = conversationId;
+
+    console.log(`[ChatMessageService] Starting polling for ${conversationId} every ${intervalMs}ms`);
+
+    // Poll every interval
+    this.pollingSubscription = interval(intervalMs).subscribe(() => {
+      if (this.currentPollingConversationId) {
+        this.loadMessages(this.currentPollingConversationId, 0, 50);
+      }
+    });
+
+    // Initial load
+    this.loadMessages(conversationId, 0, 50);
+  }
+
+  /**
+   * Stop all active polling
+   */
+  stopPolling(): void {
+    if (this.pollingSubscription) {
+      this.pollingSubscription.unsubscribe();
+      this.pollingSubscription = null;
+    }
+    this.currentPollingConversationId = null;
+    console.log('[ChatMessageService] Polling stopped');
+  }
+
+  /**
    * Private helper removed in favor of direct/group specific loading
    */
   private fetchMessages(): Observable<ChatMessage[]> {
     return of([]);
   }
-}
+} 
+
+// Import interval at top
+import { interval } from 'rxjs';

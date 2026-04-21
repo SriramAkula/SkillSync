@@ -19,7 +19,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -67,14 +67,14 @@ class MessageServiceTest {
         message1.setSenderId(100L);
         message1.setReceiverId(200L);
         message1.setContent("Hello from sender!");
-        message1.setCreatedAt(LocalDateTime.now());
+        message1.setCreatedAt(Instant.now());
 
         message2 = new Message();
         message2.setId(2L);
         message2.setSenderId(200L);
         message2.setReceiverId(100L);
         message2.setContent("Hello back from receiver!");
-        message2.setCreatedAt(LocalDateTime.now());
+        message2.setCreatedAt(Instant.now());
 
         validRequest = MessageRequestDTO.builder()
                 .senderId(100L)

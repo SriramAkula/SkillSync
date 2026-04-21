@@ -50,6 +50,7 @@ export interface MessageAttachment {
 export interface UIMessage extends ChatMessage {
   status: MessageStatus; // UI state
   isOptimistic?: boolean; // Optimistic update flag
+  tempId?: string; // Original ID for reconciliation
   error?: string; // Error message if failed
 }
 
@@ -107,6 +108,7 @@ export interface SendMessageRequest {
   recipientId?: number; // Direct message
   groupId?: number; // Group message
   replyTo?: string;
+  tempId?: string; // Client-side generated ID for tracking
 }
 
 export interface SendMessageResponse {

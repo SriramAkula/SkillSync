@@ -18,11 +18,13 @@ import {
   ChangeDetectionStrategy,
   AfterViewInit,
   OnDestroy,
+  OnInit,
   inject,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MessageItemComponent } from '../message-item/message-item.component';
 import { ChatStore } from '../../services/chat.store';
+import { ChatMessageService } from '../../services/chat-message.service';
 import type { UIMessage } from '../../models';
 
 @Component({
@@ -74,7 +76,7 @@ import type { UIMessage } from '../../models';
   `,
   styleUrls: ['./message-thread.component.scss']
 })
-export class MessageThreadComponent implements AfterViewInit, OnDestroy {
+export class MessageThreadComponent implements AfterViewInit, OnDestroy, OnInit {
   @Input() currentUserId = 0;
   @Input() isGroupChat = false;
   @Output() scrolledToTop = new EventEmitter<void>();
@@ -84,6 +86,7 @@ export class MessageThreadComponent implements AfterViewInit, OnDestroy {
   @ViewChild('threadContainer') threadContainer!: ElementRef<HTMLDivElement>;
 
   private chatStore = inject(ChatStore);
+  private chatMessageService = inject(ChatMessageService);
   private scrollListener: ((e: Event) => void) | null = null;
   private autoScrollEnabled = true;
 
@@ -117,12 +120,20 @@ export class MessageThreadComponent implements AfterViewInit, OnDestroy {
     });
   }
 
+  ngOnInit(): void {
+    const convId = this.chatStore.currentConversationId();
+    if (convId) {
+      this.chatMessageService.startPolling(convId);
+    }
+  }
+
   ngAfterViewInit(): void {
     this.setupScrollListener();
     this.scrollToBottom();
   }
 
   ngOnDestroy(): void {
+    this.chatMessageService.stopPolling();
     if (this.scrollListener && this.threadContainer?.nativeElement) {
       this.threadContainer.nativeElement.removeEventListener(
         'scroll',
