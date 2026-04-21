@@ -19,7 +19,7 @@ import type {
   MarkAsReadRequest,
   MarkAsReadResponse,
 } from '../models';
-import { ApiResponse } from '../../../shared/models';
+import { ApiResponse, PageResponse } from '../../../shared/models';
 
 @Injectable({
   providedIn: 'root'
@@ -405,10 +405,16 @@ export class ChatMessageService {
           .pipe(map(res => res.messages));
       } else if (conversationId.startsWith('group-')) {
         const groupId = Number(conversationId.replace('group-', ''));
-        messages$ = this.http.get<ApiResponse<{ content: ChatMessage[] }>>(
+        console.log(`[ChatMessageService] Fetching group conversation for: ${groupId}`);
+        messages$ = this.http.get<ApiResponse<PageResponse<ChatMessage>>>(
           `${this.apiUrl}/group/${groupId}?page=${page}&size=${pageSize}`,
           { headers: this.getHeaders() }
-        ).pipe(map(res => res.data.content || []));
+        ).pipe(
+          map(res => {
+            console.log('[ChatMessageService] Group messages response received:', res.data);
+            return res.data.content || [];
+          })
+        );
       } else {
         throw new Error('Invalid conversation ID format');
       }

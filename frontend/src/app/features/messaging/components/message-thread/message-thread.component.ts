@@ -18,7 +18,6 @@ import {
   ChangeDetectionStrategy,
   AfterViewInit,
   OnDestroy,
-  OnInit,
   inject,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
@@ -76,7 +75,7 @@ import type { UIMessage } from '../../models';
   `,
   styleUrls: ['./message-thread.component.scss']
 })
-export class MessageThreadComponent implements AfterViewInit, OnDestroy, OnInit {
+export class MessageThreadComponent implements AfterViewInit, OnDestroy {
   @Input() currentUserId = 0;
   @Input() isGroupChat = false;
   @Output() scrolledToTop = new EventEmitter<void>();
@@ -118,13 +117,17 @@ export class MessageThreadComponent implements AfterViewInit, OnDestroy, OnInit 
         this.markVisibleMessagesAsRead(messages);
       }
     });
-  }
 
-  ngOnInit(): void {
-    const convId = this.chatStore.currentConversationId();
-    if (convId) {
-      this.chatMessageService.startPolling(convId);
-    }
+    // Reactive Polling Effect
+    // restarts polling whenever the conversation ID changes (Group or Direct)
+    effect(() => {
+      const convId = this.chatStore.currentConversationId();
+      this.chatMessageService.stopPolling();
+      if (convId) {
+        console.log('[MessageThread] Reactive polling trigger for:', convId);
+        this.chatMessageService.startPolling(convId);
+      }
+    }, { allowSignalWrites: true });
   }
 
   ngAfterViewInit(): void {
