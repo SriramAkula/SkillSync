@@ -39,10 +39,12 @@ export class ChatMessageService {
   private messageSendingSubject = new Subject<UIMessage>();
   public messageSending$ = this.messageSendingSubject.asObservable();
 
+  /**
+   * Headers are handled by jwt.interceptor.ts
+   * Only need specific headers if not handled globally
+   */
   private getHeaders(): HttpHeaders {
-    const token = this.authService.getToken();
     return new HttpHeaders({
-      'Authorization': token ? `Bearer ${token}` : '',
       'Content-Type': 'application/json'
     });
   }
@@ -81,10 +83,10 @@ export class ChatMessageService {
           // Map response to UIMessage with DELIVERED status
           const uiMessages = response.messages.map((msg: ChatMessage) => ({
             ...msg,
-            timestamp: new Date(msg.timestamp),
+            createdAt: new Date(msg.createdAt),
             status: 'DELIVERED' as const
           }));
-          const conversationId = `direct-${Math.min(userId1, userId2)}-${Math.max(userId1, userId2)}`;
+          const conversationId = this.getConversationId(userId1, userId2);
           this.chatStore.addMessages(conversationId, uiMessages);
         }),
         catchError(error => {
@@ -123,40 +125,52 @@ export class ChatMessageService {
    * POST /messages
    */
   sendMessage(request: SendMessageRequest): Observable<SendMessageResponse> {
-    const payload = {
+    // Build payload and remove undefined values to avoid backend validation errors
+    const payload: Record<string, unknown> = {
       content: request.content,
       senderId: this.authStore.userId(),
-      receiverId: request.recipientId, // Map recipientId to receiverId for backend
-      groupId: request.groupId,
+      receiverId: request.recipientId
     };
+    
+    if (request.groupId) {
+      payload['groupId'] = request.groupId;
+    }
 
-    console.log('[ChatMessageService] Sending message:', payload);
+    console.log('[ChatMessageService] Sending message payload:', payload);
 
     return this.http
-      .post<ApiResponse<ChatMessage>>(`${this.apiUrl}`, payload, { headers: this.getHeaders() })
+      .post<ApiResponse<ChatMessage>>(`${this.apiUrl}`, payload)
       .pipe(
         map(apiRes => {
           const response = apiRes.data;
           console.log('[ChatMessageService] Message sent successfully:', response);
           const message: UIMessage = {
-            id: response.id,
-            senderId: this.authStore.userId() || 0,
+            id: response.id.toString(),
+            senderId: response.senderId,
+            receiverId: response.receiverId,
+            groupId: response.groupId,
             content: response.content || '',
             type: 'CHAT',
-            timestamp: new Date(response.timestamp),
+            createdAt: new Date(response.createdAt),
             isRead: false,
             status: 'SENT' as const
           };
           return {
-            id: response.id,
-            timestamp: new Date(response.timestamp),
+            id: response.id.toString(),
+            createdAt: new Date(response.createdAt),
             status: 'SUCCESS' as const,
             message
           } as SendMessageResponse;
         }),
         tap(response => {
           if (response.status === 'SUCCESS' && response.message) {
-            const conversationId = request.groupId?.toString() || request.recipientId?.toString();
+            let conversationId: string | undefined;
+            if (request.groupId) {
+              conversationId = `group-${request.groupId}`;
+            } else if (request.recipientId) {
+              conversationId = this.getConversationId(this.authStore.userId() || 0, request.recipientId);
+            }
+
             if (conversationId) {
               const uiMessage: UIMessage = {
                 ...response.message,
@@ -169,6 +183,9 @@ export class ChatMessageService {
         }),
         catchError(error => {
           console.error('[ChatMessageService] Failed to send message:', error);
+          if (error.error) {
+            console.error('[ChatMessageService] Server error detail:', error.error);
+          }
           throw error;
         })
       );
@@ -188,9 +205,9 @@ export class ChatMessageService {
       senderId: currentUserId,
       content: request.content,
       type: request.type || 'CHAT',
-      timestamp: new Date(),
+      createdAt: new Date(),
       isRead: false,
-      recipientId: request.recipientId,
+      receiverId: request.recipientId,
       groupId: request.groupId,
       status: 'SENDING',
       isOptimistic: true,
@@ -214,7 +231,7 @@ export class ChatMessageService {
       .pipe(
         map(response => ({
           ...response.data,
-          timestamp: new Date(response.data.timestamp),
+          createdAt: new Date(response.data.createdAt),
           readAt: response.data.readAt ? new Date(response.data.readAt) : undefined
         })),
         catchError(error => {
@@ -324,10 +341,19 @@ export class ChatMessageService {
     this.messageReceivedSubject.next(message);
 
     // Auto-add to store
-    const conversationId = message.groupId?.toString() || message.recipientId?.toString();
+    let conversationId: string | undefined;
+    if (message.groupId) {
+      conversationId = `group-${message.groupId}`;
+    } else if (message.receiverId) {
+      // In a direct message received, sender is the other person, recipient is me
+      // But we need the composite ID format direct-min-max
+      conversationId = this.getConversationId(message.senderId, message.receiverId);
+    }
+
     if (conversationId) {
       const uiMessage: UIMessage = {
         ...message,
+        createdAt: new Date(message.createdAt),
         status: 'DELIVERED',
       };
       this.chatStore.addMessage(conversationId, uiMessage);
@@ -335,9 +361,18 @@ export class ChatMessageService {
       // Update conversation's last message
       this.chatStore.updateConversation(conversationId, {
         lastMessage: message,
-        lastMessageAt: new Date(message.timestamp),
+        lastMessageAt: new Date(message.createdAt),
       });
     }
+  }
+
+  /**
+   * Helper to generate consistent conversation IDs for direct messages
+   */
+  public getConversationId(userId1: number, userId2: number): string {
+    const min = Math.min(userId1, userId2);
+    const max = Math.max(userId1, userId2);
+    return `direct-${min}-${max}`;
   }
 
   /**
@@ -371,7 +406,7 @@ export class ChatMessageService {
       
       const uiMessages = messages.map(msg => ({
         ...msg,
-        timestamp: new Date(msg.timestamp),
+        createdAt: new Date(msg.createdAt),
         status: 'DELIVERED' as const
       }));
 

@@ -291,7 +291,7 @@ export class ChatStore {
       }
       const newMessages = new Map(msgs);
       newMessages.set(conversationId, [...messages, message].sort((a, b) =>
-        new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
       ));
       return newMessages;
     });
@@ -310,9 +310,9 @@ export class ChatStore {
         new Map(combined.map(m => [m.id, m])).values()
       );
       
-      // Sort by timestamp
+      // Sort by createdAt
       unique.sort((a, b) =>
-        new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
       );
 
       const newMsgs = new Map(msgs);

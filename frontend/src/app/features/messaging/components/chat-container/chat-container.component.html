@@ -12,8 +12,8 @@
 
       <!-- Messages -->
       <app-message-thread
-        [currentUserId]="currentUserId"
-        [isGroupChat]="isGroupChat"
+        [currentUserId]="currentUserId()"
+        [isGroupChat]="isGroupChat()"
         (scrolledToTop)="onScrolledToTop()"
         (markAsRead)="onMarkAsRead($event)"
       ></app-message-thread>
@@ -21,8 +21,8 @@
       <!-- Input -->
       <app-message-input
         [conversationType]="getConversationType()"
-        [isLoading]="chatStore.isLoadingMessages"
-        [typingUsers]="chatStore.currentTypingUsers"
+        [isLoading]="chatStore.isLoadingMessages()"
+        [typingUsers]="chatStore.currentTypingUsers()"
         (messageSent)="onMessageSent($event)"
         (typingStatusChanged)="onTypingStatusChanged($event)"
       ></app-message-input>

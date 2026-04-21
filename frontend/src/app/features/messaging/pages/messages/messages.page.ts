@@ -8,10 +8,12 @@ import { GroupService } from '../../../../core/services/group.service';
 import { AuthStore } from '../../../../core/auth/auth.store';
 import { GroupDto } from '../../../../shared/models';
 import { forkJoin, of } from 'rxjs';
+import { firstValueFrom } from 'rxjs';
 import { catchError, map, switchMap } from 'rxjs/operators';
 import { ChatContainerComponent } from '../../components/chat-container/chat-container.component';
 import { ChatStore } from '../../services/chat.store';
 import { ConversationService } from '../../services/conversation.service';
+import { DirectConversation } from '../../models';
 
 export type MessagingTab = 'direct' | 'groups';
 
@@ -120,7 +122,11 @@ export class MessagesPage implements OnInit {
       }),
       catchError(() => of([] as DirectEntry[]))
     ).subscribe(entries => {
-      this.directList.set(entries);
+      // Merge with any manual entries to avoid race condition
+      this.directList.update(current => {
+        const manuallyAdded = current.filter(c => !entries.some(e => e.userId === c.userId));
+        return [...manuallyAdded, ...entries];
+      });
       this.loadingDirect.set(false);
     });
   }
@@ -137,15 +143,54 @@ export class MessagesPage implements OnInit {
 
   async openDirectChat(userId: number): Promise<void> {
     const currentUserId = this.authStore.userId();
-    if (!currentUserId) return;
+    if (!currentUserId || !userId) return;
 
+    this.activeTab.set('direct');
     const convId = `direct-${Math.min(currentUserId, userId)}-${Math.max(currentUserId, userId)}`;
     this.selectedConversationId.set(convId);
     this.chatStore.selectConversation(convId);
-    this.activeTab.set('direct');
 
-    // Ensure conversation is in store
+    // Check if user is already in our sidebar list
+    const existingEntry = this.directList().find(d => d.userId === userId);
+    if (!existingEntry) {
+      console.log('[MessagesPage] New chat partner detected, fetching profile...', userId);
+      try {
+        const response = await firstValueFrom(this.userService.getProfile(userId));
+        const newEntry: DirectEntry = {
+          userId: userId,
+          name: response.data?.name || response.data?.username || `User ${userId}`,
+          avatar: response.data?.avatarUrl || undefined,
+          email: response.data?.email,
+          conversationId: convId
+        };
+        this.directList.update(list => [newEntry, ...list]);
+
+        // Register in global ChatStore so ChatHeader and other components can see it
+        const newConversation: DirectConversation = {
+          id: convId,
+          type: 'direct',
+          userId: currentUserId,
+          participantId: userId,
+          participantName: newEntry.name,
+          participantEmail: newEntry.email || '',
+          participantAvatar: newEntry.avatar,
+          unreadCount: 0,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          isActive: true
+        };
+        this.chatStore.addConversation(newConversation);
+      } catch (error) {
+        console.error('[MessagesPage] Failed to fetch profile for new chat partner:', error);
+      }
+    }
+
+    // Ensure messages are loaded
     await this.conversationService.selectConversationAndLoadMessages(convId);
+  }
+
+  onNewChat(): void {
+    this.router.navigate(['/mentors']);
   }
 
   async openGroupChat(groupId: number): Promise<void> {

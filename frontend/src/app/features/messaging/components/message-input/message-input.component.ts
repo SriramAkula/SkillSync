@@ -30,13 +30,10 @@ import type { UIMessage } from '../../models';
   template: `
     <div class="message-input-container">
       <div class="input-wrapper">
-        <button class="attachment-btn" title="Add attachment" disabled>
-          <span class="material-icons">attach_file</span>
-        </button>
-
         <input
           #messageInput
-          [(ngModel)]="messageContent"
+          [ngModel]="messageContent()"
+          (ngModelChange)="messageContent.set($event)"
           (keydown.enter)="sendMessage()"
           placeholder="Type a message..."
           class="message-input"
@@ -45,7 +42,7 @@ import type { UIMessage } from '../../models';
         <button
           class="send-btn"
           (click)="sendMessage()"
-          [disabled]="!canSend()"
+          [disabled]="!canSend"
         >
           Send
         </button>
@@ -65,15 +62,15 @@ export class MessageInputComponent {
 
   @ViewChild('messageInput') messageInputRef!: ElementRef<HTMLTextAreaElement>;
 
-  // State signals
+  // State
   messageContent = signal('');
   replyingTo = signal<UIMessage | null>(null);
 
   // Computed properties
-  canSend = computed(() => {
+  get canSend(): boolean {
     const content = this.messageContent().trim();
     return content.length > 0 && content.length <= 1000 && !this.isLoading;
-  });
+  }
 
   typingUsersCount = computed(() => this.typingUsers.size);
 
@@ -103,7 +100,7 @@ export class MessageInputComponent {
       const start = textarea.selectionStart;
       const end = textarea.selectionEnd;
 
-      this.messageContent.update(content =>
+      this.messageContent.update(content => 
         content.substring(0, start) + '\t' + content.substring(end)
       );
 
@@ -115,7 +112,7 @@ export class MessageInputComponent {
 
   sendMessage(): void {
     const content = this.messageContent().trim();
-    if (!this.canSend()) return;
+    if (!this.canSend) return;
 
     console.log('[MessageInput] Sending message:', content);
     this.messageSent.emit(content);

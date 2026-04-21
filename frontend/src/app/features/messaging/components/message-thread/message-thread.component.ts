@@ -52,10 +52,10 @@ import type { UIMessage } from '../../models';
           @for (msg of displayedMessages(); track msg.id; let i = $index; let last = $last) {
             <app-message-item
               [message]="msg"
-              [currentUserId]="currentUserId()"
+              [currentUserId]="currentUserId"
               [previousMessage]="i > 0 ? displayedMessages()[i - 1] : null"
               [nextMessage]="!last ? displayedMessages()[i + 1] : null"
-              [isGroupChat]="isGroupChat()"
+              [isGroupChat]="isGroupChat"
             ></app-message-item>
           }
         </div>
@@ -75,8 +75,8 @@ import type { UIMessage } from '../../models';
   styleUrls: ['./message-thread.component.scss']
 })
 export class MessageThreadComponent implements AfterViewInit, OnDestroy {
-  @Input() currentUserId = signal<number>(0);
-  @Input() isGroupChat = signal(false);
+  @Input() currentUserId = 0;
+  @Input() isGroupChat = false;
   @Output() scrolledToTop = new EventEmitter<void>();
   @Output() scrolledNearBottom = new EventEmitter<void>();
   @Output() markAsRead = new EventEmitter<string[]>();
@@ -92,9 +92,9 @@ export class MessageThreadComponent implements AfterViewInit, OnDestroy {
 
   displayedMessages = computed(() => {
     const msgs = this.messages();
-    return msgs.sort(
+    return [...msgs].sort(
       (a: UIMessage, b: UIMessage) =>
-        new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
     );
   });
 
@@ -184,9 +184,9 @@ export class MessageThreadComponent implements AfterViewInit, OnDestroy {
     const unreadMessages = messages.filter(
       msg =>
         !msg.isRead &&
-        msg.senderId !== this.currentUserId() && // Only mark received messages
-        new Date(msg.timestamp).getTime() >= visibleStart &&
-        new Date(msg.timestamp).getTime() <= visibleEnd
+        msg.senderId !== this.currentUserId && // Only mark received messages
+        new Date(msg.createdAt).getTime() >= visibleStart &&
+        new Date(msg.createdAt).getTime() <= visibleEnd
     );
 
     if (unreadMessages.length > 0) {

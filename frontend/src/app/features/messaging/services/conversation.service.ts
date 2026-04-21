@@ -195,7 +195,7 @@ export class ConversationService {
           participantEmail: user.email || '',
           participantAvatar: user.avatar,
           lastMessage: lastMessage,
-          lastMessageAt: lastMessage?.timestamp || new Date(),
+          lastMessageAt: lastMessage?.createdAt || new Date(),
           unreadCount: 0, // TODO: Implement unread count tracking
           createdAt: new Date(),
           updatedAt: new Date(),
