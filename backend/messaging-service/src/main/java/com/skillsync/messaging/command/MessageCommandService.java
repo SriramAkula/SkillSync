@@ -46,11 +46,12 @@ public class MessageCommandService {
             throw new InvalidMessageException("Sender and receiver cannot be the same user");
         }
 
-        Message message = new Message();
-        message.setSenderId(requestDTO.getSenderId());
-        message.setReceiverId(requestDTO.getReceiverId());
-        message.setGroupId(requestDTO.getGroupId());
-        message.setContent(requestDTO.getContent());
+        Message message = Message.builder()
+                .senderId(requestDTO.getSenderId())
+                .receiverId(requestDTO.getReceiverId())
+                .groupId(requestDTO.getGroupId())
+                .content(requestDTO.getContent())
+                .build();
 
         Message saved = messageRepository.saveAndFlush(message);
         MessageResponseDTO responseDTO = mapToResponseDTO(saved);
