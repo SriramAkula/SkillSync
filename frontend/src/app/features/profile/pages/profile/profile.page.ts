@@ -56,6 +56,8 @@ export class ProfilePage implements OnInit, OnDestroy {
   readonly isEditing = signal(false);
   readonly showBadge = signal(false);
   readonly avatarUrl = signal<string | null>(null);
+  readonly uploadingResume = signal(false);
+  readonly resumeFileName = signal<string | null>(null);
   readonly isSkillDropdownOpen = signal(false);
   readonly isPrivate = signal(false);
   readonly showConfetti = signal(false);
@@ -95,7 +97,6 @@ export class ProfilePage implements OnInit, OnDestroy {
   selectedSkills(): string[] { return (this.form.get('skills')?.value || []) as string[]; }
 
   ngOnInit(): void {
-    const savedAvatar = localStorage.getItem('userAvatar'); if (savedAvatar) this.avatarUrl.set(savedAvatar);
     if (localStorage.getItem('profileBadge') === 'true') this.showBadge.set(true);
     this.refreshProfile(); 
     this.loadActivities(); 
@@ -214,6 +215,17 @@ export class ProfilePage implements OnInit, OnDestroy {
       phoneNumber: p.phoneNumber || '',
       skills: (p.skills ? p.skills.split(',').map(s => s.trim()) : [])
     });
+
+    if (p.avatarUrl) {
+      this.avatarUrl.set(p.avatarUrl);
+    } else {
+      const savedAvatar = localStorage.getItem('userAvatar');
+      if (savedAvatar) this.avatarUrl.set(savedAvatar);
+    }
+
+    if (p.resumeUrl) {
+      this.resumeFileName.set('Resume attached');
+    }
   }
 
   refreshProfile(): void {
@@ -247,9 +259,51 @@ export class ProfilePage implements OnInit, OnDestroy {
   onFileSelected(e: Event): void { const files = (e.target as HTMLInputElement).files; if (files?.[0]) this.handleFile(files[0]); }
   private handleFile(file: File) {
     if (!file.type.startsWith('image/')) return;
+    
+    // Optimistic UI update
     const reader = new FileReader();
     reader.onload = () => { const base = reader.result as string; this.avatarUrl.set(base); localStorage.setItem('userAvatar', base); };
     reader.readAsDataURL(file);
+
+    // Actual upload
+    this.userService.uploadProfileImage(file).subscribe({
+      next: (res) => {
+        this.toast.success('Profile picture updated!');
+        if (res.data?.avatarUrl) {
+          this.avatarUrl.set(res.data.avatarUrl);
+        }
+      },
+      error: () => this.toast.error('Failed to upload profile picture')
+    });
+  }
+
+  onResumeSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (input.files?.length) {
+      const file = input.files[0];
+      
+      if (file.size > 5 * 1024 * 1024) { 
+        this.toast.error('Resume must be under 5MB');
+        return;
+      }
+      
+      this.resumeFileName.set(file.name);
+      this.uploadingResume.set(true);
+      
+      this.userService.uploadResume(file).subscribe({
+        next: () => {
+          this.toast.success('Resume uploaded successfully');
+          this.uploadingResume.set(false);
+          this.refreshProfile(); 
+        },
+        error: (err) => {
+          console.error('Failed to upload resume', err);
+          this.toast.error('Failed to upload resume');
+          this.uploadingResume.set(false);
+          this.resumeFileName.set(null);
+        }
+      });
+    }
   }
   toggleSkillDropdown(): void { this.isSkillDropdownOpen.update(v => !v); }
   toggleSkill(skill: string, e: Event): void {
