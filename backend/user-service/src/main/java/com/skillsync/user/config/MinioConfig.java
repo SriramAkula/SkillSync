@@ -46,7 +46,7 @@ public class MinioConfig {
             if (!client.bucketExists(BucketExistsArgs.builder().bucket(publicBucket).build())) {
                 client.makeBucket(MakeBucketArgs.builder().bucket(publicBucket).build());
                 log.info("Created public bucket: {}", publicBucket);
-                
+
                 // Set Public Read Policy
                 String policy = """
                         {
@@ -73,7 +73,10 @@ public class MinioConfig {
                 log.info("Created private bucket: {}", privateBucket);
             }
         } catch (Exception e) {
-            log.warn("MinIO bucket initialization failed (this is expected during tests if MinIO is offline): {}", e.getMessage());
+            log.warn("MinIO bucket initialization failed (this is expected during tests if MinIO is offline): {}",
+                    e.getMessage());
         }
     }
 }
+
+// Trigger
