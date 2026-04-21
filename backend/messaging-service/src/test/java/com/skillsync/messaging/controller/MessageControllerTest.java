@@ -17,7 +17,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 
@@ -58,7 +58,7 @@ class MessageControllerTest {
                 .senderId(100L)
                 .receiverId(200L)
                 .content("Hello!")
-                .createdAt(LocalDateTime.now())
+                .createdAt(Instant.now())
                 .build();
     }
 
@@ -146,7 +146,7 @@ class MessageControllerTest {
     void getConversation_ReturnsMessages() throws Exception {
         MessageResponseDTO response2 = MessageResponseDTO.builder()
                 .id(2L).senderId(200L).receiverId(100L)
-                .content("Reply!").createdAt(LocalDateTime.now()).build();
+                .content("Reply!").createdAt(Instant.now()).build();
 
         PagedResponse<MessageResponseDTO> mockPage = PagedResponse.<MessageResponseDTO>builder()
                 .content(Arrays.asList(responseDTO, response2))

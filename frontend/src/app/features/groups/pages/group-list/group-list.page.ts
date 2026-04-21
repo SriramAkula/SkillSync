@@ -28,7 +28,7 @@ export class GroupListPage implements OnInit {
   protected readonly messagingService = inject(MessagingService);
 
   openChat(g: GroupDto): void {
-    this.messagingService.openGroupChat(g.id, g.name);
+    this.router.navigate(['/messages'], { queryParams: { tab: 'groups', groupId: g.id } });
   }
 
   readonly groups = signal<GroupDto[]>([]);

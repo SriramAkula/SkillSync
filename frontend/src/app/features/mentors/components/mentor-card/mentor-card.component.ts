@@ -2,7 +2,7 @@ import { Component, Input, Output, EventEmitter, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MentorProfileDto } from '../../../../shared/models';
 import { AuthStore } from '../../../../core/auth/auth.store';
-import { MessagingService } from '../../../../core/services/messaging.service';
+import { Router } from '@angular/router';
 import { ReviewService } from '../../../../core/services/review.service';
 import { OnInit, signal } from '@angular/core';
 
@@ -21,7 +21,7 @@ export class MentorCardComponent implements OnInit {
   @Output() book = new EventEmitter<number>();
 
   private readonly authStore = inject(AuthStore);
-  private readonly messagingService = inject(MessagingService);
+  private readonly router = inject(Router);
   private readonly reviewService = inject(ReviewService);
 
   readonly enrichedRating = signal<number | null>(null);
@@ -41,8 +41,8 @@ export class MentorCardComponent implements OnInit {
   }
 
   openChat(): void {
-    const name = this.mentor.user?.name || this.mentor.user?.username || 'Mentor';
-    this.messagingService.openPrivateChat(this.mentor.userId, name);
+    if (!this.mentor?.userId) return;
+    this.router.navigate(['/messages'], { queryParams: { tab: 'direct', directUserId: this.mentor.userId } });
   }
 
   // Use method instead of computed() — @Input is not available at computed() init time

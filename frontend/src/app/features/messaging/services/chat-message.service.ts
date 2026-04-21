@@ -7,7 +7,7 @@
 
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams, HttpHeaders } from '@angular/common/http';
-import { Observable, Subject, firstValueFrom, tap, map, catchError } from 'rxjs';
+import { Observable, Subject, firstValueFrom, tap, map, catchError, of, Subscription } from 'rxjs';
 import { ChatStore } from './chat.store';
 import { AuthService } from '../../../core/services/auth.service';
 import { AuthStore } from '../../../core/auth/auth.store';
@@ -16,11 +16,10 @@ import type {
   UIMessage,
   SendMessageRequest,
   SendMessageResponse,
-  FetchMessagesRequest,
   MarkAsReadRequest,
   MarkAsReadResponse,
 } from '../models';
-import { ApiResponse } from '../../../shared/models';
+import { ApiResponse, PageResponse } from '../../../shared/models';
 
 @Injectable({
   providedIn: 'root'
@@ -40,10 +39,15 @@ export class ChatMessageService {
   private messageSendingSubject = new Subject<UIMessage>();
   public messageSending$ = this.messageSendingSubject.asObservable();
 
+  private pollingSubscription: Subscription | null = null;
+  private currentPollingConversationId: string | null = null;
+
+  /**
+   * Headers are handled by jwt.interceptor.ts
+   * Only need specific headers if not handled globally
+   */
   private getHeaders(): HttpHeaders {
-    const token = this.authService.getToken();
     return new HttpHeaders({
-      'Authorization': token ? `Bearer ${token}` : '',
       'Content-Type': 'application/json'
     });
   }
@@ -82,10 +86,10 @@ export class ChatMessageService {
           // Map response to UIMessage with DELIVERED status
           const uiMessages = response.messages.map((msg: ChatMessage) => ({
             ...msg,
-            timestamp: new Date(msg.timestamp),
+            createdAt: new Date(msg.createdAt),
             status: 'DELIVERED' as const
           }));
-          const conversationId = `direct-${Math.min(userId1, userId2)}-${Math.max(userId1, userId2)}`;
+          const conversationId = this.getConversationId(userId1, userId2);
           this.chatStore.addMessages(conversationId, uiMessages);
         }),
         catchError(error => {
@@ -124,41 +128,53 @@ export class ChatMessageService {
    * POST /messages
    */
   sendMessage(request: SendMessageRequest): Observable<SendMessageResponse> {
-    const payload = {
+    // Build payload and remove undefined values to avoid backend validation errors
+    const payload: Record<string, unknown> = {
       content: request.content,
-      senderId: this.authStore.userId(), // Extracted from JWT token
-      recipientId: request.recipientId,
-      groupId: request.groupId,
-      type: request.type || 'CHAT'
+      senderId: this.authStore.userId(),
+      receiverId: request.recipientId
     };
+    
+    if (request.groupId) {
+      payload['groupId'] = request.groupId;
+    }
 
-    console.log('[ChatMessageService] Sending message:', payload);
+    console.log('[ChatMessageService] Sending message payload:', payload);
 
     return this.http
-      .post<ApiResponse<ChatMessage>>(`${this.apiUrl}`, payload, { headers: this.getHeaders() })
+      .post<ApiResponse<ChatMessage>>(`${this.apiUrl}`, payload)
       .pipe(
         map(apiRes => {
           const response = apiRes.data;
           console.log('[ChatMessageService] Message sent successfully:', response);
           const message: UIMessage = {
-            id: response.id,
-            senderId: this.authStore.userId() || 0,
+            id: response.id.toString(),
+            senderId: response.senderId,
+            receiverId: response.receiverId,
+            groupId: response.groupId,
             content: response.content || '',
             type: 'CHAT',
-            timestamp: new Date(response.timestamp),
+            createdAt: new Date(response.createdAt),
             isRead: false,
-            status: 'SENT' as const
+            status: 'SENT' as const,
+            tempId: request.tempId // Pass along the tempId for store reconciliation
           };
           return {
-            id: response.id,
-            timestamp: new Date(response.timestamp),
+            id: response.id.toString(),
+            createdAt: new Date(response.createdAt),
             status: 'SUCCESS' as const,
             message
           } as SendMessageResponse;
         }),
         tap(response => {
           if (response.status === 'SUCCESS' && response.message) {
-            const conversationId = request.groupId?.toString() || request.recipientId?.toString();
+            let conversationId: string | undefined;
+            if (request.groupId) {
+              conversationId = `group-${request.groupId}`;
+            } else if (request.recipientId) {
+              conversationId = this.getConversationId(this.authStore.userId() || 0, request.recipientId);
+            }
+
             if (conversationId) {
               const uiMessage: UIMessage = {
                 ...response.message,
@@ -171,6 +187,9 @@ export class ChatMessageService {
         }),
         catchError(error => {
           console.error('[ChatMessageService] Failed to send message:', error);
+          if (error.error) {
+            console.error('[ChatMessageService] Server error detail:', error.error);
+          }
           throw error;
         })
       );
@@ -190,13 +209,17 @@ export class ChatMessageService {
       senderId: currentUserId,
       content: request.content,
       type: request.type || 'CHAT',
-      timestamp: new Date(),
+      createdAt: new Date(),
       isRead: false,
-      recipientId: request.recipientId,
+      receiverId: request.recipientId,
       groupId: request.groupId,
       status: 'SENDING',
       isOptimistic: true,
+      tempId: `temp-${Date.now()}` // Set a stable tempId for reconciliation
     };
+
+    // Update request with tempId so the API handler can return it
+    request.tempId = tempMessage.tempId;
 
     this.chatStore.addMessage(conversationId, tempMessage);
     this.messageSendingSubject.next(tempMessage);
@@ -216,7 +239,7 @@ export class ChatMessageService {
       .pipe(
         map(response => ({
           ...response.data,
-          timestamp: new Date(response.data.timestamp),
+          createdAt: new Date(response.data.createdAt),
           readAt: response.data.readAt ? new Date(response.data.readAt) : undefined
         })),
         catchError(error => {
@@ -326,10 +349,19 @@ export class ChatMessageService {
     this.messageReceivedSubject.next(message);
 
     // Auto-add to store
-    const conversationId = message.groupId?.toString() || message.recipientId?.toString();
+    let conversationId: string | undefined;
+    if (message.groupId) {
+      conversationId = `group-${message.groupId}`;
+    } else if (message.receiverId) {
+      // In a direct message received, sender is the other person, recipient is me
+      // But we need the composite ID format direct-min-max
+      conversationId = this.getConversationId(message.senderId, message.receiverId);
+    }
+
     if (conversationId) {
       const uiMessage: UIMessage = {
         ...message,
+        createdAt: new Date(message.createdAt),
         status: 'DELIVERED',
       };
       this.chatStore.addMessage(conversationId, uiMessage);
@@ -337,9 +369,18 @@ export class ChatMessageService {
       // Update conversation's last message
       this.chatStore.updateConversation(conversationId, {
         lastMessage: message,
-        lastMessageAt: new Date(message.timestamp),
+        lastMessageAt: new Date(message.createdAt),
       });
     }
+  }
+
+  /**
+   * Helper to generate consistent conversation IDs for direct messages
+   */
+  public getConversationId(userId1: number, userId2: number): string {
+    const min = Math.min(userId1, userId2);
+    const max = Math.max(userId1, userId2);
+    return `direct-${min}-${max}`;
   }
 
   /**
@@ -348,18 +389,48 @@ export class ChatMessageService {
   async loadMessages(
     conversationId: string,
     page = 0,
-    pageSize = 50
+    pageSize = 50,
+    isBackground = false
   ): Promise<void> {
-    this.chatStore.setLoadingMessages(true);
+    if (!isBackground) {
+      this.chatStore.setLoadingMessages(true);
+    }
     try {
       console.log('[ChatMessageService] Loading messages for conversation:', conversationId, 'page:', page);
-      const request: FetchMessagesRequest = {
-        conversationId,
-        page,
-        pageSize,
-        sortBy: 'NEWEST',
-      };
-      await firstValueFrom(this.fetchMessages(request));
+      let messages$: Observable<ChatMessage[]>;
+
+      if (conversationId.startsWith('direct-')) {
+        const [, id1, id2] = conversationId.split('-');
+        messages$ = this.fetchDirectConversation(Number(id1), Number(id2), page, pageSize)
+          .pipe(map(res => res.messages));
+      } else if (conversationId.startsWith('group-')) {
+        const groupId = Number(conversationId.replace('group-', ''));
+        console.log(`[ChatMessageService] Fetching group conversation for: ${groupId}`);
+        messages$ = this.http.get<ApiResponse<PageResponse<ChatMessage>>>(
+          `${this.apiUrl}/group/${groupId}?page=${page}&size=${pageSize}`,
+          { headers: this.getHeaders() }
+        ).pipe(
+          map(res => {
+            console.log('[ChatMessageService] Group messages response received:', res.data);
+            return res.data.content || [];
+          })
+        );
+      } else {
+        throw new Error('Invalid conversation ID format');
+      }
+
+      const messages = await firstValueFrom(messages$);
+      console.log(`[ChatMessageService] Fetched ${messages.length} messages for ${conversationId}. Top metadata:`, 
+        messages.slice(0, 3).map(m => ({ id: m.id, sender: m.senderId, content: m.content.substring(0, 10) + '...' }))
+      );
+      
+      const uiMessages = messages.map(msg => ({
+        ...msg,
+        createdAt: new Date(msg.createdAt),
+        status: 'DELIVERED' as const
+      }));
+
+      this.chatStore.addMessages(conversationId, uiMessages);
       console.log('[ChatMessageService] Messages loaded successfully');
       this.chatStore.setMessageError(null);
     } catch (error) {
@@ -369,7 +440,9 @@ export class ChatMessageService {
       );
       throw error;
     } finally {
-      this.chatStore.setLoadingMessages(false);
+      if (!isBackground) {
+        this.chatStore.setLoadingMessages(false);
+      }
     }
   }
 
@@ -403,28 +476,46 @@ export class ChatMessageService {
   }
 
   /**
-   * Fetch messages for a conversation
+   * Start polling for a specific conversation
    */
-  private fetchMessages(request: FetchMessagesRequest): Observable<ChatMessage[]> {
-    const params = new HttpParams()
-      .set('page', request.page.toString())
-      .set('size', request.pageSize.toString())
-      .set('sortBy', request.sortBy || 'NEWEST');
+  startPolling(conversationId: string, intervalMs = 3000): void {
+    if (this.currentPollingConversationId === conversationId) return;
 
-    return this.http
-      .get<ApiResponse<{ content: ChatMessage[] }>>(`${this.apiUrl}/conversation?conversationId=${request.conversationId}`, {
-        params,
-        headers: this.getHeaders()
-      })
-      .pipe(
-        map(response => (response.data.content || []).map((msg: ChatMessage) => ({
-          ...msg,
-          timestamp: new Date(msg.timestamp)
-        }))),
-        catchError(error => {
-          console.error('[ChatMessageService] Failed to fetch messages:', error);
-          throw error;
-        })
-      );
+    this.stopPolling();
+    this.currentPollingConversationId = conversationId;
+
+    console.log(`[ChatMessageService] Starting polling for ${conversationId} every ${intervalMs}ms`);
+
+    // Poll every interval
+    this.pollingSubscription = interval(intervalMs).subscribe(() => {
+      if (this.currentPollingConversationId) {
+        this.loadMessages(this.currentPollingConversationId, 0, 50, true);
+      }
+    });
+
+    // Initial load
+    this.loadMessages(conversationId, 0, 50);
   }
-}
+
+  /**
+   * Stop all active polling
+   */
+  stopPolling(): void {
+    if (this.pollingSubscription) {
+      this.pollingSubscription.unsubscribe();
+      this.pollingSubscription = null;
+    }
+    this.currentPollingConversationId = null;
+    console.log('[ChatMessageService] Polling stopped');
+  }
+
+  /**
+   * Private helper removed in favor of direct/group specific loading
+   */
+  private fetchMessages(): Observable<ChatMessage[]> {
+    return of([]);
+  }
+} 
+
+// Import interval at top
+import { interval } from 'rxjs';

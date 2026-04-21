@@ -1,27 +1,37 @@
 
 
 .chat-container {
-  display: grid;
-  grid-template-columns: 320px 1fr;
-  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
   width: 100%;
   overflow: hidden;
-  background: radial-gradient(circle at top left, #1a1a2e 0%, #0f0f1e 100%);
-  color: #c5c6c7;
+  background: transparent;
+  color: #fff;
   font-family: 'Inter', sans-serif;
-
-  @media (max-width: 768px) {
-    grid-template-columns: 1fr;
-  }
 }
 
 .chat-area {
   display: flex;
   flex-direction: column;
   height: 100%;
+  min-height: 0; // CRITICAL for nested flexbox scrolling
   position: relative;
   background: transparent;
   backdrop-filter: blur(10px);
+
+  app-chat-header {
+    flex-shrink: 0;
+  }
+
+  app-message-thread {
+    flex: 1;
+    min-height: 0;
+  }
+
+  app-message-input {
+    flex-shrink: 0;
+  }
 }
 
 .empty-chat-state {
