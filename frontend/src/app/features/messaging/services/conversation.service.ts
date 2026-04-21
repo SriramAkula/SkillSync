@@ -12,14 +12,16 @@ import { ChatMessageService } from './chat-message.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { AuthStore } from '../../../core/auth/auth.store';
 import { UserService } from '../../../core/services/user.service';
-import type {
+import {
   Conversation,
   FetchConversationsRequest,
   FetchConversationsResponse,
   DirectConversation,
+  GroupConversation,
   CreateDirectConversationRequest,
   CreateDirectConversationResponse,
 } from '../models';
+import { ApiResponse, GroupDto } from '../../../shared/models';
 import type { ChatMessage } from '../models/chat.models';
 
 @Injectable({
@@ -217,6 +219,27 @@ export class ConversationService {
       const currentUserId = this.authStore.userId() || userId1;
 
       return this.buildDirectConversation(currentUserId, userId1 === currentUserId ? userId2 : userId1);
+    } else if (conversationId.startsWith('group-')) {
+      const groupId = parseInt(conversationId.replace('group-', ''), 10);
+      return this.http.get<ApiResponse<GroupDto>>(`/api/group/${groupId}`).pipe(
+        map(res => {
+          const group = res.data;
+          return {
+            id: conversationId,
+            type: 'group' as const,
+            groupName: group.name,
+            groupId: groupId,
+            members: [],
+            memberCount: group.currentMembers || 0,
+            currentUserRole: 'MEMBER',
+            lastMessageAt: new Date(),
+            unreadCount: 0,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            isActive: true
+          } as GroupConversation;
+        })
+      );
     }
 
     throw new Error(`Unknown conversation ID format: ${conversationId}`);
@@ -271,19 +294,26 @@ export class ConversationService {
     conversationId: string
   ): Promise<void> {
     try {
+      console.log(`[ConversationService] Selecting conversation: ${conversationId}`);
+      
+      // 1. Select in store first for immediate UI update
+      this.chatStore.selectConversation(conversationId);
+
+      // 2. Fetch full conversation details if not already in store
       const conversation = await firstValueFrom(
         this.fetchConversation(conversationId)
       );
-      this.chatStore.selectConversation(conversationId);
+      
+      // 3. Update conversation info in store
+      this.chatStore.addConversation(conversation);
 
-      // Load messages if direct conversation
-      if (conversation.type === 'direct') {
-        const userId1 = Math.min(conversation.userId, conversation.participantId);
-        const userId2 = Math.max(conversation.userId, conversation.participantId);
-        await this.messageService.fetchDirectConversationAsync(userId1, userId2, 0, 50);
-      }
+      // 4. Load messages - handles both direct and group
+      console.log(`[ConversationService] Loading messages for: ${conversationId}`);
+      await this.messageService.loadMessages(conversationId, 0, 50);
+      
     } catch (error) {
       console.error('Failed to select conversation:', error);
+      this.chatStore.setMessageError('Failed to select conversation');
     }
   }
 

@@ -30,8 +30,9 @@ public class MessageCommandService {
      */
     @Caching(evict = {
         @CacheEvict(value = "conversation",         allEntries = true),
+        @CacheEvict(value = "groupConversation",    key = "#requestDTO.groupId", condition = "#requestDTO.groupId != null"),
         @CacheEvict(value = "conversationPartners", key = "#requestDTO.senderId"),
-        @CacheEvict(value = "conversationPartners", key = "#requestDTO.receiverId")
+        @CacheEvict(value = "conversationPartners", key = "#requestDTO.receiverId", condition = "#requestDTO.receiverId != null")
     })
     public MessageResponseDTO sendMessage(MessageRequestDTO requestDTO) {
         log.info("COMMAND - sendMessage: senderId={}, receiverId={}, groupId={}", 
