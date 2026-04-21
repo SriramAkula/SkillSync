@@ -389,9 +389,12 @@ export class ChatMessageService {
   async loadMessages(
     conversationId: string,
     page = 0,
-    pageSize = 50
+    pageSize = 50,
+    isBackground = false
   ): Promise<void> {
-    this.chatStore.setLoadingMessages(true);
+    if (!isBackground) {
+      this.chatStore.setLoadingMessages(true);
+    }
     try {
       console.log('[ChatMessageService] Loading messages for conversation:', conversationId, 'page:', page);
       let messages$: Observable<ChatMessage[]>;
@@ -411,7 +414,9 @@ export class ChatMessageService {
       }
 
       const messages = await firstValueFrom(messages$);
-      console.log(`[ChatMessageService] Fetched ${messages.length} messages for ${conversationId}:`, messages);
+      console.log(`[ChatMessageService] Fetched ${messages.length} messages for ${conversationId}. Top metadata:`, 
+        messages.slice(0, 3).map(m => ({ id: m.id, sender: m.senderId, content: m.content.substring(0, 10) + '...' }))
+      );
       
       const uiMessages = messages.map(msg => ({
         ...msg,
@@ -429,7 +434,9 @@ export class ChatMessageService {
       );
       throw error;
     } finally {
-      this.chatStore.setLoadingMessages(false);
+      if (!isBackground) {
+        this.chatStore.setLoadingMessages(false);
+      }
     }
   }
 
@@ -465,7 +472,7 @@ export class ChatMessageService {
   /**
    * Start polling for a specific conversation
    */
-  startPolling(conversationId: string, intervalMs = 15000): void {
+  startPolling(conversationId: string, intervalMs = 3000): void {
     if (this.currentPollingConversationId === conversationId) return;
 
     this.stopPolling();
@@ -476,7 +483,7 @@ export class ChatMessageService {
     // Poll every interval
     this.pollingSubscription = interval(intervalMs).subscribe(() => {
       if (this.currentPollingConversationId) {
-        this.loadMessages(this.currentPollingConversationId, 0, 50);
+        this.loadMessages(this.currentPollingConversationId, 0, 50, true);
       }
     });
 

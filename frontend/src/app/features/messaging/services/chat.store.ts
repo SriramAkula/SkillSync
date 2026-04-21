@@ -332,22 +332,62 @@ export class ChatStore {
   addMessages(conversationId: string, newMessages: UIMessage[]): void {
     this.messagesSignal.update(msgs => {
       const existing = msgs.get(conversationId) || [];
+      const combined = [...existing, ...newMessages];
       
-      // Filter out optimistic messages from 'existing' if they are now present in 'newMessages'
-      // (Matched by content/sender consistency)
-      const filteredExisting = existing.filter(ex => {
-        if (!ex.isOptimistic) return true;
-        return !newMessages.some(nw => 
-          nw.senderId === ex.senderId && nw.content === ex.content
-        );
+      // IDENTITY-BASED RECONCILIATION
+      // Group messages by their 'Identity Fingerprint'
+      const buckets = new Map<string, UIMessage[]>();
+
+      combined.forEach(m => {
+        // Find the best bucket for this message
+        let bucketKey = "";
+
+        if (m.id && !String(m.id).startsWith('temp-')) {
+          // Rule 1: Real Server ID
+          bucketKey = `id-${m.id}`;
+        } else if (m.tempId) {
+          // Rule 2: Explicit Temp Link
+          bucketKey = `temp-${m.tempId}`;
+        } else {
+          // Rule 3: Fuzzy Fingerprint (Sender + Content + 5min window)
+          const timeBucket = Math.floor(new Date(m.createdAt).getTime() / 300000); // 5 minute blocks
+          bucketKey = `fuzzy-${m.senderId}-${m.content.trim()}-${timeBucket}`;
+        }
+
+        const bucket = buckets.get(bucketKey) || [];
+        bucket.push(m);
+        buckets.set(bucketKey, bucket);
       });
 
-      const combined = [...filteredExisting, ...newMessages];
-      
-      // Remove duplicates by ID
-      const unique = Array.from(
-        new Map(combined.map(m => [m.id, m])).values()
-      );
+      // Resolve each bucket to a single 'Best' message
+      const uniqueResults: UIMessage[] = [];
+      buckets.forEach((messages) => {
+        // Pick the best one from the bucket:
+        // Priority: 1. Non-optimistic, 2. Has real ID, 3. Has 'SENT' status
+        const best = messages.reduce((prev, current) => {
+          const currentIsTemp = !current.id || String(current.id).startsWith('temp-');
+          const prevIsTemp = !prev.id || String(prev.id).startsWith('temp-');
+
+          if (!current.isOptimistic && prev.isOptimistic) return current;
+          if (!currentIsTemp && prevIsTemp) return current;
+          if (current.status === 'SENT' && prev.status === 'SENDING') return current;
+          return prev;
+        });
+        uniqueResults.push(best);
+      });
+
+      // Final Deduplication by Real ID (just in case)
+      const finalMap = new Map<string, UIMessage>();
+      uniqueResults.forEach(m => {
+        const isTemp = !m.id || String(m.id).startsWith('temp-');
+        const key = !isTemp ? String(m.id) : (m.tempId || String(m.id));
+        const existing = finalMap.get(key);
+        if (!existing || (!m.isOptimistic && existing.isOptimistic)) {
+          finalMap.set(key, m);
+        }
+      });
+
+      const unique = Array.from(finalMap.values());
       
       // Sort by createdAt
       unique.sort((a, b) =>
