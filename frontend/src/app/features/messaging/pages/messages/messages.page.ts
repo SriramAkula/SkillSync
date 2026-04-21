@@ -133,7 +133,7 @@ export class MessagesPage implements OnInit {
 
   loadGroupConversations(): void {
     this.loadingGroups.set(true);
-    this.groupService.getRandomGroups(50).pipe(
+    this.groupService.getJoinedGroups().pipe(
       catchError(() => of({ data: [] as GroupDto[] }))
     ).subscribe(res => {
       this.groupList.set(res.data || []);

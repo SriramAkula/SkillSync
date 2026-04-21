@@ -15,9 +15,23 @@
   display: flex;
   flex-direction: column;
   height: 100%;
+  min-height: 0; // CRITICAL for nested flexbox scrolling
   position: relative;
   background: transparent;
   backdrop-filter: blur(10px);
+
+  app-chat-header {
+    flex-shrink: 0;
+  }
+
+  app-message-thread {
+    flex: 1;
+    min-height: 0;
+  }
+
+  app-message-input {
+    flex-shrink: 0;
+  }
 }
 
 .empty-chat-state {

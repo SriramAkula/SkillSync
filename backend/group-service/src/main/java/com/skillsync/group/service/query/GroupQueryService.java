@@ -66,4 +66,12 @@ public class GroupQueryService {
                         currentUserId != null && groupMemberRepository.findByGroupIdAndUserId(g.getId(), currentUserId).isPresent()))
                 .collect(Collectors.toList());
     }
+
+    @Cacheable(value = "group", key = "'joined_' + #userId")
+    public List<GroupResponseDto> getJoinedGroups(Long userId) {
+        log.info("Fetching joined groups for userId={}", userId);
+        return groupRepository.findJoinedGroups(userId).stream()
+                .map(g -> groupMapper.toDto(g, groupMemberRepository.countByGroupId(g.getId()), true))
+                .collect(Collectors.toList());
+    }
 }

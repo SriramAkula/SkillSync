@@ -38,4 +38,8 @@ export class GroupService {
   getRandomGroups(limit = 10): Observable<ApiResponse<GroupDto[]>> {
     return this.http.get<ApiResponse<GroupDto[]>>(`${this.base}/random?limit=${limit}`);
   }
+
+  getJoinedGroups(): Observable<ApiResponse<GroupDto[]>> {
+    return this.http.get<ApiResponse<GroupDto[]>>(`${this.base}/joined`);
+  }
 }
