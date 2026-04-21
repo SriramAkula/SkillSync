@@ -98,7 +98,7 @@ export class UserService {
     return this.http.get<ApiResponse<string>>(`${this.base}/profile/resume-url`, { headers: NO_CACHE_HEADERS });
   }
 
-  private mapProfile(p: any): UserProfileDto {
+  private mapProfile(p: UserProfileDto & { profileImageUrl?: string }): UserProfileDto {
     if (!p) return p;
     if (p.name && !p.firstName) {
       const parts = p.name.trim().split(' ');
