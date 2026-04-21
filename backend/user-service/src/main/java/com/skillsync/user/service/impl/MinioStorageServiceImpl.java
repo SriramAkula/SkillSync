@@ -22,13 +22,13 @@ public class MinioStorageServiceImpl implements FileStorageService {
 
     private final MinioClient minioClient;
 
-    @Value("${minio.url}")
+    @Value("${minio.url:http://localhost:9000}")
     private String minioUrl;
 
-    @Value("${minio.bucket.public}")
+    @Value("${minio.bucket.public:skillsync-public}")
     private String publicBucket;
 
-    @Value("${minio.bucket.private}")
+    @Value("${minio.bucket.private:skillsync-private}")
     private String privateBucket;
 
     @Override

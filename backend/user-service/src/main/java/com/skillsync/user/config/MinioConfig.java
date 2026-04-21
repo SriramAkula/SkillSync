@@ -14,19 +14,19 @@ import org.springframework.context.annotation.Configuration;
 @Slf4j
 public class MinioConfig {
 
-    @Value("${minio.url}")
+    @Value("${minio.url:http://localhost:9000}")
     private String url;
 
-    @Value("${minio.access.key}")
+    @Value("${minio.access.key:admin}")
     private String accessKey;
 
-    @Value("${minio.secret.key}")
+    @Value("${minio.secret.key:dummy-secret-placeholder}")
     private String secretKey;
 
-    @Value("${minio.bucket.public}")
+    @Value("${minio.bucket.public:skillsync-public}")
     private String publicBucket;
 
-    @Value("${minio.bucket.private}")
+    @Value("${minio.bucket.private:skillsync-private}")
     private String privateBucket;
 
     @Bean

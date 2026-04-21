@@ -42,6 +42,7 @@ export interface UserProfileDto {
   bio?: string;
   phoneNumber?: string;
   avatarUrl?: string;
+  resumeUrl?: string;
   skills?: string;
   createdAt?: string;
 }

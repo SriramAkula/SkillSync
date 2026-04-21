@@ -76,6 +76,16 @@ export class UserService {
     );
   }
 
+  uploadResume(file: File): Observable<ApiResponse<void>> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.post<ApiResponse<void>>(`${this.base}/profile/resume`, formData);
+  }
+
+  getResumeUrl(): Observable<ApiResponse<string>> {
+    return this.http.get<ApiResponse<string>>(`${this.base}/profile/resume-url`, { headers: NO_CACHE_HEADERS });
+  }
+
   private mapProfile(p: UserProfileDto): UserProfileDto {
     if (!p) return p;
     if (p.name && !p.firstName) {
