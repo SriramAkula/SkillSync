@@ -40,15 +40,4 @@ public class UserProfileQueryService {
         return userProfileRepository.existsByUsername(username);
     }
 
-    public String getResumeUrl(Long userId) {
-        UserProfile profile = userProfileRepository.findByUserId(userId)
-                .orElseThrow(() -> new UserProfileNotFoundException("User profile not found for userId: " + userId));
-
-        if (profile.getResumeUrl() == null || profile.getResumeUrl().isEmpty()) {
-            return null;
-        }
-
-        // Generate a pre-signed URL valid for 60 minutes
-        return fileStorageService.getPrivateFileUrl(profile.getResumeUrl(), 60);
-    }
 }

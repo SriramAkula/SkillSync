@@ -30,8 +30,6 @@ export class EditProfilePage implements OnInit {
   readonly saving         = signal(false);
   readonly saveError      = signal<string | null>(null);
   readonly selectedSkills = signal<string[]>([]);
-  readonly uploadingResume = signal(false);
-  readonly resumeFileName = signal<string | null>(null);
 
   readonly form = this.fb.group({
     firstName:   ['', [Validators.required, Validators.minLength(2), Validators.maxLength(100)]],
@@ -75,9 +73,6 @@ export class EditProfilePage implements OnInit {
     });
 
     this.selectedSkills.set(skills);
-    if (p.resumeUrl) {
-      this.resumeFileName.set('Resume attached');
-    }
   }
 
   usernameValidator(): AsyncValidatorFn {
@@ -137,36 +132,6 @@ export class EditProfilePage implements OnInit {
 
   removeSkill(skill: string): void {
     this.selectedSkills.update(list => list.filter(s => s !== skill));
-  }
-
-  onResumeSelected(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    if (input.files?.length) {
-      const file = input.files[0];
-      
-      // Basic validation
-      if (file.size > 5 * 1024 * 1024) { // 5MB limit
-        this.toast.error('Resume must be under 5MB');
-        return;
-      }
-      
-      this.resumeFileName.set(file.name);
-      this.uploadingResume.set(true);
-      
-      this.userService.uploadResume(file).subscribe({
-        next: () => {
-          this.toast.success('Resume uploaded successfully');
-          this.uploadingResume.set(false);
-          this.userService.refreshUser(); // Refresh to update global state
-        },
-        error: (err: HttpErrorResponse) => {
-          console.error('Failed to upload resume', err);
-          this.toast.error('Failed to upload resume');
-          this.uploadingResume.set(false);
-          this.resumeFileName.set(null);
-        }
-      });
-    }
   }
 
   save(): void {

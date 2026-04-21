@@ -23,7 +23,6 @@ public class UserProfileResponseDto {
 	private String bio;
 	private String phoneNumber;
 	private String profileImageUrl;
-	private String resumeUrl;
 	private String skills;
 	private Double rating;
 	private Integer totalReviews;

@@ -77,7 +77,6 @@ public class UserProfileMapper {
         dto.setBio(profile.getBio());
         dto.setPhoneNumber(profile.getPhoneNumber());
         dto.setProfileImageUrl(profile.getProfileImageUrl());
-        dto.setResumeUrl(profile.getResumeUrl());
         dto.setSkills(profile.getSkills());
         dto.setRating(profile.getRating());
         dto.setTotalReviews(profile.getTotalReviews());

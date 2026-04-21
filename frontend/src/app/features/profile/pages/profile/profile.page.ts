@@ -56,8 +56,6 @@ export class ProfilePage implements OnInit, OnDestroy {
   readonly isEditing = signal(false);
   readonly showBadge = signal(false);
   readonly avatarUrl = signal<string | null>(null);
-  readonly uploadingResume = signal(false);
-  readonly resumeFileName = signal<string | null>(null);
   readonly isSkillDropdownOpen = signal(false);
   readonly isPrivate = signal(false);
   readonly showConfetti = signal(false);
@@ -222,10 +220,6 @@ export class ProfilePage implements OnInit, OnDestroy {
       const savedAvatar = localStorage.getItem('userAvatar');
       if (savedAvatar) this.avatarUrl.set(savedAvatar);
     }
-
-    if (p.resumeUrl) {
-      this.resumeFileName.set('Resume attached');
-    }
   }
 
   refreshProfile(): void {
@@ -275,35 +269,6 @@ export class ProfilePage implements OnInit, OnDestroy {
       },
       error: () => this.toast.error('Failed to upload profile picture')
     });
-  }
-
-  onResumeSelected(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    if (input.files?.length) {
-      const file = input.files[0];
-      
-      if (file.size > 5 * 1024 * 1024) { 
-        this.toast.error('Resume must be under 5MB');
-        return;
-      }
-      
-      this.resumeFileName.set(file.name);
-      this.uploadingResume.set(true);
-      
-      this.userService.uploadResume(file).subscribe({
-        next: () => {
-          this.toast.success('Resume uploaded successfully');
-          this.uploadingResume.set(false);
-          this.refreshProfile(); 
-        },
-        error: (err) => {
-          console.error('Failed to upload resume', err);
-          this.toast.error('Failed to upload resume');
-          this.uploadingResume.set(false);
-          this.resumeFileName.set(null);
-        }
-      });
-    }
   }
   toggleSkillDropdown(): void { this.isSkillDropdownOpen.update(v => !v); }
   toggleSkill(skill: string, e: Event): void {

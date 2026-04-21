@@ -101,14 +101,4 @@ public class UserProfileCommandService {
         return userProfileMapper.toDto(updated);
     }
 
-    @Transactional
-    public void uploadResume(Long userId, MultipartFile file) {
-        log.info("Uploading resume for userId: {}", userId);
-        UserProfile profile = userProfileRepository.findByUserId(userId)
-                .orElseThrow(() -> new UserProfileNotFoundException("User profile not found for userId: " + userId));
-
-        String resumePath = fileStorageService.uploadPrivateFile(file, "resumes/" + userId);
-        profile.setResumeUrl(resumePath);
-        userProfileRepository.save(profile);
-    }
 }

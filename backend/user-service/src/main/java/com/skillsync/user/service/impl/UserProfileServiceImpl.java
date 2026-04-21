@@ -50,13 +50,4 @@ public class UserProfileServiceImpl implements UserProfileService {
         return userProfileCommandService.uploadProfileImage(userId, file);
     }
 
-    @Override
-    public void uploadResume(Long userId, org.springframework.web.multipart.MultipartFile file) {
-        userProfileCommandService.uploadResume(userId, file);
-    }
-
-    @Override
-    public String getResumeUrl(Long userId) {
-        return userProfileQueryService.getResumeUrl(userId);
-    }
 }
