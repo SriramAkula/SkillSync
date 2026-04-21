@@ -76,6 +76,18 @@ export class UserService {
     );
   }
 
+  uploadProfileImage(file: File): Observable<ApiResponse<UserProfileDto>> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.post<ApiResponse<UserProfileDto>>(`${this.base}/profile/image`, formData).pipe(
+      map(res => {
+        res.data = this.mapProfile(res.data);
+        return res;
+      }),
+      tap(res => this.updateUser(res.data))
+    );
+  }
+
   uploadResume(file: File): Observable<ApiResponse<void>> {
     const formData = new FormData();
     formData.append('file', file);
@@ -86,12 +98,15 @@ export class UserService {
     return this.http.get<ApiResponse<string>>(`${this.base}/profile/resume-url`, { headers: NO_CACHE_HEADERS });
   }
 
-  private mapProfile(p: UserProfileDto): UserProfileDto {
+  private mapProfile(p: any): UserProfileDto {
     if (!p) return p;
     if (p.name && !p.firstName) {
       const parts = p.name.trim().split(' ');
       p.firstName = parts[0];
       p.lastName = parts.slice(1).join(' ');
+    }
+    if (p.profileImageUrl && !p.avatarUrl) {
+      p.avatarUrl = p.profileImageUrl;
     }
     return p;
   }

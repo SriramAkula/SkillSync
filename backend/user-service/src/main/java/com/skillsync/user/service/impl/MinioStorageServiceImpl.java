@@ -25,6 +25,9 @@ public class MinioStorageServiceImpl implements FileStorageService {
     @Value("${minio.url:http://localhost:9000}")
     private String minioUrl;
 
+    @Value("${minio.external.url:http://localhost:9000}")
+    private String externalUrl;
+
     @Value("${minio.bucket.public:skillsync-public}")
     private String publicBucket;
 
@@ -36,7 +39,7 @@ public class MinioStorageServiceImpl implements FileStorageService {
         String objectKey = generateObjectKey(file, pathPrefix);
         uploadToMinio(file, publicBucket, objectKey);
         // Return direct readable URL
-        return String.format("%s/%s/%s", minioUrl, publicBucket, objectKey);
+        return String.format("%s/%s/%s", externalUrl, publicBucket, objectKey);
     }
 
     @Override
@@ -53,13 +56,14 @@ public class MinioStorageServiceImpl implements FileStorageService {
             return null;
         }
         try {
-            return minioClient.getPresignedObjectUrl(
+            String internalUrl = minioClient.getPresignedObjectUrl(
                 GetPresignedObjectUrlArgs.builder()
                     .method(Method.GET)
                     .bucket(privateBucket)
                     .object(objectKey)
                     .expiry(expiryMinutes, TimeUnit.MINUTES)
                     .build());
+            return internalUrl.replace(minioUrl, externalUrl);
         } catch (Exception e) {
             log.error("Error generating presigned URL for key {}", objectKey, e);
             throw new RuntimeException("Could not generate secure file URL");
