@@ -21,7 +21,8 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
     Page<Message> findConversation(@Param("user1") Long user1, @Param("user2") Long user2, Pageable pageable);
 
     @Query("SELECT DISTINCT CASE WHEN m.senderId = :userId THEN m.receiverId ELSE m.senderId END " +
-           "FROM Message m WHERE m.senderId = :userId OR m.receiverId = :userId")
+           "FROM Message m WHERE (m.senderId = :userId OR m.receiverId = :userId) " +
+           "AND m.receiverId IS NOT NULL AND m.groupId IS NULL")
     List<Long> findConversationPartners(@Param("userId") Long userId);
 
     @Query("SELECT m FROM Message m WHERE m.groupId = :groupId ORDER BY m.createdAt DESC")

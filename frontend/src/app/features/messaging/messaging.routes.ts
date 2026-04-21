@@ -1,10 +1,11 @@
 import { Routes } from '@angular/router';
+import { MessagesPage } from './pages/messages/messages.page';
 import { ChatPageComponent } from './pages';
 
 export const MESSAGING_ROUTES: Routes = [
   {
     path: '',
-    component: ChatPageComponent,
+    component: MessagesPage,
     data: { title: 'Messages' }
   },
   {

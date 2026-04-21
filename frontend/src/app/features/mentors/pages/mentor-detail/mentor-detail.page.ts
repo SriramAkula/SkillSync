@@ -3,7 +3,6 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { MentorStore } from '../../../../core/auth/mentor.store';
 import { AuthStore } from '../../../../core/auth/auth.store';
-import { MessagingService } from '../../../../core/services/messaging.service';
 import { ReviewService } from '../../../../core/services/review.service';
 import { ReviewDto, MentorRatingDto } from '../../../../shared/models';
 
@@ -20,7 +19,6 @@ export class MentorDetailPage implements OnInit {
   private readonly route = inject(ActivatedRoute);
   readonly router = inject(Router);
   private readonly reviewService = inject(ReviewService);
-  private readonly messagingService = inject(MessagingService);
   
   readonly reviews = signal<ReviewDto[]>([]);
   readonly rating = signal<MentorRatingDto | null>(null);
@@ -49,8 +47,8 @@ export class MentorDetailPage implements OnInit {
   bookSession(mentorId: number): void { this.router.navigate(['/sessions/request'], { queryParams: { mentorId } }); }
   
   openChat(mentor: { userId: number; name?: string; username?: string }): void {
-    const name = mentor.name || mentor.username || 'Mentor';
-    this.messagingService.openPrivateChat(mentor.userId, name);
+    if (!mentor?.userId) return;
+    this.router.navigate(['/messages'], { queryParams: { tab: 'direct', directUserId: mentor.userId } });
   }
 
   initials(name: string): string { return (name || 'M').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase(); }

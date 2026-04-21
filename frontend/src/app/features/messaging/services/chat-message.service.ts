@@ -126,10 +126,9 @@ export class ChatMessageService {
   sendMessage(request: SendMessageRequest): Observable<SendMessageResponse> {
     const payload = {
       content: request.content,
-      senderId: this.authStore.userId(), // Extracted from JWT token
-      recipientId: request.recipientId,
+      senderId: this.authStore.userId(),
+      receiverId: request.recipientId, // Map recipientId to receiverId for backend
       groupId: request.groupId,
-      type: request.type || 'CHAT'
     };
 
     console.log('[ChatMessageService] Sending message:', payload);
@@ -353,13 +352,31 @@ export class ChatMessageService {
     this.chatStore.setLoadingMessages(true);
     try {
       console.log('[ChatMessageService] Loading messages for conversation:', conversationId, 'page:', page);
-      const request: FetchMessagesRequest = {
-        conversationId,
-        page,
-        pageSize,
-        sortBy: 'NEWEST',
-      };
-      await firstValueFrom(this.fetchMessages(request));
+      let messages$: Observable<ChatMessage[]>;
+
+      if (conversationId.startsWith('direct-')) {
+        const [_, id1, id2] = conversationId.split('-');
+        messages$ = this.fetchDirectConversation(Number(id1), Number(id2), page, pageSize)
+          .pipe(map(res => res.messages));
+      } else if (conversationId.startsWith('group-')) {
+        const groupId = Number(conversationId.replace('group-', ''));
+        messages$ = this.http.get<ApiResponse<{ content: ChatMessage[] }>>(
+          `${this.apiUrl}/group/${groupId}?page=${page}&size=${pageSize}`,
+          { headers: this.getHeaders() }
+        ).pipe(map(res => res.data.content || []));
+      } else {
+        throw new Error('Invalid conversation ID format');
+      }
+
+      const messages = await firstValueFrom(messages$);
+      
+      const uiMessages = messages.map(msg => ({
+        ...msg,
+        timestamp: new Date(msg.timestamp),
+        status: 'DELIVERED' as const
+      }));
+
+      this.chatStore.addMessages(conversationId, uiMessages);
       console.log('[ChatMessageService] Messages loaded successfully');
       this.chatStore.setMessageError(null);
     } catch (error) {
@@ -403,28 +420,9 @@ export class ChatMessageService {
   }
 
   /**
-   * Fetch messages for a conversation
+   * Private helper removed in favor of direct/group specific loading
    */
   private fetchMessages(request: FetchMessagesRequest): Observable<ChatMessage[]> {
-    const params = new HttpParams()
-      .set('page', request.page.toString())
-      .set('size', request.pageSize.toString())
-      .set('sortBy', request.sortBy || 'NEWEST');
-
-    return this.http
-      .get<ApiResponse<{ content: ChatMessage[] }>>(`${this.apiUrl}/conversation?conversationId=${request.conversationId}`, {
-        params,
-        headers: this.getHeaders()
-      })
-      .pipe(
-        map(response => (response.data.content || []).map((msg: ChatMessage) => ({
-          ...msg,
-          timestamp: new Date(msg.timestamp)
-        }))),
-        catchError(error => {
-          console.error('[ChatMessageService] Failed to fetch messages:', error);
-          throw error;
-        })
-      );
+    return of([]);
   }
 }
