@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal, computed, effect } from '@angular/core';
+import { Component, inject, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -8,7 +8,7 @@ import { GroupService } from '../../../../core/services/group.service';
 import { AuthStore } from '../../../../core/auth/auth.store';
 import { GroupDto } from '../../../../shared/models';
 import { forkJoin, of } from 'rxjs';
-import { catchError, map, switchMap, take } from 'rxjs/operators';
+import { catchError, map, switchMap } from 'rxjs/operators';
 import { ChatContainerComponent } from '../../components/chat-container/chat-container.component';
 import { ChatStore } from '../../services/chat.store';
 import { ConversationService } from '../../services/conversation.service';

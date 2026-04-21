@@ -48,7 +48,10 @@
               <div 
                 class="chat-item" 
                 [class.active]="isDirectSelected(entry)"
-                (click)="openDirectChat(entry.userId)">
+                (click)="openDirectChat(entry.userId)"
+                (keydown.enter)="openDirectChat(entry.userId)"
+                role="button"
+                tabindex="0">
                 <div class="avatar-circle">
                   @if (entry.avatar) {
                     <img [src]="entry.avatar" [alt]="entry.name">
@@ -77,7 +80,10 @@
               <div 
                 class="chat-item" 
                 [class.active]="isGroupSelected(group)"
-                (click)="openGroupChat(group.id)">
+                (click)="openGroupChat(group.id)"
+                (keydown.enter)="openGroupChat(group.id)"
+                role="button"
+                tabindex="0">
                 <div class="avatar-circle group-bg">
                   <span class="material-icons">groups</span>
                 </div>

@@ -16,7 +16,6 @@ import type {
   UIMessage,
   SendMessageRequest,
   SendMessageResponse,
-  FetchMessagesRequest,
   MarkAsReadRequest,
   MarkAsReadResponse,
 } from '../models';
@@ -355,7 +354,7 @@ export class ChatMessageService {
       let messages$: Observable<ChatMessage[]>;
 
       if (conversationId.startsWith('direct-')) {
-        const [_, id1, id2] = conversationId.split('-');
+        const [, id1, id2] = conversationId.split('-');
         messages$ = this.fetchDirectConversation(Number(id1), Number(id2), page, pageSize)
           .pipe(map(res => res.messages));
       } else if (conversationId.startsWith('group-')) {
@@ -422,7 +421,7 @@ export class ChatMessageService {
   /**
    * Private helper removed in favor of direct/group specific loading
    */
-  private fetchMessages(request: FetchMessagesRequest): Observable<ChatMessage[]> {
+  private fetchMessages(): Observable<ChatMessage[]> {
     return of([]);
   }
 }
