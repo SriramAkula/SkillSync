@@ -122,10 +122,11 @@ export class MessagesPage implements OnInit {
       }),
       catchError(() => of([] as DirectEntry[]))
     ).subscribe(entries => {
-      // Merge with any manual entries to avoid race condition
+      // Merge with any manual entries and deduplicate by userId
       this.directList.update(current => {
-        const manuallyAdded = current.filter(c => !entries.some(e => e.userId === c.userId));
-        return [...manuallyAdded, ...entries];
+        const combined = [...current, ...entries];
+        const unique = Array.from(new Map(combined.map(e => [e.userId, e])).values());
+        return unique;
       });
       this.loadingDirect.set(false);
     });
@@ -163,7 +164,11 @@ export class MessagesPage implements OnInit {
           email: response.data?.email,
           conversationId: convId
         };
-        this.directList.update(list => [newEntry, ...list]);
+        this.directList.update(list => {
+          const exists = list.some(e => e.userId === userId);
+          if (exists) return list;
+          return [newEntry, ...list];
+        });
 
         // Register in global ChatStore so ChatHeader and other components can see it
         const newConversation: DirectConversation = {

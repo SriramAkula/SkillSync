@@ -411,6 +411,7 @@ export class ChatMessageService {
       }
 
       const messages = await firstValueFrom(messages$);
+      console.log(`[ChatMessageService] Fetched ${messages.length} messages for ${conversationId}:`, messages);
       
       const uiMessages = messages.map(msg => ({
         ...msg,
