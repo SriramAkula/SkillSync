@@ -7,7 +7,7 @@
 
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams, HttpHeaders } from '@angular/common/http';
-import { Observable, Subject, firstValueFrom, tap, map, catchError } from 'rxjs';
+import { Observable, Subject, firstValueFrom, tap, map, catchError, of } from 'rxjs';
 import { ChatStore } from './chat.store';
 import { AuthService } from '../../../core/services/auth.service';
 import { AuthStore } from '../../../core/auth/auth.store';
