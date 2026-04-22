@@ -41,9 +41,17 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public void sendOtp(String email) {
-        if (userRepository.existsByEmail(email)) {
-            throw new RuntimeException("Email already registered");
+        User existingUser = userRepository.findByEmail(email).orElse(null);
+        if (existingUser != null) {
+            // Block if user already has a local password (LOCAL or BOTH)
+            if (existingUser.getAuthProvider() == AuthProvider.LOCAL || existingUser.getAuthProvider() == AuthProvider.BOTH) {
+                throw new RuntimeException("Email already registered and has a password set. Please login or use 'Forgot Password'.");
+            }
+            // If it's just GOOGLE or GITHUB, allow them to proceed to verify and "upgrade"
+            log.info("Allowing OTP for existing {} user to enable account upgrade: email={}", 
+                    existingUser.getAuthProvider(), email);
         }
+        
         otpService.sendOtp(email);
         log.info("OTP send requested for email={}", email);
     }
@@ -63,8 +71,25 @@ public class AuthServiceImpl implements AuthService {
             throw new RuntimeException("Email not verified. Please verify your email with OTP before registering.");
         }
 
-        if (userRepository.existsByEmail(request.email())) {
-            throw new RuntimeException("Email already exists");
+        User existingUser = userRepository.findByEmail(request.email().toLowerCase()).orElse(null);
+        if (existingUser != null) {
+            // If user exists and is purely OAuth, we can "upgrade" them to BOTH
+            if (existingUser.getAuthProvider() == AuthProvider.GOOGLE || existingUser.getAuthProvider() == AuthProvider.GITHUB) {
+                log.info("Upgrading OAuth user to BOTH status during registration: email={}", request.email());
+                existingUser.setPassword(passwordEncoder.encode(request.password()));
+                existingUser.setAuthProvider(AuthProvider.BOTH);
+                userRepository.save(existingUser);
+                
+                // Clear verified flag
+                otpService.clearVerification(request.email());
+                
+                List<String> roles = Arrays.asList(existingUser.getRole().split(","));
+                String token = jwtUtil.generateToken(existingUser.getId(), existingUser.getEmail(), roles);
+                String refreshToken = jwtUtil.generateRefreshToken(existingUser.getId(), existingUser.getEmail(), roles);
+                return new AuthResponse(token, refreshToken, roles, existingUser.getUsername(), existingUser.getId(), existingUser.getEmail());
+            } else {
+                throw new RuntimeException("Email already exists");
+            }
         }
 
         String generatedUsername = request.email().split("@")[0].toLowerCase();
@@ -126,11 +151,11 @@ public class AuthServiceImpl implements AuthService {
             throw new RuntimeException("Your account has been deactivated. Please contact support.");
         }
 
-        // Block OAuth users from password login with a clear message
-        if (user.getAuthProvider() != AuthProvider.LOCAL) {
+        // Allow login if provider is LOCAL or BOTH
+        if (user.getAuthProvider() == AuthProvider.GOOGLE || user.getAuthProvider() == AuthProvider.GITHUB) {
             throw new RuntimeException(
-                "This account uses " + user.getAuthProvider() + " login. " +
-                "Please use the corresponding social login button."
+                "This account currently uses " + user.getAuthProvider() + " login. " +
+                "Please use the social login button or reset your password to enable email login."
             );
         }
 
@@ -207,10 +232,10 @@ public class AuthServiceImpl implements AuthService {
         }
 
         user.setPassword(passwordEncoder.encode(newPassword));
-        // If OAuth user sets a real password, enable LOCAL login too (flexible account linking)
-        if (user.getAuthProvider() != AuthProvider.LOCAL) {
-            user.setAuthProvider(AuthProvider.LOCAL);
-            log.info("OAuth user linked to LOCAL login via password reset: email={}", email);
+        // If OAuth user sets a real password, enable BOTH login (flexible account linking)
+        if (user.getAuthProvider() == AuthProvider.GOOGLE || user.getAuthProvider() == AuthProvider.GITHUB) {
+            user.setAuthProvider(AuthProvider.BOTH);
+            log.info("OAuth user linked to BOTH login via password reset: email={}", email);
         }
         userRepository.save(user);
 
