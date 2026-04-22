@@ -1,0 +1,231 @@
+@reference "tailwindcss";
+
+.page {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 0 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+@media (min-width: 640px) {
+  .page {
+    padding: 2.5rem 2rem;
+  }
+}
+
+/* Header Section */
+.page-header {
+  h1 {
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: #0f172a;
+    letter-spacing: -1.5px;
+    margin-bottom: 0.5rem;
+  }
+
+  p {
+    font-size: 1.125rem;
+    color: #64748b;
+    font-weight: 500;
+  }
+}
+
+.dark .page-header {
+  h1 { color: white; }
+  p { color: #94a3b8; }
+}
+
+/* Premium Search Bar */
+.search-container {
+  display: flex;
+  background: white;
+  border-radius: 1.5rem;
+  border: 1px solid #e2e8f0;
+  padding: 0.5rem 1.5rem;
+  height: 4.5rem;
+  align-items: center;
+  gap: 1.25rem;
+  box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+
+  &:focus-within {
+    border-color: #6366f1;
+    box-shadow: 0 15px 50px -10px rgba(99, 102, 241, 0.15);
+  }
+
+  .material-icons {
+    color: #94a3b8;
+    font-size: 1.5rem;
+  }
+
+  input {
+    flex: 1;
+    border: none;
+    outline: none;
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #1e293b;
+    background: transparent;
+
+    &::placeholder {
+      color: #cbd5e1;
+    }
+  }
+}
+
+.dark .search-container {
+  background: #0f172a;
+  border-color: #1e293b;
+  input { color: white; }
+}
+
+/* Skill Cards Grid */
+.skills-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.5rem;
+}
+
+.skill-card {
+  background: white;
+  border-radius: 24px;
+  border: 1px solid #e2e8f0;
+  padding: 1.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.02);
+
+  &:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 25px 50px -12px rgba(79, 70, 229, 0.12);
+    border-color: #c7d2fe;
+  }
+}
+
+.dark .skill-card {
+  background: #0f172a;
+  border-color: #1e293b;
+  &:hover {
+    border-color: #6366f1;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4);
+  }
+}
+
+.skill-header {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.skill-icon {
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 1rem;
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: 800;
+  box-shadow: 0 10px 20px rgba(99, 102, 241, 0.2);
+}
+
+.skill-meta {
+  h3 {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: #1e293b;
+    margin: 0;
+  }
+  .skill-category {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #6366f1;
+  }
+}
+
+.dark .skill-meta h3 { color: white; }
+
+.skill-desc {
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: #64748b;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  height: 4.8rem;
+}
+
+.dark .skill-desc { color: #94a3b8; }
+
+.skill-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 1.25rem;
+  border-top: 1px solid #f1f5f9;
+}
+
+.dark .skill-footer { border-color: #1e293b; }
+
+.popularity-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #f8fafc;
+  padding: 0.5rem 1rem;
+  border-radius: 1rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #475569;
+
+  .material-icons {
+    font-size: 1rem;
+    color: #f59e0b;
+  }
+}
+
+.dark .popularity-chip {
+  background: #1e293b;
+  color: #94a3b8;
+}
+
+.admin-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.btn-action {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &.edit {
+    background: #eef2ff;
+    color: #6366f1;
+    &:hover { background: #e0e7ff; }
+  }
+
+  &.delete {
+    background: #fef2f2;
+    color: #ef4444;
+    &:hover { background: #fee2e2; }
+  }
+}
+
+.dark .btn-action.edit { background: rgba(99, 102, 241, 0.1); }
+.dark .btn-action.delete { background: rgba(239, 68, 68, 0.1); }

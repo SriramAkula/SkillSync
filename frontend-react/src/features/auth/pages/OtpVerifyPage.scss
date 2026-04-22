@@ -1,0 +1,285 @@
+@reference "tailwindcss";
+.page {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+.left-panel {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(145deg, #4f46e5 0%, #7c3aed 50%, #a855f7 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px;
+}
+
+.brand-content {
+  position: relative;
+  z-index: 2;
+  color: white;
+  max-width: 380px;
+
+  h1 {
+    font-size: 38px;
+    font-weight: 800;
+    margin: 0 0 8px;
+    letter-spacing: -1px;
+  }
+
+  p {
+    font-size: 16px;
+    opacity: 0.8;
+    margin: 0 0 40px;
+  }
+}
+
+.brand-logo {
+  width: 64px;
+  height: 64px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+
+  .bolt {
+    font-size: 32px;
+  }
+}
+
+.steps-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.step-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  opacity: 0.6;
+  transition: opacity 0.3s;
+
+  &.active {
+    opacity: 1;
+
+    .step-circle {
+      background: white;
+      color: #4f46e5;
+      border-color: white;
+    }
+  }
+
+  &.done {
+    opacity: 1;
+
+    .step-circle {
+      background: #10b981;
+      border-color: #10b981;
+
+      .material-icons {
+        font-size: 16px;
+        color: white;
+      }
+    }
+  }
+
+  span:last-child {
+    font-size: 14px;
+    font-weight: 500;
+  }
+}
+
+.step-circle {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(60px);
+  opacity: 0.25;
+
+  &-1 {
+    width: 280px;
+    height: 280px;
+    background: #818cf8;
+    top: -60px;
+    right: -60px;
+  }
+
+  &-2 {
+    width: 200px;
+    height: 200px;
+    background: #c084fc;
+    bottom: 40px;
+    left: -40px;
+  }
+}
+
+.right-panel {
+  background: #fafafa;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 32px;
+}
+
+.form-wrapper {
+  width: 100%;
+  max-width: 420px;
+}
+
+.mobile-logo {
+  display: none;
+  font-size: 22px;
+  font-weight: 800;
+  color: #4f46e5;
+  margin-bottom: 32px;
+}
+
+.form-header {
+  margin-bottom: 28px;
+
+  h2 {
+    font-size: 28px;
+    font-weight: 800;
+    color: #111827;
+    margin: 0 0 6px;
+    letter-spacing: -0.5px;
+  }
+
+  p {
+    color: #6b7280;
+    font-size: 14px;
+    margin: 0;
+  }
+}
+
+.otp-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+}
+
+.error-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 14px;
+  width: 100%;
+
+  .material-icons {
+    font-size: 18px;
+  }
+}
+
+.actions {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.submit-btn {
+  height: 52px;
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s;
+  box-shadow: 0 4px 15px rgba(79, 70, 229, 0.35);
+
+  &:hover:not(:disabled) {
+    opacity: 0.92;
+    transform: translateY(-1px);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+.resend-btn {
+  background: none;
+  border: none;
+  color: #4f46e5;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: underline;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.login-link {
+  text-align: center;
+  font-size: 14px;
+  color: #6b7280;
+  margin: 32px 0 0;
+
+  a {
+    color: #4f46e5;
+    font-weight: 600;
+    text-decoration: none;
+    margin-left: 4px;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}
+
+@media (max-width: 900px) {
+  .page {
+    grid-template-columns: 1fr;
+  }
+
+  .left-panel {
+    display: none;
+  }
+
+  .right-panel {
+    background: white;
+    padding: 32px 20px;
+  }
+
+  .mobile-logo {
+    display: block;
+  }
+}
+
+
+

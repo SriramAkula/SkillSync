@@ -1,0 +1,88 @@
+/* HomePage.scss - Premium Home Page Effects */
+
+.home-page {
+  /* Ensure smooth scrolling */
+  scroll-behavior: smooth;
+  
+  /* Selection colors matching brand */
+  ::selection {
+    background-color: #6366f1; /* indigo-500 */
+    color: white;
+  }
+}
+
+/* ── Landing Nav Glass ─────────────────────────────────────────────── */
+nav.sticky {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(16px);
+}
+
+/* ── Hero Animations ───────────────────────────────────────────────── */
+@keyframes drop-in {
+  from { opacity: 0; transform: translateY(-30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-drop-in {
+  animation: drop-in 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fade-in 1s ease-out forwards;
+  
+  &.delay-200 {
+    animation-delay: 0.2s;
+    opacity: 0; /* start hidden */
+  }
+}
+
+/* ── Category Cards ────────────────────────────────────────────────── */
+.category-card {
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  
+  &:hover {
+    box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.25);
+  }
+}
+
+/* ── Floating Card Animation ───────────────────────────────────────── */
+@keyframes float {
+  0% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+  100% { transform: translateY(0); }
+}
+
+.animate-bounce-slow {
+  animation: float 4s ease-in-out infinite;
+}
+
+/* ── Responsive Refinements ────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .home-page {
+    h1 {
+      font-size: 3.5rem !important;
+      line-height: 1.1;
+    }
+  }
+  
+  .category-card {
+    padding: 2rem !important;
+    
+    .material-icons-outlined {
+      font-size: 2.5rem !important;
+    }
+  }
+}
+
+@media (max-width: 640px) {
+  .home-page {
+    h1 {
+      font-size: 2.75rem !important;
+    }
+  }
+}

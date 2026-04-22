@@ -1,0 +1,215 @@
+/* LoginPage.scss - Refined Auth Styles */
+
+.auth-form-refined {
+  display: flex;
+  flex-direction: column;
+}
+
+.input-group-refined {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+}
+
+.refined-label {
+  font-size: 11px;
+  font-weight: 800;
+  color: #64748b;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.dark .refined-label {
+  color: #94a3b8;
+}
+
+.refined-input-wrapper {
+  display: flex;
+  align-items: center;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 1rem;
+  padding: 0 1.25rem;
+  height: 3.5rem;
+  transition: all 0.3s ease;
+
+  .input-icon {
+    font-size: 1.25rem;
+    color: #94a3b8;
+    margin-right: 0.75rem;
+  }
+
+  input {
+    flex: 1;
+    border: none !important;
+    outline: none !important;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #1e293b;
+    background: transparent !important;
+    box-shadow: none !important;
+
+    &::placeholder {
+      color: #cbd5e1;
+    }
+  }
+
+  &.focused {
+    background: white;
+    border-color: #6366f1;
+    box-shadow: 0 10px 25px -10px rgba(99, 102, 241, 0.2);
+    
+    .input-icon {
+      color: #6366f1;
+    }
+  }
+
+  &.error {
+    border-color: #ef4444;
+    background-color: #fef2f2;
+  }
+}
+
+.dark .refined-input-wrapper {
+  background: #1e293b;
+  border-color: #334155;
+
+  input {
+    color: white;
+    &::placeholder { color: #475569; }
+  }
+
+  &.focused {
+    background: #0f172a;
+    border-color: #6366f1;
+    box-shadow: 0 10px 25px -10px rgba(0, 0, 0, 0.4);
+  }
+}
+
+.password-toggle-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #94a3b8;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  transition: color 0.2s;
+
+  &:hover {
+    color: #6366f1;
+  }
+}
+
+.forgot-password-link {
+  font-size: 11px;
+  font-weight: 700;
+  color: #6366f1;
+  text-decoration: none;
+  
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.refined-field-error {
+  font-size: 12px;
+  font-weight: 600;
+  color: #ef4444;
+  margin-top: 6px;
+}
+
+/* ── Submit Button ───────────────────────────────────────────────────── */
+.refined-submit-btn {
+  height: 3.5rem;
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  color: white;
+  border: none;
+  border-radius: 1.25rem;
+  font-size: 1rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  box-shadow: 0 10px 25px rgba(99, 102, 241, 0.3);
+
+  &:hover:not(:disabled) {
+    transform: translateY(-4px);
+    box-shadow: 0 15px 35px rgba(99, 102, 241, 0.5);
+    opacity: 0.95;
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(0);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .material-icons {
+    font-size: 20px;
+  }
+}
+
+/* ── Divider ─────────────────────────────────────────────────────────── */
+.refined-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #94a3b8;
+  font-size: 12px;
+  font-weight: 600;
+
+  &::before,
+  &::after {
+    content: '';
+    flex: 1;
+    height: 1.5px;
+    background-color: #f1f5f9;
+  }
+}
+
+/* ── Google Sign In Button ───────────────────────────────────────────── */
+.google-signin-btn {
+  height: 56px;
+  width: 100%;
+  background: white;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  gap: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background-color: #f8fafc;
+    border-color: #cbd5e1;
+  }
+}
+
+.refined-error-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #fef2f2;
+  color: #dc2626;
+  padding: 12px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  border: 1px solid #fee2e2;
+
+  .material-icons {
+    font-size: 18px;
+  }
+}

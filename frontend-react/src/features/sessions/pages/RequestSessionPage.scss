@@ -1,0 +1,30 @@
+@reference "tailwindcss";
+/* Request Session Styles */
+/* Note: This component currently utilizes Tailwind CSS utility classes in the template. */
+
+& {
+  display: block;
+
+  // Force dark mode for native browser pickers (Calendar/Clock)
+  input[type="date"],
+  input[type="time"] {
+    &::-webkit-calendar-picker-indicator {
+      filter: invert(0.8) brightness(1.2) contrast(1.2); // Make the icon white/visible in dark mode
+      cursor: pointer;
+      opacity: 0.7;
+      transition: opacity 0.2s;
+      &:hover { opacity: 1; }
+    }
+  }
+
+  .dark {
+    input[type="date"],
+    input[type="time"],
+    select {
+      color-scheme: dark;
+    }
+  }
+}
+
+
+

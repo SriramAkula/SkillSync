@@ -1,0 +1,396 @@
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+@theme {
+  --color-primary-50: #f5f3ff;
+  --color-primary-100: #ede9fe;
+  --color-primary-200: #ddd6fe;
+  --color-primary-300: #c4b5fd;
+  --color-primary-400: #a78bfa;
+  --color-primary-500: #8b5cf6;
+  --color-primary-600: #7c3aed;
+  --color-primary-700: #6d28d9;
+  --color-primary-800: #5b21b6;
+  --color-primary-900: #4c1d95;
+  --color-primary-950: #2e1065;
+
+  --color-secondary-50: #fdf4ff;
+  --color-secondary-100: #fae8ff;
+  --color-secondary-200: #f5d0fe;
+  --color-secondary-300: #f0abfc;
+  --color-secondary-400: #e879f9;
+  --color-secondary-500: #d946ef;
+  --color-secondary-600: #c026d3;
+  --color-secondary-700: #a21caf;
+  --color-secondary-800: #86198f;
+  --color-secondary-900: #701a75;
+  --color-secondary-950: #4a044e;
+
+  --font-sans: "Outfit", "Inter", "system-ui", "sans-serif";
+}
+
+:root {
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.4);
+  --glass-shadow: 0 8px 32px 0 rgba(79, 70, 229, 0.15);
+}
+
+.dark {
+  --glass-bg: rgba(15, 23, 42, 0.85);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+}
+
+body {
+  @apply bg-slate-50 text-slate-900 font-sans antialiased transition-colors duration-300;
+  margin: 0;
+}
+
+.dark body {
+  @apply bg-slate-950 text-slate-100;
+}
+
+/* Premium Glassmorphism Utility */
+.glass-effect {
+  backdrop-filter: blur(24px);
+  background-color: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  transition: all 0.3s ease;
+}
+
+.glass-card {
+  backdrop-filter: blur(24px);
+  background-color: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  border-radius: 1rem;
+  transition: all 0.3s ease;
+}
+
+/* Custom Scrollbar for Premium Feel */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #cbd5e1; /* slate-300 */
+  border-radius: 9999px;
+  transition: background-color 0.2s;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: #94a3b8; /* slate-400 */
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background-color: #334155; /* slate-700 */
+}
+.dark ::-webkit-scrollbar-thumb:hover {
+  background-color: #475569; /* slate-600 */
+}
+
+/* Dark Mode Form Input Styling */
+input[type="text"],
+input[type="number"],
+input[type="email"],
+input[type="password"],
+textarea,
+select {
+  @apply transition-colors duration-200;
+}
+
+/* Fix Browser Autofill "Black Box" Glitch */
+input:-webkit-autofill,
+input:-webkit-autofill:hover, 
+input:-webkit-autofill:focus, 
+input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 1000px white inset !important;
+    -webkit-text-fill-color: #0f172a !important;
+    transition: background-color 5000s ease-in-out 0s;
+}
+
+.dark input:-webkit-autofill,
+.dark input:-webkit-autofill:hover, 
+.dark input:-webkit-autofill:focus, 
+.dark input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 1000px #1e293b inset !important;
+    -webkit-text-fill-color: #f1f5f9 !important;
+}
+
+/* Dark Mode Form Input Styling - Refined */
+input[type="text"],
+input[type="number"],
+input[type="email"],
+input[type="password"],
+textarea,
+select {
+  @apply transition-all duration-200 outline-none;
+}
+
+.dark input[type="text"],
+.dark input[type="number"],
+.dark input[type="email"],
+.dark input[type="password"],
+.dark textarea,
+.dark select {
+  background-color: rgba(30, 41, 59, 0.5) !important;
+  @apply text-slate-100 border-slate-800;
+}
+
+.dark input[type="text"]:focus,
+.dark input[type="number"]:focus,
+.dark input[type="email"]:focus,
+.dark input[type="password"]:focus,
+.dark textarea:focus,
+.dark select:focus {
+  @apply border-primary-500 ring-4 ring-primary-500/10 bg-slate-800/80;
+}
+
+
+
+/* Animation Utilities */
+.page-transition {
+  @apply transition-all duration-300 ease-out;
+}
+
+.hover-lift {
+  @apply transition-transform duration-200 hover:-translate-y-1;
+}
+
+/* Material Dialog Centering - Custom Modal Styles */
+.custom-modal-backdrop {
+  background-color: rgba(0, 0, 0, 0.5) !important;
+}
+
+.custom-modal-dialog {
+  /* Center the dialog */
+  position: fixed !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  
+  /* Ensure it's on top */
+  z-index: 1000 !important;
+}
+
+/* Material Dialog Container Overrides */
+.mat-mdc-dialog-container {
+  border-radius: 12px !important;
+  padding: 0 !important;
+  max-height: 90vh !important;
+  overflow: auto !important;
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.2) !important;
+}
+
+.mat-mdc-dialog-container .mat-mdc-dialog-title {
+  padding: 0 !important;
+}
+
+/* Ensure backdrop covers full screen */
+.cdk-overlay-backdrop {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  z-index: 999 !important;
+}
+
+/* Media queries for responsive dialogs */
+@media (max-width: 600px) {
+  .custom-modal-dialog {
+    width: calc(100vw - 32px) !important;
+    max-width: calc(100vw - 32px) !important;
+  }
+  
+  .mat-mdc-dialog-container {
+    max-height: calc(100vh - 64px) !important;
+  }
+}
+
+/* Material Snackbar - FORCE TOP POSITIONING */
+.mat-mdc-snack-bar-container {
+  position: fixed !important;
+  top: 80px !important;
+  bottom: auto !important;
+  right: 16px !important;
+  left: auto !important;
+  z-index: 1000 !important;
+  margin: 0 !important;
+}
+
+::ng-deep .cdk-overlay-pane:has(.mat-mdc-snack-bar-container) {
+  position: fixed !important;
+  top: 80px !important;
+  bottom: auto !important;
+  right: 16px !important;
+  left: auto !important;
+}
+
+/* Force remove ALL Material hover/state layers */
+.mdc-button--raised:hover::before {
+  display: none !important;
+}
+
+.mdc-button__state-layer {
+  display: none !important;
+  background: none !important;
+}
+
+/* Disable ALL Material Ripple Effects Globally */
+.mdc-ripple-surface {
+  overflow: hidden !important;
+}
+
+.mat-ripple {
+  display: none !important;
+}
+
+.mdc-ripple--surface::before,
+.mdc-ripple--surface::after {
+  display: none !important;
+}
+
+/* AGGRESSIVE Material Snackbar Button Override */
+.mat-mdc-snack-bar-container .mat-mdc-button,
+.mat-mdc-snack-bar-container .mdc-button,
+.mat-mdc-snack-bar-container button,
+.snackbar-container button,
+.mdc-snackbar__action {
+  background-color: transparent !important;
+  background: transparent !important;
+  color: white !important;
+  border: none !important;
+  padding: 8px !important;
+  min-width: auto !important;
+  font-size: 14px !important;
+  transition: none !important;
+}
+
+/* Override all hover states */
+.mat-mdc-snack-bar-container .mat-mdc-button:hover,
+.mat-mdc-snack-bar-container .mdc-button:hover,
+.mat-mdc-snack-bar-container button:hover,
+.snackbar-container button:hover,
+.mdc-snackbar__action:hover {
+  background-color: transparent !important;
+  background: transparent !important;
+  color: white !important;
+  opacity: 0.8;
+}
+
+/* Override focus states */
+.mat-mdc-snack-bar-container .mat-mdc-button:focus,
+.mat-mdc-snack-bar-container .mdc-button:focus,
+.mat-mdc-snack-bar-container button:focus,
+.snackbar-container button:focus,
+.mdc-snackbar__action:focus {
+  background-color: transparent !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Hide any overlay/state layer */
+.mat-mdc-snack-bar-container .mdc-button__ripple,
+.mat-mdc-snack-bar-container .mat-ripple-element,
+.mat-mdc-snack-bar-container .mdc-states-layer {
+  display: none !important;
+}
+
+/* Close Button - Remove all borders globally */
+.close-btn {
+  border: none !important;
+  border-width: 0 !important;
+  border-color: transparent !important;
+  outline: none !important;
+  outline-width: 0 !important;
+  box-shadow: none !important;
+}
+
+.close-btn:hover,
+.close-btn:focus,
+.close-btn:focus-visible,
+.close-btn:active {
+  border: none !important;
+  border-width: 0 !important;
+  outline: none !important;
+  outline-width: 0 !important;
+  box-shadow: none !important;
+}
+
+/* Dark mode - explicitly hide any border */
+.dark .close-btn {
+  border: none !important;
+  border-width: 0 !important;
+  border-color: transparent !important;
+  outline: none !important;
+}
+
+/* Global Material button border removal */
+button, 
+.mdc-button,
+.mat-mdc-button {
+  border: none !important;
+  border-width: 0 !important;
+  border-color: transparent !important;
+}
+
+/* Material snackbar button specifically */
+.mat-mdc-snack-bar-container button {
+  border: none !important;
+  border-width: 0 !important;
+  border-color: transparent !important;
+  border-radius: 0 !important;
+}
+
+/* Remove Material's dark mode button border */
+.dark button,
+.dark .mdc-button,
+.dark .mat-mdc-button,
+.dark .mat-mdc-snack-bar-container button,
+.dark .close-btn {
+  border: none !important;
+  border-width: 0 !important;
+  border-color: transparent !important;
+  border-radius: 0 !important;
+}
+
+/* Override Material Design theme border for snackbar action buttons */
+.mat-mdc-snack-bar-container .mdc-button {
+  border: none !important;
+  border-width: 0 !important;
+}
+
+.mdc-button--raised {
+  border: none !important;
+  border-width: 0 !important;
+}
+
+/* Hide Material's internal border elements */
+.mdc-button::before,
+.mdc-button::after,
+.mat-mdc-button::before,
+.mat-mdc-button::after,
+button::before,
+button::after {
+  border: none !important;
+  border-width: 0 !important;
+}
+
+/* Target dark theme border specifically */
+:root {
+  --mdc-button-label-text-color: white !important;
+}
+
+.dark {
+  --mdc-button-label-text-color: white !important;
+  --mdc-button-container-color: transparent !important;
+  --mdc-button-outline-color: transparent !important;
+}
+
