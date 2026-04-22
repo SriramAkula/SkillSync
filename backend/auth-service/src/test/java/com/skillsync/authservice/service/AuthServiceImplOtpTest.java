@@ -47,7 +47,7 @@ class AuthServiceImplOtpTest {
 
     @Test
     void sendOtp_shouldCallOtpService_whenEmailNotRegistered() {
-        when(userRepository.existsByEmail("new@example.com")).thenReturn(false);
+        when(userRepository.findByEmail("new@example.com")).thenReturn(Optional.empty());
 
         authService.sendOtp("new@example.com");
 
@@ -55,14 +55,25 @@ class AuthServiceImplOtpTest {
     }
 
     @Test
-    void sendOtp_shouldThrow_whenEmailAlreadyRegistered() {
-        when(userRepository.existsByEmail("test@example.com")).thenReturn(true);
+    void sendOtp_shouldThrow_whenEmailAlreadyRegisteredWithPassword() {
+        activeUser.setAuthProvider(AuthProvider.LOCAL);
+        when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.of(activeUser));
 
         assertThatThrownBy(() -> authService.sendOtp("test@example.com"))
                 .isInstanceOf(RuntimeException.class)
-                .hasMessageContaining("Email already registered");
+                .hasMessageContaining("Email already registered and has a password set");
 
         verify(otpService, never()).sendOtp(any());
+    }
+
+    @Test
+    void sendOtp_shouldSucceed_whenEmailRegisteredAsOAuthUser() {
+        activeUser.setAuthProvider(AuthProvider.GOOGLE);
+        when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.of(activeUser));
+
+        authService.sendOtp("test@example.com");
+
+        verify(otpService).sendOtp("test@example.com");
     }
 
     // ─── verifyOtp ───────────────────────────────────────────────
@@ -182,7 +193,7 @@ class AuthServiceImplOtpTest {
     }
 
     @Test
-    void resetPassword_shouldSwitchToLocalProvider_whenOAuthUser() {
+    void resetPassword_shouldSwitchToBothProvider_whenOAuthUser() {
         activeUser.setAuthProvider(AuthProvider.GOOGLE);
         when(otpService.isPasswordResetVerified("test@example.com")).thenReturn(true);
         when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.of(activeUser));
@@ -190,7 +201,7 @@ class AuthServiceImplOtpTest {
 
         authService.resetPassword("test@example.com", "newPass123");
 
-        verify(userRepository).save(argThat(u -> u.getAuthProvider() == AuthProvider.LOCAL));
+        verify(userRepository).save(argThat(u -> u.getAuthProvider() == AuthProvider.BOTH));
     }
 
     // ─── login with OAuth provider ───────────────────────────────
