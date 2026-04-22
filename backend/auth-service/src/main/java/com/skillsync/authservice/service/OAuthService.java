@@ -73,17 +73,19 @@ public class OAuthService {
             throw new RuntimeException("Your account has been deactivated. Please contact support.");
         }
 
-        if (user.getAuthProvider() == AuthProvider.LOCAL) {
-            throw new RuntimeException(
-                "This email is already registered with password login. " +
-                "Please login with your email and password."
-            );
-        }
-        // Update providerId if missing (first OAuth login after migration)
+        // Link account if it's the first time using this provider with an existing email
         if (user.getProviderId() == null) {
+            log.info("Linking existing {} account to Google for email={}", user.getAuthProvider(), user.getEmail());
             user.setProviderId(providerId);
+            
+            // If it was LOCAL, it's now accessible by BOTH
+            if (user.getAuthProvider() == AuthProvider.LOCAL) {
+                user.setAuthProvider(AuthProvider.BOTH);
+            }
+            
             userRepository.save(user);
         }
+        
         return user;
     }
 
