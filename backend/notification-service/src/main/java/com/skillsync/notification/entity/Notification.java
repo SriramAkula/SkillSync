@@ -31,7 +31,7 @@ public class Notification {
     @Column(name = "`read`", nullable = false, columnDefinition = "BOOLEAN")
     private Boolean read = false;
     
-    @Column(nullable = false)
+    @Column(name = "sent_at", nullable = false)
     private LocalDateTime createdAt;
 
     // Alias methods to support test expectations
