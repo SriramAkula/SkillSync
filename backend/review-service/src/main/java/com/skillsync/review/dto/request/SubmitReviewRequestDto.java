@@ -2,6 +2,15 @@ package com.skillsync.review.dto.request;
 
 import jakarta.validation.constraints.*;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class SubmitReviewRequestDto {
     
     @NotNull(message = "Mentor ID is required")
@@ -20,29 +29,4 @@ public class SubmitReviewRequestDto {
     
     @NotNull(message = "isAnonymous flag is required")
     private Boolean isAnonymous = false;
-    
-    public SubmitReviewRequestDto() {}
-    
-    public SubmitReviewRequestDto(Long mentorId, Long sessionId, Integer rating, String comment, Boolean isAnonymous) {
-        this.mentorId = mentorId;
-        this.sessionId = sessionId;
-        this.rating = rating;
-        this.comment = comment;
-        this.isAnonymous = isAnonymous;
-    }
-    
-    public Long getMentorId() { return mentorId; }
-    public void setMentorId(Long mentorId) { this.mentorId = mentorId; }
-    
-    public Long getSessionId() { return sessionId; }
-    public void setSessionId(Long sessionId) { this.sessionId = sessionId; }
-    
-    public Integer getRating() { return rating; }
-    public void setRating(Integer rating) { this.rating = rating; }
-    
-    public String getComment() { return comment; }
-    public void setComment(String comment) { this.comment = comment; }
-    
-    public Boolean getIsAnonymous() { return isAnonymous; }
-    public void setIsAnonymous(Boolean isAnonymous) { this.isAnonymous = isAnonymous; }
 }
