@@ -1,5 +1,6 @@
 package com.skillsync.notification.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -18,6 +19,7 @@ public class NotificationDto {
     private String message;
     private String data;
     private Boolean read;
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss", timezone = "Asia/Kolkata")
     private LocalDateTime createdAt;
     
     // Alias methods to support test expectations

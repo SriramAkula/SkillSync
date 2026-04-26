@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import com.fasterxml.jackson.annotation.JsonFormat;
 
 /**
  * User Profile Response DTO
@@ -28,6 +29,8 @@ public class UserProfileResponseDto {
 	private Integer totalReviews;
 	private Boolean isProfileComplete;
 	private Boolean isBlocked;
+	@JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss", timezone = "Asia/Kolkata")
 	private LocalDateTime createdAt;
+	@JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss", timezone = "Asia/Kolkata")
 	private LocalDateTime updatedAt;
 }
