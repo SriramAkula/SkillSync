@@ -18,7 +18,7 @@ public class NotificationDto {
     private String message;
     private String data;
     private Boolean read;
-    private LocalDateTime sentAt;
+    private LocalDateTime createdAt;
     
     // Alias methods to support test expectations
     public Boolean getIsRead() { return read; }
@@ -32,7 +32,7 @@ public class NotificationDto {
             .message(notification.getMessage())
             .data(notification.getData())
             .read(notification.getRead())
-            .sentAt(notification.getSentAt())
+            .createdAt(notification.getCreatedAt())
             .build();
     }
 }

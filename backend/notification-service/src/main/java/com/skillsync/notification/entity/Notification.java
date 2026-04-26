@@ -32,7 +32,7 @@ public class Notification {
     private Boolean read = false;
     
     @Column(nullable = false)
-    private LocalDateTime sentAt;
+    private LocalDateTime createdAt;
 
     // Alias methods to support test expectations
     public Boolean getIsRead() {

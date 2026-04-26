@@ -29,7 +29,7 @@ public class SessionRejectedEventConsumer {
             notification.setType("SESSION_REJECTED");
             notification.setMessage("Your session request has been rejected. Reason: " + event.getRejectionReason());
             notification.setRead(false);
-            notification.setSentAt(LocalDateTime.now());
+            notification.setCreatedAt(LocalDateTime.now());
             notificationRepository.save(notification);
             
             // Send email to learner

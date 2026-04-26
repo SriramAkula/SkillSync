@@ -21,7 +21,7 @@ class NotificationDtoTest {
         dto.setData("{}");
         dto.setRead(true);
         dto.setIsRead(true);
-        dto.setSentAt(now);
+        dto.setCreatedAt(now);
 
         assertThat(dto.getId()).isEqualTo(1L);
         assertThat(dto.getUserId()).isEqualTo(10L);
@@ -30,7 +30,7 @@ class NotificationDtoTest {
         assertThat(dto.getData()).isEqualTo("{}");
         assertThat(dto.getRead()).isTrue();
         assertThat(dto.getIsRead()).isTrue();
-        assertThat(dto.getSentAt()).isEqualTo(now);
+        assertThat(dto.getCreatedAt()).isEqualTo(now);
     }
 
     @Test
@@ -43,7 +43,7 @@ class NotificationDtoTest {
                 .message("msg")
                 .data("{}")
                 .read(true)
-                .sentAt(now)
+                .createdAt(now)
                 .build();
 
         NotificationDto dto = NotificationDto.fromEntity(entity);
@@ -51,5 +51,6 @@ class NotificationDtoTest {
         assertThat(dto.getId()).isEqualTo(1L);
         assertThat(dto.getUserId()).isEqualTo(10L);
         assertThat(dto.getType()).isEqualTo("TEST");
+        assertThat(dto.getCreatedAt()).isEqualTo(now);
     }
 }
