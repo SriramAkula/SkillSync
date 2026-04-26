@@ -65,9 +65,7 @@ export class ProfilePage implements OnInit, OnDestroy {
   confettiDrops: ConfettiDrop[] = [];
 
   readonly allSkillOptions = computed(() => {
-    const backend = this.skillStore.skillNames();
-    const SOFT_SKILLS = ['Problem Solving', 'Communication', 'Teamwork', 'Leadership', 'Time Management', 'Creativity'];
-    return [...new Set([...backend, ...SOFT_SKILLS])].sort();
+    return [...new Set(this.skillStore.skillNames())].sort();
   });
 
   readonly form = this.fb.group({
