@@ -37,6 +37,7 @@ describe('MentorListPage', () => {
       searchResults: signal([]),
       myProfile: signal(null),
       loading: signal(false),
+      error: signal(null),
       currentPage: signal(0),
       pageSize: signal(12),
       totalElements: signal(1),
@@ -56,11 +57,21 @@ describe('MentorListPage', () => {
 
     mockAuthStore = {
       userId: signal(100),
-      isAdmin: signal(false)
+      isAdmin: signal(false),
+      isMentor: signal(false)
     };
 
-    reviewServiceSpy.getMentorReviews.and.returnValue(of({ data: { content: [] } } as unknown as ApiResponse<PageResponse<ReviewDto>>));
-    reviewServiceSpy.getMentorRating.and.returnValue(of({ data: { averageRating: 4.5 } } as unknown as ApiResponse<MentorRatingDto>));
+    reviewServiceSpy.getMentorReviews.and.returnValue(of({
+      success: true,
+      message: 'Success',
+      data: { content: [], totalElements: 0, totalPages: 0, size: 10, number: 0 }
+    } as any));
+    
+    reviewServiceSpy.getMentorRating.and.returnValue(of({
+      success: true,
+      message: 'Success',
+      data: { mentorId: 100, averageRating: 4.5, totalReviews: 1 }
+    } as any));
 
     await TestBed.configureTestingModule({
       imports: [MentorListPage],
@@ -110,5 +121,67 @@ describe('MentorListPage', () => {
     expect(component.isFilterOpen()).toBeFalse();
     component.isFilterOpen.set(true);
     expect(component.isFilterOpen()).toBeTrue();
+  });
+
+  it('should reset filters', () => {
+    component.filterForm.patchValue({ skill: 'Java' });
+    component.availFilter.set('AVAILABLE');
+    component.reset();
+    expect(component.filterForm.get('skill')?.value).toBeNull();
+    expect(component.availFilter()).toBe('');
+  });
+
+  it('should sync approved mentors with current user profile', () => {
+    const myProfile = { id: 1, userId: 101, name: 'My Updated Name', availabilityStatus: 'AVAILABLE' };
+    mockMentorStore.approved.set([{ id: 1, userId: 101, name: 'Old Name', availabilityStatus: 'AVAILABLE' }]);
+    mockMentorStore.myProfile.set(myProfile);
+    mockAuthStore.userId.set(101); // same userId as in approved list
+    
+    const synced = component.syncedApprovedMentors();
+    const myInList = synced.find((m: any) => m.userId === 101);
+    expect(myInList?.name).toBe('My Updated Name');
+  });
+
+  it('should return all approved mentors if no user is logged in', () => {
+    mockAuthStore.userId.set(null);
+    const synced = component.syncedApprovedMentors();
+    expect(synced.length).toBe(1);
+  });
+
+  it('should filter mentors by availability', () => {
+    mockMentorStore.approved.set([
+      { id: 1, userId: 101, name: 'A', availabilityStatus: 'AVAILABLE' },
+      { id: 2, userId: 102, name: 'B', availabilityStatus: 'BUSY' }
+    ]);
+    
+    component.availFilter.set('AVAILABLE');
+    expect(component.filteredMentors().length).toBe(1);
+    expect(component.filteredMentors()[0].name).toBe('A');
+
+    component.availFilter.set('BUSY');
+    expect(component.filteredMentors().length).toBe(1);
+    expect(component.filteredMentors()[0].name).toBe('B');
+
+    component.availFilter.set('');
+    expect(component.filteredMentors().length).toBe(2);
+  });
+
+  it('should use search results when search is active (via minExperience filter)', fakeAsync(() => {
+    mockMentorStore.searchResults.set([{ id: 3, name: 'Search Result', availabilityStatus: 'AVAILABLE' }]);
+    component.filterForm.patchValue({ minExperience: 5 });
+    tick(500); // allow debounce to trigger search
+
+    // Verify search was called on the store (which proves the filter is active)
+    expect(mockMentorStore.search).toHaveBeenCalledWith(jasmine.objectContaining({ minExperience: 5 }));
+  }));
+
+  it('should load my profile and reviews if user is a mentor', () => {
+    mockAuthStore.isMentor.set(true);
+    
+    // Trigger loadMentors again
+    component.ngOnInit();
+    
+    expect(mockMentorStore.loadMyProfile).toHaveBeenCalled();
+    expect(reviewServiceSpy.getMentorReviews).toHaveBeenCalledWith(100);
   });
 });
