@@ -47,6 +47,24 @@ class GatewayRequestFilterTest {
     }
 
     @Test
+    void doFilterInternal_shouldPass_whenSwaggerUiPath() throws Exception {
+        when(request.getRequestURI()).thenReturn("/swagger-ui/index.html");
+
+        filter.doFilterInternal(request, response, filterChain);
+
+        verify(filterChain).doFilter(request, response);
+    }
+
+    @Test
+    void doFilterInternal_shouldPass_whenSwaggerResourcesPath() throws Exception {
+        when(request.getRequestURI()).thenReturn("/swagger-resources/configuration/ui");
+
+        filter.doFilterInternal(request, response, filterChain);
+
+        verify(filterChain).doFilter(request, response);
+    }
+
+    @Test
     void doFilterInternal_shouldPass_whenActuatorPath() throws Exception {
         when(request.getRequestURI()).thenReturn("/actuator/health");
 

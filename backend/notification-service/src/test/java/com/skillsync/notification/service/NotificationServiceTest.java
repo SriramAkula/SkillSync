@@ -41,7 +41,7 @@ class NotificationServiceTest {
         notificationDto.setType("SESSION_REQUESTED");
         notificationDto.setMessage("New session request");
         notificationDto.setIsRead(false);
-        notificationDto.setSentAt(LocalDateTime.now());
+        notificationDto.setCreatedAt(LocalDateTime.now());
     }
 
     @Test

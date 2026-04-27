@@ -4,6 +4,9 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
+import jakarta.annotation.PostConstruct;
+import java.util.TimeZone;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Skill Service - Skill management and tagging
@@ -20,8 +23,14 @@ import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 @SpringBootApplication
 @EnableDiscoveryClient
 @EnableCaching
-@lombok.extern.slf4j.Slf4j
+@Slf4j
 public class SkillServiceApplication {
+
+	@PostConstruct
+	public void init() {
+		TimeZone.setDefault(TimeZone.getTimeZone("Asia/Kolkata"));
+		log.info("[TIMEZONE] Skill Service running in IST (Asia/Kolkata)");
+	}
 
 	public static void main(String[] args) {
 		SpringApplication.run(SkillServiceApplication.class, args);

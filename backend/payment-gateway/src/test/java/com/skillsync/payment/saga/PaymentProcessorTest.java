@@ -201,6 +201,17 @@ class PaymentProcessorTest {
     }
 
     @Test
+    void refund_shouldHandleNullMessage() throws RazorpayException {
+        try (MockedConstruction<RazorpayClient> mocked = mockConstruction(RazorpayClient.class, (mock, context) -> {
+            PaymentClient paymentClient = mock(PaymentClient.class);
+            when(paymentClient.refund(anyString(), any())).thenThrow(new RazorpayException((String) null));
+            ReflectionTestUtils.setField(mock, "payments", paymentClient);
+        })) {
+            assertThrows(RuntimeException.class, () -> paymentProcessor.refund("pay_1", BigDecimal.TEN));
+        }
+    }
+
+    @Test
     void refund_shouldThrow_whenPaymentIdNull() {
         assertThrows(RuntimeException.class, () -> paymentProcessor.refund(null, BigDecimal.ONE));
     }

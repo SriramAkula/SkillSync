@@ -29,7 +29,7 @@ public class SessionRequestedEventConsumer {
             notification.setType("SESSION_REQUESTED");
             notification.setMessage("You have a new session request scheduled for " + event.getScheduledAt());
             notification.setRead(false);
-            notification.setSentAt(LocalDateTime.now());
+            notification.setCreatedAt(LocalDateTime.now());
             notificationRepository.save(notification);
             
             // Send email

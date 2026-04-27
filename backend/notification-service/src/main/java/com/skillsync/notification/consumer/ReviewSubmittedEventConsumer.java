@@ -29,7 +29,7 @@ public class ReviewSubmittedEventConsumer {
             notification.setType("REVIEW_SUBMITTED");
             notification.setMessage("You received a new " + event.getRating() + "-star review");
             notification.setRead(false);
-            notification.setSentAt(LocalDateTime.now());
+            notification.setCreatedAt(LocalDateTime.now());
             notificationRepository.save(notification);
             
             // Send email

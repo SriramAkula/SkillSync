@@ -1,9 +1,16 @@
 package com.skillsync.session.dto.request;
 
 import jakarta.validation.constraints.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class RequestSessionRequestDto {
     @NotNull(message = "Mentor ID is required")
     private Long mentorId;
@@ -19,14 +26,4 @@ public class RequestSessionRequestDto {
     @Min(value = 15, message = "Minimum duration is 15 minutes")
     @Max(value = 240, message = "Maximum duration is 240 minutes")
     private Integer durationMinutes = 60;
-
-    // Manual Getters and Setters
-    public Long getMentorId() { return mentorId; }
-    public void setMentorId(Long mentorId) { this.mentorId = mentorId; }
-    public Long getSkillId() { return skillId; }
-    public void setSkillId(Long skillId) { this.skillId = skillId; }
-    public LocalDateTime getScheduledAt() { return scheduledAt; }
-    public void setScheduledAt(LocalDateTime scheduledAt) { this.scheduledAt = scheduledAt; }
-    public Integer getDurationMinutes() { return durationMinutes; }
-    public void setDurationMinutes(Integer durationMinutes) { this.durationMinutes = durationMinutes; }
 }

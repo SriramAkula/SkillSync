@@ -28,10 +28,16 @@
   }
 
   &.other {
-    background-color: #1f1f2e;
-    color: #fff;
+    background-color: #f1f5f9;
+    color: #1e293b;
     border-top-left-radius: 4px;
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    border: 1px solid #e2e8f0;
+
+    @at-root :host-context(.dark) & {
+      background-color: #1f1f2e;
+      color: #fff;
+      border-color: rgba(255, 255, 255, 0.05);
+    }
   }
 }
 
@@ -50,6 +56,10 @@
 
 .time {
   font-size: 0.75rem;
-  color: rgba(255, 255, 255, 0.5);
+  color: #64748b;
   font-weight: 500;
+
+  @at-root :host-context(.dark) & {
+    color: rgba(255, 255, 255, 0.5);
+  }
 }

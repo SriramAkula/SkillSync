@@ -115,6 +115,16 @@ class MentorQueryServiceTest {
     }
 
     @Test
+    void getMentorByUserId_shouldReturnFromCache_whenPresent() {
+        when(valueOperations.get("mentor:user:100")).thenReturn(responseDto);
+
+        MentorProfileResponseDto result = mentorQueryService.getMentorByUserId(100L);
+
+        assertThat(result).isEqualTo(responseDto);
+        verifyNoInteractions(mentorRepository);
+    }
+
+    @Test
     void getAllApprovedMentors_shouldReturnPageResponse() {
         Page<MentorProfile> page = new PageImpl<>(List.of(profile));
         when(mentorRepository.findAllApprovedMentors(any())).thenReturn(page);

@@ -18,7 +18,7 @@ class NotificationEntityTest {
                 .message("Hello")
                 .data("{}")
                 .read(false)
-                .sentAt(now)
+                .createdAt(now)
                 .build();
         
         notification.setRead(true);
@@ -31,7 +31,7 @@ class NotificationEntityTest {
         assertThat(notification.getData()).isEqualTo("{}");
         assertThat(notification.getRead()).isTrue();
         assertThat(notification.getIsRead()).isTrue();
-        assertThat(notification.getSentAt()).isEqualTo(now);
+        assertThat(notification.getCreatedAt()).isEqualTo(now);
     }
     
     @Test

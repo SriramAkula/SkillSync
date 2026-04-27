@@ -141,6 +141,72 @@ class SagaOrchestratorTest {
     }
 
     @Test
+    void startSaga_shouldRestart_whenExistingRejected() {
+        StartSagaRequest request = new StartSagaRequest();
+        request.setSessionId(100L);
+        saga.setStatus(SagaStatus.REJECTED);
+        when(sagaRepository.findBySessionId(100L)).thenReturn(Optional.of(saga));
+        
+        SessionDto.SessionData sessionData = new SessionDto.SessionData();
+        sessionData.setStatus("ACCEPTED");
+        SessionDto sessionDto = new SessionDto();
+        sessionDto.setData(sessionData);
+        when(sessionServiceClient.getSession(100L)).thenReturn(sessionDto);
+        
+        // Mock deps for onSessionAccepted
+        MentorRateDto.MentorData mData = new MentorRateDto.MentorData();
+        mData.setHourlyRate(50.0);
+        MentorRateDto rateDto = new MentorRateDto();
+        rateDto.setData(mData);
+        when(mentorServiceClient.fetchMentorProfileForSaga(10L)).thenReturn(rateDto);
+        when(paymentProcessor.createOrder(anyString(), any())).thenReturn("order_1");
+        when(sagaRepository.save(any())).thenReturn(saga);
+        when(sagaMapper.toDto(any())).thenReturn(sagaResponse);
+
+        sagaOrchestrator.startSaga(request);
+        assertThat(saga.getStatus()).isEqualTo(SagaStatus.PAYMENT_PENDING);
+    }
+
+    @Test
+    void startSaga_shouldProceed_whenSessionDataNull() {
+        StartSagaRequest request = new StartSagaRequest();
+        request.setSessionId(100L);
+        SessionDto sessionDto = new SessionDto();
+        sessionDto.setData(null);
+        when(sessionServiceClient.getSession(100L)).thenReturn(sessionDto);
+        when(sagaRepository.findBySessionId(100L)).thenReturn(Optional.empty());
+
+        assertThrows(RuntimeException.class, () -> sagaOrchestrator.startSaga(request));
+    }
+
+    @Test
+    void startSaga_shouldRestart_whenExistingInitiated() {
+        StartSagaRequest request = new StartSagaRequest();
+        request.setSessionId(100L);
+        saga.setStatus(SagaStatus.INITIATED);
+        when(sagaRepository.findBySessionId(100L)).thenReturn(Optional.of(saga));
+        
+        SessionDto.SessionData sessionData = new SessionDto.SessionData();
+        sessionData.setStatus("ACCEPTED");
+        SessionDto sessionDto = new SessionDto();
+        sessionDto.setData(sessionData);
+        when(sessionServiceClient.getSession(100L)).thenReturn(sessionDto);
+        
+        // Mock deps for onSessionAccepted
+        MentorRateDto.MentorData mData = new MentorRateDto.MentorData();
+        mData.setHourlyRate(50.0);
+        MentorRateDto rateDto = new MentorRateDto();
+        rateDto.setData(mData);
+        when(mentorServiceClient.fetchMentorProfileForSaga(10L)).thenReturn(rateDto);
+        when(paymentProcessor.createOrder(anyString(), any())).thenReturn("order_1");
+        when(sagaMapper.toDto(any())).thenReturn(sagaResponse);
+
+        sagaOrchestrator.startSaga(request);
+        // The saga status will be updated to PAYMENT_PENDING in onSessionAccepted, so save IS called.
+        assertThat(saga.getStatus()).isEqualTo(SagaStatus.PAYMENT_PENDING);
+    }
+
+    @Test
     void getSagaBySessionId_shouldStayInitiated_whenSessionNotAccepted() {
         when(sagaRepository.findBySessionId(100L)).thenReturn(Optional.of(saga));
         
@@ -474,5 +540,56 @@ class SagaOrchestratorTest {
         sagaOrchestrator.onSessionAccepted(100L, 10L, 50L);
         
         verify(sagaRepository, atLeastOnce()).save(any());
+    }
+
+    @Test
+    void startSaga_shouldHandleNullSessionResponse() {
+        StartSagaRequest request = new StartSagaRequest();
+        request.setSessionId(100L);
+        when(sessionServiceClient.getSession(100L)).thenReturn(null);
+        when(sagaRepository.findBySessionId(100L)).thenReturn(Optional.empty());
+
+        assertThrows(RuntimeException.class, () -> sagaOrchestrator.startSaga(request));
+    }
+
+    @Test
+    void onSessionAccepted_shouldSkip_whenNotInitiated() {
+        saga.setStatus(SagaStatus.PAYMENT_PENDING);
+        when(sagaRepository.findBySessionId(100L)).thenReturn(Optional.of(saga));
+        when(sagaMapper.toDto(saga)).thenReturn(sagaResponse);
+
+        SagaResponse result = sagaOrchestrator.onSessionAccepted(100L, 10L, 50L);
+        assertThat(result).isEqualTo(sagaResponse);
+        verify(paymentProcessor, never()).createOrder(anyString(), any());
+    }
+
+    @Test
+    void verifyAndCompletePayment_shouldThrow_whenNotFound() {
+        when(sagaRepository.findBySessionId(999L)).thenReturn(Optional.empty());
+        VerifyPaymentRequest request = new VerifyPaymentRequest();
+        request.setSessionId(999L);
+        assertThrows(SagaNotFoundException.class, () -> sagaOrchestrator.verifyAndCompletePayment(request));
+    }
+
+    @Test
+    void initiateRefund_shouldThrow_whenNotFound() {
+        when(sagaRepository.findBySessionId(999L)).thenReturn(Optional.empty());
+        assertThrows(SagaNotFoundException.class, () -> sagaOrchestrator.initiateRefund(999L));
+    }
+
+    @Test
+    void getSagaBySessionId_shouldThrow_whenNotFound() {
+        when(sagaRepository.findBySessionId(999L)).thenReturn(Optional.empty());
+        assertThrows(SagaNotFoundException.class, () -> sagaOrchestrator.getSagaBySessionId(999L));
+    }
+
+    @Test
+    void getSagaBySessionId_shouldNotAdvance_whenNotInitiated() {
+        saga.setStatus(SagaStatus.COMPLETED);
+        when(sagaRepository.findBySessionId(100L)).thenReturn(Optional.of(saga));
+        when(sagaMapper.toDto(saga)).thenReturn(sagaResponse);
+
+        sagaOrchestrator.getSagaBySessionId(100L);
+        verify(sessionServiceClient, never()).getSession(anyLong());
     }
 }

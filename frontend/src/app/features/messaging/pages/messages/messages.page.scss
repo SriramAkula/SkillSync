@@ -1,10 +1,15 @@
 .messaging-layout {
   display: flex;
-  height: calc(100vh - 72px); // Adjust based on navbar height
-  background-color: #0b0b14;
-  color: #fff;
+  height: calc(100vh - 72px);
+  background-color: #f8fafc;
+  color: #1e293b;
   font-family: 'Inter', 'Roboto', sans-serif;
   overflow: hidden;
+
+  @at-root :host-context(.dark) & {
+    background-color: #0b0b14;
+    color: #fff;
+  }
 }
 
 // ──────────────────────────────────────────────────────────
@@ -12,11 +17,16 @@
 // ──────────────────────────────────────────────────────────
 .sidebar {
   width: 320px;
-  background-color: #0e0e1a;
-  border-right: 1px solid rgba(255, 255, 255, 0.05);
+  background-color: #fff;
+  border-right: 1px solid #e2e8f0;
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
+
+  @at-root :host-context(.dark) & {
+    background-color: #0e0e1a;
+    border-right: 1px solid rgba(255, 255, 255, 0.05);
+  }
 
   @media (max-width: 900px) {
     width: 260px;
@@ -36,13 +46,17 @@
       font-size: 1.5rem;
       font-weight: 700;
       margin: 0;
-      color: #fff;
+      color: #1e293b;
+
+      @at-root :host-context(.dark) & {
+        color: #fff;
+      }
     }
 
     .btn-new {
       background: transparent;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      color: rgba(255, 255, 255, 0.7);
+      border: 1px solid #e2e8f0;
+      color: #64748b;
       padding: 0.35rem 0.85rem;
       border-radius: 6px;
       font-size: 0.8rem;
@@ -52,9 +66,20 @@
       cursor: pointer;
       transition: all 0.2s;
 
+      @at-root :host-context(.dark) & {
+        border-color: rgba(255, 255, 255, 0.1);
+        color: rgba(255, 255, 255, 0.7);
+
+        &:hover {
+          background: rgba(255, 255, 255, 0.05);
+          color: #fff;
+        }
+      }
+
       &:hover {
-        background: rgba(255, 255, 255, 0.05);
-        color: #fff;
+        background: #f1f5f9;
+        color: #1e293b;
+        border-color: #cbd5e1;
       }
 
       .material-icons { font-size: 1.1rem; }
@@ -63,28 +88,44 @@
 
   .search-box {
     position: relative;
-    background: #1a1a2e;
+    background: #f1f5f9;
     border-radius: 8px;
     padding: 0.6rem 0.75rem;
     display: flex;
     align-items: center;
     gap: 0.5rem;
 
+    @at-root :host-context(.dark) & {
+      background: #1a1a2e;
+    }
+
     .search-icon {
-      color: rgba(255, 255, 255, 0.3);
+      color: #94a3b8;
       font-size: 1.2rem;
+
+      @at-root :host-context(.dark) & {
+        color: rgba(255, 255, 255, 0.3);
+      }
     }
 
     input {
       background: transparent;
       border: none;
-      color: #fff;
+      color: #1e293b;
       font-size: 0.9rem;
       width: 100%;
       outline: none;
 
+      @at-root :host-context(.dark) & {
+        color: #fff;
+      }
+
       &::placeholder {
-        color: rgba(255, 255, 255, 0.25);
+        color: #94a3b8;
+
+        @at-root :host-context(.dark) & {
+          color: rgba(255, 255, 255, 0.25);
+        }
       }
     }
   }
@@ -94,12 +135,16 @@
   display: flex;
   padding: 0 1.5rem;
   margin-bottom: 0.5rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid #f1f5f9;
+
+  @at-root :host-context(.dark) & {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  }
 
   .tab-link {
     background: transparent;
     border: none;
-    color: rgba(255, 255, 255, 0.4);
+    color: #64748b;
     padding: 0.75rem 1.25rem;
     font-size: 1rem;
     font-weight: 600;
@@ -107,7 +152,13 @@
     position: relative;
     transition: color 0.2s;
 
-    &:hover { color: #fff; }
+    @at-root :host-context(.dark) & {
+      color: rgba(255, 255, 255, 0.4);
+
+      &:hover { color: #fff; }
+    }
+
+    &:hover { color: #1e293b; }
 
     &.active {
       color: #7c5cff;
@@ -130,7 +181,14 @@
   padding: 1rem;
 
   &::-webkit-scrollbar { width: 4px; }
-  &::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 4px; }
+  &::-webkit-scrollbar-thumb { 
+    background: rgba(0, 0, 0, 0.05); 
+    border-radius: 4px; 
+    
+    @at-root :host-context(.dark) & {
+      background: rgba(255, 255, 255, 0.1);
+    }
+  }
 }
 
 .chat-item {
@@ -144,14 +202,25 @@
   margin-bottom: 0.5rem;
 
   &:hover {
-    background-color: rgba(255, 255, 255, 0.03);
+    background-color: #f8fafc;
+
+    @at-root :host-context(.dark) & {
+      background-color: rgba(255, 255, 255, 0.03);
+    }
   }
 
   &.active {
-    background-color: rgba(124, 92, 255, 0.1);
-    border: 1px solid rgba(124, 92, 255, 0.3);
+    background-color: rgba(124, 92, 255, 0.05);
+    border: 1px solid rgba(124, 92, 255, 0.2);
     
-    .chat-name { color: #fff; }
+    .chat-name { color: #1e293b; }
+
+    @at-root :host-context(.dark) & {
+      background-color: rgba(124, 92, 255, 0.1);
+      border-color: rgba(124, 92, 255, 0.3);
+
+      .chat-name { color: #fff; }
+    }
   }
 }
 
@@ -180,18 +249,26 @@
     font-size: 0.95rem;
     font-weight: 600;
     margin-bottom: 0.125rem;
-    color: #f7f7f7;
+    color: #1e293b;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+
+    @at-root :host-context(.dark) & {
+      color: #f7f7f7;
+    }
   }
 
   .chat-preview {
     font-size: 0.8rem;
-    color: rgba(255, 255, 255, 0.4);
+    color: #64748b;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+
+    @at-root :host-context(.dark) & {
+      color: rgba(255, 255, 255, 0.4);
+    }
   }
 }
 
@@ -202,8 +279,12 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  background-color: #0b0b14;
+  background-color: #fff;
   position: relative;
+
+  @at-root :host-context(.dark) & {
+    background-color: #0b0b14;
+  }
 
   &.no-selection {
     align-items: center;
@@ -236,21 +317,33 @@
     font-size: 1.5rem;
     font-weight: 700;
     margin-bottom: 0.75rem;
-    color: #fff;
+    color: #1e293b;
+
+    @at-root :host-context(.dark) & {
+      color: #fff;
+    }
   }
 
   p {
-    color: rgba(255, 255, 255, 0.4);
+    color: #64748b;
     line-height: 1.6;
     font-size: 0.95rem;
+
+    @at-root :host-context(.dark) & {
+      color: rgba(255, 255, 255, 0.4);
+    }
   }
 }
 
 .loading-state, .empty-list {
   padding: 2rem;
   text-align: center;
-  color: rgba(255, 255, 255, 0.3);
+  color: #94a3b8;
   font-size: 0.9rem;
+
+  @at-root :host-context(.dark) & {
+    color: rgba(255, 255, 255, 0.3);
+  }
 }
 
 // Global UI consistency for child components inside chat-main
@@ -274,9 +367,14 @@
   }
 
   .message-received {
-    background-color: #1f1f2e !important;
-    color: #f7f7f7 !important;
+    background-color: #f1f5f9 !important;
+    color: #1e293b !important;
     align-self: flex-start !important;
+
+    @at-root :host-context(.dark) & {
+      background-color: #1f1f2e !important;
+      color: #f7f7f7 !important;
+    }
   }
 
   .message-sent {

@@ -1,9 +1,14 @@
 package com.skillsync.skill.audit;
 
+import lombok.*;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 @Table(name = "audit_logs", indexes = {
         @Index(name = "idx_audit_entity", columnList = "entity_name, entity_id"),
         @Index(name = "idx_audit_user", columnList = "performed_by")
@@ -34,17 +39,4 @@ public class AuditLog {
 
     @PrePersist
     protected void onCreate() { this.timestamp = LocalDateTime.now(); }
-
-    public Long getId() { return id; }
-    public String getEntityName() { return entityName; }
-    public void setEntityName(String entityName) { this.entityName = entityName; }
-    public Long getEntityId() { return entityId; }
-    public void setEntityId(Long entityId) { this.entityId = entityId; }
-    public String getAction() { return action; }
-    public void setAction(String action) { this.action = action; }
-    public String getPerformedBy() { return performedBy; }
-    public void setPerformedBy(String performedBy) { this.performedBy = performedBy; }
-    public String getDetails() { return details; }
-    public void setDetails(String details) { this.details = details; }
-    public LocalDateTime getTimestamp() { return timestamp; }
 }

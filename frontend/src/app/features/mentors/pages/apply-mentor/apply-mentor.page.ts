@@ -57,9 +57,9 @@ export class ApplyMentorPage implements OnInit {
   statusClasses = computed(() => {
     const s = this.myProfile()?.status || 'PENDING';
     const map: Record<string, { bg: string; text: string }> = {
-      'PENDING': { bg: 'bg-amber-500 shadow-amber-100', text: 'text-amber-600' },
-      'APPROVED': { bg: 'bg-emerald-500 shadow-emerald-100', text: 'text-emerald-600' },
-      'REJECTED': { bg: 'bg-red-500 shadow-red-100', text: 'text-red-600' }
+      'PENDING': { bg: 'bg-amber-500', text: 'text-amber-600' },
+      'APPROVED': { bg: 'bg-emerald-500', text: 'text-emerald-600' },
+      'REJECTED': { bg: 'bg-red-500', text: 'text-red-600' }
     };
     return map[s] || map['PENDING'];
   });

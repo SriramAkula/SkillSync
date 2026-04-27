@@ -16,6 +16,8 @@ import java.util.List;
 
 import static org.mockito.Mockito.*;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 @ExtendWith(MockitoExtension.class)
 class JwtFilterTest {
@@ -34,10 +36,30 @@ class JwtFilterTest {
         jwtFilter = new JwtFilter(jwtUtil);
     }
 
+    private boolean invokeIsPublicEndpoint(String path) throws Exception {
+        java.lang.reflect.Method method = JwtFilter.class.getDeclaredMethod("isPublicEndpoint", String.class);
+        method.setAccessible(true);
+        return (boolean) method.invoke(jwtFilter, path);
+    }
+
+    @Test
+    void isPublicEndpoint_shouldReturnTrue_forVariousPaths() throws Exception {
+        assertTrue(invokeIsPublicEndpoint("/auth/login"));
+        assertTrue(invokeIsPublicEndpoint("/auth/register"));
+        assertTrue(invokeIsPublicEndpoint("/auth/refresh"));
+        assertTrue(invokeIsPublicEndpoint("/internal/users/1"));
+        assertTrue(invokeIsPublicEndpoint("/v3/api-docs"));
+        assertTrue(invokeIsPublicEndpoint("/swagger-ui/index.html"));
+        assertTrue(invokeIsPublicEndpoint("/swagger-resources"));
+        assertTrue(invokeIsPublicEndpoint("/error"));
+        assertFalse(invokeIsPublicEndpoint("/actuator/health")); // Not in current filter list
+        assertFalse(invokeIsPublicEndpoint("/api/private"));
+    }
+
     @Test
     void doFilterInternal_shouldPassThrough_forPublicEndpoints() throws Exception {
         String[] publicPaths = {"/auth/register", "/auth/login", "/auth/refresh",
-                "/internal/users/1", "/v3/api-docs", "/swagger-ui/index.html"};
+                "/internal/users/1", "/v3/api-docs", "/swagger-ui/index.html", "/error"};
 
         for (String path : publicPaths) {
             MockHttpServletRequest request = new MockHttpServletRequest("GET", path);
@@ -67,6 +89,19 @@ class JwtFilterTest {
         jwtFilter.doFilterInternal(request, response, filterChain);
 
         verify(filterChain).doFilter(request, response);
+    }
+
+    @Test
+    void doFilterInternal_shouldPassThrough_forMorePublicEndpoints() throws Exception {
+        String[] publicPaths = {"/actuator/health", "/", "/favicon.ico"};
+
+        for (String path : publicPaths) {
+            MockHttpServletRequest request = new MockHttpServletRequest("GET", path);
+            MockHttpServletResponse response = new MockHttpServletResponse();
+            jwtFilter.doFilterInternal(request, response, filterChain);
+        }
+
+        verify(filterChain, times(publicPaths.length)).doFilter(any(), any());
     }
 
     @Test

@@ -1,8 +1,15 @@
 package com.skillsync.mentor.dto.request;
 
 import jakarta.validation.constraints.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class ApplyMentorRequestDto {
 
     @NotBlank(message = "Specialization is required")
@@ -22,14 +29,4 @@ public class ApplyMentorRequestDto {
     @NotBlank(message = "Bio is required")
     @Size(min = 10, max = 500, message = "Bio must be between 10 and 500 characters")
     private String bio;
-
-    // Manual Getters and Setters
-    public String getSpecialization() { return specialization; }
-    public void setSpecialization(String specialization) { this.specialization = specialization; }
-    public Integer getYearsOfExperience() { return yearsOfExperience; }
-    public void setYearsOfExperience(Integer yearsOfExperience) { this.yearsOfExperience = yearsOfExperience; }
-    public Double getHourlyRate() { return hourlyRate; }
-    public void setHourlyRate(Double hourlyRate) { this.hourlyRate = hourlyRate; }
-    public String getBio() { return bio; }
-    public void setBio(String bio) { this.bio = bio; }
 }

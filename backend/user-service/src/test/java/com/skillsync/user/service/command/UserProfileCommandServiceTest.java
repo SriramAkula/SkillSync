@@ -27,6 +27,7 @@ class UserProfileCommandServiceTest {
     @Mock private UserProfileRepository userProfileRepository;
     @Mock private UserProfileMapper userProfileMapper;
     @Mock private AuthClient authClient;
+    @Mock private com.skillsync.user.service.FileStorageService fileStorageService;
     @InjectMocks private UserProfileCommandService userProfileCommandService;
 
     private UserProfile profile;
@@ -128,5 +129,37 @@ class UserProfileCommandServiceTest {
                 .doesNotThrowAnyException();
         
         verify(userProfileRepository).save(profile);
+    }
+
+    @Test
+    void updateProfile_shouldThrow_whenUsernameExists() {
+        UpdateProfileRequestDto request = new UpdateProfileRequestDto("taken", "Name", "Bio", "123", "Java");
+        
+        when(userProfileRepository.findByUserId(10L)).thenReturn(Optional.of(profile));
+        when(userProfileRepository.existsByUsernameAndUserIdNot("taken", 10L)).thenReturn(true);
+
+        assertThatThrownBy(() -> userProfileCommandService.updateProfile(10L, request))
+                .isInstanceOf(com.skillsync.user.exception.UsernameAlreadyExistsException.class);
+    }
+
+    @Test
+    void uploadProfileImage_shouldUpdateProfile() {
+        org.springframework.web.multipart.MultipartFile file = mock(org.springframework.web.multipart.MultipartFile.class);
+        when(userProfileRepository.findByUserId(10L)).thenReturn(Optional.of(profile));
+        when(fileStorageService.uploadPublicFile(any(), anyString())).thenReturn("http://image.url");
+        when(userProfileRepository.save(any())).thenReturn(profile);
+        when(userProfileMapper.toDto(any())).thenReturn(new UserProfileResponseDto());
+
+        userProfileCommandService.uploadProfileImage(10L, file);
+
+        verify(fileStorageService).uploadPublicFile(eq(file), contains("profile-images/10"));
+        assertThat(profile.getProfileImageUrl()).isEqualTo("http://image.url");
+    }
+
+    @Test
+    void uploadProfileImage_shouldThrow_whenNotFound() {
+        when(userProfileRepository.findByUserId(99L)).thenReturn(Optional.empty());
+        assertThatThrownBy(() -> userProfileCommandService.uploadProfileImage(99L, mock(org.springframework.web.multipart.MultipartFile.class)))
+                .isInstanceOf(UserProfileNotFoundException.class);
     }
 }

@@ -56,6 +56,28 @@ class UserProfileEventListenerTest {
     }
 
     @Test
+    void handleUserCreated_ShouldHandleNullName() {
+        createdEvent = new UserCreatedEvent(1L, "test@example.com", null, "testuser", "ROLE_LEARNER", 12345L);
+        when(userProfileRepository.findByUserId(1L)).thenReturn(Optional.empty());
+        when(userProfileRepository.save(any(UserProfile.class))).thenAnswer(i -> i.getArgument(0));
+
+        listener.handleUserCreated(createdEvent);
+
+        verify(userProfileRepository).save(argThat(p -> Boolean.FALSE.equals(p.getProfileComplete())));
+    }
+
+    @Test
+    void handleUserCreated_ShouldHandleEmptyName() {
+        createdEvent = new UserCreatedEvent(1L, "test@example.com", "   ", "testuser", "ROLE_LEARNER", 12345L);
+        when(userProfileRepository.findByUserId(1L)).thenReturn(Optional.empty());
+        when(userProfileRepository.save(any(UserProfile.class))).thenAnswer(i -> i.getArgument(0));
+
+        listener.handleUserCreated(createdEvent);
+
+        verify(userProfileRepository).save(argThat(p -> Boolean.FALSE.equals(p.getProfileComplete())));
+    }
+
+    @Test
     void handleUserCreated_ShouldThrowException_OnError() {
         when(userProfileRepository.findByUserId(1L)).thenThrow(new RuntimeException("DB Error"));
 

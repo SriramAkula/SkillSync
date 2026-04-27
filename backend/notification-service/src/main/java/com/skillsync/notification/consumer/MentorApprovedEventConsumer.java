@@ -29,7 +29,7 @@ public class MentorApprovedEventConsumer {
             notification.setType("MENTOR_APPROVED");
             notification.setMessage("Congratulations! Your mentor application has been approved.");
             notification.setRead(false);
-            notification.setSentAt(LocalDateTime.now());
+            notification.setCreatedAt(LocalDateTime.now());
             notificationRepository.save(notification);
             
             // Send email
