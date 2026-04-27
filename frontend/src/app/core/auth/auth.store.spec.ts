@@ -231,7 +231,7 @@ describe('AuthStore', () => {
   });
 
   it('should handle verifyOtp successfully', fakeAsync(() => {
-    authServiceSpy.verifyOtp.and.returnValue(of({ success: true } as any));
+    authServiceSpy.verifyOtp.and.returnValue(of({ success: true } as unknown as ApiResponse<void>));
     store.verifyOtp({ email: 't@t.com', otp: '1234' });
     tick();
     expect(store.otpVerified()).toBeTrue();
@@ -247,7 +247,7 @@ describe('AuthStore', () => {
   it('should use claims if res.roles is missing during registration', fakeAsync(() => {
     const mockRes = { token: 't' }; // Missing roles/email/username
     spyOn(window, 'atob').and.returnValue(JSON.stringify({ userId: 1, roles: ['ROLE_LEARNER'], sub: 'claim@test.com' }));
-    authServiceSpy.register.and.returnValue(of(mockRes as any));
+    authServiceSpy.register.and.returnValue(of(mockRes as unknown as AuthResponse));
     
     store.register({ email: 'test@test.com', password: 'p' });
     tick();

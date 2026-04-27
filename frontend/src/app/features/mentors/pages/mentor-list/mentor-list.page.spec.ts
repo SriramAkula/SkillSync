@@ -65,13 +65,13 @@ describe('MentorListPage', () => {
       success: true,
       message: 'Success',
       data: { content: [], totalElements: 0, totalPages: 0, size: 10, number: 0 }
-    } as any));
+    } as unknown as ApiResponse<PageResponse<ReviewDto>>));
     
     reviewServiceSpy.getMentorRating.and.returnValue(of({
       success: true,
       message: 'Success',
       data: { mentorId: 100, averageRating: 4.5, totalReviews: 1 }
-    } as any));
+    } as unknown as ApiResponse<MentorRatingDto>));
 
     await TestBed.configureTestingModule({
       imports: [MentorListPage],
@@ -138,7 +138,7 @@ describe('MentorListPage', () => {
     mockAuthStore.userId.set(101); // same userId as in approved list
     
     const synced = component.syncedApprovedMentors();
-    const myInList = synced.find((m: any) => m.userId === 101);
+    const myInList = synced.find((m: import('../../../../shared/models').MentorProfileDto) => m.userId === 101);
     expect(myInList?.name).toBe('My Updated Name');
   });
 

@@ -9,7 +9,7 @@ import { Router } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import { signal } from '@angular/core';
 import { NO_ERRORS_SCHEMA } from '@angular/core';
-import { ApiResponse, UserProfileDto } from '../../../../shared/models';
+import { ApiResponse, UserProfileDto, SkillDto } from '../../../../shared/models';
 
 describe('SkillListPage', () => {
   let component: SkillListPage;
@@ -94,8 +94,7 @@ describe('SkillListPage', () => {
   });
 
   it('should select skill', () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const skill = { id: 1, skillName: 'Java' } as any;
+    const skill = { id: 1, skillName: 'Java' } as unknown as SkillDto;
     component.selectSkill(skill);
     expect(component.selectedSkill()).toBe(skill);
   });
@@ -108,10 +107,10 @@ describe('SkillListPage', () => {
   it('should toggle profile skill (remove)', fakeAsync(() => {
     // Current skills: 'Java, Spring'
     const skill = { id: 1, skillName: 'Java', popularityScore: 10 };
-    userServiceSpy.updateProfile.and.returnValue(of({ success: true } as any));
-    skillServiceSpy.updatePopularity.and.returnValue(of({ data: skill } as any));
+    userServiceSpy.updateProfile.and.returnValue(of({ success: true } as unknown as ApiResponse<UserProfileDto>));
+    skillServiceSpy.updatePopularity.and.returnValue(of({ data: skill } as unknown as ApiResponse<SkillDto>));
 
-    component.toggleProfileSkill(skill as any);
+    component.toggleProfileSkill(skill as unknown as SkillDto);
     tick();
     
     expect(toastServiceSpy.success).toHaveBeenCalledWith(jasmine.stringMatching(/Removed/));
@@ -122,7 +121,7 @@ describe('SkillListPage', () => {
     const skill = { id: 3, skillName: 'Python', popularityScore: 5 };
     userServiceSpy.updateProfile.and.returnValue(throwError(() => ({ error: { message: 'Server error' } })));
 
-    component.toggleProfileSkill(skill as any);
+    component.toggleProfileSkill(skill as unknown as SkillDto);
     tick();
     
     expect(toastServiceSpy.error).toHaveBeenCalledWith('Server error');
@@ -184,19 +183,19 @@ describe('SkillListPage', () => {
 
   it('should open edit form with skill data', () => {
     const skill = { id: 1, skillName: 'Java', description: 'Desc', category: 'Backend' };
-    component.openEdit(skill as any);
+    component.openEdit(skill as unknown as SkillDto);
     
-    expect(component.editingSkill()).toBe(skill as any);
+    expect(component.editingSkill()).toBe(skill as unknown as SkillDto);
     expect(component.formData.skillName).toBe('Java');
     expect(component.showForm()).toBeTrue();
   });
 
   it('should update existing skill', fakeAsync(() => {
     const skill = { id: 1, skillName: 'Java', description: 'Old', category: 'Backend' };
-    component.editingSkill.set(skill as any);
+    component.editingSkill.set(skill as unknown as SkillDto);
     component.formData = { skillName: 'Java', description: 'New', category: 'Backend' };
     
-    skillServiceSpy.update.and.returnValue(of({ data: { ...skill, description: 'New' } } as any));
+    skillServiceSpy.update.and.returnValue(of({ data: { ...skill, description: 'New' } } as unknown as ApiResponse<SkillDto>));
     
     component.saveSkill();
     tick();
@@ -207,7 +206,7 @@ describe('SkillListPage', () => {
   }));
 
   it('should handle skill deletion success', fakeAsync(() => {
-    skillServiceSpy.delete.and.returnValue(of({ success: true } as any));
+    skillServiceSpy.delete.and.returnValue(of({ success: true } as unknown as ApiResponse<void>));
     component.deleteSkill(1);
     tick();
     expect(mockSkillStore.removeSkill).toHaveBeenCalledWith(1);

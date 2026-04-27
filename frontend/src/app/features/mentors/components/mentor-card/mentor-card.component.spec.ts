@@ -10,7 +10,7 @@ import { MentorProfileDto } from '../../../../shared/models';
 describe('MentorCardComponent', () => {
   let component: MentorCardComponent;
   let fixture: ComponentFixture<MentorCardComponent>;
-  let mockAuthStore: any;
+  let mockAuthStore: { userId: import('@angular/core').WritableSignal<number | null> };
   let mockRouter: jasmine.SpyObj<Router>;
   let mockReviewService: jasmine.SpyObj<ReviewService>;
 
@@ -113,7 +113,7 @@ describe('MentorCardComponent', () => {
   });
 
   it('should not open chat if userId is missing', () => {
-    const noUser = { ...mockMentor, userId: undefined as any };
+    const noUser = { ...mockMentor, userId: undefined as unknown as number };
     fixture.componentRef.setInput('mentor', noUser);
     component.openChat();
     expect(mockRouter.navigate).not.toHaveBeenCalled();
