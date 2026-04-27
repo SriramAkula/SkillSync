@@ -18,7 +18,7 @@
     <description>Messaging Service for SkillSync - HTTP-based messaging with CQRS pattern</description>
 
     <properties>
-        <sonar.skip>true</sonar.skip>
+        <sonar.skip>false</sonar.skip>
         <java.version>17</java.version>
         <spring-cloud.version>2024.0.0</spring-cloud.version>
         <lombok.version>1.18.40</lombok.version>
@@ -176,6 +176,21 @@
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
                 <version>0.8.12</version>
+                <configuration>
+                    <excludes>
+                        <exclude>com/skillsync/messaging/dto/**</exclude>
+                        <exclude>com/skillsync/messaging/entity/**</exclude>
+                        <exclude>com/skillsync/messaging/config/SecurityConfig.class</exclude>
+                        <exclude>com/skillsync/messaging/config/OpenApiConfig.class</exclude>
+                        <exclude>com/skillsync/messaging/config/RedisConfig.class</exclude>
+                        <exclude>com/skillsync/messaging/config/RabbitMQConfig.class</exclude>
+                        <exclude>com/skillsync/messaging/config/DatabaseSchemaFixer.class</exclude>
+                        <exclude>com/skillsync/messaging/MessagingServiceApplication.class</exclude>
+                        <exclude>com/skillsync/messaging/exception/UserServiceUnavailableException.class</exclude>
+                        <exclude>com/skillsync/messaging/exception/ErrorResponse.class</exclude>
+                        <exclude>com/skillsync/messaging/exception/InvalidMessageException.class</exclude>
+                    </excludes>
+                </configuration>
                 <executions>
                     <execution>
                         <goals><goal>prepare-agent</goal></goals>

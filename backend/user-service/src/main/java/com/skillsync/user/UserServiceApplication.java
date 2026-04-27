@@ -11,6 +11,12 @@ import lombok.extern.slf4j.Slf4j;
 
 /**
  * User Service - Profile and account management
+ * 
+ * Manages:
+ * - User profiles
+ * - Profile information (name, bio, skills)
+ * - Profile images
+ * - User information updates
  */
 @SpringBootApplication
 @EnableDiscoveryClient

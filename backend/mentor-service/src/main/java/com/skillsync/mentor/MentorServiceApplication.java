@@ -11,6 +11,12 @@ import lombok.extern.slf4j.Slf4j;
 
 /**
  * Mentor Service - Mentor management and approval
+ * 
+ * Manages:
+ * - Mentor applications
+ * - Mentor approvals (admin)
+ * - Mentor profiles and ratings
+ * - Mentor availability
  */
 @SpringBootApplication
 @EnableDiscoveryClient

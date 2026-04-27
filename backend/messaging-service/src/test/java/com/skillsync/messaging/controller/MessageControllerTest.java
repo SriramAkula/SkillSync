@@ -176,4 +176,22 @@ class MessageControllerTest {
                 .andExpect(jsonPath("$.data[0]").value(200))
                 .andExpect(jsonPath("$.data[1]").value(300));
     }
+
+    // --- GET /messaging/group/{groupId} ---
+
+    @Test
+    @DisplayName("GET /messaging/group/{groupId} - returns group conversation")
+    void getGroupConversation_ReturnsMessages() throws Exception {
+        PagedResponse<MessageResponseDTO> mockPage = PagedResponse.<MessageResponseDTO>builder()
+                .content(List.of(responseDTO))
+                .build();
+
+        when(messageService.getGroupConversation(eq(500L), any(Pageable.class)))
+                .thenReturn(mockPage);
+
+        mockMvc.perform(get("/messaging/group/500"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.content.length()").value(1))
+                .andExpect(jsonPath("$.data.content[0].content").value("Hello!"));
+    }
 }

@@ -1,7 +1,5 @@
 package com.skillsync.authservice.filter;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.skillsync.authservice.dto.response.ApiResponse;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -76,6 +74,34 @@ class FilterCoverageTest {
         verify(filterChain).doFilter(request, response);
     }
 
+    @Test
+    void gatewayFilter_shouldDeny_whenInternalPathButMissingAuthHeader() throws Exception {
+        when(request.getRequestURI()).thenReturn("/internal/users/1/profile");
+        when(request.getHeader("X-Service-Auth")).thenReturn(null); // Will not match "true"
+        when(request.getHeader("X-Internal-Service")).thenReturn("user-service");
+        when(request.getHeader("X-Gateway-Request")).thenReturn(null); // Will cause 403
+        
+        StringWriter sw = new StringWriter();
+        when(response.getWriter()).thenReturn(new PrintWriter(sw));
+
+        gatewayRequestFilter.doFilterInternal(request, response, filterChain);
+        verify(response).setStatus(403);
+    }
+
+    @Test
+    void gatewayFilter_shouldDeny_whenInternalPathButMissingServiceHeader() throws Exception {
+        when(request.getRequestURI()).thenReturn("/internal/users/1/profile");
+        when(request.getHeader("X-Service-Auth")).thenReturn("true");
+        when(request.getHeader("X-Internal-Service")).thenReturn(null); // Missing
+        when(request.getHeader("X-Gateway-Request")).thenReturn(null); // Will cause 403
+        
+        StringWriter sw = new StringWriter();
+        when(response.getWriter()).thenReturn(new PrintWriter(sw));
+
+        gatewayRequestFilter.doFilterInternal(request, response, filterChain);
+        verify(response).setStatus(403);
+    }
+
     // ─── ForbiddenResponseFilter ─────────────────────────────────
 
     @InjectMocks private ForbiddenResponseFilter forbiddenResponseFilter;
@@ -86,9 +112,9 @@ class FilterCoverageTest {
         StringWriter sw = new StringWriter();
         when(httpResponse.getWriter()).thenReturn(new PrintWriter(sw));
         
-        // Simulate chain setting status to 403
+        // Case 1: content type is null
         doAnswer(inv -> {
-            HttpServletResponse resp = inv.getArgument(1);
+            ForbiddenAwareResponseWrapper resp = inv.getArgument(1);
             resp.setStatus(403);
             return null;
         }).when(filterChain).doFilter(any(), any());
@@ -100,20 +126,38 @@ class FilterCoverageTest {
     }
 
     @Test
-    void forbiddenFilter_shouldNotWrap_ifAlreadyJson() throws Exception {
+    void forbiddenFilter_shouldConvert_whenTextPlain() throws Exception {
         HttpServletResponse httpResponse = mock(HttpServletResponse.class);
-        when(httpResponse.getContentType()).thenReturn("application/json");
+        StringWriter sw = new StringWriter();
+        when(httpResponse.getWriter()).thenReturn(new PrintWriter(sw));
+        when(httpResponse.getContentType()).thenReturn("text/plain");
         
         doAnswer(inv -> {
-            HttpServletResponse resp = inv.getArgument(1);
+            ForbiddenAwareResponseWrapper resp = inv.getArgument(1);
             resp.setStatus(403);
             return null;
         }).when(filterChain).doFilter(any(), any());
 
         forbiddenResponseFilter.doFilter(request, httpResponse, filterChain);
 
-        // Should not have called getWriter() on httpResponse for the wrap (it captures it in wrapper anyway)
-        verify(httpResponse, never()).getWriter();
+        verify(httpResponse).setContentType(MediaType.APPLICATION_JSON_VALUE);
+        assertThat(sw.toString()).contains("Forbidden: You don't have permission");
+    }
+
+    @Test
+    void forbiddenFilter_shouldNotConvert_whenAlreadyJson() throws Exception {
+        HttpServletResponse httpResponse = mock(HttpServletResponse.class);
+        when(httpResponse.getContentType()).thenReturn("application/json");
+        
+        doAnswer(inv -> {
+            ForbiddenAwareResponseWrapper resp = inv.getArgument(1);
+            resp.setStatus(403);
+            return null;
+        }).when(filterChain).doFilter(any(), any());
+
+        forbiddenResponseFilter.doFilter(request, httpResponse, filterChain);
+
+        verify(httpResponse, never()).setContentType(MediaType.APPLICATION_JSON_VALUE);
     }
 
     @Test
@@ -121,7 +165,7 @@ class FilterCoverageTest {
         HttpServletResponse httpResponse = mock(HttpServletResponse.class);
         
         doAnswer(inv -> {
-            HttpServletResponse resp = inv.getArgument(1);
+            ForbiddenAwareResponseWrapper resp = inv.getArgument(1);
             resp.setStatus(200);
             return null;
         }).when(filterChain).doFilter(any(), any());
@@ -151,4 +195,3 @@ class FilterCoverageTest {
         verify(mockResp).sendError(403, "Msg");
     }
 }
-

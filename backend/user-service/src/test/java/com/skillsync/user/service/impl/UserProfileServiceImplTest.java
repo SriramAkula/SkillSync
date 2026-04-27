@@ -61,4 +61,23 @@ class UserProfileServiceImplTest {
         userProfileService.createProfile(1L, "email", "username");
         verify(commandService).createProfile(1L, "email", "username");
     }
+
+    @Test
+    void createProfileFull_shouldDelegateToCommandService() {
+        userProfileService.createProfile(1L, "email", "user", "Name", "ROLE_ADMIN");
+        verify(commandService).createProfile(1L, "email", "user", "Name", "ROLE_ADMIN");
+    }
+
+    @Test
+    void existsByUsername_shouldDelegateToQueryService() {
+        when(queryService.existsByUsername("user")).thenReturn(true);
+        assertThat(userProfileService.existsByUsername("user")).isTrue();
+    }
+
+    @Test
+    void uploadProfileImage_shouldDelegateToCommandService() {
+        org.springframework.web.multipart.MultipartFile file = mock(org.springframework.web.multipart.MultipartFile.class);
+        userProfileService.uploadProfileImage(1L, file);
+        verify(commandService).uploadProfileImage(1L, file);
+    }
 }

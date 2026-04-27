@@ -65,6 +65,19 @@ class AuditConfigTest {
     }
 
     @Test
+    void auditorProvider_shouldReturnSystem_whenUserIdHeaderNull() {
+        HttpServletRequest request = mock(HttpServletRequest.class);
+        when(request.getHeader("X-User-Id")).thenReturn(null);
+        ServletRequestAttributes attrs = new ServletRequestAttributes(request);
+        RequestContextHolder.setRequestAttributes(attrs);
+
+        AuditorAware<String> provider = auditConfig.auditorProvider();
+        Optional<String> auditor = provider.getCurrentAuditor();
+
+        assertThat(auditor).contains("system");
+    }
+
+    @Test
     void auditorProvider_shouldReturnSystem_whenExceptionOccurs() {
         // Force exception via ClassCastException
         RequestContextHolder.setRequestAttributes(mock(org.springframework.web.context.request.RequestAttributes.class));

@@ -163,6 +163,21 @@ class AuthServiceImplTest {
     }
 
     @Test
+    void register_shouldUpgradeGithubUserToBoth() {
+        RegisterRequest request = new RegisterRequest("test@example.com", "password123");
+        user.setAuthProvider(com.skillsync.authservice.enums.AuthProvider.GITHUB);
+        
+        when(otpService.isEmailVerified("test@example.com")).thenReturn(true);
+        when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.of(user));
+        when(passwordEncoder.encode(anyString())).thenReturn("enc");
+        when(jwtUtil.generateToken(any(), any(), any())).thenReturn("t");
+        when(jwtUtil.generateRefreshToken(any(), any(), any())).thenReturn("rt");
+
+        authService.register(request);
+        assertThat(user.getAuthProvider()).isEqualTo(com.skillsync.authservice.enums.AuthProvider.BOTH);
+    }
+
+    @Test
     void login_shouldReturnToken_whenValidCredentials() {
         LoginRequest request = new LoginRequest("test@example.com", "password123");
         when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.of(user));
@@ -283,7 +298,18 @@ class AuthServiceImplTest {
 
         assertThatThrownBy(() -> authService.login(request))
                 .isInstanceOf(RuntimeException.class)
-                .hasMessageContaining("Please use the social login button or reset your password");
+                .hasMessageContaining("Please use the social login button");
+    }
+
+    @Test
+    void login_shouldThrow_whenGithubProvider() {
+        user.setAuthProvider(com.skillsync.authservice.enums.AuthProvider.GITHUB);
+        LoginRequest request = new LoginRequest("test@example.com", "p");
+        when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.of(user));
+
+        assertThatThrownBy(() -> authService.login(request))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("Please use the social login button");
     }
 
     @Test
@@ -322,6 +348,18 @@ class AuthServiceImplTest {
         verify(userRepository).save(user);
     }
 
+    @Test
+    void resetPassword_shouldSyncAuthProvider_whenGithub() {
+        when(otpService.isPasswordResetVerified("test@example.com")).thenReturn(true);
+        user.setAuthProvider(com.skillsync.authservice.enums.AuthProvider.GITHUB);
+        when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.of(user));
+        when(passwordEncoder.encode(anyString())).thenReturn("encoded");
+
+        authService.resetPassword("test@example.com", "newPass");
+
+        assertThat(user.getAuthProvider()).isEqualTo(com.skillsync.authservice.enums.AuthProvider.BOTH);
+    }
+
     // ─── Otp / Additional ───────────────────────────────────
 
     @Test
@@ -346,6 +384,14 @@ class AuthServiceImplTest {
         when(userRepository.findByEmail("oauth@example.com")).thenReturn(Optional.of(user));
         authService.sendOtp("oauth@example.com");
         verify(otpService).sendOtp("oauth@example.com");
+    }
+
+    @Test
+    void sendOtp_shouldThrow_whenUserIsBoth() {
+        user.setAuthProvider(com.skillsync.authservice.enums.AuthProvider.BOTH);
+        when(userRepository.findByEmail("both@example.com")).thenReturn(Optional.of(user));
+        assertThatThrownBy(() -> authService.sendOtp("both@example.com"))
+                .isInstanceOf(RuntimeException.class);
     }
 
     @Test

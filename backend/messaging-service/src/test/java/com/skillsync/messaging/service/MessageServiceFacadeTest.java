@@ -80,4 +80,17 @@ class MessageServiceFacadeTest {
         assertThat(result).isEqualTo(res);
         verify(queryService).getConversationPartners(1L);
     }
+
+    @Test
+    @DisplayName("getGroupConversation - delegates to query service")
+    void getGroupConversation_Delegates() {
+        PagedResponse<MessageResponseDTO> res = new PagedResponse<>();
+        PageRequest page = PageRequest.of(0, 10);
+        when(queryService.getGroupConversation(500L, page)).thenReturn(res);
+
+        PagedResponse<MessageResponseDTO> result = messageService.getGroupConversation(500L, page);
+
+        assertThat(result).isEqualTo(res);
+        verify(queryService).getGroupConversation(500L, page);
+    }
 }

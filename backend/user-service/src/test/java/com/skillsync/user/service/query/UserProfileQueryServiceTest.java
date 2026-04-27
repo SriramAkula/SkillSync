@@ -75,4 +75,13 @@ class UserProfileQueryServiceTest {
         assertThatThrownBy(() -> userProfileQueryService.getProfileByEmail("ghost@example.com"))
                 .isInstanceOf(UserProfileNotFoundException.class);
     }
+
+    @Test
+    void existsByUsername_shouldReturnRepositoryValue() {
+        when(userProfileRepository.existsByUsername("taken")).thenReturn(true);
+        assertThat(userProfileQueryService.existsByUsername("taken")).isTrue();
+        
+        when(userProfileRepository.existsByUsername("free")).thenReturn(false);
+        assertThat(userProfileQueryService.existsByUsername("free")).isFalse();
+    }
 }

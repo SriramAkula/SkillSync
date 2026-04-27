@@ -349,4 +349,35 @@ class GroupControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data").isArray());
     }
+
+    @Test
+    void getJoinedGroups_shouldReturn200() throws Exception {
+        when(groupService.getJoinedGroups(100L)).thenReturn(List.of(groupResponse));
+
+        mockMvc.perform(get("/group/joined")
+                        .header("X-User-Id", 100L))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data").isArray());
+    }
+
+    @Test
+    void joinGroup_shouldReturn403_whenRolesNull() throws Exception {
+        mockMvc.perform(post("/group/1/join")
+                        .header("X-User-Id", 200L))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void leaveGroup_shouldReturn403_whenRolesNull() throws Exception {
+        mockMvc.perform(delete("/group/1/leave")
+                        .header("X-User-Id", 200L))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void deleteGroup_shouldReturn403_whenRolesNull() throws Exception {
+        mockMvc.perform(delete("/group/1")
+                        .header("X-User-Id", 100L))
+                .andExpect(status().isForbidden());
+    }
 }

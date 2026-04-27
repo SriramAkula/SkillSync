@@ -10,6 +10,15 @@ import lombok.extern.slf4j.Slf4j;
 
 /**
  * Skill Service - Skill management and tagging
+ * 
+ * Manages:
+ * - Skills (CRUD)
+ * - Skill categories
+ * - Skill popularity tracking
+ * 
+ * Features:
+ * - Redis caching for frequently accessed skills
+ * - Search and filtering
  */
 @SpringBootApplication
 @EnableDiscoveryClient

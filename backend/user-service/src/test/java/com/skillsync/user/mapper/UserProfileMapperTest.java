@@ -59,6 +59,12 @@ class UserProfileMapperTest {
     }
 
     @Test
+    void toEntity_shouldFallbackToEmailPrefix_whenUsernameBlank() {
+        UserProfile result = userProfileMapper.toEntity(10L, "test@example.com", "   ");
+        assertThat(result.getUsername()).isEqualTo("test");
+    }
+
+    @Test
     void updateEntity_shouldUpdateFields() {
         UpdateProfileRequestDto request = new UpdateProfileRequestDto("newuser", "New Name", "New Bio", "123", "Java");
         userProfileMapper.updateEntity(profile, request);
