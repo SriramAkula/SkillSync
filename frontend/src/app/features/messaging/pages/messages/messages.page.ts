@@ -1,24 +1,34 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, inject, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router, ActivatedRoute } from '@angular/router';
+import { FormsModule } from '@angular/forms';
 import { MessagingService } from '../../../../core/services/messaging.service';
 import { UserService } from '../../../../core/services/user.service';
 import { GroupService } from '../../../../core/services/group.service';
+import { AuthStore } from '../../../../core/auth/auth.store';
+import { GroupDto } from '../../../../shared/models';
 import { forkJoin, of } from 'rxjs';
-import { catchError, map } from 'rxjs/operators';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { firstValueFrom } from 'rxjs';
+import { catchError, map, switchMap } from 'rxjs/operators';
+import { ChatContainerComponent } from '../../components/chat-container/chat-container.component';
+import { ChatStore } from '../../services/chat.store';
+import { ConversationService } from '../../services/conversation.service';
+import { DirectConversation } from '../../models';
 
-interface ConversationEntry {
-  id: number;
+export type MessagingTab = 'direct' | 'groups';
+
+export interface DirectEntry {
+  userId: number;
   name: string;
-  type: 'user' | 'group';
   avatar?: string;
-  subtitle?: string;
+  conversationId: string;
+  email?: string;
 }
 
 @Component({
   selector: 'app-messages-page',
   standalone: true,
-  imports: [CommonModule, MatProgressSpinnerModule],
+  imports: [CommonModule, FormsModule, ChatContainerComponent],
   templateUrl: './messages.page.html',
   styleUrls: ['./messages.page.scss']
 })
@@ -26,63 +36,191 @@ export class MessagesPage implements OnInit {
   private readonly messagingService = inject(MessagingService);
   private readonly userService = inject(UserService);
   private readonly groupService = inject(GroupService);
+  private readonly authStore = inject(AuthStore);
+  private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
+  private readonly chatStore = inject(ChatStore);
+  private readonly conversationService = inject(ConversationService);
 
-  readonly conversations = signal<ConversationEntry[]>([]);
-  readonly loading = signal(true);
+  readonly activeTab = signal<MessagingTab>('direct');
+  readonly directList = signal<DirectEntry[]>([]);
+  readonly groupList = signal<GroupDto[]>([]);
+  readonly loadingDirect = signal(true);
+  readonly loadingGroups = signal(true);
+  readonly selectedConversationId = signal<string | null>(null);
+  readonly searchQuery = signal('');
 
-  ngOnInit(): void {
-    this.loadConversations();
-  }
+  // Search filtered lists
+  readonly filteredDirectList = computed(() => {
+    const query = this.searchQuery().toLowerCase().trim();
+    if (!query) return this.directList();
+    return this.directList().filter(d => 
+      d.name.toLowerCase().includes(query) || d.email?.toLowerCase().includes(query)
+    );
+  });
 
-  loadConversations(): void {
-    this.loading.set(true);
-    
-    forkJoin({
-      users: this.messagingService.getActiveUsers().pipe(catchError(() => of([]))),
-      groups: this.messagingService.getActiveGroups().pipe(catchError(() => of([])))
-    }).subscribe({
-      next: (ids: { users: number[], groups: number[] }) => {
-        const userReqs = ids.users.map(id => 
-          this.userService.getProfile(id).pipe(
-            map(res => ({ id, name: res.data.name || res.data.username, type: 'user' as const, avatar: res.data.avatarUrl })),
-            catchError(() => of({ id, name: `User ${id}`, type: 'user' as const }))
-          )
-        );
+  readonly filteredGroupList = computed(() => {
+    const query = this.searchQuery().toLowerCase().trim();
+    if (!query) return this.groupList();
+    return this.groupList().filter(g => 
+      g.name.toLowerCase().includes(query) || (g.description && g.description.toLowerCase().includes(query))
+    );
+  });
 
-        const groupReqs = ids.groups.map(id => 
-          this.groupService.getGroup(id).pipe(
-            map(res => ({ id, name: res.data.name, type: 'group' as const, subtitle: 'Group Chat' })),
-            catchError(() => of({ id, name: `Group ${id}`, type: 'group' as const, subtitle: 'Group Chat' }))
-          )
-        );
+  constructor() {
+    // React to query param changes reactively
+    this.route.queryParams.subscribe(params => {
+      const tab = params['tab'] as MessagingTab;
+      const directId = params['directUserId'];
+      const groupId = params['groupId'];
 
-        if (userReqs.length === 0 && groupReqs.length === 0) {
-          this.conversations.set([]);
-          this.loading.set(false);
-          return;
-        }
+      if (tab) this.activeTab.set(tab);
 
-        forkJoin([...userReqs, ...groupReqs]).subscribe({
-          next: (entries) => {
-            this.conversations.set(entries);
-            this.loading.set(false);
-          },
-          error: () => this.loading.set(false)
-        });
-      },
-      error: () => this.loading.set(false)
+      if (directId) {
+        this.openDirectChat(Number(directId));
+      } else if (groupId) {
+        this.openGroupChat(Number(groupId));
+      }
     });
   }
 
-  openChat(entry: ConversationEntry): void {
-    if (entry.type === 'user') {
-      this.messagingService.openPrivateChat(entry.id, entry.name);
-    } else {
-      this.messagingService.openGroupChat(entry.id, entry.name);
+  ngOnInit(): void {
+    this.loadDirectConversations();
+    this.loadGroupConversations();
+  }
+
+  setTab(tab: MessagingTab): void {
+    this.activeTab.set(tab);
+    this.searchQuery.set(''); // Clear search when switching tabs
+  }
+
+  loadDirectConversations(): void {
+    this.loadingDirect.set(true);
+    const currentUserId = this.authStore.userId();
+    if (!currentUserId) {
+      this.loadingDirect.set(false);
+      return;
     }
+
+    this.messagingService.getPartnerIds().pipe(
+      switchMap(res => {
+        const partnerIds: number[] = res.data || [];
+        if (partnerIds.length === 0) return of([]);
+        const userReqs = partnerIds.map(id =>
+          this.userService.getProfile(id).pipe(
+            map(r => ({
+              userId: id,
+              name: r.data?.name || r.data?.username || `User ${id}`,
+              avatar: r.data?.avatarUrl || undefined,
+              email: r.data?.email,
+              conversationId: `direct-${Math.min(currentUserId, id)}-${Math.max(currentUserId, id)}`
+            } as DirectEntry)),
+            catchError(() => of({ userId: id, name: `User ${id}`, avatar: undefined, conversationId: `direct-${Math.min(currentUserId, id)}-${Math.max(currentUserId, id)}` } as DirectEntry))
+          )
+        );
+        return forkJoin(userReqs);
+      }),
+      catchError(() => of([] as DirectEntry[]))
+    ).subscribe(entries => {
+      // Merge with any manual entries and deduplicate by userId
+      this.directList.update(current => {
+        const combined = [...current, ...entries];
+        const unique = Array.from(new Map(combined.map(e => [e.userId, e])).values());
+        return unique;
+      });
+      this.loadingDirect.set(false);
+    });
+  }
+
+  loadGroupConversations(): void {
+    this.loadingGroups.set(true);
+    this.groupService.getJoinedGroups().pipe(
+      catchError(() => of({ data: [] as GroupDto[] }))
+    ).subscribe(res => {
+      this.groupList.set(res.data || []);
+      this.loadingGroups.set(false);
+    });
+  }
+
+  async openDirectChat(userId: number): Promise<void> {
+    const currentUserId = this.authStore.userId();
+    if (!currentUserId || !userId) return;
+
+    this.activeTab.set('direct');
+    const convId = `direct-${Math.min(currentUserId, userId)}-${Math.max(currentUserId, userId)}`;
+    this.selectedConversationId.set(convId);
+    this.chatStore.selectConversation(convId);
+
+    // Check if user is already in our sidebar list
+    const existingEntry = this.directList().find(d => d.userId === userId);
+    if (!existingEntry) {
+      console.log('[MessagesPage] New chat partner detected, fetching profile...', userId);
+      try {
+        const response = await firstValueFrom(this.userService.getProfile(userId));
+        const newEntry: DirectEntry = {
+          userId: userId,
+          name: response.data?.name || response.data?.username || `User ${userId}`,
+          avatar: response.data?.avatarUrl || undefined,
+          email: response.data?.email,
+          conversationId: convId
+        };
+        this.directList.update(list => {
+          const exists = list.some(e => e.userId === userId);
+          if (exists) return list;
+          return [newEntry, ...list];
+        });
+
+        // Register in global ChatStore so ChatHeader and other components can see it
+        const newConversation: DirectConversation = {
+          id: convId,
+          type: 'direct',
+          userId: currentUserId,
+          participantId: userId,
+          participantName: newEntry.name,
+          participantEmail: newEntry.email || '',
+          participantAvatar: newEntry.avatar,
+          unreadCount: 0,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          isActive: true
+        };
+        this.chatStore.addConversation(newConversation);
+      } catch (error) {
+        console.error('[MessagesPage] Failed to fetch profile for new chat partner:', error);
+      }
+    }
+
+    // Ensure messages are loaded
+    await this.conversationService.selectConversationAndLoadMessages(convId);
+  }
+
+  onNewChat(): void {
+    this.router.navigate(['/mentors']);
+  }
+
+  async openGroupChat(groupId: number): Promise<void> {
+    const convId = `group-${groupId}`;
+    this.selectedConversationId.set(convId);
+    this.chatStore.selectConversation(convId);
+    this.activeTab.set('groups');
+    
+    await this.conversationService.selectConversationAndLoadMessages(convId);
   }
 
   getInitials(name: string): string {
-    return name.charAt(0).toUpperCase();
+    return name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+  }
+
+  isDirectSelected(entry: DirectEntry): boolean {
+    return this.selectedConversationId() === entry.conversationId;
+  }
+
+  isGroupSelected(group: GroupDto): boolean {
+    return this.selectedConversationId() === `group-${group.id}`;
+  }
+
+  onSearch(event: Event): void {
+    const target = event.target as HTMLInputElement;
+    this.searchQuery.set(target.value);
   }
 }

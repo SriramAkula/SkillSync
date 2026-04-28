@@ -19,7 +19,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -42,9 +42,6 @@ class MessageServiceTest {
 
     @Mock
     private MessageRepository messageRepository;
-
-    @Mock
-    private UserServiceClient userServiceClient;
 
     @Mock
     private MessageEventPublisher messageEventPublisher;
@@ -70,14 +67,14 @@ class MessageServiceTest {
         message1.setSenderId(100L);
         message1.setReceiverId(200L);
         message1.setContent("Hello from sender!");
-        message1.setCreatedAt(LocalDateTime.now());
+        message1.setCreatedAt(Instant.now());
 
         message2 = new Message();
         message2.setId(2L);
         message2.setSenderId(200L);
         message2.setReceiverId(100L);
         message2.setContent("Hello back from receiver!");
-        message2.setCreatedAt(LocalDateTime.now());
+        message2.setCreatedAt(Instant.now());
 
         validRequest = MessageRequestDTO.builder()
                 .senderId(100L)
@@ -92,9 +89,8 @@ class MessageServiceTest {
     // --- sendMessage tests ---
 
     @Test
-    @DisplayName("sendMessage - success with valid users")
-    void sendMessage_WithValidUsers_ReturnsResponseDTO() {
-        when(userServiceClient.getUserById(100L)).thenReturn(senderDTO);
+    @DisplayName("sendMessage - success and saves to repository")
+    void sendMessage_Success_SavesToRepository() {
         when(messageRepository.saveAndFlush(any(Message.class))).thenReturn(message1);
 
         MessageResponseDTO result = messageCommandService.sendMessage(validRequest);
@@ -104,21 +100,10 @@ class MessageServiceTest {
         assertThat(result.getSenderId()).isEqualTo(100L);
         assertThat(result.getReceiverId()).isEqualTo(200L);
         assertThat(result.getContent()).isEqualTo("Hello from sender!");
-        verify(userServiceClient).getUserById(100L);
         verify(messageRepository).saveAndFlush(any(Message.class));
     }
 
-    @Test
-    @DisplayName("sendMessage - throws when user-service returns null (user not found)")
-    void sendMessage_WhenUserServiceReturnsNull_ThrowsException() {
-        when(userServiceClient.getUserById(100L)).thenReturn(null);
-
-        assertThatThrownBy(() -> messageCommandService.sendMessage(validRequest))
-                .isInstanceOf(InvalidMessageException.class)
-                .hasMessageContaining("does not exist");
-
-        verify(messageRepository, never()).save(any());
-    }
+    // --- Validation tests ---
 
     @Test
     @DisplayName("sendMessage - throws when sender equals receiver")
@@ -152,10 +137,8 @@ class MessageServiceTest {
     }
 
     @Test
-    @DisplayName("sendMessage - handles null sender name gracefully")
-    void sendMessage_WhenSenderNameIsNull() {
-        UserDTO namelessSender = new UserDTO(1L, 100L, null, "sender@test.com");
-        when(userServiceClient.getUserById(100L)).thenReturn(namelessSender);
+    @DisplayName("sendMessage - handles message creation successfully")
+    void sendMessage_HandlesCreation() {
         when(messageRepository.saveAndFlush(any(Message.class))).thenReturn(message1);
 
         MessageResponseDTO result = messageCommandService.sendMessage(validRequest);
@@ -167,7 +150,6 @@ class MessageServiceTest {
     @Test
     @DisplayName("sendMessage - prevents exception propagation when event publisher fails")
     void sendMessage_WhenPublisherFails_ContinuesNormally() {
-        when(userServiceClient.getUserById(100L)).thenReturn(senderDTO);
         when(messageRepository.saveAndFlush(any(Message.class))).thenReturn(message1);
         
         doThrow(new RuntimeException("RabbitMQ Down"))
@@ -179,18 +161,7 @@ class MessageServiceTest {
         verify(messageRepository).saveAndFlush(any(Message.class));
     }
 
-    // --- sendMessageFallback test ---
-
-    @Test
-    @DisplayName("sendMessageFallback - throws when user-service is unavailable")
-    void sendMessageFallback_ThrowsWhenServiceUnavailable() {
-        assertThatThrownBy(() -> messageCommandService.sendMessageFallback(
-                validRequest, new RuntimeException("Service unavailable")))
-                .isInstanceOf(InvalidMessageException.class)
-                .hasMessageContaining("User Service is unavailable");
-
-        verify(messageRepository, never()).save(any());
-    }
+    // --- sendMessageFallback test removed ---
 
     // --- getConversation tests ---
 

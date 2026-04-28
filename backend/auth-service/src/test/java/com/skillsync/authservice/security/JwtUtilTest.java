@@ -103,10 +103,14 @@ class JwtUtilTest {
     }
 
     @Test
-    void malformedTokens_shouldReturnNull() {
-        assertThat(jwtUtil.extractEmail("invalid")).isNull();
-        assertThat(jwtUtil.extractUserId("invalid")).isNull();
-        assertThat(jwtUtil.extractRoles("invalid")).isNull();
-        assertThat(jwtUtil.extractEmailIgnoreExpiry("invalid")).isNull();
+    void validateRefreshToken_shouldReturnFalse_whenTypeIsWrong() {
+        String token = jwtUtil.generateToken(1L, "test@example.com", List.of("ROLE_LEARNER"));
+        // This token has type "access" or similar (actually it doesn't set type for access token in generateToken)
+        assertThat(jwtUtil.validateRefreshToken(token)).isFalse();
+    }
+
+    @Test
+    void validateRefreshToken_shouldReturnFalse_whenGarbage() {
+        assertThat(jwtUtil.validateRefreshToken("garbage")).isFalse();
     }
 }

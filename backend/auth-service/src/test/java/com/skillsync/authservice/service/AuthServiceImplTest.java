@@ -52,7 +52,7 @@ class AuthServiceImplTest {
     void register_shouldReturnToken_whenValidRequest() {
         RegisterRequest request = new RegisterRequest("test@example.com", "password123");
         when(otpService.isEmailVerified("test@example.com")).thenReturn(true);
-        when(userRepository.existsByEmail("test@example.com")).thenReturn(false);
+        when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.empty());
         when(userRepository.existsByUsername(anyString())).thenReturn(false);
         when(passwordEncoder.encode("password123")).thenReturn("encodedPass");
         when(userRepository.save(any(User.class))).thenReturn(user);
@@ -83,7 +83,8 @@ class AuthServiceImplTest {
     void register_shouldThrow_whenEmailAlreadyExists() {
         RegisterRequest request = new RegisterRequest("test@example.com", "password123");
         when(otpService.isEmailVerified("test@example.com")).thenReturn(true);
-        when(userRepository.existsByEmail("test@example.com")).thenReturn(true);
+        user.setAuthProvider(com.skillsync.authservice.enums.AuthProvider.LOCAL);
+        when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.of(user));
 
         assertThatThrownBy(() -> authService.register(request))
                 .isInstanceOf(RuntimeException.class)
@@ -96,7 +97,7 @@ class AuthServiceImplTest {
     void register_shouldThrow_whenUsernameAlreadyExists() {
         RegisterRequest request = new RegisterRequest("test@example.com", "password123");
         when(otpService.isEmailVerified("test@example.com")).thenReturn(true);
-        when(userRepository.existsByEmail("test@example.com")).thenReturn(false);
+        when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.empty());
         when(userRepository.existsByUsername(anyString())).thenReturn(true);
 
         assertThatThrownBy(() -> authService.register(request))
@@ -110,7 +111,7 @@ class AuthServiceImplTest {
     void register_shouldStillSucceed_whenEventPublishFails() {
         RegisterRequest request = new RegisterRequest("test@example.com", "password123");
         when(otpService.isEmailVerified(anyString())).thenReturn(true);
-        when(userRepository.existsByEmail(anyString())).thenReturn(false);
+        when(userRepository.findByEmail(anyString())).thenReturn(Optional.empty());
         when(userRepository.existsByUsername(anyString())).thenReturn(false);
         when(passwordEncoder.encode(anyString())).thenReturn("encodedPass");
         when(userRepository.save(any())).thenReturn(user);
@@ -127,7 +128,7 @@ class AuthServiceImplTest {
     void register_shouldStillSucceed_whenFeignClientFails() {
         RegisterRequest request = new RegisterRequest("test@example.com", "password123");
         when(otpService.isEmailVerified(anyString())).thenReturn(true);
-        when(userRepository.existsByEmail(anyString())).thenReturn(false);
+        when(userRepository.findByEmail(anyString())).thenReturn(Optional.empty());
         when(userRepository.existsByUsername(anyString())).thenReturn(false);
         when(passwordEncoder.encode(anyString())).thenReturn("encodedPass");
         when(userRepository.save(any())).thenReturn(user);
@@ -141,6 +142,40 @@ class AuthServiceImplTest {
     }
 
     // ─── login ───────────────────────────────────────────────────────────────
+
+    @Test
+    void register_shouldUpgradeOAuthUserToBoth() {
+        RegisterRequest request = new RegisterRequest("test@example.com", "password123");
+        user.setAuthProvider(com.skillsync.authservice.enums.AuthProvider.GOOGLE);
+        
+        when(otpService.isEmailVerified("test@example.com")).thenReturn(true);
+        when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.of(user));
+        when(passwordEncoder.encode("password123")).thenReturn("newEncoded");
+        when(jwtUtil.generateToken(anyLong(), anyString(), anyList())).thenReturn("jwt");
+        when(jwtUtil.generateRefreshToken(anyLong(), anyString(), anyList())).thenReturn("ref");
+
+        AuthResponse response = authService.register(request);
+
+        assertThat(user.getAuthProvider()).isEqualTo(com.skillsync.authservice.enums.AuthProvider.BOTH);
+        assertThat(user.getPassword()).isEqualTo("newEncoded");
+        verify(userRepository).save(user);
+        verify(otpService).clearVerification("test@example.com");
+    }
+
+    @Test
+    void register_shouldUpgradeGithubUserToBoth() {
+        RegisterRequest request = new RegisterRequest("test@example.com", "password123");
+        user.setAuthProvider(com.skillsync.authservice.enums.AuthProvider.GITHUB);
+        
+        when(otpService.isEmailVerified("test@example.com")).thenReturn(true);
+        when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.of(user));
+        when(passwordEncoder.encode(anyString())).thenReturn("enc");
+        when(jwtUtil.generateToken(any(), any(), any())).thenReturn("t");
+        when(jwtUtil.generateRefreshToken(any(), any(), any())).thenReturn("rt");
+
+        authService.register(request);
+        assertThat(user.getAuthProvider()).isEqualTo(com.skillsync.authservice.enums.AuthProvider.BOTH);
+    }
 
     @Test
     void login_shouldReturnToken_whenValidCredentials() {
@@ -227,7 +262,7 @@ class AuthServiceImplTest {
     void register_shouldHandleUsernameCollisionFallback() {
         RegisterRequest request = new RegisterRequest("test@example.com", "password123");
         when(otpService.isEmailVerified("test@example.com")).thenReturn(true);
-        when(userRepository.existsByEmail("test@example.com")).thenReturn(false);
+        when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.empty());
         
         // First username 'test' exists
         when(userRepository.existsByUsername("test")).thenReturn(true);
@@ -243,7 +278,7 @@ class AuthServiceImplTest {
     void register_shouldHandleUsernameCollisionSucceed() {
         RegisterRequest request = new RegisterRequest("test@example.com", "password123");
         when(otpService.isEmailVerified("test@example.com")).thenReturn(true);
-        when(userRepository.existsByEmail("test@example.com")).thenReturn(false);
+        when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.empty());
         when(userRepository.existsByUsername("test")).thenReturn(true);
         when(userRepository.existsByUsername("test.example.com")).thenReturn(false); // Success on second try
         when(passwordEncoder.encode(anyString())).thenReturn("p");
@@ -263,7 +298,18 @@ class AuthServiceImplTest {
 
         assertThatThrownBy(() -> authService.login(request))
                 .isInstanceOf(RuntimeException.class)
-                .hasMessageContaining("Please use the corresponding social login button");
+                .hasMessageContaining("Please use the social login button");
+    }
+
+    @Test
+    void login_shouldThrow_whenGithubProvider() {
+        user.setAuthProvider(com.skillsync.authservice.enums.AuthProvider.GITHUB);
+        LoginRequest request = new LoginRequest("test@example.com", "p");
+        when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.of(user));
+
+        assertThatThrownBy(() -> authService.login(request))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("Please use the social login button");
     }
 
     @Test
@@ -298,25 +344,54 @@ class AuthServiceImplTest {
 
         authService.resetPassword("test@example.com", "newPass");
 
-        assertThat(user.getAuthProvider()).isEqualTo(com.skillsync.authservice.enums.AuthProvider.LOCAL);
+        assertThat(user.getAuthProvider()).isEqualTo(com.skillsync.authservice.enums.AuthProvider.BOTH);
         verify(userRepository).save(user);
+    }
+
+    @Test
+    void resetPassword_shouldSyncAuthProvider_whenGithub() {
+        when(otpService.isPasswordResetVerified("test@example.com")).thenReturn(true);
+        user.setAuthProvider(com.skillsync.authservice.enums.AuthProvider.GITHUB);
+        when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.of(user));
+        when(passwordEncoder.encode(anyString())).thenReturn("encoded");
+
+        authService.resetPassword("test@example.com", "newPass");
+
+        assertThat(user.getAuthProvider()).isEqualTo(com.skillsync.authservice.enums.AuthProvider.BOTH);
     }
 
     // ─── Otp / Additional ───────────────────────────────────
 
     @Test
     void sendOtp_shouldSucceed_whenUserDoesNotExist() {
-        when(userRepository.existsByEmail("new@example.com")).thenReturn(false);
+        when(userRepository.findByEmail("new@example.com")).thenReturn(Optional.empty());
         authService.sendOtp("new@example.com");
         verify(otpService).sendOtp("new@example.com");
     }
 
     @Test
-    void sendOtp_shouldThrow_whenUserExists() {
-        when(userRepository.existsByEmail("exists@example.com")).thenReturn(true);
+    void sendOtp_shouldThrow_whenUserHasPassword() {
+        user.setAuthProvider(com.skillsync.authservice.enums.AuthProvider.LOCAL);
+        when(userRepository.findByEmail("exists@example.com")).thenReturn(Optional.of(user));
         assertThatThrownBy(() -> authService.sendOtp("exists@example.com"))
                 .isInstanceOf(RuntimeException.class)
-                .hasMessageContaining("already registered");
+                .hasMessageContaining("Email already registered and has a password set");
+    }
+
+    @Test
+    void sendOtp_shouldSucceed_whenOAuthUserWantsToUpgrade() {
+        user.setAuthProvider(com.skillsync.authservice.enums.AuthProvider.GOOGLE);
+        when(userRepository.findByEmail("oauth@example.com")).thenReturn(Optional.of(user));
+        authService.sendOtp("oauth@example.com");
+        verify(otpService).sendOtp("oauth@example.com");
+    }
+
+    @Test
+    void sendOtp_shouldThrow_whenUserIsBoth() {
+        user.setAuthProvider(com.skillsync.authservice.enums.AuthProvider.BOTH);
+        when(userRepository.findByEmail("both@example.com")).thenReturn(Optional.of(user));
+        assertThatThrownBy(() -> authService.sendOtp("both@example.com"))
+                .isInstanceOf(RuntimeException.class);
     }
 
     @Test

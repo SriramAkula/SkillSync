@@ -30,16 +30,16 @@ public class SessionCancelledEventConsumer {
             mentorNotification.setType("SESSION_CANCELLED");
             mentorNotification.setMessage("A session has been cancelled.");
             mentorNotification.setRead(false);
-            mentorNotification.setSentAt(LocalDateTime.now());
+            mentorNotification.setCreatedAt(LocalDateTime.now());
             notificationRepository.save(mentorNotification);
             
-            // Notification to learner
+            // 2. Notify Learner
             Notification learnerNotification = new Notification();
             learnerNotification.setUserId(event.getLearnerId());
             learnerNotification.setType("SESSION_CANCELLED");
             learnerNotification.setMessage("Your session has been cancelled.");
             learnerNotification.setRead(false);
-            learnerNotification.setSentAt(LocalDateTime.now());
+            learnerNotification.setCreatedAt(LocalDateTime.now());
             notificationRepository.save(learnerNotification);
             
             // Send email to both

@@ -17,7 +17,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 
@@ -58,7 +58,7 @@ class MessageControllerTest {
                 .senderId(100L)
                 .receiverId(200L)
                 .content("Hello!")
-                .createdAt(LocalDateTime.now())
+                .createdAt(Instant.now())
                 .build();
     }
 
@@ -146,7 +146,7 @@ class MessageControllerTest {
     void getConversation_ReturnsMessages() throws Exception {
         MessageResponseDTO response2 = MessageResponseDTO.builder()
                 .id(2L).senderId(200L).receiverId(100L)
-                .content("Reply!").createdAt(LocalDateTime.now()).build();
+                .content("Reply!").createdAt(Instant.now()).build();
 
         PagedResponse<MessageResponseDTO> mockPage = PagedResponse.<MessageResponseDTO>builder()
                 .content(Arrays.asList(responseDTO, response2))
@@ -175,5 +175,23 @@ class MessageControllerTest {
                 .andExpect(jsonPath("$.data.length()").value(2))
                 .andExpect(jsonPath("$.data[0]").value(200))
                 .andExpect(jsonPath("$.data[1]").value(300));
+    }
+
+    // --- GET /messaging/group/{groupId} ---
+
+    @Test
+    @DisplayName("GET /messaging/group/{groupId} - returns group conversation")
+    void getGroupConversation_ReturnsMessages() throws Exception {
+        PagedResponse<MessageResponseDTO> mockPage = PagedResponse.<MessageResponseDTO>builder()
+                .content(List.of(responseDTO))
+                .build();
+
+        when(messageService.getGroupConversation(eq(500L), any(Pageable.class)))
+                .thenReturn(mockPage);
+
+        mockMvc.perform(get("/messaging/group/500"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.content.length()").value(1))
+                .andExpect(jsonPath("$.data.content[0].content").value("Hello!"));
     }
 }

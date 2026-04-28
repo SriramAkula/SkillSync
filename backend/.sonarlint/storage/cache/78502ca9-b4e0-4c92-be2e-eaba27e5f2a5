@@ -1,8 +1,0 @@
-src\main\java\com\skillsync\apiGateway\ApiGatewayApplication.java
-src\test\java\com\skillsync\apiGateway\ApiGatewayApplicationTests.java
-src\main\java\com\skillsync\apiGateway\exception\ApiResponse.java
-src\main\java\com\skillsync\apiGateway\exception\GlobalErrorHandler.java
-src\main\java\com\skillsync\apiGateway\filter\JwtAuthenticationFilter.java
-src\main\java\com\skillsync\apiGateway\util\JwtUtil.java
-src\main\java\com\skillsync\apiGateway\config\OpenApiConfig.java
-pom.xml

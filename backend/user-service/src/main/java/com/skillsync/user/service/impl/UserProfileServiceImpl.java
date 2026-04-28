@@ -44,4 +44,10 @@ public class UserProfileServiceImpl implements UserProfileService {
     public boolean existsByUsername(String username) {
         return userProfileQueryService.existsByUsername(username);
     }
+
+    @Override
+    public UserProfileResponseDto uploadProfileImage(Long userId, org.springframework.web.multipart.MultipartFile file) {
+        return userProfileCommandService.uploadProfileImage(userId, file);
+    }
+
 }

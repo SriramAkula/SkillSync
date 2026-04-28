@@ -13,7 +13,7 @@ describe('AuthStore', () => {
   let routerSpy: jasmine.SpyObj<Router>;
 
   beforeEach(() => {
-    authServiceSpy = jasmine.createSpyObj('AuthService', ['login', 'register', 'refreshToken', 'logout', 'sendOtp', 'googleLogin']);
+    authServiceSpy = jasmine.createSpyObj('AuthService', ['login', 'register', 'refreshToken', 'logout', 'sendOtp', 'googleLogin', 'verifyOtp']);
     routerSpy = jasmine.createSpyObj('Router', ['navigate']);
 
     localStorage.clear();
@@ -192,6 +192,68 @@ describe('AuthStore', () => {
     store.googleLogin('code');
     tick();
     expect(store.error()).toBe('G-Fail');
+  }));
+
+  it('should navigate to admin users if user is admin', fakeAsync(() => {
+    const mockRes: AuthResponse = { token: 't', roles: ['ROLE_ADMIN'], username: 'a', email: 'a@a.com' };
+    spyOn(window, 'atob').and.returnValue(JSON.stringify({ roles: ['ROLE_ADMIN'] }));
+    authServiceSpy.login.and.returnValue(of(mockRes));
+    
+    store.login({ email: 'a@a.com', password: 'p' });
+    tick();
+    expect(routerSpy.navigate).toHaveBeenCalledWith(['/admin/users']);
+  }));
+
+  it('should handle decodeJwt failure gracefully', fakeAsync(() => {
+    const mockRes: AuthResponse = { token: 'invalid.token.here', roles: ['ROLE_LEARNER'], username: 'u', email: 'u@u.com' };
+    authServiceSpy.login.and.returnValue(of(mockRes));
+    
+    // atob will fail or JSON.parse will fail
+    store.login({ email: 'u@u.com', password: 'p' });
+    tick();
+    
+    expect(store.token()).toBe('invalid.token.here');
+    expect(store.roles()).toEqual(['ROLE_LEARNER']);
+  }));
+
+  it('should not add role if it already exists', () => {
+    patchState(store, { roles: ['ROLE_LEARNER'] });
+    store.addRole('ROLE_LEARNER');
+    expect(store.roles().length).toBe(1);
+  });
+
+  it('should correctly compute canApplyToBeMentor', () => {
+    patchState(store, { roles: ['ROLE_LEARNER'] });
+    expect(store.canApplyToBeMentor()).toBeTrue();
+
+    patchState(store, { roles: ['ROLE_LEARNER', 'ROLE_MENTOR'] });
+    expect(store.canApplyToBeMentor()).toBeFalse();
+  });
+
+  it('should handle verifyOtp successfully', fakeAsync(() => {
+    authServiceSpy.verifyOtp.and.returnValue(of({ success: true } as unknown as ApiResponse<void>));
+    store.verifyOtp({ email: 't@t.com', otp: '1234' });
+    tick();
+    expect(store.otpVerified()).toBeTrue();
+  }));
+
+  it('should handle verifyOtp error', fakeAsync(() => {
+    authServiceSpy.verifyOtp.and.returnValue(throwError(() => ({ error: { message: 'Wrong OTP' } })));
+    store.verifyOtp({ email: 't@t.com', otp: '0000' });
+    tick();
+    expect(store.error()).toBe('Wrong OTP');
+  }));
+
+  it('should use claims if res.roles is missing during registration', fakeAsync(() => {
+    const mockRes = { token: 't' }; // Missing roles/email/username
+    spyOn(window, 'atob').and.returnValue(JSON.stringify({ userId: 1, roles: ['ROLE_LEARNER'], sub: 'claim@test.com' }));
+    authServiceSpy.register.and.returnValue(of(mockRes as unknown as AuthResponse));
+    
+    store.register({ email: 'test@test.com', password: 'p' });
+    tick();
+    
+    expect(store.roles()).toEqual(['ROLE_LEARNER']);
+    expect(store.email()).toBe('claim@test.com');
   }));
 
   it('should clear error', () => {

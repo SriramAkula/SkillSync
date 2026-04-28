@@ -53,6 +53,11 @@ public class GroupServiceImpl implements GroupService {
     }
 
     @Override
+    public List<GroupResponseDto> getJoinedGroups(Long userId) {
+        return groupQueryService.getJoinedGroups(userId);
+    }
+
+    @Override
     public List<GroupResponseDto> getRandomGroups(int limit, Long currentUserId) {
         return groupQueryService.getRandomGroups(limit, currentUserId);
     }

@@ -513,6 +513,29 @@ class MentorControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated());
     }
+
+    @Test
+    void rejectMentor_shouldReturn403_whenRolesNull() throws Exception {
+        mockMvc.perform(put("/mentor/1/reject").header("X-User-Id", 1L))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void updateAvailability_shouldReturn403_whenRolesNull() throws Exception {
+        UpdateAvailabilityRequestDto request = new UpdateAvailabilityRequestDto();
+        request.setAvailabilityStatus("BUSY");
+        mockMvc.perform(put("/mentor/availability")
+                        .header("X-User-Id", 1L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void suspendMentor_shouldReturn403_whenRolesNull() throws Exception {
+        mockMvc.perform(put("/mentor/1/suspend").header("X-User-Id", 1L))
+                .andExpect(status().isForbidden());
+    }
 }
 
 

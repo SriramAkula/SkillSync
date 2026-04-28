@@ -9,6 +9,8 @@ import com.skillsync.user.exception.UserProfileNotFoundException;
 import com.skillsync.user.exception.UsernameAlreadyExistsException;
 import com.skillsync.user.mapper.UserProfileMapper;
 import com.skillsync.user.repository.UserProfileRepository;
+import com.skillsync.user.service.FileStorageService;
+import org.springframework.web.multipart.MultipartFile;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
@@ -25,6 +27,7 @@ public class UserProfileCommandService {
     private final UserProfileRepository userProfileRepository;
     private final UserProfileMapper userProfileMapper;
     private final AuthClient authClient;
+    private final FileStorageService fileStorageService;
 
     @Transactional
     @Caching(evict = {
@@ -82,4 +85,20 @@ public class UserProfileCommandService {
         userProfileRepository.save(userProfileMapper.toEntity(userId, email, username, name, role));
         log.info("UserProfile created successfully for userId: {}", userId);
     }
+
+    @Transactional
+    @Caching(evict = {
+        @CacheEvict(value = "user", key = "'userId_' + #userId")
+    })
+    public UserProfileResponseDto uploadProfileImage(Long userId, MultipartFile file) {
+        log.info("Uploading profile image for userId: {}", userId);
+        UserProfile profile = userProfileRepository.findByUserId(userId)
+                .orElseThrow(() -> new UserProfileNotFoundException("User profile not found for userId: " + userId));
+
+        String imageUrl = fileStorageService.uploadPublicFile(file, "profile-images/" + userId);
+        profile.setProfileImageUrl(imageUrl);
+        UserProfile updated = userProfileRepository.save(profile);
+        return userProfileMapper.toDto(updated);
+    }
+
 }

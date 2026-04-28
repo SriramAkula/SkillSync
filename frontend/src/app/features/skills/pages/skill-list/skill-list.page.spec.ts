@@ -9,7 +9,7 @@ import { Router } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import { signal } from '@angular/core';
 import { NO_ERRORS_SCHEMA } from '@angular/core';
-import { ApiResponse, UserProfileDto } from '../../../../shared/models';
+import { ApiResponse, UserProfileDto, SkillDto } from '../../../../shared/models';
 
 describe('SkillListPage', () => {
   let component: SkillListPage;
@@ -94,8 +94,7 @@ describe('SkillListPage', () => {
   });
 
   it('should select skill', () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const skill = { id: 1, skillName: 'Java' } as any;
+    const skill = { id: 1, skillName: 'Java' } as unknown as SkillDto;
     component.selectSkill(skill);
     expect(component.selectedSkill()).toBe(skill);
   });
@@ -105,54 +104,119 @@ describe('SkillListPage', () => {
     expect(routerSpy.navigate).toHaveBeenCalledWith(['/groups'], { queryParams: { skillId: 1 } });
   });
 
-  it('should toggle profile skill (add)', fakeAsync(() => {
-    // Skills in mock profile: 'Java, Spring'
-    // Let's add 'Python' which is NOT in initial profile
-    const skill = { id: 3, skillName: 'Python', popularityScore: 5 };
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    userServiceSpy.updateProfile.and.returnValue(of({ success: true } as any));
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    skillServiceSpy.updatePopularity.and.returnValue(of({ data: skill } as any));
+  it('should toggle profile skill (remove)', fakeAsync(() => {
+    // Current skills: 'Java, Spring'
+    const skill = { id: 1, skillName: 'Java', popularityScore: 10 };
+    userServiceSpy.updateProfile.and.returnValue(of({ success: true } as unknown as ApiResponse<UserProfileDto>));
+    skillServiceSpy.updatePopularity.and.returnValue(of({ data: skill } as unknown as ApiResponse<SkillDto>));
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    component.toggleProfileSkill(skill as any);
+    component.toggleProfileSkill(skill as unknown as SkillDto);
     tick();
     
-    expect(userServiceSpy.updateProfile).toHaveBeenCalled();
-    expect(toastServiceSpy.success).toHaveBeenCalledWith(jasmine.stringMatching(/Added/));
+    expect(toastServiceSpy.success).toHaveBeenCalledWith(jasmine.stringMatching(/Removed/));
+    expect(component.isSkillSelected('Java')).toBeFalse();
   }));
 
-  it('should handle skill creation', fakeAsync(() => {
-    component.formData = { skillName: 'New Skill', description: 'Desc', category: 'Cat' };
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    skillServiceSpy.create.and.returnValue(of({ data: { id: 2, ...component.formData } } as any));
+  it('should rollback optimistic update on failure', fakeAsync(() => {
+    const skill = { id: 3, skillName: 'Python', popularityScore: 5 };
+    userServiceSpy.updateProfile.and.returnValue(throwError(() => ({ error: { message: 'Server error' } })));
+
+    component.toggleProfileSkill(skill as unknown as SkillDto);
+    tick();
+    
+    expect(toastServiceSpy.error).toHaveBeenCalledWith('Server error');
+    expect(component.isSkillSelected('Python')).toBeFalse();
+    expect(mockSkillStore.loadAll).toHaveBeenCalled();
+  }));
+
+  it('should debounce search input', fakeAsync(() => {
+    component.onSearch('Spring');
+    tick(200);
+    expect(mockSkillStore.search).not.toHaveBeenCalled();
+    
+    tick(150); // total 350ms
+    expect(mockSkillStore.search).toHaveBeenCalledWith(jasmine.objectContaining({ keyword: 'Spring' }));
+  }));
+
+  it('should handle pagination with search query', () => {
+    component.searchQuery = 'Java';
+    component.onPageChange(2);
+    expect(mockSkillStore.search).toHaveBeenCalledWith(jasmine.objectContaining({ keyword: 'Java', page: 2 }));
+  });
+
+  it('should filter locally by search query', () => {
+    mockSkillStore.skills.set([
+      { id: 1, skillName: 'Java', category: 'Backend' },
+      { id: 2, skillName: 'Angular', category: 'Frontend' }
+    ]);
+    component.searchQuery = 'ang';
+    const filtered = component.filteredSkills();
+    expect(filtered.length).toBe(1);
+    expect(filtered[0].skillName).toBe('Angular');
+  });
+
+  it('should filter locally by My Skills', () => {
+    mockSkillStore.skills.set([
+      { id: 1, skillName: 'Java', category: 'Backend' },
+      { id: 2, skillName: 'Python', category: 'Backend' }
+    ]);
+    component.selectedSkills.set(['Java']);
+    component.showMySkills.set(true);
+    
+    const filtered = component.filteredSkills();
+    expect(filtered.length).toBe(1);
+    expect(filtered[0].skillName).toBe('Java');
+  });
+
+  it('should clear all filters', () => {
+    component.searchQuery = 'Java';
+    component.selectedCategory.set('Backend');
+    component.showMySkills.set(true);
+    
+    component.clearAll();
+    
+    expect(component.searchQuery).toBe('');
+    expect(component.selectedCategory()).toBe('');
+    expect(component.showMySkills()).toBeFalse();
+    expect(mockSkillStore.loadAll).toHaveBeenCalled();
+  });
+
+  it('should open edit form with skill data', () => {
+    const skill = { id: 1, skillName: 'Java', description: 'Desc', category: 'Backend' };
+    component.openEdit(skill as unknown as SkillDto);
+    
+    expect(component.editingSkill()).toBe(skill as unknown as SkillDto);
+    expect(component.formData.skillName).toBe('Java');
+    expect(component.showForm()).toBeTrue();
+  });
+
+  it('should update existing skill', fakeAsync(() => {
+    const skill = { id: 1, skillName: 'Java', description: 'Old', category: 'Backend' };
+    component.editingSkill.set(skill as unknown as SkillDto);
+    component.formData = { skillName: 'Java', description: 'New', category: 'Backend' };
+    
+    skillServiceSpy.update.and.returnValue(of({ data: { ...skill, description: 'New' } } as unknown as ApiResponse<SkillDto>));
     
     component.saveSkill();
     tick();
     
-    expect(skillServiceSpy.create).toHaveBeenCalled();
-    expect(mockSkillStore.addSkill).toHaveBeenCalled();
-    expect(toastServiceSpy.success).toHaveBeenCalledWith(jasmine.stringMatching(/created/));
+    expect(skillServiceSpy.update).toHaveBeenCalledWith(1, jasmine.any(Object));
+    expect(mockSkillStore.updateSkill).toHaveBeenCalled();
+    expect(toastServiceSpy.success).toHaveBeenCalledWith('Skill updated!');
   }));
 
-  it('should handle skill deletion error', fakeAsync(() => {
-    const error = { error: { message: 'Cannot delete' } };
-    skillServiceSpy.delete.and.returnValue(throwError(() => error));
-    
+  it('should handle skill deletion success', fakeAsync(() => {
+    skillServiceSpy.delete.and.returnValue(of({ success: true } as unknown as ApiResponse<void>));
     component.deleteSkill(1);
     tick();
-    
-    expect(toastServiceSpy.error).toHaveBeenCalledWith('Cannot delete');
+    expect(mockSkillStore.removeSkill).toHaveBeenCalledWith(1);
+    expect(toastServiceSpy.success).toHaveBeenCalled();
   }));
 
-  it('should handle skill saving error', fakeAsync(() => {
-    component.formData = { skillName: 'New Skill', description: 'Desc', category: 'Cat' };
-    skillServiceSpy.create.and.returnValue(throwError(() => ({ error: { message: 'Save failed' } })));
-    
+  it('should not save skill if name is missing', () => {
+    component.formData = { skillName: '', description: '', category: '' };
     component.saveSkill();
-    tick();
-    
-    expect(toastServiceSpy.error).toHaveBeenCalledWith('Save failed');
-    expect(component.saving()).toBeFalse();
-  }));
+    expect(skillServiceSpy.create).not.toHaveBeenCalled();
+    expect(skillServiceSpy.update).not.toHaveBeenCalled();
+  });
 });

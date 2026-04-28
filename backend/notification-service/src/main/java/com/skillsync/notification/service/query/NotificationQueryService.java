@@ -18,7 +18,7 @@ public class NotificationQueryService {
 
     public com.skillsync.notification.dto.response.PageResponse<com.skillsync.notification.dto.NotificationDto> getUserNotifications(Long userId, int page, int size) {
         log.info("Fetching paginated notifications for user {}, page={}, size={}", userId, page, size);
-        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size, org.springframework.data.domain.Sort.by("sentAt").descending());
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size, org.springframework.data.domain.Sort.by("createdAt").descending());
         org.springframework.data.domain.Page<Notification> notificationPage = notificationRepository.findByUserId(userId, pageable);
         
         return com.skillsync.notification.dto.response.PageResponse.<com.skillsync.notification.dto.NotificationDto>builder()
@@ -34,7 +34,7 @@ public class NotificationQueryService {
 
     public com.skillsync.notification.dto.response.PageResponse<com.skillsync.notification.dto.NotificationDto> getUserUnreadNotifications(Long userId, int page, int size) {
         log.info("Fetching paginated unread notifications for user {}, page={}, size={}", userId, page, size);
-        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size, org.springframework.data.domain.Sort.by("sentAt").descending());
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size, org.springframework.data.domain.Sort.by("createdAt").descending());
         org.springframework.data.domain.Page<Notification> notificationPage = notificationRepository.findUnreadByUserId(userId, pageable);
         
         return com.skillsync.notification.dto.response.PageResponse.<com.skillsync.notification.dto.NotificationDto>builder()

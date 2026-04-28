@@ -29,7 +29,7 @@ public class SessionAcceptedEventConsumer {
             notification.setType("SESSION_ACCEPTED");
             notification.setMessage("Your session request has been accepted by the mentor!");
             notification.setRead(false);
-            notification.setSentAt(LocalDateTime.now());
+            notification.setCreatedAt(LocalDateTime.now());
             notificationRepository.save(notification);
             
             // Send email to learner

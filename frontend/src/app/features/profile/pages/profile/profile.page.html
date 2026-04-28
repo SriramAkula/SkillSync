@@ -211,7 +211,6 @@
                </div>
             </div>
           </div>
-
           <div class="space-y-6">
              <div class="flex items-center justify-between">
                 <div class="flex items-center gap-4">
@@ -228,12 +227,12 @@
                       @if (isSkillDropdownOpen()) {
                          <div class="absolute right-0 mt-3 w-48 sm:w-56 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl sm:rounded-2xl shadow-2xl z-50 max-h-64 overflow-y-auto p-2 space-y-1 transition-colors">
                            @for (skill of allSkillOptions(); track skill) {
-                              <div class="px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-bold flex items-center justify-between cursor-pointer transition-colors"
+                              <div class="px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-bold flex items-center justify-between cursor-pointer transition-colors text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/50"
                                    (click)="toggleSkill(skill, $event)"
                                    (keyup.enter)="toggleSkill(skill, $event)"
                                    tabindex="0" role="button">
-                                 <span [class.text-indigo-600]="selectedSkills().includes(skill)">{{ skill }}</span>
-                                 @if (selectedSkills().includes(skill)) { <span class="material-icons text-sm text-indigo-600">check</span> }
+                                 <span [class.text-indigo-600]="selectedSkills().includes(skill)" [class.dark:text-indigo-400]="selectedSkills().includes(skill)">{{ skill }}</span>
+                                 @if (selectedSkills().includes(skill)) { <span class="material-icons text-sm text-indigo-600 dark:text-indigo-400">check</span> }
                               </div>
                            }
                          </div>

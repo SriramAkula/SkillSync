@@ -129,7 +129,7 @@ class OAuthServiceTest {
     }
 
     @Test
-    void loginWithGoogle_shouldThrow_whenExistingLocalUser() throws Exception {
+    void loginWithGoogle_shouldLinkAccount_whenExistingLocalUser() throws Exception {
         String idToken = "valid-token";
         lenient().when(verifier.verify(idToken)).thenReturn(googleIdToken);
         lenient().when(googleIdToken.getPayload()).thenReturn(payload);
@@ -137,12 +137,19 @@ class OAuthServiceTest {
         lenient().when(payload.getSubject()).thenReturn("google-id-123");
 
         User existingUser = new User("local@example.com", "pass", "local", "ROLE_LEARNER");
+        existingUser.setId(3L);
         existingUser.setAuthProvider(AuthProvider.LOCAL);
         lenient().when(userRepository.findByEmail("local@example.com")).thenReturn(Optional.of(existingUser));
+        
+        lenient().when(jwtUtil.generateToken(anyLong(), anyString(), anyList())).thenReturn("at");
+        lenient().when(jwtUtil.generateRefreshToken(anyLong(), anyString(), anyList())).thenReturn("rt");
 
-        assertThatThrownBy(() -> oAuthService.loginWithGoogle(idToken))
-                .isInstanceOf(RuntimeException.class)
-                .hasMessageContaining("already registered with password login");
+        AuthResponse response = oAuthService.loginWithGoogle(idToken);
+
+        assertThat(response.email()).isEqualTo("local@example.com");
+        assertThat(existingUser.getAuthProvider()).isEqualTo(AuthProvider.BOTH);
+        assertThat(existingUser.getProviderId()).isEqualTo("google-id-123");
+        verify(userRepository).save(existingUser);
     }
 
     @Test

@@ -4,7 +4,7 @@
 
 $base = "C:\Users\srira\Desktop\SkillSync-Project\backend"
 $token = $env:SONAR_TOKEN
-$services = @("auth-service","session-service","skill-service","user-service","mentor-service","group-service","notification-service","review-service")
+$services = @("auth-service","session-service","skill-service","user-service","mentor-service","group-service","notification-service","review-service","messaging-service")
 
 foreach ($svc in $services) {
     Write-Host "`n========== Scanning $svc ==========" -ForegroundColor Cyan

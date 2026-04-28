@@ -1,7 +1,16 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+}
+
 .message-thread {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  flex: 1;
+  min-height: 0;
   padding-bottom: 20px;
   background: transparent;
   overflow-y: auto;
@@ -16,11 +25,19 @@
   }
   
   &::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.05);
+    background: rgba(0, 0, 0, 0.05);
     border-radius: 10px;
     
+    @at-root :host-context(.dark) & {
+      background: rgba(255, 255, 255, 0.05);
+    }
+
     &:hover {
-      background: rgba(255, 255, 255, 0.1);
+      background: rgba(0, 0, 0, 0.1);
+
+      @at-root :host-context(.dark) & {
+        background: rgba(255, 255, 255, 0.1);
+      }
     }
   }
 }
@@ -31,14 +48,19 @@
   justify-content: center;
   gap: 10px;
   padding: 20px;
-  color: #94a3b8;
+  color: #64748b;
   font-size: 0.8rem;
   font-weight: 500;
   position: sticky;
   top: 0;
-  background: linear-gradient(to bottom, rgba(15, 15, 30, 0.95), transparent);
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.95), transparent);
   z-index: 5;
   backdrop-filter: blur(5px);
+
+  @at-root :host-context(.dark) & {
+    color: #94a3b8;
+    background: linear-gradient(to bottom, rgba(15, 15, 30, 0.95), transparent);
+  }
 }
 
 .spinner {
@@ -82,8 +104,12 @@
   h3 {
     font-size: 1.25rem;
     font-weight: 600;
-    color: #f1f5f9;
+    color: #1e293b;
     margin-bottom: 0.5rem;
+
+    @at-root :host-context(.dark) & {
+      color: #f1f5f9;
+    }
   }
   
   p {
@@ -102,23 +128,32 @@
   background: rgba(111, 66, 193, 0.1);
   backdrop-filter: blur(10px);
   border: 1px solid rgba(111, 66, 193, 0.3);
-  color: #a78bfa;
+  color: #6f42c1;
   border-radius: 30px;
   font-size: 0.75rem;
   font-weight: 600;
   cursor: pointer;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   align-items: center;
   gap: 6px;
   z-index: 10;
+
+  @at-root :host-context(.dark) & {
+    color: #a78bfa;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  }
   
   &:hover {
     background: rgba(111, 66, 193, 0.2);
     border-color: rgba(111, 66, 193, 0.5);
     transform: translateY(-2px);
-    color: #fff;
+    color: #6f42c1;
+
+    @at-root :host-context(.dark) & {
+      color: #fff;
+    }
   }
 }
 

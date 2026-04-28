@@ -84,6 +84,21 @@ class InternalUserControllerTest {
     }
 
     @Test
+    void updateUserProfile_shouldNotUpdate_whenUsernameNull() throws Exception {
+        AuthProfileUpdateDTO updates = new AuthProfileUpdateDTO();
+        updates.setUsername(null);
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+
+        mockMvc.perform(put("/internal/users/1/profile")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(updates)))
+                .andExpect(status().isOk());
+
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
     void updateUserProfile_shouldReturnNotFound_whenUserDoesNotExist() throws Exception {
         when(userRepository.findById(99L)).thenReturn(Optional.empty());
 
@@ -142,6 +157,16 @@ class InternalUserControllerTest {
     @Test
     void getUserRoles_shouldReturnEmptySet_whenRolesNull() throws Exception {
         user.setRole(null);
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+
+        mockMvc.perform(get("/internal/users/1/roles"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(0));
+    }
+
+    @Test
+    void getUserRoles_shouldReturnEmptySet_whenRolesEmpty() throws Exception {
+        user.setRole("");
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
 
         mockMvc.perform(get("/internal/users/1/roles"))

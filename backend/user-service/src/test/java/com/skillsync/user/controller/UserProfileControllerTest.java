@@ -131,6 +131,28 @@ class UserProfileControllerTest {
                 .andExpect(status().isNotFound());
     }
 
+    // ─── GET /user/exists/{username} ─────────────────────────────────────────
+
+    @Test
+    void checkUsernameExists_shouldReturnTrue() throws Exception {
+        when(userProfileService.existsByUsername("taken")).thenReturn(true);
+
+        mockMvc.perform(get("/user/exists/taken")
+                        .header("X-Gateway-Request", "true"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data").value(true));
+    }
+
+    @Test
+    void checkUsernameExists_shouldReturnFalse() throws Exception {
+        when(userProfileService.existsByUsername("free")).thenReturn(false);
+
+        mockMvc.perform(get("/user/exists/free")
+                        .header("X-Gateway-Request", "true"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data").value(false));
+    }
+
     // ─── PUT /user/profile ───────────────────────────────────────────────────
 
     @Test
@@ -208,6 +230,51 @@ class UserProfileControllerTest {
                 .andExpect(status().isNotFound());
     }
 
+    // ─── POST /user/profile/image ────────────────────────────────────────────
+
+    @Test
+    void uploadProfileImage_shouldReturn200() throws Exception {
+        org.springframework.mock.web.MockMultipartFile file = new org.springframework.mock.web.MockMultipartFile(
+                "file", "test.jpg", "image/jpeg", "image data".getBytes());
+        
+        when(securityUtil.extractUserId(any())).thenReturn(10L);
+        when(userProfileService.uploadProfileImage(anyLong(), any())).thenReturn(responseDto);
+
+        mockMvc.perform(multipart("/user/profile/image")
+                        .file(file)
+                        .header("X-Gateway-Request", "true"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("Profile image uploaded successfully"));
+    }
+
+    @Test
+    void uploadProfileImage_shouldFallbackToHeader_whenSecurityNull() throws Exception {
+        org.springframework.mock.web.MockMultipartFile file = new org.springframework.mock.web.MockMultipartFile(
+                "file", "test.jpg", "image/jpeg", "image data".getBytes());
+        
+        when(securityUtil.extractUserId(any())).thenReturn(null);
+        when(userProfileService.uploadProfileImage(eq(10L), any())).thenReturn(responseDto);
+
+        mockMvc.perform(multipart("/user/profile/image")
+                        .file(file)
+                        .header("X-User-Id", 10L)
+                        .header("X-Gateway-Request", "true"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void uploadProfileImage_shouldReturn401_whenBothNull() throws Exception {
+        org.springframework.mock.web.MockMultipartFile file = new org.springframework.mock.web.MockMultipartFile(
+                "file", "test.jpg", "image/jpeg", "image data".getBytes());
+        
+        when(securityUtil.extractUserId(any())).thenReturn(null);
+
+        mockMvc.perform(multipart("/user/profile/image")
+                        .file(file)
+                        .header("X-Gateway-Request", "true"))
+                .andExpect(status().isUnauthorized());
+    }
+
     // ─── POST /user/internal/users ───────────────────────────────────────────
 
     @Test
@@ -226,6 +293,65 @@ class UserProfileControllerTest {
                 .andExpect(status().isCreated());
 
         verify(userProfileService).createProfile(10L, "user@example.com", "user");
+    }
+
+    @Test
+    void createUserProfile_shouldReturn201_whenFullDataProvided() throws Exception {
+        Map<String, Object> userData = new HashMap<>();
+        userData.put("userId", 10);
+        userData.put("email", "user@example.com");
+        userData.put("username", "user");
+        userData.put("name", "John Full");
+        userData.put("role", "ROLE_MENTOR");
+        
+        when(userProfileService.getProfileByUserId(10L))
+                .thenThrow(new UserProfileNotFoundException("Not found"));
+
+        mockMvc.perform(post("/user/internal/users")
+                        .header("X-Gateway-Request", "true")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(userData)))
+                .andExpect(status().isCreated());
+
+        verify(userProfileService).createProfile(10L, "user@example.com", "user", "John Full", "ROLE_MENTOR");
+    }
+
+    @Test
+    void createUserProfile_shouldReturn201_whenPartialDataProvided() throws Exception {
+        Map<String, Object> userData = new HashMap<>();
+        userData.put("userId", 10);
+        userData.put("email", "user@example.com");
+        userData.put("name", "Only Name");
+        
+        when(userProfileService.getProfileByUserId(10L))
+                .thenThrow(new UserProfileNotFoundException("Not found"));
+
+        mockMvc.perform(post("/user/internal/users")
+                        .header("X-Gateway-Request", "true")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(userData)))
+                .andExpect(status().isCreated());
+
+        verify(userProfileService).createProfile(10L, "user@example.com", null, "Only Name", null);
+    }
+
+    @Test
+    void createUserProfile_shouldReturn201_whenRoleOnlyProvided() throws Exception {
+        Map<String, Object> userData = new HashMap<>();
+        userData.put("userId", 10);
+        userData.put("email", "user@example.com");
+        userData.put("role", "ROLE_MENTOR");
+        
+        when(userProfileService.getProfileByUserId(10L))
+                .thenThrow(new UserProfileNotFoundException("Not found"));
+
+        mockMvc.perform(post("/user/internal/users")
+                        .header("X-Gateway-Request", "true")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(userData)))
+                .andExpect(status().isCreated());
+
+        verify(userProfileService).createProfile(10L, "user@example.com", null, null, "ROLE_MENTOR");
     }
 
     @Test
@@ -386,6 +512,32 @@ class UserProfileControllerTest {
                 .andExpect(jsonPath("$.data.userId").value(10));
     }
 
+    @Test
+    void getUserDetails_shouldReturn403_whenNotAdmin() throws Exception {
+        mockMvc.perform(get("/user/admin/10/details")
+                        .header("roles", "ROLE_USER")
+                        .header("X-Gateway-Request", "true"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void blockUser_shouldReturn403_whenNotAdmin() throws Exception {
+        mockMvc.perform(put("/user/admin/10/block")
+                        .header("roles", "ROLE_USER")
+                        .header("X-Gateway-Request", "true")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void unblockUser_shouldReturn403_whenNotAdmin() throws Exception {
+        mockMvc.perform(put("/user/admin/10/unblock")
+                        .header("roles", "ROLE_USER")
+                        .header("X-Gateway-Request", "true"))
+                .andExpect(status().isForbidden());
+    }
+
     // ─── Missing Unidentified User Branches ───────────────────────────────────
 
     @Test
@@ -481,6 +633,29 @@ class UserProfileControllerTest {
     @Test
     void getBlockedUsers_shouldReturn403_whenRolesHeaderNull() throws Exception {
         mockMvc.perform(get("/user/admin/blocked")
+                        .header("X-Gateway-Request", "true"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void blockUser_shouldReturn403_whenRolesHeaderNull() throws Exception {
+        mockMvc.perform(put("/user/admin/10/block")
+                        .header("X-Gateway-Request", "true")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void unblockUser_shouldReturn403_whenRolesHeaderNull() throws Exception {
+        mockMvc.perform(put("/user/admin/10/unblock")
+                        .header("X-Gateway-Request", "true"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void getUserDetails_shouldReturn403_whenRolesHeaderNull() throws Exception {
+        mockMvc.perform(get("/user/admin/10/details")
                         .header("X-Gateway-Request", "true"))
                 .andExpect(status().isForbidden());
     }

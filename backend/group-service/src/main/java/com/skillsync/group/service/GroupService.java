@@ -13,6 +13,7 @@ public interface GroupService {
     void deleteGroup(Long groupId, Long userId, boolean isAdmin);
     GroupResponseDto joinGroup(Long groupId, Long userId);
     GroupResponseDto leaveGroup(Long groupId, Long userId);
+    List<GroupResponseDto> getJoinedGroups(Long userId);
     List<GroupResponseDto> getRandomGroups(int limit, Long currentUserId);
 }
 

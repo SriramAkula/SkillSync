@@ -183,6 +183,24 @@ public class GroupController {
                 .build());
     }
 
+    @GetMapping("/joined")
+    @Operation(summary = "Get joined groups", description = "Retrieve all groups that the current user has joined")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Joined groups retrieved successfully"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "Unauthorized")
+    })
+    public ResponseEntity<ApiResponse<List<GroupResponseDto>>> getJoinedGroups(
+            @Parameter(hidden = true) @RequestHeader("X-User-Id") Long userId) {
+        log.info("GET /joined - Fetching joined groups for userId={}", userId);
+        List<GroupResponseDto> response = groupService.getJoinedGroups(userId);
+        return ResponseEntity.ok(ApiResponse.<List<GroupResponseDto>>builder()
+                .success(true)
+                .data(response)
+                .message("Joined groups retrieved successfully")
+                .statusCode(200)
+                .build());
+    }
+
     @GetMapping("/random")
     @Operation(summary = "Get random groups", description = "Retrieve a list of random active groups")
     @ApiResponses(value = {

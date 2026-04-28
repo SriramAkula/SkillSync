@@ -165,6 +165,32 @@ public class UserProfileController {
 	}
 
 	/**
+	 * POST /api/user/profile/image
+	 * Upload user's profile image
+	 */
+	@PostMapping(value = "/profile/image", consumes = org.springframework.http.MediaType.MULTIPART_FORM_DATA_VALUE)
+	@Operation(summary = "Upload profile picture", description = "Upload a profile picture for the authenticated user")
+	@SecurityRequirement(name = "bearerAuth")
+	public ResponseEntity<ApiResponse<UserProfileResponseDto>> uploadProfileImage(
+			@Parameter(hidden = true) @RequestHeader(value = "X-User-Id", required = false) Long headerUserId,
+			@RequestParam("file") org.springframework.web.multipart.MultipartFile file,
+			HttpServletRequest request) {
+
+		Long userId = securityUtil.extractUserId(request);
+		if (userId == null) userId = headerUserId;
+
+		if (userId == null) {
+			throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Unidentified user");
+		}
+
+		log.info("Uploading profile image for userId: {}", userId);
+		UserProfileResponseDto response = userProfileService.uploadProfileImage(userId, file);
+
+		return ResponseEntity.ok(new ApiResponse<>(true, "Profile image uploaded successfully", response, 200));
+	}
+
+
+	/**
 	 * POST /user/internal/users
 	 * Internal endpoint for creating profile after registration
 	 * Called by Auth Service via Feign

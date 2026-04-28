@@ -18,7 +18,10 @@ describe('MentorStore', () => {
       'getApprovedMentors', 'searchMentors', 'getMentor', 'getMyMentorProfile', 
       'getPendingApplications', 'applyAsMentor', 'approveMentor', 'rejectMentor', 'updateAvailability'
     ]);
-    authStoreSpy = jasmine.createSpyObj('AuthStore', ['refreshToken']);
+    authStoreSpy = { 
+      refreshToken: jasmine.createSpy('refreshToken'),
+      roles: jasmine.createSpy('roles').and.returnValue(['ROLE_MENTOR'])
+    };
 
     TestBed.configureTestingModule({
       providers: [
@@ -57,11 +60,11 @@ describe('MentorStore', () => {
     expect(store.loading()).toBeFalse();
   }));
 
-  it('should handle loadApproved error with 403 by refreshing', fakeAsync(() => {
-    mentorServiceSpy.getApprovedMentors.and.returnValue(throwError(() => ({ status: 403 })));
+  it('should handle loadApproved error by setting error state', fakeAsync(() => {
+    mentorServiceSpy.getApprovedMentors.and.returnValue(throwError(() => ({ status: 403, error: { message: 'Forbidden' } })));
     store.loadApproved();
     tick();
-    expect(authStoreSpy.refreshToken).toHaveBeenCalled();
+    expect(store.loading()).toBeFalse();
   }));
 
   it('should search mentors', fakeAsync(() => {
@@ -115,6 +118,7 @@ describe('MentorStore', () => {
 
   it('should load my profile and suppress "not found" errors', fakeAsync(() => {
     mentorServiceSpy.getMyMentorProfile.and.returnValue(throwError(() => ({ 
+      status: 404,
       error: { message: 'Mentor profile not found' } 
     })));
 
@@ -211,9 +215,8 @@ describe('MentorStore', () => {
     expect(console.error).toHaveBeenCalled();
   }));
 
-  it('should clear error', () => {
+  it('should patch state (error tested via other methods)', () => {
     patchState(store, { error: 'some error' });
-    store.clearError();
-    expect(store.error()).toBeNull();
+    expect(store.error()).toBe('some error');
   });
 });

@@ -12,24 +12,22 @@ export type MessageStatus = 'SENDING' | 'SENT' | 'DELIVERED' | 'READ' | 'FAILED'
  */
 export interface ChatMessage {
   id: string;
-  senderId: number; // Long from Java
+  senderId: number;
   senderName?: string;
   senderAvatar?: string;
   
-  // Either recipientId OR groupId will be set (not both)
-  recipientId?: number; // For direct messages (null for group)
-  groupId?: number; // For group messages (null for direct)
+  receiverId?: number; // Matches backend field name
+  groupId?: number;
   
   content: string;
   type: MessageType;
   
-  timestamp: Date; // When message was created
+  createdAt: Date; // Matches backend field name
   isRead: boolean;
   readAt?: Date;
   
-  // Optional: Rich content support (future)
   attachments?: MessageAttachment[];
-  replyTo?: string; // ID of message being replied to
+  replyTo?: string;
   editedAt?: Date;
 }
 
@@ -52,6 +50,7 @@ export interface MessageAttachment {
 export interface UIMessage extends ChatMessage {
   status: MessageStatus; // UI state
   isOptimistic?: boolean; // Optimistic update flag
+  tempId?: string; // Original ID for reconciliation
   error?: string; // Error message if failed
 }
 
@@ -109,11 +108,12 @@ export interface SendMessageRequest {
   recipientId?: number; // Direct message
   groupId?: number; // Group message
   replyTo?: string;
+  tempId?: string; // Client-side generated ID for tracking
 }
 
 export interface SendMessageResponse {
   id: string;
-  timestamp: Date;
+  createdAt: Date;
   status: 'SUCCESS' | 'FAILED';
   message?: ChatMessage;
   error?: string;

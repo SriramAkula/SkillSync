@@ -5,8 +5,8 @@ on:
   push:
     branches:
       - main
-      # - development
-      # - 'feature/**'
+      - development
+      - 'feature/**'
     paths:
       - 'backend/**'
       - 'frontend/**'

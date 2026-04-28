@@ -209,4 +209,24 @@ class ReviewControllerTest {
                         .header("roles", "ROLE_MENTOR"))
                 .andExpect(status().isOk());
     }
+
+    @Test
+    void submitReview_shouldReturn403_whenForbiddenRole() throws Exception {
+        mockMvc.perform(post("/review")
+                        .header("X-User-Id", 10L)
+                        .header("roles", "ROLE_ADMIN")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(reviewRequest)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void updateReview_shouldReturn403_whenForbiddenRole() throws Exception {
+        mockMvc.perform(put("/review/1")
+                        .header("X-User-Id", 10L)
+                        .header("roles", "ROLE_ADMIN")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(reviewRequest)))
+                .andExpect(status().isForbidden());
+    }
 }

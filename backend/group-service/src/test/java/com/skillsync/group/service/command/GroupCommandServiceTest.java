@@ -161,6 +161,18 @@ class GroupCommandServiceTest {
     }
 
     @Test
+    void deleteGroup_ShouldSucceed_WhenAdmin() {
+        when(groupRepository.findById(1L)).thenReturn(Optional.of(group));
+        when(groupRepository.save(group)).thenReturn(group);
+        when(groupMemberRepository.findByGroupId(1L)).thenReturn(List.of());
+
+        groupCommandService.deleteGroup(1L, 999L, true);
+
+        verify(groupRepository).save(group);
+        assertFalse(group.getIsActive());
+    }
+
+    @Test
     void deleteGroup_ShouldThrowException_WhenNotCreator() {
         when(groupRepository.findById(1L)).thenReturn(Optional.of(group));
 

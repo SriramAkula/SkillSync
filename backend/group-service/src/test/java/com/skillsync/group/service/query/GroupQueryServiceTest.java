@@ -130,7 +130,11 @@ class GroupQueryServiceTest {
         when(groupMemberRepository.findByGroupIdAndUserId(anyLong(), anyLong())).thenReturn(Optional.of(new com.skillsync.group.entity.GroupMember()));
         groupQueryService.getGroupsByCreator(100L, 101L);
 
-        verify(groupMapper, times(2)).toDto(any(), anyInt(), anyBoolean());
+        // Path 3: User not null, notMember
+        when(groupMemberRepository.findByGroupIdAndUserId(anyLong(), anyLong())).thenReturn(Optional.empty());
+        groupQueryService.getGroupsByCreator(100L, 101L);
+
+        verify(groupMapper, times(3)).toDto(any(), anyInt(), anyBoolean());
     }
 
     @Test
@@ -144,7 +148,23 @@ class GroupQueryServiceTest {
         when(groupMemberRepository.findByGroupIdAndUserId(anyLong(), anyLong())).thenReturn(Optional.of(new com.skillsync.group.entity.GroupMember()));
         groupQueryService.getRandomGroups(5, 100L);
 
-        verify(groupMapper, times(2)).toDto(any(), anyInt(), anyBoolean());
+        // Path 3: User not null, notMember
+        when(groupMemberRepository.findByGroupIdAndUserId(anyLong(), anyLong())).thenReturn(Optional.empty());
+        groupQueryService.getRandomGroups(5, 100L);
+
+        verify(groupMapper, times(3)).toDto(any(), anyInt(), anyBoolean());
+    }
+
+    @Test
+    void getJoinedGroups_shouldReturnList() {
+        when(groupRepository.findJoinedGroups(100L)).thenReturn(List.of(group));
+        when(groupMemberRepository.countByGroupId(1L)).thenReturn(3);
+        when(groupMapper.toDto(group, 3, true)).thenReturn(groupResponse);
+
+        List<GroupResponseDto> response = groupQueryService.getJoinedGroups(100L);
+
+        assertNotNull(response);
+        assertEquals(1, response.size());
     }
 
     @Test

@@ -212,12 +212,10 @@ export type MessageType = 'CHAT' | 'JOIN' | 'LEAVE';
 export interface ChatMessage {
   id?: number;
   senderId: number;
-  receiverId?: number; // Backend uses receiverId
-  recipientId?: number; // For backward compatibility
+  receiverId?: number; 
   groupId?: number;
   content: string;
-  createdAt?: string; // Backend uses createdAt
-  timestamp?: string; // For backward compatibility
+  createdAt?: string; 
   type: MessageType;
   isRead?: boolean;
 }

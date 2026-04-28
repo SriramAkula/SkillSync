@@ -1,191 +1,65 @@
 .message-container {
   display: flex;
-  gap: 12px;
-  margin-bottom: 6px;
-  animation: slideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  position: relative;
+  margin-bottom: 1.5rem;
+  width: 100%;
 
   &.self {
-    flex-direction: row-reverse;
+    justify-content: flex-end;
   }
-}
-
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateY(15px) scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-.avatar {
-  flex-shrink: 0;
-  width: 36px;
-  height: 36px;
-  border-radius: 12px;
-  background: linear-gradient(135deg, #6f42c1 0%, #a78bfa 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-size: 13px;
-  font-weight: 700;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-  margin-top: 4px;
-}
-
-.avatar-spacer {
-  flex-shrink: 0;
-  width: 36px;
 }
 
 .message-content {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  max-width: 80%;
-}
-
-.timestamp-divider {
-  text-align: center;
-  font-size: 0.7rem;
-  color: #64748b;
-  margin: 20px 0;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  position: relative;
-  
-  &::before, &::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    width: 30%;
-    height: 1px;
-    background: rgba(255, 255, 255, 0.05);
-  }
-  
-  &::before { left: 10%; }
-  &::after { right: 10%; }
-}
-
-.sender-name {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: #a78bfa;
-  margin-left: 12px;
-  margin-bottom: 2px;
+  max-width: 70%;
 }
 
 .bubble {
-  padding: 12px 18px;
-  border-radius: 20px;
+  padding: 1.25rem 1.5rem;
+  border-radius: 18px;
   word-wrap: break-word;
   position: relative;
-  transition: all 0.2s ease;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 
   &.self {
-    background: linear-gradient(135deg, #6f42c1 0%, #5a4fb8 100%);
-    color: white;
-    border-bottom-right-radius: 4px;
-    align-self: flex-end;
-    box-shadow: 0 4px 15px rgba(111, 66, 193, 0.3);
-    
-    &:hover {
-      box-shadow: 0 6px 20px rgba(111, 66, 193, 0.4);
-      filter: brightness(1.1);
-    }
-    
-    .time { color: rgba(255, 255, 255, 0.7); }
-    .status { color: #4ade80; }
+    background-color: #8a3ffc;
+    color: #fff;
+    border-top-right-radius: 4px;
   }
 
   &.other {
-    background: rgba(255, 255, 255, 0.05);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    color: #f1f5f9;
-    border-bottom-left-radius: 4px;
-    align-self: flex-start;
-    
-    &:hover {
-      background: rgba(255, 255, 255, 0.08);
-      border-color: rgba(255, 255, 255, 0.15);
+    background-color: #f1f5f9;
+    color: #1e293b;
+    border-top-left-radius: 4px;
+    border: 1px solid #e2e8f0;
+
+    @at-root :host-context(.dark) & {
+      background-color: #1f1f2e;
+      color: #fff;
+      border-color: rgba(255, 255, 255, 0.05);
     }
-  }
-
-  &.system {
-    background: transparent;
-    border: none;
-    box-shadow: none;
-    color: #64748b;
-    text-align: center;
-    font-size: 0.8rem;
-    align-self: center;
-    max-width: 100%;
-    padding: 10px;
-    font-style: italic;
-  }
-
-  &.failed {
-    border: 1px solid rgba(239, 68, 68, 0.5);
-    background: rgba(239, 68, 68, 0.1);
-    
-    .status { color: #ef4444; }
   }
 }
 
 .text {
   margin: 0;
-  font-size: 0.95rem;
-  line-height: 1.6;
+  font-size: 1rem;
+  line-height: 1.5;
+  font-weight: 400;
 }
 
-.meta {
+.bubble-footer {
   display: flex;
-  gap: 6px;
-  align-items: center;
   justify-content: flex-end;
-  margin-top: 6px;
-  font-size: 0.65rem;
-  font-weight: 600;
+  margin-top: 0.25rem;
 }
 
 .time {
-  white-space: nowrap;
-  color: #94a3b8;
-}
-
-.status {
-  display: flex;
-  align-items: center;
-}
-
-.read-receipt {
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   color: #64748b;
-  margin-top: 4px;
-  text-align: right;
   font-weight: 500;
-}
 
-@media (max-width: 768px) {
-  .message-content {
-    max-width: 90%;
-  }
-
-  .avatar {
-    width: 32px;
-    height: 32px;
-    font-size: 11px;
-  }
-
-  .avatar-spacer {
-    width: 32px;
+  @at-root :host-context(.dark) & {
+    color: rgba(255, 255, 255, 0.5);
   }
 }

@@ -45,6 +45,7 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
             "/auth/reset-password",
             "/auth/oauth/google",
             "/api/payment/payments",
+            "/skillsync-public",
             "/eureka",
             "/swagger-ui",
             "/swagger-resources",

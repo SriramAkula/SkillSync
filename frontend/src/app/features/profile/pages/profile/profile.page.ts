@@ -65,9 +65,7 @@ export class ProfilePage implements OnInit, OnDestroy {
   confettiDrops: ConfettiDrop[] = [];
 
   readonly allSkillOptions = computed(() => {
-    const backend = this.skillStore.skillNames();
-    const SOFT_SKILLS = ['Problem Solving', 'Communication', 'Teamwork', 'Leadership', 'Time Management', 'Creativity'];
-    return [...new Set([...backend, ...SOFT_SKILLS])].sort();
+    return [...new Set(this.skillStore.skillNames())].sort();
   });
 
   readonly form = this.fb.group({
@@ -95,7 +93,6 @@ export class ProfilePage implements OnInit, OnDestroy {
   selectedSkills(): string[] { return (this.form.get('skills')?.value || []) as string[]; }
 
   ngOnInit(): void {
-    const savedAvatar = localStorage.getItem('userAvatar'); if (savedAvatar) this.avatarUrl.set(savedAvatar);
     if (localStorage.getItem('profileBadge') === 'true') this.showBadge.set(true);
     this.refreshProfile(); 
     this.loadActivities(); 
@@ -214,6 +211,13 @@ export class ProfilePage implements OnInit, OnDestroy {
       phoneNumber: p.phoneNumber || '',
       skills: (p.skills ? p.skills.split(',').map(s => s.trim()) : [])
     });
+
+    if (p.avatarUrl) {
+      this.avatarUrl.set(p.avatarUrl);
+    } else {
+      const savedAvatar = localStorage.getItem('userAvatar');
+      if (savedAvatar) this.avatarUrl.set(savedAvatar);
+    }
   }
 
   refreshProfile(): void {
@@ -247,9 +251,22 @@ export class ProfilePage implements OnInit, OnDestroy {
   onFileSelected(e: Event): void { const files = (e.target as HTMLInputElement).files; if (files?.[0]) this.handleFile(files[0]); }
   private handleFile(file: File) {
     if (!file.type.startsWith('image/')) return;
+    
+    // Optimistic UI update
     const reader = new FileReader();
     reader.onload = () => { const base = reader.result as string; this.avatarUrl.set(base); localStorage.setItem('userAvatar', base); };
     reader.readAsDataURL(file);
+
+    // Actual upload
+    this.userService.uploadProfileImage(file).subscribe({
+      next: (res) => {
+        this.toast.success('Profile picture updated!');
+        if (res.data?.avatarUrl) {
+          this.avatarUrl.set(res.data.avatarUrl);
+        }
+      },
+      error: () => this.toast.error('Failed to upload profile picture')
+    });
   }
   toggleSkillDropdown(): void { this.isSkillDropdownOpen.update(v => !v); }
   toggleSkill(skill: string, e: Event): void {

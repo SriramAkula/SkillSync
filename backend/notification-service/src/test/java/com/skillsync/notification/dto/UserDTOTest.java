@@ -23,7 +23,13 @@ class UserDTOTest {
 
     @Test
     void testUserDTOAllArgs() {
-        UserDTO user = new UserDTO(1L, "test@test.com", "First", "Last", "user1");
+        UserDTO user = UserDTO.builder()
+                .id(1L)
+                .email("test@test.com")
+                .firstName("First")
+                .lastName("Last")
+                .username("user1")
+                .build();
         assertEquals(1L, user.getId());
         assertEquals("First", user.getFirstName());
         assertEquals("Last", user.getLastName());

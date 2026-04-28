@@ -87,7 +87,13 @@ class EventAndDtoTest {
 
     @Test
     void testClientDtos() {
-        UserDTO user = new UserDTO(1L, "e", "f", "l", "u");
+        UserDTO user = UserDTO.builder()
+                .id(1L)
+                .email("e")
+                .firstName("f")
+                .lastName("l")
+                .username("u")
+                .build();
         assertThat(user.getId()).isEqualTo(1L);
         assertThat(user.getEmail()).isEqualTo("e");
         assertThat(user.getFirstName()).isEqualTo("f");
