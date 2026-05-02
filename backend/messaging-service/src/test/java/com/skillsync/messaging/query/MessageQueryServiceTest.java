@@ -1,7 +1,10 @@
 package com.skillsync.messaging.query;
 
+import com.skillsync.messaging.client.UserServiceClient;
+import com.skillsync.messaging.dto.ApiResponse;
 import com.skillsync.messaging.dto.MessageResponseDTO;
 import com.skillsync.messaging.dto.PagedResponse;
+import com.skillsync.messaging.dto.UserDTO;
 import com.skillsync.messaging.entity.Message;
 import com.skillsync.messaging.exception.MessageNotFoundException;
 import com.skillsync.messaging.repository.MessageRepository;
@@ -34,6 +37,9 @@ class MessageQueryServiceTest {
     @Mock
     private MessageRepository messageRepository;
 
+    @Mock
+    private UserServiceClient userServiceClient;
+
     @InjectMocks
     private MessageQueryService messageQueryService;
 
@@ -51,14 +57,17 @@ class MessageQueryServiceTest {
     }
 
     @Test
-    @DisplayName("getMessageById - success")
-    void getMessageById_Success() {
+    @DisplayName("getMessageById - success with fallback username")
+    void getMessageById_Success_WithFallback() {
+        UserDTO user = new UserDTO();
+        user.setUsername("fallback_user");
+        when(userServiceClient.getUserById(100L)).thenReturn(ApiResponse.ok(user));
         when(messageRepository.findById(1L)).thenReturn(Optional.of(message));
 
         MessageResponseDTO result = messageQueryService.getMessageById(1L);
 
         assertThat(result.getId()).isEqualTo(1L);
-        assertThat(result.getContent()).isEqualTo("Test message");
+        assertThat(result.getSenderUsername()).isEqualTo("fallback_user");
     }
 
     @Test
@@ -74,6 +83,7 @@ class MessageQueryServiceTest {
     @DisplayName("getConversation - success")
     void getConversation_Success() {
         Page<Message> page = new PageImpl<>(List.of(message));
+        when(userServiceClient.getUserById(any())).thenReturn(ApiResponse.ok(new UserDTO()));
         when(messageRepository.findConversation(eq(100L), eq(200L), any(Pageable.class)))
                 .thenReturn(page);
 
@@ -87,6 +97,7 @@ class MessageQueryServiceTest {
     @DisplayName("getGroupConversation - success")
     void getGroupConversation_Success() {
         Page<Message> page = new PageImpl<>(List.of(message));
+        when(userServiceClient.getUserById(any())).thenReturn(ApiResponse.ok(new UserDTO()));
         when(messageRepository.findByGroupIdOrderByCreatedAtDesc(eq(500L), any(Pageable.class)))
                 .thenReturn(page);
 

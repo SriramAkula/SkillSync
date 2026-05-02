@@ -60,8 +60,9 @@ public class MessageCommandService {
 
         // Enrich with sender details from User Service
         try {
-            UserDTO sender = userServiceClient.getUserById(requestDTO.getSenderId());
-            if (sender != null) {
+            com.skillsync.messaging.dto.ApiResponse<UserDTO> response = userServiceClient.getUserById(requestDTO.getSenderId());
+            if (response != null && response.isSuccess() && response.getData() != null) {
+                UserDTO sender = response.getData();
                 message.setSenderUsername(sender.getUsername());
                 message.setSenderProfilePicUrl(sender.getProfileImageUrl());
             }

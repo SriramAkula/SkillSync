@@ -1,6 +1,7 @@
 package com.skillsync.messaging.command;
 
 import com.skillsync.messaging.client.UserServiceClient;
+import com.skillsync.messaging.dto.ApiResponse;
 import com.skillsync.messaging.dto.MessageRequestDTO;
 import com.skillsync.messaging.dto.MessageResponseDTO;
 import com.skillsync.messaging.dto.UserDTO;
@@ -60,7 +61,7 @@ class MessageCommandServiceTest {
         UserDTO sender = new UserDTO();
         sender.setUsername("testuser");
         sender.setProfileImageUrl("http://image.url");
-        when(userServiceClient.getUserById(100L)).thenReturn(sender);
+        when(userServiceClient.getUserById(100L)).thenReturn(ApiResponse.ok(sender));
         when(messageRepository.saveAndFlush(any(Message.class))).thenReturn(message);
 
         MessageResponseDTO result = messageCommandService.sendMessage(validRequest);
@@ -85,7 +86,7 @@ class MessageCommandServiceTest {
     void sendMessage_WithGroupId_Success() {
         UserDTO sender = new UserDTO();
         sender.setUsername("testuser");
-        when(userServiceClient.getUserById(100L)).thenReturn(sender);
+        when(userServiceClient.getUserById(100L)).thenReturn(ApiResponse.ok(sender));
         validRequest.setReceiverId(null);
         validRequest.setGroupId(500L);
         message.setReceiverId(null);
@@ -113,7 +114,7 @@ class MessageCommandServiceTest {
     @Test
     @DisplayName("sendMessage - event publishing failure is caught")
     void sendMessage_EventPublishingFails_StillReturnsResponse() {
-        when(userServiceClient.getUserById(100L)).thenReturn(new UserDTO());
+        when(userServiceClient.getUserById(100L)).thenReturn(ApiResponse.ok(new UserDTO()));
         when(messageRepository.saveAndFlush(any(Message.class))).thenReturn(message);
         doThrow(new RuntimeException("MQ down")).when(messageEventPublisher).publishMessageSent(any());
 

@@ -2,6 +2,7 @@ package com.skillsync.messaging.service;
 
 import com.skillsync.messaging.client.UserServiceClient;
 import com.skillsync.messaging.command.MessageCommandService;
+import com.skillsync.messaging.dto.ApiResponse;
 import com.skillsync.messaging.dto.MessageRequestDTO;
 import com.skillsync.messaging.dto.MessageResponseDTO;
 import com.skillsync.messaging.dto.UserDTO;
@@ -105,7 +106,7 @@ class MessageServiceTest {
     @Test
     @DisplayName("sendMessage - success and saves to repository")
     void sendMessage_Success_SavesToRepository() {
-        when(userServiceClient.getUserById(100L)).thenReturn(senderDTO);
+        when(userServiceClient.getUserById(100L)).thenReturn(ApiResponse.ok(senderDTO));
         when(messageRepository.saveAndFlush(any(Message.class))).thenReturn(message1);
 
         MessageResponseDTO result = messageCommandService.sendMessage(validRequest);
@@ -154,7 +155,7 @@ class MessageServiceTest {
     @Test
     @DisplayName("sendMessage - handles message creation successfully")
     void sendMessage_HandlesCreation() {
-        when(userServiceClient.getUserById(100L)).thenReturn(senderDTO);
+        when(userServiceClient.getUserById(100L)).thenReturn(ApiResponse.ok(senderDTO));
         when(messageRepository.saveAndFlush(any(Message.class))).thenReturn(message1);
 
         MessageResponseDTO result = messageCommandService.sendMessage(validRequest);
@@ -166,7 +167,7 @@ class MessageServiceTest {
     @Test
     @DisplayName("sendMessage - prevents exception propagation when event publisher fails")
     void sendMessage_WhenPublisherFails_ContinuesNormally() {
-        when(userServiceClient.getUserById(100L)).thenReturn(senderDTO);
+        when(userServiceClient.getUserById(100L)).thenReturn(ApiResponse.ok(senderDTO));
         when(messageRepository.saveAndFlush(any(Message.class))).thenReturn(message1);
         
         doThrow(new RuntimeException("RabbitMQ Down"))
@@ -185,6 +186,7 @@ class MessageServiceTest {
     @Test
     @DisplayName("getConversation - returns conversation between two users")
     void getConversation_ReturnsMessages() {
+        when(userServiceClient.getUserById(anyLong())).thenReturn(ApiResponse.ok(senderDTO));
         when(messageRepository.findConversation(eq(100L), eq(200L), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(Arrays.asList(message1, message2)));
 
@@ -223,6 +225,7 @@ class MessageServiceTest {
     @Test
     @DisplayName("getMessageById - returns message when found")
     void getMessageById_WhenFound_ReturnsDTO() {
+        when(userServiceClient.getUserById(anyLong())).thenReturn(ApiResponse.ok(senderDTO));
         when(messageRepository.findById(1L)).thenReturn(Optional.of(message1));
 
         MessageResponseDTO result = messageQueryService.getMessageById(1L);

@@ -128,12 +128,16 @@ export class ChatMessageService {
    * POST /messages
    */
   sendMessage(request: SendMessageRequest): Observable<SendMessageResponse> {
-    // Build payload and remove undefined values to avoid backend validation errors
-    const payload: Record<string, unknown> = {
+    // Build payload dynamically to avoid sending null/undefined fields
+    const payload: Record<string, any> = {
       content: request.content,
       senderId: this.authStore.userId(),
-      receiverId: request.recipientId
+      type: request.type || 'CHAT'
     };
+    
+    if (request.recipientId) {
+      payload['receiverId'] = request.recipientId;
+    }
     
     if (request.groupId) {
       payload['groupId'] = request.groupId;

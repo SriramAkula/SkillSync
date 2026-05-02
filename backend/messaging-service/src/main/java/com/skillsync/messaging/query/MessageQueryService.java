@@ -1,6 +1,8 @@
 package com.skillsync.messaging.query;
 
+import com.skillsync.messaging.client.UserServiceClient;
 import com.skillsync.messaging.dto.MessageResponseDTO;
+import com.skillsync.messaging.dto.UserDTO;
 import com.skillsync.messaging.entity.Message;
 import com.skillsync.messaging.exception.MessageNotFoundException;
 import com.skillsync.messaging.repository.MessageRepository;
@@ -22,9 +24,11 @@ import org.springframework.data.domain.Pageable;
 public class MessageQueryService {
 
     private final MessageRepository messageRepository;
+    private final UserServiceClient userServiceClient;
 
-    public MessageQueryService(MessageRepository messageRepository) {
+    public MessageQueryService(MessageRepository messageRepository, UserServiceClient userServiceClient) {
         this.messageRepository = messageRepository;
+        this.userServiceClient = userServiceClient;
     }
 
     /**
@@ -97,14 +101,31 @@ public class MessageQueryService {
     }
 
     private MessageResponseDTO mapToResponseDTO(Message message) {
+        String username = message.getSenderUsername();
+        String profilePic = message.getSenderProfilePicUrl();
+
+        // Fallback for existing messages where details were not persisted
+        if (username == null) {
+            try {
+                com.skillsync.messaging.dto.ApiResponse<UserDTO> response = userServiceClient.getUserById(message.getSenderId());
+                if (response != null && response.isSuccess() && response.getData() != null) {
+                    UserDTO user = response.getData();
+                    username = user.getUsername();
+                    profilePic = user.getProfileImageUrl();
+                }
+            } catch (Exception e) {
+                log.warn("Failed to fetch fallback sender details for userId {}: {}", message.getSenderId(), e.getMessage());
+            }
+        }
+
         return MessageResponseDTO.builder()
                 .id(message.getId())
                 .senderId(message.getSenderId())
                 .receiverId(message.getReceiverId())
                 .groupId(message.getGroupId())
                 .content(message.getContent())
-                .senderUsername(message.getSenderUsername())
-                .senderProfilePicUrl(message.getSenderProfilePicUrl())
+                .senderUsername(username)
+                .senderProfilePicUrl(profilePic)
                 .createdAt(message.getCreatedAt())
                 .build();
     }
