@@ -263,7 +263,19 @@ export class ChatStore {
    * Select a conversation (load its messages)
    */
   selectConversation(conversationId: string): void {
+    // If clicking same conversation, we might want to force a refresh
+    // For now, let's allow it to reset the page
     this.currentConversationIdSignal.set(conversationId);
+    
+    // Clear message state for this conversation to prevent flickering with old data
+    this.messagesSignal.update(msgs => {
+      const newMsgs = new Map(msgs);
+      // We don't necessarily want to clear if we want "instant" feel, 
+      // but if the data is stale (missing usernames), clearing ensures a clean fetch.
+      // Let's NOT clear for now to keep it fast, the deduplication should handle it.
+      return newMsgs;
+    });
+
     // Reset message page to 0
     this.messagePageNumberSignal.update(pages => {
       const newPages = new Map(pages);
@@ -371,6 +383,11 @@ export class ChatStore {
           if (!current.isOptimistic && prev.isOptimistic) return current;
           if (!currentIsTemp && prevIsTemp) return current;
           if (current.status === 'SENT' && prev.status === 'SENDING') return current;
+          
+          // Preserve username if one has it and the other doesn't
+          if (current.senderUsername && !prev.senderUsername) return current;
+          if (!current.senderUsername && prev.senderUsername) return prev;
+          
           return prev;
         });
         uniqueResults.push(best);

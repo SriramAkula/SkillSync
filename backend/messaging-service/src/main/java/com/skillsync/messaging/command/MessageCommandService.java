@@ -34,10 +34,10 @@ public class MessageCommandService {
      * Evicts conversation and partners caches for both users.
      */
     @Caching(evict = {
-        @CacheEvict(value = "conversation",         allEntries = true),
-        @CacheEvict(value = "groupConversation",    allEntries = true),
-        @CacheEvict(value = "conversationPartners", key = "#requestDTO.senderId"),
-        @CacheEvict(value = "conversationPartners", key = "#requestDTO.receiverId", condition = "#requestDTO.receiverId != null")
+        @CacheEvict(value = "conversation_v2",         allEntries = true),
+        @CacheEvict(value = "groupConversation_v2",    allEntries = true),
+        @CacheEvict(value = "conversationPartners_v2", key = "#requestDTO.senderId"),
+        @CacheEvict(value = "conversationPartners_v2", key = "#requestDTO.receiverId", condition = "#requestDTO.receiverId != null")
     })
     public MessageResponseDTO sendMessage(MessageRequestDTO requestDTO) {
         log.info("COMMAND - sendMessage: senderId={}, receiverId={}, groupId={}", 
@@ -60,11 +60,16 @@ public class MessageCommandService {
 
         // Enrich with sender details from User Service
         try {
+            log.info("Enriching message with sender details for userId: {}", requestDTO.getSenderId());
             com.skillsync.messaging.dto.ApiResponse<UserDTO> response = userServiceClient.getUserById(requestDTO.getSenderId());
             if (response != null && response.isSuccess() && response.getData() != null) {
                 UserDTO sender = response.getData();
+                log.info("Successfully enriched message for senderId: {} with username: {}", requestDTO.getSenderId(), sender.getUsername());
                 message.setSenderUsername(sender.getUsername());
                 message.setSenderProfilePicUrl(sender.getProfileImageUrl());
+            } else {
+                log.warn("User Service returned unsuccessful response for userId {}: {}", 
+                        requestDTO.getSenderId(), response != null ? response.getMessage() : "null response");
             }
         } catch (Exception e) {
             log.warn("Failed to fetch sender details for userId {}: {}", requestDTO.getSenderId(), e.getMessage());

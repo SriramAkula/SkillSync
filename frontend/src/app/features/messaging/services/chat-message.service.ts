@@ -41,6 +41,7 @@ export class ChatMessageService {
 
   private pollingSubscription: Subscription | null = null;
   private currentPollingConversationId: string | null = null;
+  private loadingMap = new Map<string, boolean>();
 
   /**
    * Headers are handled by jwt.interceptor.ts
@@ -213,6 +214,7 @@ export class ChatMessageService {
     const tempMessage: UIMessage = {
       id: `temp-${Date.now()}-${Math.random()}`,
       senderId: currentUserId,
+      senderUsername: this.authStore.username() || 'You',
       content: request.content,
       type: request.type || 'CHAT',
       createdAt: new Date(),
@@ -398,9 +400,17 @@ export class ChatMessageService {
     pageSize = 50,
     isBackground = false
   ): Promise<void> {
+    const requestKey = `${conversationId}-${page}`;
+    if (this.loadingMap.get(requestKey)) {
+      console.log('[ChatMessageService] Skipping redundant loadMessages call for:', requestKey);
+      return;
+    }
+
     if (!isBackground) {
       this.chatStore.setLoadingMessages(true);
     }
+    this.loadingMap.set(requestKey, true);
+
     try {
       console.log('[ChatMessageService] Loading messages for conversation:', conversationId, 'page:', page);
       let messages$: Observable<ChatMessage[]>;
@@ -427,7 +437,7 @@ export class ChatMessageService {
 
       const messages = await firstValueFrom(messages$);
       console.log(`[ChatMessageService] Fetched ${messages.length} messages for ${conversationId}. Top metadata:`,
-        messages.slice(0, 3).map(m => ({ id: m.id, sender: m.senderId, content: m.content.substring(0, 10) + '...' }))
+        messages.slice(0, 3).map(m => ({ id: m.id, sender: m.senderId, user: m.senderUsername, content: m.content.substring(0, 10) + '...' }))
       );
 
       const uiMessages = messages.map(msg => ({
@@ -446,6 +456,7 @@ export class ChatMessageService {
       );
       throw error;
     } finally {
+      this.loadingMap.set(requestKey, false);
       if (!isBackground) {
         this.chatStore.setLoadingMessages(false);
       }
@@ -456,7 +467,13 @@ export class ChatMessageService {
    * Async wrapper for sending message
    */
   async sendMessageAsync(request: SendMessageRequest): Promise<SendMessageResponse> {
-    console.log('[ChatMessageService] Sending message:', request);
+    const userId = this.authStore.userId();
+    console.log('[ChatMessageService] Sending message async:', { 
+      ...request, 
+      authUserId: userId,
+      authUserIdType: typeof userId 
+    });
+    
     try {
       const response = await firstValueFrom(this.sendMessage(request));
       console.log('[ChatMessageService] Message sent successfully:', response);

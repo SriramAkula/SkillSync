@@ -44,7 +44,8 @@ export class MessageItemComponent {
   @Input() isGroupChat = false;
 
   get isSelfMessage(): boolean {
-    return this.message.senderId === this.currentUserId;
+    // Use loose equality to handle string vs number comparison if needed
+    return this.message.senderId == this.currentUserId;
   }
 
   get showAvatar(): boolean {

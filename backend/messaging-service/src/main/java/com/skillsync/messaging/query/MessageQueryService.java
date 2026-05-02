@@ -49,7 +49,7 @@ public class MessageQueryService {
      */
     @CircuitBreaker(name = "messagingService", fallbackMethod = "getConversationFallback")
     @Retry(name = "messagingService")
-    @Cacheable(value = "conversation",
+    @Cacheable(value = "conversation_v2",
                key = "(#user1 < #user2 ? #user1 + '_' + #user2 : #user2 + '_' + #user1) + '_' + #pageable.pageNumber + '_' + #pageable.pageSize")
     public PagedResponse<MessageResponseDTO> getConversation(Long user1, Long user2, Pageable pageable) {
         log.info("QUERY - getConversation: user1={}, user2={} (cache miss, hitting DB)", user1, user2);
@@ -69,7 +69,7 @@ public class MessageQueryService {
      */
     @CircuitBreaker(name = "messagingService", fallbackMethod = "getGroupConversationFallback")
     @Retry(name = "messagingService")
-    @Cacheable(value = "groupConversation", key = "#groupId + '_' + #pageable.pageNumber + '_' + #pageable.pageSize")
+    @Cacheable(value = "groupConversation_v2", key = "#groupId + '_' + #pageable.pageNumber + '_' + #pageable.pageSize")
     public PagedResponse<MessageResponseDTO> getGroupConversation(Long groupId, Pageable pageable) {
         log.info("QUERY - getGroupConversation: groupId={} (cache miss, hitting DB)", groupId);
         Page<Message> page = messageRepository.findByGroupIdOrderByCreatedAtDesc(groupId, pageable);
@@ -89,7 +89,7 @@ public class MessageQueryService {
      */
     @CircuitBreaker(name = "messagingService", fallbackMethod = "getConversationPartnersFallback")
     @Retry(name = "messagingService")
-    @Cacheable(value = "conversationPartners", key = "#userId")
+    @Cacheable(value = "conversationPartners_v2", key = "#userId")
     public List<Long> getConversationPartners(Long userId) {
         log.info("QUERY - getConversationPartners: userId={} (cache miss, hitting DB)", userId);
         return messageRepository.findConversationPartners(userId);

@@ -50,8 +50,9 @@ export class ChatContainerComponent implements OnInit, OnDestroy {
   // Get current user ID from AuthStore
   currentUserId = computed(() => {
     const id = this.authStore.userId();
-    console.log('[ChatContainer] Current User ID:', id);
-    return id || 0;
+    const numericId = id ? Number(id) : 0;
+    console.log('[ChatContainer] Current User ID:', numericId, 'Original ID:', id);
+    return numericId;
   });
 
   isGroupChat = computed(() => {
@@ -95,15 +96,9 @@ export class ChatContainerComponent implements OnInit, OnDestroy {
   }
 
   async onConversationSelected(conversation: Conversation): Promise<void> {
-    // Load messages for this conversation
+    // Select in store - this triggers reactive logic in MessageThread
     console.log('[ChatContainer] Selected conversation:', conversation.id);
     this.store.selectConversation(conversation.id);
-    try {
-      await this.messageService.loadMessages(conversation.id, 0, 50);
-      console.log('[ChatContainer] Messages loaded for conversation:', conversation.id);
-    } catch (error) {
-      console.error('[ChatContainer] Failed to load messages:', error);
-    }
   }
 
   private readonly router = inject(Router);
@@ -146,21 +141,27 @@ export class ChatContainerComponent implements OnInit, OnDestroy {
 
     // Send to server
     try {
+      console.log('[ChatContainer] Sending to server:', sendRequest);
       const response = await this.messageService.sendMessageAsync(sendRequest);
       if (response.status === 'SUCCESS') {
+        console.log('[ChatContainer] Server confirmed success:', response.id);
         // Update temp message to SENT
         this.store.updateMessage(conversation.id, tempMessage.id, {
           status: 'SENT',
           id: response.message?.id || tempMessage.id,
+          senderUsername: response.message?.senderUsername || tempMessage.senderUsername
         });
+      } else {
+        throw new Error(response.error || 'Server returned failure');
       }
     } catch (error) {
       // Mark message as FAILED
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
       this.store.updateMessage(conversation.id, tempMessage.id, {
         status: 'FAILED',
-        error: 'Failed to send message',
+        error: errorMsg,
       });
-      console.error('Failed to send message:', error);
+      console.error('[ChatContainer] Failed to send message:', error);
     }
   }
 
