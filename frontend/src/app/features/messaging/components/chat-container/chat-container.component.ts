@@ -21,7 +21,7 @@ import { ConversationListComponent } from '../conversation-list/conversation-lis
 import { MessageThreadComponent } from '../message-thread/message-thread.component';
 import { MessageInputComponent } from '../message-input/message-input.component';
 import { ChatHeaderComponent } from '../chat-header/chat-header.component';
-import { AuthStore } from '../../../../core/auth/auth.store';
+import { AuthStore } from '../../../../core/store/auth.store';
 import { Subject } from 'rxjs';
 import type { Conversation, SendMessageRequest, DirectConversation } from '../../models';
 

@@ -10,7 +10,7 @@ import { HttpClient, HttpParams, HttpHeaders } from '@angular/common/http';
 import { Observable, Subject, firstValueFrom, tap, map, catchError, of, Subscription } from 'rxjs';
 import { ChatStore } from './chat.store';
 import { AuthService } from '../../../core/services/auth.service';
-import { AuthStore } from '../../../core/auth/auth.store';
+import { AuthStore } from '../../../core/store/auth.store';
 import type {
   ChatMessage,
   UIMessage,

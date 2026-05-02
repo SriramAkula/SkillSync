@@ -3,10 +3,10 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { SessionStore } from '../../../../core/auth/session.store';
-import { MentorStore } from '../../../../core/auth/mentor.store';
+import { SessionStore } from '../../../../core/store/session.store';
+import { MentorStore } from '../../../../core/store/mentor.store';
 import { ToastService } from '../../../../core/services/toast.service';
-import { AuthStore } from '../../../../core/auth/auth.store';
+import { AuthStore } from '../../../../core/store/auth.store';
 
 const STATUS: Record<string, { color: string; bg: string; icon: string }> = {
   REQUESTED:      { color: '#d97706', bg: '#fef3c7', icon: 'schedule' },

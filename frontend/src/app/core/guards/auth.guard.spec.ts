@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { Router, ActivatedRouteSnapshot, RouterStateSnapshot } from '@angular/router';
 import { authGuard, roleGuard } from './auth.guard';
-import { AuthStore } from '../auth/auth.store';
+import { AuthStore } from '../store/auth.store';
 import { signal } from '@angular/core';
 
 describe('AuthGuards', () => {

@@ -1,8 +1,8 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
-import { SessionStore } from '../../../../core/auth/session.store';
-import { SkillStore } from '../../../../core/auth/skill.store';
+import { SessionStore } from '../../../../core/store/session.store';
+import { SkillStore } from '../../../../core/store/skill.store';
 import { SessionCardComponent } from '../../components/session-card/session-card.component';
 import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';
 

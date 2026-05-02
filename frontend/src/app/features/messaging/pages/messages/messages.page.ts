@@ -5,7 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { MessagingService } from '../../../../core/services/messaging.service';
 import { UserService } from '../../../../core/services/user.service';
 import { GroupService } from '../../../../core/services/group.service';
-import { AuthStore } from '../../../../core/auth/auth.store';
+import { AuthStore } from '../../../../core/store/auth.store';
 import { GroupDto } from '../../../../shared/models';
 import { forkJoin, of } from 'rxjs';
 import { firstValueFrom } from 'rxjs';

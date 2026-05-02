@@ -10,7 +10,7 @@ import { Observable, firstValueFrom, tap, catchError, forkJoin, map, of, switchM
 import { ChatStore } from './chat.store';
 import { ChatMessageService } from './chat-message.service';
 import { AuthService } from '../../../core/services/auth.service';
-import { AuthStore } from '../../../core/auth/auth.store';
+import { AuthStore } from '../../../core/store/auth.store';
 import { UserService } from '../../../core/services/user.service';
 import {
   Conversation,

@@ -1,8 +1,8 @@
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
 import { MentorListPage } from './mentor-list.page';
-import { MentorStore } from '../../../../core/auth/mentor.store';
-import { SkillStore } from '../../../../core/auth/skill.store';
-import { AuthStore } from '../../../../core/auth/auth.store';
+import { MentorStore } from '../../../../core/store/mentor.store';
+import { SkillStore } from '../../../../core/store/skill.store';
+import { AuthStore } from '../../../../core/store/auth.store';
 import { ReviewService } from '../../../../core/services/review.service';
 import { MessagingService } from '../../../../core/services/messaging.service';
 import { Router, ActivatedRoute } from '@angular/router';

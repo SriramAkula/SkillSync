@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { SessionCardComponent } from './session-card.component';
-import { SkillStore } from '../../../../core/auth/skill.store';
-import { AuthStore } from '../../../../core/auth/auth.store';
+import { SkillStore } from '../../../../core/store/skill.store';
+import { AuthStore } from '../../../../core/store/auth.store';
 import { signal } from '@angular/core';
 
 describe('SessionCardComponent', () => {

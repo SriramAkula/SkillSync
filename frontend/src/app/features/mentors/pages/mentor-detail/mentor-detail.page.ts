@@ -1,8 +1,8 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
-import { MentorStore } from '../../../../core/auth/mentor.store';
-import { AuthStore } from '../../../../core/auth/auth.store';
+import { MentorStore } from '../../../../core/store/mentor.store';
+import { AuthStore } from '../../../../core/store/auth.store';
 import { ReviewService } from '../../../../core/services/review.service';
 import { ReviewDto, MentorRatingDto } from '../../../../shared/models';
 

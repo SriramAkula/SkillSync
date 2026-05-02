@@ -5,7 +5,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { ReviewService } from '../../../../core/services/review.service';
 import { ToastService } from '../../../../core/services/toast.service';
-import { AuthStore } from '../../../../core/auth/auth.store';
+import { AuthStore } from '../../../../core/store/auth.store';
 import { ReviewDto, MentorRatingDto } from '../../../../shared/models';
 
 @Component({

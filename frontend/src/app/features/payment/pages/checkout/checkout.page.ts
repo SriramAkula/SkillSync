@@ -2,9 +2,9 @@ import { Component, inject, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { PaymentStore } from '../../../../core/auth/payment.store';
-import { AuthStore } from '../../../../core/auth/auth.store';
-import { SessionStore } from '../../../../core/auth/session.store';
+import { PaymentStore } from '../../../../core/store/payment.store';
+import { AuthStore } from '../../../../core/store/auth.store';
+import { SessionStore } from '../../../../core/store/session.store';
 import { effect } from '@angular/core';
 import { SagaResponse } from '../../../../shared/models';
 
