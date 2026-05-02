@@ -103,6 +103,8 @@ public class MessageQueryService {
                 .receiverId(message.getReceiverId())
                 .groupId(message.getGroupId())
                 .content(message.getContent())
+                .senderUsername(message.getSenderUsername())
+                .senderProfilePicUrl(message.getSenderProfilePicUrl())
                 .createdAt(message.getCreatedAt())
                 .build();
     }

@@ -19,6 +19,8 @@ public class MessageResponseDTO {
     private Long receiverId;
     private Long groupId;
     private String content;
+    private String senderUsername;
+    private String senderProfilePicUrl;
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSXXX", timezone = "Asia/Kolkata")
     private Instant createdAt;
 }

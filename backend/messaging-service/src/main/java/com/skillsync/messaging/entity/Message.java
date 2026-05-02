@@ -31,6 +31,12 @@ public class Message {
 
     @Column(columnDefinition = "TEXT", nullable = false)
     private String content;
+    
+    @Column(name = "sender_username")
+    private String senderUsername;
+
+    @Column(name = "sender_profile_pic_url")
+    private String senderProfilePicUrl;
 
     @Column(name = "created_at")
     private Instant createdAt;

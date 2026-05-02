@@ -153,6 +153,8 @@ export class ChatMessageService {
             receiverId: response.receiverId,
             groupId: response.groupId,
             content: response.content || '',
+            senderUsername: response.senderUsername,
+            senderProfilePicUrl: response.senderProfilePicUrl,
             type: 'CHAT',
             createdAt: new Date(response.createdAt),
             isRead: false,

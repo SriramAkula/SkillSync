@@ -15,6 +15,8 @@ export interface ChatMessage {
   senderId: number;
   senderName?: string;
   senderAvatar?: string;
+  senderUsername?: string;
+  senderProfilePicUrl?: string;
   
   receiverId?: number; // Matches backend field name
   groupId?: number;
