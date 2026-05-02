@@ -32,6 +32,18 @@ public class GlobalExceptionHandler {
                 .body(new ApiResponse<>(false, null, message, 400));
     }
 
+    @ExceptionHandler(PaymentProcessingException.class)
+    public ResponseEntity<ApiResponse<Void>> handlePaymentProcessing(PaymentProcessingException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(new ApiResponse<>(false, null, ex.getMessage(), 400));
+    }
+
+    @ExceptionHandler(RazorpayIntegrationException.class)
+    public ResponseEntity<ApiResponse<Void>> handleRazorpayIntegration(RazorpayIntegrationException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
+                .body(new ApiResponse<>(false, null, ex.getMessage(), 502));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleGeneric(Exception ex) {
         log.error("Unhandled exception: {}", ex.getMessage(), ex);

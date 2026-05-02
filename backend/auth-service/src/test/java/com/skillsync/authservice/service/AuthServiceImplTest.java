@@ -9,6 +9,7 @@ import com.skillsync.authservice.entity.User;
 import com.skillsync.authservice.publisher.AuthEventPublisher;
 import com.skillsync.authservice.repository.UserRepository;
 import com.skillsync.authservice.security.JwtUtil;
+import com.skillsync.authservice.exception.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -73,7 +74,7 @@ class AuthServiceImplTest {
         when(otpService.isEmailVerified("test@example.com")).thenReturn(false);
 
         assertThatThrownBy(() -> authService.register(request))
-                .isInstanceOf(RuntimeException.class)
+                .isInstanceOf(InvalidOtpException.class)
                 .hasMessageContaining("Email not verified");
 
         verify(userRepository, never()).save(any());
@@ -87,7 +88,7 @@ class AuthServiceImplTest {
         when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.of(user));
 
         assertThatThrownBy(() -> authService.register(request))
-                .isInstanceOf(RuntimeException.class)
+                .isInstanceOf(UserAlreadyExistsException.class)
                 .hasMessageContaining("Email already exists");
 
         verify(userRepository, never()).save(any());
@@ -197,7 +198,7 @@ class AuthServiceImplTest {
         when(userRepository.findByEmail("unknown@example.com")).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> authService.login(request))
-                .isInstanceOf(RuntimeException.class)
+                .isInstanceOf(InvalidCredentialsException.class)
                 .hasMessageContaining("User not found");
     }
 
@@ -208,7 +209,7 @@ class AuthServiceImplTest {
         when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.of(user));
 
         assertThatThrownBy(() -> authService.login(request))
-                .isInstanceOf(RuntimeException.class)
+                .isInstanceOf(AccountDeactivatedException.class)
                 .hasMessageContaining("deactivated");
     }
 
@@ -219,7 +220,7 @@ class AuthServiceImplTest {
         when(passwordEncoder.matches("wrongPass", "encodedPass")).thenReturn(false);
 
         assertThatThrownBy(() -> authService.login(request))
-                .isInstanceOf(RuntimeException.class)
+                .isInstanceOf(InvalidCredentialsException.class)
                 .hasMessageContaining("Invalid password");
     }
 
@@ -244,7 +245,7 @@ class AuthServiceImplTest {
         when(userRepository.findByEmail("ghost@example.com")).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> authService.refreshToken("bad-token"))
-                .isInstanceOf(RuntimeException.class)
+                .isInstanceOf(UserNotFoundException.class)
                 .hasMessageContaining("User not found");
     }
 
@@ -255,7 +256,7 @@ class AuthServiceImplTest {
         when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.of(user));
 
         assertThatThrownBy(() -> authService.refreshToken("token"))
-                .isInstanceOf(RuntimeException.class)
+                .isInstanceOf(AccountDeactivatedException.class)
                 .hasMessageContaining("deactivated");
     }
     @Test
@@ -270,7 +271,7 @@ class AuthServiceImplTest {
         when(userRepository.existsByUsername("test.example.com")).thenReturn(true);
 
         assertThatThrownBy(() -> authService.register(request))
-                .isInstanceOf(RuntimeException.class)
+                .isInstanceOf(UserAlreadyExistsException.class)
                 .hasMessageContaining("Username derived from email already exists");
     }
 
@@ -297,7 +298,7 @@ class AuthServiceImplTest {
         when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.of(user));
 
         assertThatThrownBy(() -> authService.login(request))
-                .isInstanceOf(RuntimeException.class)
+                .isInstanceOf(ProviderMismatchException.class)
                 .hasMessageContaining("Please use the social login button");
     }
 
@@ -308,7 +309,7 @@ class AuthServiceImplTest {
         when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.of(user));
 
         assertThatThrownBy(() -> authService.login(request))
-                .isInstanceOf(RuntimeException.class)
+                .isInstanceOf(ProviderMismatchException.class)
                 .hasMessageContaining("Please use the social login button");
     }
 
@@ -331,7 +332,7 @@ class AuthServiceImplTest {
         when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.of(user));
 
         assertThatThrownBy(() -> authService.resetPassword("test@example.com", "newPass"))
-                .isInstanceOf(RuntimeException.class)
+                .isInstanceOf(AccountDeactivatedException.class)
                 .hasMessageContaining("deactivated");
     }
 
@@ -374,7 +375,7 @@ class AuthServiceImplTest {
         user.setAuthProvider(com.skillsync.authservice.enums.AuthProvider.LOCAL);
         when(userRepository.findByEmail("exists@example.com")).thenReturn(Optional.of(user));
         assertThatThrownBy(() -> authService.sendOtp("exists@example.com"))
-                .isInstanceOf(RuntimeException.class)
+                .isInstanceOf(UserAlreadyExistsException.class)
                 .hasMessageContaining("Email already registered and has a password set");
     }
 
@@ -391,14 +392,14 @@ class AuthServiceImplTest {
         user.setAuthProvider(com.skillsync.authservice.enums.AuthProvider.BOTH);
         when(userRepository.findByEmail("both@example.com")).thenReturn(Optional.of(user));
         assertThatThrownBy(() -> authService.sendOtp("both@example.com"))
-                .isInstanceOf(RuntimeException.class);
+                .isInstanceOf(UserAlreadyExistsException.class);
     }
 
     @Test
     void verifyOtp_shouldThrow_whenInvalid() {
         when(otpService.verifyOtp("test@example.com", "123456")).thenReturn(false);
         assertThatThrownBy(() -> authService.verifyOtp("test@example.com", "123456"))
-                .isInstanceOf(RuntimeException.class)
+                .isInstanceOf(InvalidOtpException.class)
                 .hasMessageContaining("Invalid or expired OTP");
     }
 
@@ -420,7 +421,7 @@ class AuthServiceImplTest {
     void verifyForgotPasswordOtp_shouldThrow_whenInvalid() {
         when(otpService.verifyPasswordResetOtp("test@example.com", "123456")).thenReturn(false);
         assertThatThrownBy(() -> authService.verifyForgotPasswordOtp("test@example.com", "123456"))
-                .isInstanceOf(RuntimeException.class)
+                .isInstanceOf(InvalidOtpException.class)
                 .hasMessageContaining("Invalid or expired OTP");
     }
 
@@ -428,7 +429,7 @@ class AuthServiceImplTest {
     void resetPassword_shouldThrow_whenOtpNotVerified() {
         when(otpService.isPasswordResetVerified("test@example.com")).thenReturn(false);
         assertThatThrownBy(() -> authService.resetPassword("test@example.com", "newPass"))
-                .isInstanceOf(RuntimeException.class)
+                .isInstanceOf(InvalidOtpException.class)
                 .hasMessageContaining("OTP not verified");
     }
 
@@ -437,7 +438,7 @@ class AuthServiceImplTest {
         when(otpService.isPasswordResetVerified("test@example.com")).thenReturn(true);
         when(userRepository.findByEmail("test@example.com")).thenReturn(Optional.empty());
         assertThatThrownBy(() -> authService.resetPassword("test@example.com", "newPass"))
-                .isInstanceOf(RuntimeException.class)
+                .isInstanceOf(UserNotFoundException.class)
                 .hasMessageContaining("User not found");
     }
 }

@@ -40,6 +40,26 @@ public class GlobalExceptionHandler {
                 .statusCode(409)
                 .build());
     }
+
+    @ExceptionHandler(OperationNotAllowedException.class)
+    public ResponseEntity<ApiResponse<?>> handleOperationNotAllowed(OperationNotAllowedException ex) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+            .body(ApiResponse.builder()
+                .success(false)
+                .message(ex.getMessage())
+                .statusCode(403)
+                .build());
+    }
+
+    @ExceptionHandler(BadRequestException.class)
+    public ResponseEntity<ApiResponse<?>> handleBadRequest(BadRequestException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+            .body(ApiResponse.builder()
+                .success(false)
+                .message(ex.getMessage())
+                .statusCode(400)
+                .build());
+    }
     
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiResponse<?>> handleValidation(MethodArgumentNotValidException ex) {

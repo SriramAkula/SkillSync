@@ -24,6 +24,42 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     }
 
+    @ExceptionHandler(InvalidCredentialsException.class)
+    public ResponseEntity<ApiResponse<?>> handleInvalidCredentialsException(InvalidCredentialsException ex) {
+        ApiResponse<?> response = new ApiResponse<>(ex.getMessage(), null, HttpStatus.UNAUTHORIZED.value());
+        return new ResponseEntity<>(response, HttpStatus.UNAUTHORIZED);
+    }
+
+    @ExceptionHandler(UserAlreadyExistsException.class)
+    public ResponseEntity<ApiResponse<?>> handleUserAlreadyExistsException(UserAlreadyExistsException ex) {
+        ApiResponse<?> response = new ApiResponse<>(ex.getMessage(), null, HttpStatus.CONFLICT.value());
+        return new ResponseEntity<>(response, HttpStatus.CONFLICT);
+    }
+
+    @ExceptionHandler(InvalidOtpException.class)
+    public ResponseEntity<ApiResponse<?>> handleInvalidOtpException(InvalidOtpException ex) {
+        ApiResponse<?> response = new ApiResponse<>(ex.getMessage(), null, HttpStatus.BAD_REQUEST.value());
+        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(AccountDeactivatedException.class)
+    public ResponseEntity<ApiResponse<?>> handleAccountDeactivatedException(AccountDeactivatedException ex) {
+        ApiResponse<?> response = new ApiResponse<>(ex.getMessage(), null, HttpStatus.FORBIDDEN.value());
+        return new ResponseEntity<>(response, HttpStatus.FORBIDDEN);
+    }
+
+    @ExceptionHandler(ProviderMismatchException.class)
+    public ResponseEntity<ApiResponse<?>> handleProviderMismatchException(ProviderMismatchException ex) {
+        ApiResponse<?> response = new ApiResponse<>(ex.getMessage(), null, HttpStatus.BAD_REQUEST.value());
+        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(UserNotFoundException.class)
+    public ResponseEntity<ApiResponse<?>> handleUserNotFoundException(UserNotFoundException ex) {
+        ApiResponse<?> response = new ApiResponse<>(ex.getMessage(), null, HttpStatus.NOT_FOUND.value());
+        return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
+    }
+
     @ExceptionHandler(AuthException.class)
     public ResponseEntity<ApiResponse<?>> handleAuthException(AuthException ex) {
         ApiResponse<?> response = new ApiResponse<>(ex.getMessage(), null, HttpStatus.UNAUTHORIZED.value());

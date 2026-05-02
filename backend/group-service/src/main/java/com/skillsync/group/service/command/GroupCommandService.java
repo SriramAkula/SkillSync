@@ -8,8 +8,10 @@ import com.skillsync.group.entity.Group;
 import com.skillsync.group.entity.GroupMember;
 import com.skillsync.group.entity.MemberRole;
 import com.skillsync.group.exception.AlreadyMemberException;
+import com.skillsync.group.exception.BadRequestException;
 import com.skillsync.group.exception.GroupFullException;
 import com.skillsync.group.exception.GroupNotFoundException;
+import com.skillsync.group.exception.OperationNotAllowedException;
 import com.skillsync.group.mapper.GroupMapper;
 import com.skillsync.group.repository.GroupMemberRepository;
 import com.skillsync.group.repository.GroupRepository;
@@ -41,12 +43,12 @@ public class GroupCommandService {
         try {
             skillServiceClient.getSkillById(request.getSkillId());
         } catch (Exception e) {
-            throw new GroupNotFoundException("Referenced skill (ID: " + request.getSkillId() + ") does not exist or skill-service is down. Cause: " + e.getMessage());
+            throw new BadRequestException("Referenced skill (ID: " + request.getSkillId() + ") does not exist or skill-service is down.");
         }
         try {
             userServiceClient.getProfile(creatorId);
         } catch (Exception e) {
-            throw new GroupNotFoundException("Creator user (ID: " + creatorId + ") does not exist or user-service is down. Cause: " + e.getMessage());
+            throw new BadRequestException("Creator user (ID: " + creatorId + ") does not exist or user-service is down.");
         }
         Group savedGroup = groupRepository.save(groupMapper.toEntity(creatorId, request));
         groupMemberRepository.save(groupMapper.toMemberEntity(savedGroup.getId(), creatorId, MemberRole.CREATOR));
@@ -61,7 +63,7 @@ public class GroupCommandService {
         try {
             userServiceClient.getProfile(userId);
         } catch (Exception e) {
-            throw new GroupNotFoundException("User (ID: " + userId + ") does not exist or user-service is down. Cause: " + e.getMessage());
+            throw new BadRequestException("User (ID: " + userId + ") does not exist or user-service is down.");
         }
         Group group = groupRepository.findById(groupId)
                 .orElseThrow(() -> new GroupNotFoundException("Group not found"));
@@ -87,7 +89,7 @@ public class GroupCommandService {
         GroupMember member = groupMemberRepository.findByGroupIdAndUserId(groupId, userId)
                 .orElseThrow(() -> new GroupNotFoundException("User is not a member of this group"));
         if (member.getRole() == MemberRole.CREATOR) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Creator cannot leave the group. You must delete the group instead.");
+            throw new BadRequestException("Creator cannot leave the group. You must delete the group instead.");
         }
         groupMemberRepository.delete(member);
         log.info("User {} left group {}", userId, groupId);
@@ -101,7 +103,7 @@ public class GroupCommandService {
         Group group = groupRepository.findById(groupId)
                 .orElseThrow(() -> new GroupNotFoundException("Group not found"));
         if (!isAdmin && !group.getCreatorId().equals(userId)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only creator or admin can delete the group");
+            throw new OperationNotAllowedException("Only creator or admin can delete the group");
         }
         group.setIsActive(false);
         groupRepository.save(group);

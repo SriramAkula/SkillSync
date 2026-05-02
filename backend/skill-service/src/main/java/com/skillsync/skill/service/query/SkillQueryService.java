@@ -2,6 +2,7 @@ package com.skillsync.skill.service.query;
 
 import com.skillsync.skill.dto.response.PageResponse;
 import com.skillsync.skill.dto.response.SkillResponseDto;
+import com.skillsync.skill.exception.SkillNotFoundException;
 import com.skillsync.skill.mapper.SkillMapper;
 import com.skillsync.skill.repository.SkillRepository;
 import com.skillsync.skill.entity.Skill;
@@ -29,7 +30,7 @@ public class SkillQueryService {
         log.info("Cache MISS - fetching skillId={} from DB", id);
         return skillRepository.findById(id)
                 .map(skillMapper::toDto)
-                .orElseThrow(() -> new RuntimeException("Skill not found"));
+                .orElseThrow(() -> new SkillNotFoundException("Skill not found"));
     }
 
     @Cacheable(value = "skills", key = "'p' + #page + '_s' + #size")

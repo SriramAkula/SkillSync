@@ -3,6 +3,8 @@ package com.skillsync.skill.service.command;
 import com.skillsync.skill.dto.request.CreateSkillRequestDto;
 import com.skillsync.skill.dto.response.SkillResponseDto;
 import com.skillsync.skill.entity.Skill;
+import com.skillsync.skill.exception.SkillAlreadyExistsException;
+import com.skillsync.skill.exception.SkillNotFoundException;
 import com.skillsync.skill.mapper.SkillMapper;
 import com.skillsync.skill.repository.SkillRepository;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +25,9 @@ public class SkillCommandService {
     @CacheEvict(value = {"skills", "skill"}, allEntries = true)
     public SkillResponseDto createSkill(CreateSkillRequestDto requestDto) {
         log.info("Creating skill: {}", requestDto.getSkillName());
+        if (skillRepository.findBySkillName(requestDto.getSkillName()).isPresent()) {
+            throw new SkillAlreadyExistsException("Skill with name '" + requestDto.getSkillName() + "' already exists");
+        }
         Skill saved = skillRepository.save(skillMapper.toEntity(requestDto));
         log.info("Skill created with ID: {}", saved.getId());
         return skillMapper.toDto(saved);
@@ -33,7 +38,7 @@ public class SkillCommandService {
     public SkillResponseDto updateSkill(Long id, CreateSkillRequestDto requestDto) {
         log.info("Updating skill with ID: {}", id);
         Skill skill = skillRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Skill not found"));
+                .orElseThrow(() -> new SkillNotFoundException("Skill not found"));
         skillMapper.updateEntity(skill, requestDto);
         return skillMapper.toDto(skillRepository.save(skill));
     }
@@ -43,7 +48,7 @@ public class SkillCommandService {
     public void deleteSkill(Long id) {
         log.info("Deleting skill with ID: {}", id);
         Skill skill = skillRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Skill not found"));
+                .orElseThrow(() -> new SkillNotFoundException("Skill not found"));
         skill.setIsActive(false);
         skillRepository.save(skill);
     }
@@ -53,7 +58,7 @@ public class SkillCommandService {
     public SkillResponseDto updatePopularity(Long id, boolean increment) {
         log.info("{} popularity for skill ID: {}", increment ? "Incrementing" : "Decrementing", id);
         Skill skill = skillRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Skill not found"));
+                .orElseThrow(() -> new SkillNotFoundException("Skill not found"));
         
         int currentPopularity = skill.getPopularityScore() != null ? skill.getPopularityScore() : 0;
         int newPopularity = increment ? currentPopularity + 1 : Math.max(0, currentPopularity - 1);

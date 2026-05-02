@@ -1,5 +1,6 @@
 package com.skillsync.user.service.impl;
 
+import com.skillsync.user.exception.FileStorageException;
 import com.skillsync.user.service.FileStorageService;
 import io.minio.GetPresignedObjectUrlArgs;
 import io.minio.MinioClient;
@@ -66,7 +67,7 @@ public class MinioStorageServiceImpl implements FileStorageService {
             return internalUrl.replace(minioUrl, externalUrl);
         } catch (Exception e) {
             log.error("Error generating presigned URL for key {}", objectKey, e);
-            throw new RuntimeException("Could not generate secure file URL");
+            throw new FileStorageException("Could not generate secure file URL", e);
         }
     }
 
@@ -81,7 +82,7 @@ public class MinioStorageServiceImpl implements FileStorageService {
                     .build());
         } catch (Exception e) {
             log.error("Failed to upload file to MinIO bucket {}", bucket, e);
-            throw new RuntimeException("Failed to store file data");
+            throw new FileStorageException("Failed to store file data", e);
         }
     }
 
