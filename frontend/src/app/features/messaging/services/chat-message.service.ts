@@ -129,7 +129,7 @@ export class ChatMessageService {
    */
   sendMessage(request: SendMessageRequest): Observable<SendMessageResponse> {
     // Build payload dynamically to avoid sending null/undefined fields
-    const payload: Record<string, any> = {
+    const payload: Record<string, unknown> = {
       content: request.content,
       senderId: this.authStore.userId(),
       type: request.type || 'CHAT'
