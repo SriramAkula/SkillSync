@@ -2,9 +2,9 @@ import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
-import { SessionStore } from '../../../../core/auth/session.store';
-import { MentorStore } from '../../../../core/auth/mentor.store';
-import { SkillStore } from '../../../../core/auth/skill.store';
+import { SessionStore } from '../../../../core/store/session.store';
+import { MentorStore } from '../../../../core/store/mentor.store';
+import { SkillStore } from '../../../../core/store/skill.store';
 
 @Component({
   selector: 'app-request-session-page',

@@ -2,9 +2,9 @@ import { Component, inject, OnInit, signal, computed, effect } from '@angular/co
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
-import { MentorStore } from '../../../../core/auth/mentor.store';
-import { SkillStore } from '../../../../core/auth/skill.store';
-import { AuthStore } from '../../../../core/auth/auth.store';
+import { MentorStore } from '../../../../core/store/mentor.store';
+import { SkillStore } from '../../../../core/store/skill.store';
+import { AuthStore } from '../../../../core/store/auth.store';
 import { UserService } from '../../../../core/services/user.service';
 import { UserProfileDto } from '../../../../shared/models';
 

@@ -1,7 +1,9 @@
 package com.skillsync.messaging.command;
 
+import com.skillsync.messaging.client.UserServiceClient;
 import com.skillsync.messaging.dto.MessageRequestDTO;
 import com.skillsync.messaging.dto.MessageResponseDTO;
+import com.skillsync.messaging.dto.UserDTO;
 import com.skillsync.messaging.entity.Message;
 import com.skillsync.messaging.event.MessageEventPublisher;
 import com.skillsync.messaging.exception.InvalidMessageException;
@@ -17,11 +19,14 @@ public class MessageCommandService {
 
     private final MessageRepository messageRepository;
     private final MessageEventPublisher messageEventPublisher;
+    private final UserServiceClient userServiceClient;
 
     public MessageCommandService(MessageRepository messageRepository,
-                                  MessageEventPublisher messageEventPublisher) {
+                                  MessageEventPublisher messageEventPublisher,
+                                  UserServiceClient userServiceClient) {
         this.messageRepository = messageRepository;
         this.messageEventPublisher = messageEventPublisher;
+        this.userServiceClient = userServiceClient;
     }
 
     /**
@@ -29,10 +34,10 @@ public class MessageCommandService {
      * Evicts conversation and partners caches for both users.
      */
     @Caching(evict = {
-        @CacheEvict(value = "conversation",         allEntries = true),
-        @CacheEvict(value = "groupConversation",    allEntries = true),
-        @CacheEvict(value = "conversationPartners", key = "#requestDTO.senderId"),
-        @CacheEvict(value = "conversationPartners", key = "#requestDTO.receiverId", condition = "#requestDTO.receiverId != null")
+        @CacheEvict(value = "conversation_v2",         allEntries = true),
+        @CacheEvict(value = "groupConversation_v2",    allEntries = true),
+        @CacheEvict(value = "conversationPartners_v2", key = "#requestDTO.senderId"),
+        @CacheEvict(value = "conversationPartners_v2", key = "#requestDTO.receiverId", condition = "#requestDTO.receiverId != null")
     })
     public MessageResponseDTO sendMessage(MessageRequestDTO requestDTO) {
         log.info("COMMAND - sendMessage: senderId={}, receiverId={}, groupId={}", 
@@ -52,6 +57,23 @@ public class MessageCommandService {
                 .groupId(requestDTO.getGroupId())
                 .content(requestDTO.getContent())
                 .build();
+
+        // Enrich with sender details from User Service
+        try {
+            log.info("Enriching message with sender details for userId: {}", requestDTO.getSenderId());
+            com.skillsync.messaging.dto.ApiResponse<UserDTO> response = userServiceClient.getUserById(requestDTO.getSenderId());
+            if (response != null && response.isSuccess() && response.getData() != null) {
+                UserDTO sender = response.getData();
+                log.info("Successfully enriched message for senderId: {} with username: {}", requestDTO.getSenderId(), sender.getUsername());
+                message.setSenderUsername(sender.getUsername());
+                message.setSenderProfilePicUrl(sender.getProfileImageUrl());
+            } else {
+                log.warn("User Service returned unsuccessful response for userId {}: {}", 
+                        requestDTO.getSenderId(), response != null ? response.getMessage() : "null response");
+            }
+        } catch (Exception e) {
+            log.warn("Failed to fetch sender details for userId {}: {}", requestDTO.getSenderId(), e.getMessage());
+        }
 
         Message saved = messageRepository.saveAndFlush(message);
         MessageResponseDTO responseDTO = mapToResponseDTO(saved);
@@ -74,6 +96,8 @@ public class MessageCommandService {
                 .receiverId(message.getReceiverId())
                 .groupId(message.getGroupId())
                 .content(message.getContent())
+                .senderUsername(message.getSenderUsername())
+                .senderProfilePicUrl(message.getSenderProfilePicUrl())
                 .createdAt(message.getCreatedAt())
                 .build();
     }

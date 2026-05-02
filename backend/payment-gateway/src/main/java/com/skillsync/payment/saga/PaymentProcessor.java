@@ -6,6 +6,8 @@ import com.razorpay.Refund;
 import com.razorpay.RazorpayClient;
 import com.razorpay.RazorpayException;
 import com.razorpay.Utils;
+import com.skillsync.payment.exception.PaymentProcessingException;
+import com.skillsync.payment.exception.RazorpayIntegrationException;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -49,7 +51,7 @@ public class PaymentProcessor {
 
         } catch (RazorpayException e) {
             log.error("[RAZORPAY] Failed to create order: {}", e.getMessage());
-            throw new RuntimeException("Razorpay order creation failed: " + e.getMessage(), e);
+            throw new RazorpayIntegrationException("Razorpay order creation failed: " + e.getMessage(), e);
         }
     }
 
@@ -70,7 +72,7 @@ public class PaymentProcessor {
 
         } catch (RazorpayException e) {
             log.error("[RAZORPAY] Signature verification failed: {}", e.getMessage());
-            throw new RuntimeException("Payment signature verification failed - possible tampered request", e);
+            throw new PaymentProcessingException("Payment signature verification failed - possible tampered request");
         }
     }
 
@@ -87,14 +89,14 @@ public class PaymentProcessor {
             log.info("[RAZORPAY] Payment status={} for paymentId={}", status, paymentId);
 
             if (!"captured".equals(status) && !"authorized".equals(status)) {
-                throw new RuntimeException("Payment not captured. Status: " + status);
+                throw new PaymentProcessingException("Payment not captured. Status: " + status);
             }
 
             return paymentId;
 
         } catch (RazorpayException e) {
             log.error("[RAZORPAY] Failed to fetch payment: {}", e.getMessage());
-            throw new RuntimeException("Failed to confirm payment: " + e.getMessage(), e);
+            throw new RazorpayIntegrationException("Failed to confirm payment: " + e.getMessage(), e);
         }
     }
 
@@ -104,7 +106,7 @@ public class PaymentProcessor {
     // ─────────────────────────────────────────────────────────────
     public String refund(String paymentId, BigDecimal amount) {
         if (paymentId == null) {
-            throw new RuntimeException("Cannot refund - no Razorpay payment ID found");
+            throw new PaymentProcessingException("Cannot refund - no Razorpay payment ID found");
         }
 
         try {
@@ -130,7 +132,7 @@ public class PaymentProcessor {
                 return simulatedRefundId;
             }
             log.error("[RAZORPAY] Refund failed for paymentId={}: {}", paymentId, e.getMessage());
-            throw new RuntimeException("Razorpay refund failed: " + e.getMessage(), e);
+            throw new RazorpayIntegrationException("Razorpay refund failed: " + e.getMessage(), e);
         }
     }
 }

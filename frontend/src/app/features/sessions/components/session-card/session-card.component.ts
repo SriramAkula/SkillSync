@@ -1,8 +1,8 @@
 import { Component, Input, Output, EventEmitter, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { SessionDto } from '../../../../shared/models';
-import { SkillStore } from '../../../../core/auth/skill.store';
-import { AuthStore } from '../../../../core/auth/auth.store';
+import { SkillStore } from '../../../../core/store/skill.store';
+import { AuthStore } from '../../../../core/store/auth.store';
 
 const STATUS_MAP: Record<string, { color: string; bg: string; icon: string; label: string; ring: string }> = {
   REQUESTED:      { color: 'text-amber-600 dark:text-amber-400',  bg: 'bg-amber-50 dark:bg-amber-900/20',    icon: 'hourglass_empty',  label: 'Requested',       ring: 'ring-amber-500/20' },

@@ -2,6 +2,7 @@ package com.skillsync.skill.repository;
 
 import java.util.List;
 
+import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -17,6 +18,8 @@ import com.skillsync.skill.entity.Skill;
 public interface SkillRepository extends JpaRepository<Skill, Long> {
 
 	Page<Skill> findByIsActiveTrueOrderByPopularityScoreDesc(Pageable pageable);
+
+	Optional<Skill> findBySkillName(String skillName);
 
 	@Query("SELECT s FROM Skill s WHERE LOWER(s.skillName) LIKE LOWER(CONCAT('%', ?1, '%')) AND s.isActive = true")
 	Page<Skill> searchByName(String skillName, Pageable pageable);

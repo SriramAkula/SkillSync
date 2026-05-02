@@ -26,13 +26,21 @@ public class GlobalExceptionHandler {
                 .body(Map.of("message", message, "status", 400));
     }
 
-    @ExceptionHandler(RuntimeException.class)
-    public ResponseEntity<Map<String, Object>> handleRuntimeException(RuntimeException ex) {
-        String message = ex.getMessage() != null ? ex.getMessage() : "An error occurred";
-        HttpStatus status = message.toLowerCase().contains("not found")
-                ? HttpStatus.NOT_FOUND
-                : HttpStatus.INTERNAL_SERVER_ERROR;
-        return ResponseEntity.status(status)
-                .body(Map.of("message", message, "status", status.value()));
+    @ExceptionHandler(SkillNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleSkillNotFound(SkillNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(Map.of("message", ex.getMessage(), "status", 404));
+    }
+
+    @ExceptionHandler(SkillAlreadyExistsException.class)
+    public ResponseEntity<Map<String, Object>> handleSkillAlreadyExists(SkillAlreadyExistsException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(Map.of("message", ex.getMessage(), "status", 409));
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<Map<String, Object>> handleGlobalException(Exception ex) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("message", "An internal server error occurred: " + ex.getMessage(), "status", 500));
     }
 }

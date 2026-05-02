@@ -120,6 +120,19 @@ public class GlobalExceptionHandler {
 		return ResponseEntity.status(ex.getStatusCode()).body(error);
 	}
 
+	@ExceptionHandler(FileStorageException.class)
+	public ResponseEntity<ErrorResponse> handleFileStorageException(FileStorageException ex) {
+		log.error("File storage error: {}", ex.getMessage());
+		ErrorResponse error = new ErrorResponse(
+			HttpStatus.INTERNAL_SERVER_ERROR.value(),
+			ex.getMessage(),
+			LocalDateTime.now(),
+			null,
+			"FILE_STORAGE_ERROR"
+		);
+		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
+	}
+
 	@ExceptionHandler(Exception.class)
 	public ResponseEntity<ErrorResponse> handleGenericException(Exception ex) {
 		log.error("Internal server error: {}", ex.getMessage(), ex);

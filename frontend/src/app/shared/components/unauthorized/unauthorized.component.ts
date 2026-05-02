@@ -1,7 +1,7 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink, ActivatedRoute } from '@angular/router';
-import { AuthStore } from '../../../core/auth/auth.store';
+import { AuthStore } from '../../../core/store/auth.store';
 
 @Component({
   selector: 'app-unauthorized',

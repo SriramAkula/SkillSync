@@ -5,6 +5,7 @@ import com.skillsync.skill.dto.request.CreateSkillRequestDto;
 import com.skillsync.skill.dto.response.ApiResponse;
 import com.skillsync.skill.dto.response.PageResponse;
 import com.skillsync.skill.dto.response.SkillResponseDto;
+import com.skillsync.skill.exception.SkillNotFoundException;
 import com.skillsync.skill.service.SkillService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -144,7 +145,7 @@ class SkillControllerTest {
 
     @Test
     void getSkillById_shouldReturn404_whenNotFound() throws Exception {
-        when(skillService.getSkillById(99L)).thenThrow(new RuntimeException("Skill not found"));
+        when(skillService.getSkillById(99L)).thenThrow(new SkillNotFoundException("Skill not found"));
 
         mockMvc.perform(get("/skill/99")
                         .header("X-Gateway-Request", "true"))
@@ -310,7 +311,7 @@ class SkillControllerTest {
     @Test
     void updateSkill_shouldReturn404_whenNotFound() throws Exception {
         when(skillService.updateSkill(eq(99L), any()))
-                .thenThrow(new RuntimeException("Skill not found"));
+                .thenThrow(new SkillNotFoundException("Skill not found"));
 
         mockMvc.perform(put("/skill/99")
                         .header("roles", "ROLE_ADMIN")
@@ -354,7 +355,7 @@ class SkillControllerTest {
 
     @Test
     void deleteSkill_shouldReturn404_whenNotFound() throws Exception {
-        doThrow(new RuntimeException("Skill not found")).when(skillService).deleteSkill(99L);
+        doThrow(new SkillNotFoundException("Skill not found")).when(skillService).deleteSkill(99L);
 
         mockMvc.perform(delete("/skill/99")
                         .header("roles", "ROLE_ADMIN")

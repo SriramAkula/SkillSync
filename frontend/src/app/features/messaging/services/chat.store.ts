@@ -240,6 +240,23 @@ export class ChatStore {
   }
 
   /**
+   * Upsert conversation — add if new, replace if already exists.
+   * Use this instead of addConversation when you always want the store
+   * to reflect the latest fetched metadata (e.g. before selecting a conversation).
+   */
+  upsertConversation(conversation: Conversation): void {
+    this.conversationsSignal.update(convs => {
+      const idx = convs.findIndex(c => c.id === conversation.id);
+      if (idx === -1) {
+        return [conversation, ...convs];
+      }
+      const updated = [...convs];
+      updated[idx] = { ...convs[idx], ...conversation };
+      return updated;
+    });
+  }
+
+  /**
    * Update conversation (e.g., new unread count)
    */
   updateConversation(conversationId: string, updates: Partial<Conversation>): void {
@@ -263,7 +280,19 @@ export class ChatStore {
    * Select a conversation (load its messages)
    */
   selectConversation(conversationId: string): void {
+    // If clicking same conversation, we might want to force a refresh
+    // For now, let's allow it to reset the page
     this.currentConversationIdSignal.set(conversationId);
+
+    // Clear message state for this conversation to prevent flickering with old data
+    this.messagesSignal.update(msgs => {
+      const newMsgs = new Map(msgs);
+      // We don't necessarily want to clear if we want "instant" feel, 
+      // but if the data is stale (missing usernames), clearing ensures a clean fetch.
+      // Let's NOT clear for now to keep it fast, the deduplication should handle it.
+      return newMsgs;
+    });
+
     // Reset message page to 0
     this.messagePageNumberSignal.update(pages => {
       const newPages = new Map(pages);
@@ -291,14 +320,14 @@ export class ChatStore {
       // 1. Check if this is a real message replacing an optimistic one
       // Match by tempId if available, OR by content/sender for recently sent optimistic messages
       let existingIndex = -1;
-      
+
       if (message.tempId) {
         existingIndex = messages.findIndex(m => m.id === message.tempId || m.tempId === message.tempId);
       } else if (!message.isOptimistic) {
         // Fallback: match by content and sender for very recent optimistic messages
-        existingIndex = messages.findIndex(m => 
-          m.isOptimistic && 
-          m.senderId === message.senderId && 
+        existingIndex = messages.findIndex(m =>
+          m.isOptimistic &&
+          m.senderId === message.senderId &&
           m.content === message.content
         );
       } else {
@@ -333,7 +362,7 @@ export class ChatStore {
     this.messagesSignal.update(msgs => {
       const existing = msgs.get(conversationId) || [];
       const combined = [...existing, ...newMessages];
-      
+
       // IDENTITY-BASED RECONCILIATION
       // Group messages by their 'Identity Fingerprint'
       const buckets = new Map<string, UIMessage[]>();
@@ -371,6 +400,11 @@ export class ChatStore {
           if (!current.isOptimistic && prev.isOptimistic) return current;
           if (!currentIsTemp && prevIsTemp) return current;
           if (current.status === 'SENT' && prev.status === 'SENDING') return current;
+
+          // Preserve username if one has it and the other doesn't
+          if (current.senderUsername && !prev.senderUsername) return current;
+          if (!current.senderUsername && prev.senderUsername) return prev;
+
           return prev;
         });
         uniqueResults.push(best);
@@ -388,7 +422,7 @@ export class ChatStore {
       });
 
       const unique = Array.from(finalMap.values());
-      
+
       // Sort by createdAt
       unique.sort((a, b) =>
         new Date(a.createdAt).valueOf() - new Date(b.createdAt).valueOf()

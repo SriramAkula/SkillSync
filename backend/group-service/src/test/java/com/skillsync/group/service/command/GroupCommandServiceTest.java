@@ -22,8 +22,10 @@ import com.skillsync.group.entity.Group;
 import com.skillsync.group.entity.GroupMember;
 import com.skillsync.group.entity.MemberRole;
 import com.skillsync.group.exception.AlreadyMemberException;
+import com.skillsync.group.exception.BadRequestException;
 import com.skillsync.group.exception.GroupFullException;
 import com.skillsync.group.exception.GroupNotFoundException;
+import com.skillsync.group.exception.OperationNotAllowedException;
 import com.skillsync.group.mapper.GroupMapper;
 import com.skillsync.group.repository.GroupMemberRepository;
 import com.skillsync.group.repository.GroupRepository;
@@ -116,8 +118,7 @@ class GroupCommandServiceTest {
     @Test
     void createGroup_ShouldThrowException_WhenSkillServiceDown() {
         when(skillServiceClient.getSkillById(10L)).thenThrow(new RuntimeException("Service down"));
-
-        assertThrows(GroupNotFoundException.class, () -> groupCommandService.createGroup(100L, createRequest));
+        assertThrows(BadRequestException.class, () -> groupCommandService.createGroup(100L, createRequest));
     }
 
     @Test
@@ -145,7 +146,7 @@ class GroupCommandServiceTest {
         when(groupRepository.findById(1L)).thenReturn(Optional.of(group));
         when(groupMemberRepository.findByGroupIdAndUserId(1L, 100L)).thenReturn(Optional.of(member));
 
-        assertThrows(org.springframework.web.server.ResponseStatusException.class, () -> groupCommandService.leaveGroup(1L, 100L));
+        assertThrows(BadRequestException.class, () -> groupCommandService.leaveGroup(1L, 100L));
     }
 
     @Test
@@ -175,23 +176,20 @@ class GroupCommandServiceTest {
     @Test
     void deleteGroup_ShouldThrowException_WhenNotCreator() {
         when(groupRepository.findById(1L)).thenReturn(Optional.of(group));
-
-        assertThrows(org.springframework.web.server.ResponseStatusException.class, () -> groupCommandService.deleteGroup(1L, 999L, false));
+        assertThrows(OperationNotAllowedException.class, () -> groupCommandService.deleteGroup(1L, 999L, false));
     }
 
     @Test
     void createGroup_ShouldThrowException_WhenUserServiceDown() {
         when(skillServiceClient.getSkillById(anyLong())).thenReturn(null);
         when(userServiceClient.getProfile(anyLong())).thenThrow(new RuntimeException("User service down"));
-
-        assertThrows(GroupNotFoundException.class, () -> groupCommandService.createGroup(100L, createRequest));
+        assertThrows(BadRequestException.class, () -> groupCommandService.createGroup(100L, createRequest));
     }
 
     @Test
     void joinGroup_ShouldThrowException_WhenUserServiceDown() {
         when(userServiceClient.getProfile(anyLong())).thenThrow(new RuntimeException("User service down"));
-
-        assertThrows(GroupNotFoundException.class, () -> groupCommandService.joinGroup(1L, 101L));
+        assertThrows(BadRequestException.class, () -> groupCommandService.joinGroup(1L, 101L));
     }
 
     @Test

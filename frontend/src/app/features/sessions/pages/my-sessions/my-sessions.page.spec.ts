@@ -1,9 +1,9 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { MySessionsPage } from './my-sessions.page';
-import { SessionStore } from '../../../../core/auth/session.store';
+import { SessionStore } from '../../../../core/store/session.store';
 import { SessionService } from '../../../../core/services/session.service';
-import { AuthStore } from '../../../../core/auth/auth.store';
-import { SkillStore } from '../../../../core/auth/skill.store';
+import { AuthStore } from '../../../../core/store/auth.store';
+import { SkillStore } from '../../../../core/store/skill.store';
 import { signal } from '@angular/core';
 import { NO_ERRORS_SCHEMA } from '@angular/core';
 

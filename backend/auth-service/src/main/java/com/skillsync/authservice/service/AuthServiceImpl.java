@@ -18,6 +18,12 @@ import com.skillsync.authservice.dto.response.AuthResponse;
 import com.skillsync.authservice.entity.User;
 import com.skillsync.authservice.event.UserCreatedEvent;
 import com.skillsync.authservice.exception.AuthException;
+import com.skillsync.authservice.exception.InvalidCredentialsException;
+import com.skillsync.authservice.exception.InvalidOtpException;
+import com.skillsync.authservice.exception.UserAlreadyExistsException;
+import com.skillsync.authservice.exception.UserNotFoundException;
+import com.skillsync.authservice.exception.AccountDeactivatedException;
+import com.skillsync.authservice.exception.ProviderMismatchException;
 import com.skillsync.authservice.publisher.AuthEventPublisher;
 import com.skillsync.authservice.repository.UserRepository;
 import com.skillsync.authservice.security.JwtUtil;
@@ -45,7 +51,7 @@ public class AuthServiceImpl implements AuthService {
         if (existingUser != null) {
             // Block if user already has a local password (LOCAL or BOTH)
             if (existingUser.getAuthProvider() == AuthProvider.LOCAL || existingUser.getAuthProvider() == AuthProvider.BOTH) {
-                throw new RuntimeException("Email already registered and has a password set. Please login or use 'Forgot Password'.");
+                throw new UserAlreadyExistsException("Email already registered and has a password set. Please login or use 'Forgot Password'.");
             }
             // If it's just GOOGLE or GITHUB, allow them to proceed to verify and "upgrade"
             log.info("Allowing OTP for existing {} user to enable account upgrade: email={}", 
@@ -59,7 +65,7 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public void verifyOtp(String email, String otp) {
         if (!otpService.verifyOtp(email, otp)) {
-            throw new RuntimeException("Invalid or expired OTP");
+            throw new InvalidOtpException("Invalid or expired OTP");
         }
         log.info("OTP verified for email={}", email);
     }
@@ -68,7 +74,7 @@ public class AuthServiceImpl implements AuthService {
     @Transactional
     public AuthResponse register(RegisterRequest request) {
         if (!otpService.isEmailVerified(request.email())) {
-            throw new RuntimeException("Email not verified. Please verify your email with OTP before registering.");
+            throw new InvalidOtpException("Email not verified. Please verify your email with OTP before registering.");
         }
 
         User existingUser = userRepository.findByEmail(request.email().toLowerCase()).orElse(null);
@@ -88,7 +94,7 @@ public class AuthServiceImpl implements AuthService {
                 String refreshToken = jwtUtil.generateRefreshToken(existingUser.getId(), existingUser.getEmail(), roles);
                 return new AuthResponse(token, refreshToken, roles, existingUser.getUsername(), existingUser.getId(), existingUser.getEmail());
             } else {
-                throw new RuntimeException("Email already exists");
+                throw new UserAlreadyExistsException("Email already exists");
             }
         }
 
@@ -97,7 +103,7 @@ public class AuthServiceImpl implements AuthService {
             // Fallback to dot replacement if common username exists, or handle collision
             generatedUsername = request.email().replace("@", ".").toLowerCase();
             if (userRepository.existsByUsername(generatedUsername)) {
-                throw new RuntimeException("Username derived from email already exists");
+                throw new UserAlreadyExistsException("Username derived from email already exists");
             }
         }
 
@@ -145,22 +151,22 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public AuthResponse login(LoginRequest request) {
         User user = userRepository.findByEmail(request.email())
-                .orElseThrow(() -> new AuthException("User not found"));
+                .orElseThrow(() -> new InvalidCredentialsException("User not found"));
 
         if (Boolean.FALSE.equals(user.getIsActive())) {
-            throw new RuntimeException("Your account has been deactivated. Please contact support.");
+            throw new AccountDeactivatedException("Your account has been deactivated. Please contact support.");
         }
 
         // Allow login if provider is LOCAL or BOTH
         if (user.getAuthProvider() == AuthProvider.GOOGLE || user.getAuthProvider() == AuthProvider.GITHUB) {
-            throw new RuntimeException(
+            throw new ProviderMismatchException(
                 "This account currently uses " + user.getAuthProvider() + " login. " +
                 "Please use the social login button or reset your password to enable email login."
             );
         }
 
         if (!passwordEncoder.matches(request.password(), user.getPassword())) {
-            throw new AuthException("Invalid password");
+            throw new InvalidCredentialsException("Invalid password");
         }
 
         List<String> roles = Arrays.asList(user.getRole().split(","));
@@ -175,10 +181,10 @@ public class AuthServiceImpl implements AuthService {
         // extractEmailIgnoreExpiry allows refresh even when access token is expired
         String email = jwtUtil.extractEmailIgnoreExpiry(token);
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
 
         if (Boolean.FALSE.equals(user.getIsActive())) {
-            throw new RuntimeException("Session invalid: Account is deactivated.");
+            throw new AccountDeactivatedException("Session invalid: Account is deactivated.");
         }
 
         List<String> roles = Arrays.asList(user.getRole().split(","));
@@ -212,7 +218,7 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public void verifyForgotPasswordOtp(String email, String otp) {
         if (!otpService.verifyPasswordResetOtp(email, otp)) {
-            throw new RuntimeException("Invalid or expired OTP");
+            throw new InvalidOtpException("Invalid or expired OTP");
         }
         log.info("Forgot password OTP verified for email={}", email);
     }
@@ -221,14 +227,14 @@ public class AuthServiceImpl implements AuthService {
     @Transactional
     public void resetPassword(String email, String newPassword) {
         if (!otpService.isPasswordResetVerified(email)) {
-            throw new RuntimeException("OTP not verified. Please verify your OTP before resetting password.");
+            throw new InvalidOtpException("OTP not verified. Please verify your OTP before resetting password.");
         }
 
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
 
         if (Boolean.FALSE.equals(user.getIsActive())) {
-            throw new RuntimeException("Account is deactivated. Please contact support.");
+            throw new AccountDeactivatedException("Account is deactivated. Please contact support.");
         }
 
         user.setPassword(passwordEncoder.encode(newPassword));

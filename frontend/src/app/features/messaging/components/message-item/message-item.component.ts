@@ -22,6 +22,10 @@ import type { UIMessage } from '../../models';
       <div class="message-content">
         <!-- Message bubble -->
         <div class="bubble animate-fade-in" [class]="getBubbleClass()">
+          <!-- Sender name for group chats -->
+          @if (showSenderName) {
+            <span class="sender-name">{{ message.senderUsername || message.senderName || 'Unknown' }}</span>
+          }
           <p class="text">{{ message.content }}</p>
           <div class="bubble-footer">
             <span class="time">{{ formatTime(message.createdAt) }}</span>
@@ -40,7 +44,8 @@ export class MessageItemComponent {
   @Input() isGroupChat = false;
 
   get isSelfMessage(): boolean {
-    return this.message.senderId === this.currentUserId;
+    // Use loose equality to handle string vs number comparison if needed
+    return this.message.senderId == this.currentUserId;
   }
 
   get showAvatar(): boolean {
@@ -62,7 +67,7 @@ export class MessageItemComponent {
   }
 
   get senderInitials(): string {
-    const name = this.message.senderName || 'U';
+    const name = this.message.senderUsername || this.message.senderName || 'U';
     return name
       .split(' ')
       .map((n: string) => n.charAt(0).toUpperCase())

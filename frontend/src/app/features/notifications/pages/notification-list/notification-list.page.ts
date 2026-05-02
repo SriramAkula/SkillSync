@@ -1,8 +1,8 @@
 import { Component, inject, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
-import { NotificationStore } from '../../../../core/auth/notification.store';
-import { AuthStore } from '../../../../core/auth/auth.store';
+import { NotificationStore } from '../../../../core/store/notification.store';
+import { AuthStore } from '../../../../core/store/auth.store';
 import { NotificationDto } from '../../../../shared/models';
 
 import { PaginationComponent } from '../../../../shared/components/pagination/pagination.component';

@@ -8,7 +8,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatIconModule } from '@angular/material/icon';
 import { MatRippleModule } from '@angular/material/core';
-import { AuthStore } from '../../../../core/auth/auth.store';
+import { AuthStore } from '../../../../core/store/auth.store';
 import { GoogleLoginButtonComponent } from '../../components/google-login/google-login-button.component';
 
 @Component({

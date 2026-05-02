@@ -4,8 +4,8 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { GroupService } from '../../../../core/services/group.service';
 import { ToastService } from '../../../../core/services/toast.service';
-import { AuthStore } from '../../../../core/auth/auth.store';
-import { SkillStore } from '../../../../core/auth/skill.store';
+import { AuthStore } from '../../../../core/store/auth.store';
+import { SkillStore } from '../../../../core/store/skill.store';
 import { GroupDto } from '../../../../shared/models';
 
 @Component({
