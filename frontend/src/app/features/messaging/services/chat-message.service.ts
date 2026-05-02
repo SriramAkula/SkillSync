@@ -10,7 +10,7 @@ import { HttpClient, HttpParams, HttpHeaders } from '@angular/common/http';
 import { Observable, Subject, firstValueFrom, tap, map, catchError, of, Subscription } from 'rxjs';
 import { ChatStore } from './chat.store';
 import { AuthService } from '../../../core/services/auth.service';
-import { AuthStore } from '../../../core/auth/auth.store';
+import { AuthStore } from '../../../core/store/auth.store';
 import type {
   ChatMessage,
   UIMessage,
@@ -41,6 +41,7 @@ export class ChatMessageService {
 
   private pollingSubscription: Subscription | null = null;
   private currentPollingConversationId: string | null = null;
+  private loadingMap = new Map<string, boolean>();
 
   /**
    * Headers are handled by jwt.interceptor.ts
@@ -53,7 +54,7 @@ export class ChatMessageService {
   }
 
   /**
-   * Fetch direct message conversation between two users
+   * Fetch direct message conversation between two users 
    * GET /messages/conversation/{userId1}/{userId2}?page=0&size=50
    */
   fetchDirectConversation(
@@ -134,11 +135,11 @@ export class ChatMessageService {
       senderId: this.authStore.userId(),
       type: request.type || 'CHAT'
     };
-    
+
     if (request.recipientId) {
       payload['receiverId'] = request.recipientId;
     }
-    
+
     if (request.groupId) {
       payload['groupId'] = request.groupId;
     }
@@ -213,6 +214,7 @@ export class ChatMessageService {
     const tempMessage: UIMessage = {
       id: `temp-${Date.now()}-${Math.random()}`,
       senderId: currentUserId,
+      senderUsername: this.authStore.username() || 'You',
       content: request.content,
       type: request.type || 'CHAT',
       createdAt: new Date(),
@@ -260,7 +262,7 @@ export class ChatMessageService {
    */
   markAsRead(request: MarkAsReadRequest): Observable<MarkAsReadResponse> {
     console.log('[ChatMessageService] Marking messages as read:', request);
-    
+
     return this.http
       .patch<{ readAt: string }>(
         `${this.apiUrl}/mark-read`,
@@ -398,9 +400,17 @@ export class ChatMessageService {
     pageSize = 50,
     isBackground = false
   ): Promise<void> {
+    const requestKey = `${conversationId}-${page}`;
+    if (this.loadingMap.get(requestKey)) {
+      console.log('[ChatMessageService] Skipping redundant loadMessages call for:', requestKey);
+      return;
+    }
+
     if (!isBackground) {
       this.chatStore.setLoadingMessages(true);
     }
+    this.loadingMap.set(requestKey, true);
+
     try {
       console.log('[ChatMessageService] Loading messages for conversation:', conversationId, 'page:', page);
       let messages$: Observable<ChatMessage[]>;
@@ -426,10 +436,10 @@ export class ChatMessageService {
       }
 
       const messages = await firstValueFrom(messages$);
-      console.log(`[ChatMessageService] Fetched ${messages.length} messages for ${conversationId}. Top metadata:`, 
-        messages.slice(0, 3).map(m => ({ id: m.id, sender: m.senderId, content: m.content.substring(0, 10) + '...' }))
+      console.log(`[ChatMessageService] Fetched ${messages.length} messages for ${conversationId}. Top metadata:`,
+        messages.slice(0, 3).map(m => ({ id: m.id, sender: m.senderId, user: m.senderUsername, content: m.content.substring(0, 10) + '...' }))
       );
-      
+
       const uiMessages = messages.map(msg => ({
         ...msg,
         createdAt: new Date(msg.createdAt),
@@ -446,6 +456,7 @@ export class ChatMessageService {
       );
       throw error;
     } finally {
+      this.loadingMap.set(requestKey, false);
       if (!isBackground) {
         this.chatStore.setLoadingMessages(false);
       }
@@ -456,7 +467,13 @@ export class ChatMessageService {
    * Async wrapper for sending message
    */
   async sendMessageAsync(request: SendMessageRequest): Promise<SendMessageResponse> {
-    console.log('[ChatMessageService] Sending message:', request);
+    const userId = this.authStore.userId();
+    console.log('[ChatMessageService] Sending message async:', {
+      ...request,
+      authUserId: userId,
+      authUserIdType: typeof userId
+    });
+
     try {
       const response = await firstValueFrom(this.sendMessage(request));
       console.log('[ChatMessageService] Message sent successfully:', response);
@@ -492,15 +509,16 @@ export class ChatMessageService {
 
     console.log(`[ChatMessageService] Starting polling for ${conversationId} every ${intervalMs}ms`);
 
-    // Poll every interval
+    // NOTE: Do NOT call loadMessages() here for the initial load.
+    // The initial load is already handled by selectConversationAndLoadMessages().
+    // Calling it here races with that flow and causes the loadingMap guard
+    // to silently drop the intended load, making sender names flicker/disappear.
+    // Only the periodic interval triggers background refreshes.
     this.pollingSubscription = interval(intervalMs).subscribe(() => {
       if (this.currentPollingConversationId) {
         this.loadMessages(this.currentPollingConversationId, 0, 50, true);
       }
     });
-
-    // Initial load
-    this.loadMessages(conversationId, 0, 50);
   }
 
   /**
@@ -521,7 +539,7 @@ export class ChatMessageService {
   private fetchMessages(): Observable<ChatMessage[]> {
     return of([]);
   }
-} 
+}
 
 // Import interval at top
 import { interval } from 'rxjs';

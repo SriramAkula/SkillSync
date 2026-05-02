@@ -106,7 +106,7 @@ export class ConversationListComponent {
 
   onSelectConversation(conversation: Conversation): void {
     this.selectedConversationId.set(conversation.id);
-    this.chatStore.selectConversation(conversation.id);
+    // Let the parent (ChatContainer) handle the store selection to avoid double-triggers
     this.conversationSelected.emit(conversation);
   }
 

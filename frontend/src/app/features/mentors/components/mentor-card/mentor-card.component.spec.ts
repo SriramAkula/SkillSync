@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { MentorCardComponent } from './mentor-card.component';
-import { AuthStore } from '../../../../core/auth/auth.store';
+import { AuthStore } from '../../../../core/store/auth.store';
 import { Router } from '@angular/router';
 import { ReviewService } from '../../../../core/services/review.service';
 import { signal } from '@angular/core';

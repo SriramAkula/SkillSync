@@ -1,16 +1,16 @@
 import { HttpInterceptorFn, HttpRequest, HttpHandlerFn, HttpErrorResponse } from '@angular/common/http';
 import { inject } from '@angular/core';
-import { Router } from '@angular/router';
 import { catchError, switchMap, throwError, BehaviorSubject, filter, take } from 'rxjs';
 import { AuthService } from '../services/auth.service';
+import { AuthStore } from '../store/auth.store';
 import { environment } from '../../../environments/environment';
 
 let isRefreshing = false;
 const refreshSubject = new BehaviorSubject<string | null>(null);
 
 export const jwtInterceptor: HttpInterceptorFn = (req, next) => {
-  const router = inject(Router);
   const authService = inject(AuthService);
+  const authStore = inject(AuthStore);
   
   // Standardize URL: Only prepend environment.apiUrl if the request is relative 
   // AND doesn't already start with the API prefix.
@@ -40,21 +40,18 @@ export const jwtInterceptor: HttpInterceptorFn = (req, next) => {
 
   return next(authReq).pipe(
     catchError((err: HttpErrorResponse) => {
-      console.error(`HTTP Error ${err.status}:`, err.message, 'URL:', finalUrl);
-      
       if (err.status === 401) {
         if (req.url.includes('/auth/')) {
-          console.warn('Auth endpoint returned 401, not attempting refresh');
+          console.warn('[JWT Interceptor] Auth endpoint returned 401, not attempting refresh');
           return throwError(() => err);
         }
-        console.warn('Token expired, attempting refresh...');
-        return handle401(req, next, authService, router);
+        console.warn('[JWT Interceptor] 401 Detected, attempting token refresh...');
+        return handle401(req, next, authService, authStore);
       }
       if (err.status === 403) {
-        console.warn('Access forbidden for:', req.url);
+        console.warn('[JWT Interceptor] 403 Forbidden for:', req.url);
         return throwError(() => err);
       }
-      console.error('HTTP request failed:', err.status, err.statusText);
       return throwError(() => err);
     })
   );
@@ -68,7 +65,8 @@ function handle401(
   req: HttpRequest<unknown>,
   next: HttpHandlerFn,
   authService: AuthService,
-  router: Router
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  authStore: any // Using any for signalStore to avoid complex type issues in interceptor
 ) {
   if (isRefreshing) {
     return refreshSubject.pipe(
@@ -83,15 +81,22 @@ function handle401(
 
   return authService.refreshToken().pipe(
     switchMap(res => {
+      console.log('[JWT Interceptor] Token refreshed successfully');
       isRefreshing = false;
-      localStorage.setItem('token', res.token);
+      
+      // Update both LocalStorage and Signal State
+      authStore.updateFromResponse(res);
+      
       refreshSubject.next(res.token);
       return next(addToken(req, res.token));
     }),
     catchError(err => {
+      console.error('[JWT Interceptor] Refresh failed, logging out...');
       isRefreshing = false;
-      localStorage.clear();
-      router.navigate(['/auth/login']);
+      
+      // Use Store logout for clean state removal
+      authStore.logout();
+      
       return throwError(() => err);
     })
   );

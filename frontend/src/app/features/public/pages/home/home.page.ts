@@ -1,7 +1,7 @@
 import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
-import { AuthStore } from '../../../../core/auth/auth.store';
+import { AuthStore } from '../../../../core/store/auth.store';
 
 @Component({
   selector: 'app-home-page',

@@ -1,7 +1,7 @@
 import { Component, Input, Output, EventEmitter, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MentorProfileDto } from '../../../../shared/models';
-import { AuthStore } from '../../../../core/auth/auth.store';
+import { AuthStore } from '../../../../core/store/auth.store';
 import { Router } from '@angular/router';
 import { ReviewService } from '../../../../core/services/review.service';
 import { OnInit, signal } from '@angular/core';

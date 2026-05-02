@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { UnauthorizedComponent } from './unauthorized.component';
 import { ActivatedRoute, convertToParamMap } from '@angular/router';
-import { AuthStore } from '../../../core/auth/auth.store';
+import { AuthStore } from '../../../core/store/auth.store';
 
 describe('UnauthorizedComponent', () => {
   let component: UnauthorizedComponent;

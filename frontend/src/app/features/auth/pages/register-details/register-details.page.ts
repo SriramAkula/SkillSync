@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
 import { Router } from '@angular/router';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { AuthStore } from '../../../../core/auth/auth.store';
+import { AuthStore } from '../../../../core/store/auth.store';
 
 @Component({
   selector: 'app-register-details-page',

@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { map, Observable, BehaviorSubject, of, throwError, Subscription, timer, switchMap } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { AuthStore } from '../auth/auth.store';
+import { AuthStore } from '../store/auth.store';
 import { ApiResponse, ChatMessage, PageResponse } from '../../shared/models';
 
 @Injectable({ providedIn: 'root' })

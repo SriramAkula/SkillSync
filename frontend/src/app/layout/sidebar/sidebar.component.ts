@@ -1,7 +1,7 @@
 import { Component, inject, Output, EventEmitter, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink, RouterLinkActive } from '@angular/router';
-import { AuthStore } from '../../core/auth/auth.store';
+import { AuthStore } from '../../core/store/auth.store';
 
 interface NavItem { 
   label: string; 

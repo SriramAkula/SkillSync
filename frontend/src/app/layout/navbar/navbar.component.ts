@@ -1,8 +1,8 @@
 import { Component, inject, OnInit, Output, EventEmitter, signal, HostListener, computed, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink, RouterLinkActive, Router } from '@angular/router';
-import { AuthStore } from '../../core/auth/auth.store';
-import { NotificationStore } from '../../core/auth/notification.store';
+import { AuthStore } from '../../core/store/auth.store';
+import { NotificationStore } from '../../core/store/notification.store';
 import { ThemeToggleComponent } from '../theme-toggle/theme-toggle.component';
 import { NotificationDto } from '../../shared/models';
 
