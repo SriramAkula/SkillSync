@@ -53,7 +53,7 @@ export class ChatMessageService {
   }
 
   /**
-   * Fetch direct message conversation between two users
+   * Fetch direct message conversation between two users 
    * GET /messages/conversation/{userId1}/{userId2}?page=0&size=50
    */
   fetchDirectConversation(
@@ -134,11 +134,11 @@ export class ChatMessageService {
       senderId: this.authStore.userId(),
       type: request.type || 'CHAT'
     };
-    
+
     if (request.recipientId) {
       payload['receiverId'] = request.recipientId;
     }
-    
+
     if (request.groupId) {
       payload['groupId'] = request.groupId;
     }
@@ -260,7 +260,7 @@ export class ChatMessageService {
    */
   markAsRead(request: MarkAsReadRequest): Observable<MarkAsReadResponse> {
     console.log('[ChatMessageService] Marking messages as read:', request);
-    
+
     return this.http
       .patch<{ readAt: string }>(
         `${this.apiUrl}/mark-read`,
@@ -426,10 +426,10 @@ export class ChatMessageService {
       }
 
       const messages = await firstValueFrom(messages$);
-      console.log(`[ChatMessageService] Fetched ${messages.length} messages for ${conversationId}. Top metadata:`, 
+      console.log(`[ChatMessageService] Fetched ${messages.length} messages for ${conversationId}. Top metadata:`,
         messages.slice(0, 3).map(m => ({ id: m.id, sender: m.senderId, content: m.content.substring(0, 10) + '...' }))
       );
-      
+
       const uiMessages = messages.map(msg => ({
         ...msg,
         createdAt: new Date(msg.createdAt),
@@ -521,7 +521,7 @@ export class ChatMessageService {
   private fetchMessages(): Observable<ChatMessage[]> {
     return of([]);
   }
-} 
+}
 
 // Import interval at top
 import { interval } from 'rxjs';

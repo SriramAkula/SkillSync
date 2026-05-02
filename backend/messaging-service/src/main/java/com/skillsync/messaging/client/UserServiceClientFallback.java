@@ -11,7 +11,8 @@ public class UserServiceClientFallback implements UserServiceClient {
 
     @Override
     public ApiResponse<UserDTO> getUserById(Long id) {
-        log.warn("User-service is unavailable. Fallback triggered for user ID: {}", id);
-        return ApiResponse.error("User service is unavailable", org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE);
+        log.warn("User-service is unavailable. Fallback is triggered for user ID: {}", id);
+        return ApiResponse.error("User service is unavailable",
+                org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE);
     }
 }
