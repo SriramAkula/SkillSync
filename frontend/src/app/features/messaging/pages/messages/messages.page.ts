@@ -54,7 +54,7 @@ export class MessagesPage implements OnInit {
   readonly filteredDirectList = computed(() => {
     const query = this.searchQuery().toLowerCase().trim();
     if (!query) return this.directList();
-    return this.directList().filter(d => 
+    return this.directList().filter(d =>
       d.name.toLowerCase().includes(query) || d.email?.toLowerCase().includes(query)
     );
   });
@@ -62,7 +62,7 @@ export class MessagesPage implements OnInit {
   readonly filteredGroupList = computed(() => {
     const query = this.searchQuery().toLowerCase().trim();
     if (!query) return this.groupList();
-    return this.groupList().filter(g => 
+    return this.groupList().filter(g =>
       g.name.toLowerCase().includes(query) || (g.description && g.description.toLowerCase().includes(query))
     );
   });
@@ -201,9 +201,8 @@ export class MessagesPage implements OnInit {
   async openGroupChat(groupId: number): Promise<void> {
     const convId = `group-${groupId}`;
     this.selectedConversationId.set(convId);
-    this.chatStore.selectConversation(convId);
     this.activeTab.set('groups');
-    
+
     await this.conversationService.selectConversationAndLoadMessages(convId);
   }
 

@@ -295,22 +295,25 @@ export class ConversationService {
   ): Promise<void> {
     try {
       console.log(`[ConversationService] Selecting conversation: ${conversationId}`);
-      
-      // 1. Select in store first for immediate UI update
-      this.chatStore.selectConversation(conversationId);
 
-      // 2. Fetch full conversation details if not already in store
+      // 1. Fetch full conversation details FIRST (before selecting).
+      //    This ensures the conversation (with its type='group') is in the store
+      //    before currentConversationId is set, so isGroupChat() is already
+      //    correct when the signal fires — preventing sender names from flickering.
       const conversation = await firstValueFrom(
         this.fetchConversation(conversationId)
       );
-      
-      // 3. Update conversation info in store
-      this.chatStore.addConversation(conversation);
+
+      // 2. Upsert conversation into store (add or update).
+      this.chatStore.upsertConversation(conversation);
+
+      // 3. Now select — isGroupChat() will be correct immediately.
+      this.chatStore.selectConversation(conversationId);
 
       // 4. Load messages - handles both direct and group
       console.log(`[ConversationService] Loading messages for: ${conversationId}`);
       await this.messageService.loadMessages(conversationId, 0, 50);
-      
+
     } catch (error) {
       console.error('Failed to select conversation:', error);
       this.chatStore.setMessageError('Failed to select conversation');

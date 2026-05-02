@@ -468,12 +468,12 @@ export class ChatMessageService {
    */
   async sendMessageAsync(request: SendMessageRequest): Promise<SendMessageResponse> {
     const userId = this.authStore.userId();
-    console.log('[ChatMessageService] Sending message async:', { 
-      ...request, 
+    console.log('[ChatMessageService] Sending message async:', {
+      ...request,
       authUserId: userId,
-      authUserIdType: typeof userId 
+      authUserIdType: typeof userId
     });
-    
+
     try {
       const response = await firstValueFrom(this.sendMessage(request));
       console.log('[ChatMessageService] Message sent successfully:', response);
@@ -509,15 +509,16 @@ export class ChatMessageService {
 
     console.log(`[ChatMessageService] Starting polling for ${conversationId} every ${intervalMs}ms`);
 
-    // Poll every interval
+    // NOTE: Do NOT call loadMessages() here for the initial load.
+    // The initial load is already handled by selectConversationAndLoadMessages().
+    // Calling it here races with that flow and causes the loadingMap guard
+    // to silently drop the intended load, making sender names flicker/disappear.
+    // Only the periodic interval triggers background refreshes.
     this.pollingSubscription = interval(intervalMs).subscribe(() => {
       if (this.currentPollingConversationId) {
         this.loadMessages(this.currentPollingConversationId, 0, 50, true);
       }
     });
-
-    // Initial load
-    this.loadMessages(conversationId, 0, 50);
   }
 
   /**

@@ -23,7 +23,7 @@ import { MessageInputComponent } from '../message-input/message-input.component'
 import { ChatHeaderComponent } from '../chat-header/chat-header.component';
 import { AuthStore } from '../../../../core/auth/auth.store';
 import { Subject } from 'rxjs';
-import type { Conversation, SendMessageRequest, DirectConversation, GroupConversation } from '../../models';
+import type { Conversation, SendMessageRequest, DirectConversation } from '../../models';
 
 @Component({
   selector: 'app-chat-container',
@@ -56,8 +56,10 @@ export class ChatContainerComponent implements OnInit, OnDestroy {
   });
 
   isGroupChat = computed(() => {
-    const conv = this.chatStore.currentConversation();
-    return conv?.type === 'group';
+    // Derive directly from the ID prefix — always correct the instant the ID is set,
+    // with no dependency on conversationsSignal (which may not yet contain this group).
+    const id = this.chatStore.currentConversationId();
+    return id?.startsWith('group-') ?? false;
   });
 
   private destroy$ = new Subject<void>();
@@ -96,9 +98,8 @@ export class ChatContainerComponent implements OnInit, OnDestroy {
   }
 
   async onConversationSelected(conversation: Conversation): Promise<void> {
-    // Select in store - this triggers reactive logic in MessageThread
-    console.log('[ChatContainer] Selected conversation:', conversation.id);
-    this.store.selectConversation(conversation.id);
+    console.log('[ChatContainer] Selecting conversation:', conversation.id);
+    await this.conversationService.selectConversationAndLoadMessages(conversation.id);
   }
 
   private readonly router = inject(Router);
@@ -111,30 +112,31 @@ export class ChatContainerComponent implements OnInit, OnDestroy {
   // ==================== Message Management ====================
 
   async onMessageSent(content: string): Promise<void> {
-    const conversation = this.chatStore.currentConversation();
-    if (!conversation) return;
+    const conversationId = this.chatStore.currentConversationId();
+    if (!conversationId) return;
 
     let sendRequest: SendMessageRequest;
 
-    if (conversation.type === 'direct') {
-      const direct = conversation as DirectConversation;
-      sendRequest = {
-        content,
-        type: 'CHAT',
-        recipientId: direct.participantId,
-      };
+    if (conversationId.startsWith('group-')) {
+      // Derive groupId directly from the conversation ID string.
+      // This prevents the race where chatStore.currentConversation() returns null
+      // because setConversations() (from ngOnInit's loadConversations) wiped the
+      // group out of conversationsSignal before the user hit send.
+      const groupId = Number(conversationId.replace('group-', ''));
+      if (!groupId) return;
+      sendRequest = { content, type: 'CHAT', groupId };
     } else {
-      const group = conversation as GroupConversation;
-      sendRequest = {
-        content,
-        type: 'CHAT',
-        groupId: group.groupId,
-      };
+      // For direct conversations, participantId is needed — look it up from store.
+      // Direct conversations are always in conversationsSignal (loaded by loadConversations).
+      const conversation = this.chatStore.currentConversation();
+      if (!conversation || conversation.type !== 'direct') return;
+      const direct = conversation as DirectConversation;
+      sendRequest = { content, type: 'CHAT', recipientId: direct.participantId };
     }
 
     // Optimistic update
     const tempMessage = this.messageService.sendMessageOptimistic(
-      conversation.id,
+      conversationId,
       sendRequest,
       this.currentUserId()
     );
@@ -146,7 +148,7 @@ export class ChatContainerComponent implements OnInit, OnDestroy {
       if (response.status === 'SUCCESS') {
         console.log('[ChatContainer] Server confirmed success:', response.id);
         // Update temp message to SENT
-        this.store.updateMessage(conversation.id, tempMessage.id, {
+        this.store.updateMessage(conversationId, tempMessage.id, {
           status: 'SENT',
           id: response.message?.id || tempMessage.id,
           senderUsername: response.message?.senderUsername || tempMessage.senderUsername
@@ -157,7 +159,7 @@ export class ChatContainerComponent implements OnInit, OnDestroy {
     } catch (error) {
       // Mark message as FAILED
       const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-      this.store.updateMessage(conversation.id, tempMessage.id, {
+      this.store.updateMessage(conversationId, tempMessage.id, {
         status: 'FAILED',
         error: errorMsg,
       });
@@ -213,7 +215,7 @@ export class ChatContainerComponent implements OnInit, OnDestroy {
   }
 
   getConversationType(): 'direct' | 'group' {
-    const conv = this.chatStore.currentConversation();
-    return conv?.type === 'group' ? 'group' : 'direct';
+    const id = this.chatStore.currentConversationId();
+    return id?.startsWith('group-') ? 'group' : 'direct';
   }
 }
