@@ -229,8 +229,6 @@ export class ApplyMentorPage implements OnInit {
       const error = this.mentorStore.error();
       if (error) {
         this.submissionError.set(error);
-      } else if (!error) {
-        this.authStore.addRole('ROLE_MENTOR');
       }
     }, 1500);
   }
@@ -253,5 +251,11 @@ export class ApplyMentorPage implements OnInit {
       REJECTED: 'Your application was declined. You can re-apply once you have more experience.'
     };
     return msgs[status] ?? 'Application status unknown';
+  }
+
+  reapply(): void {
+    if (confirm('Are you sure you want to reset your application and start over?')) {
+      this.mentorStore.deleteMyProfile(undefined);
+    }
   }
 }

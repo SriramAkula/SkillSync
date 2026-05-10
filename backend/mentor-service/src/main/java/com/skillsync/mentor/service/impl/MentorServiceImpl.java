@@ -230,4 +230,21 @@ public class MentorServiceImpl implements MentorService {
         profile.setRating(newRating);
         mentorRepository.save(profile);
     }
+
+    @Override
+    @Transactional
+    @CacheEvict(allEntries = true)
+    public void deleteMentorProfile(Long userId) {
+        log.info("Deleting mentor profile for userId: {}", userId);
+        MentorProfile profile = mentorRepository.findByUserId(userId)
+                .orElseThrow(() -> new MentorNotFoundException("Mentor profile not found for userId: " + userId));
+
+        if (profile.getStatus() != MentorStatus.REJECTED) {
+            throw new IllegalStateException("Only rejected mentor applications can be deleted for re-application.");
+        }
+
+        mentorRepository.delete(profile);
+        auditService.log("MentorProfile", profile.getId(), "DELETE", userId.toString(), "re-apply=true");
+        log.info("Mentor profile deleted for userId: {}. User can now re-apply.", userId);
+    }
 }

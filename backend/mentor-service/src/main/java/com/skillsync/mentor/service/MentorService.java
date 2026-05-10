@@ -32,6 +32,8 @@ public interface MentorService {
     MentorProfileResponseDto suspendMentor(Long mentorId, Long adminId);
 
     void updateMentorRating(Long mentorId, Double newRating);
+    
+    void deleteMentorProfile(Long userId);
 }
 
 

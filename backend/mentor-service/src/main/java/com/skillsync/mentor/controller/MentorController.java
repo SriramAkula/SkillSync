@@ -264,6 +264,24 @@ public class MentorController {
                 .statusCode(200)
                 .build());
     }
+
+    @DeleteMapping("/profile")
+    @Operation(summary = "Delete my mentor profile", description = "Allow users to delete their rejected mentor application to re-apply")
+    @ApiResponses(value = {
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "Application deleted successfully"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "Mentor profile not found"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "Only rejected applications can be deleted")
+    })
+    public ResponseEntity<ApiResponse<Void>> deleteProfile(
+            @Parameter(hidden = true) @RequestHeader("X-User-Id") Long userId) {
+        log.info("DELETE /profile - User {}", userId);
+        mentorService.deleteMentorProfile(userId);
+        return ResponseEntity.ok(ApiResponse.<Void>builder()
+                .success(true)
+                .message("Mentor application deleted successfully. You can now re-apply.")
+                .statusCode(200)
+                .build());
+    }
 }
 
 

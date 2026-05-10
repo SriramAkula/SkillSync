@@ -206,4 +206,24 @@ class MentorServiceImplTest {
         assertThat(profile.getRating()).isEqualTo(4.5);
         verify(mentorRepository).save(profile);
     }
+
+    @Test
+    void deleteMentorProfile_shouldDelete_whenRejected() {
+        profile.setStatus(MentorStatus.REJECTED);
+        when(mentorRepository.findByUserId(100L)).thenReturn(Optional.of(profile));
+        
+        mentorService.deleteMentorProfile(100L);
+        
+        verify(mentorRepository).delete(profile);
+        verify(auditService).log(anyString(), anyLong(), eq("DELETE"), anyString(), anyString());
+    }
+
+    @Test
+    void deleteMentorProfile_shouldThrowException_whenNotRejected() {
+        profile.setStatus(MentorStatus.PENDING);
+        when(mentorRepository.findByUserId(100L)).thenReturn(Optional.of(profile));
+        
+        assertThrows(IllegalStateException.class, () -> mentorService.deleteMentorProfile(100L));
+        verify(mentorRepository, never()).delete(any());
+    }
 }

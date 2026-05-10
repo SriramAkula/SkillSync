@@ -217,6 +217,20 @@ export const MentorStore = signalStore(
           )
         )
       )
+    ),
+
+    deleteMyProfile: rxMethod<void>(
+      pipe(
+        tap(() => patchState(store, { loading: true, error: null })),
+        switchMap(() =>
+          svc.deleteProfile().pipe(
+            tapResponse({
+              next: () => patchState(store, { myProfile: null, loading: false, error: null }),
+              error: (err: HttpErrorResponse) => patchState(store, { loading: false, error: err.error?.message ?? 'Failed to delete application' })
+            })
+          )
+        )
+      )
     )
   }))
 );

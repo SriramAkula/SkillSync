@@ -111,6 +111,10 @@ export class MentorService {
     return this.http.put<ApiResponse<MentorProfileDto>>(`${this.base}/availability`, req);
   }
 
+  deleteProfile(): Observable<ApiResponse<void>> {
+    return this.http.delete<ApiResponse<void>>(`${this.base}/profile`);
+  }
+
   /** logic to enrich mentor list with user names from user-service */
   private enrichMentors(res: ApiResponse<PageResponse<MentorProfileDto>>): Observable<ApiResponse<PageResponse<MentorProfileDto>>> {
     const pageData = res.data;
