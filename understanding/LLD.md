@@ -36,7 +36,7 @@ graph TD
     subgraph Microservices Layer
         AUTH["🔐 Auth Service (8081)<br/>JWT, OAuth2"]:::service
         USER["👤 User Service (8082)<br/>Redis Cache"]:::service
-        SESSION["📅 Session Service (8084)<br/>CQRS + Locks"]:::service
+        SESSION["📅 Session Service (8084)<br/>CQRS Pattern"]:::service
         MENTOR["🎓 Mentor Service (8085)"]:::service
         SKILL["🛠️ Skill Service (8083)"]:::service
         REVIEW["⭐ Review Service (8087)"]:::service
@@ -276,7 +276,7 @@ user_profile_{userId}   → UserProfileDTO (TTL: 10 minutes)
 
 ### 6.1 Responsibilities
 - Learner books a session with a mentor (CQRS: command vs query separation)
-- Double-booking prevented via Redis lock + MySQL UNIQUE index
+- Double-booking prevented via MySQL UNIQUE index + Application checks
 - Publishes lifecycle events: `SessionRequested`, `SessionAccepted`, `SessionRejected`, `SessionCancelled`
 - Feign call to User Service for participant details in responses
 
@@ -287,7 +287,6 @@ SessionController
     │
     ├─► SessionCommandService  (writes: book, accept, reject, cancel)
     │       └─► SessionRepository (JPA write)
-    │       └─► Redis distributed lock
     │       └─► SessionEventPublisher (RabbitMQ)
     │
     └─► SessionQueryService    (reads: history, detail, paginated list)
@@ -298,12 +297,10 @@ SessionController
 ### 6.3 Double-Booking Prevention
 
 ```java
-// 1. Redis Distributed Lock (30-second TTL)
-String lockKey = "session-lock:" + mentorId + ":" + scheduledAt;
-Boolean acquired = redisTemplate.opsForValue()
-    .setIfAbsent(lockKey, "locked", 30, TimeUnit.SECONDS);
+// 1. Application-level check
+// Query for existing slots in time range
 
-// 2. Database UNIQUE constraint (backup)
+// 2. Database UNIQUE constraint (Safety Net)
 CREATE UNIQUE INDEX unique_session_booking
 ON sessions (mentor_id, scheduled_at)
 WHERE status IN ('REQUESTED', 'ACCEPTED');
@@ -504,11 +501,11 @@ export const roleGuard: CanActivateFn = (route) => {
               │    Routes to all services below                │
               └┬──────┬──────┬──────┬──────┬──────┬──────┬────┘
                │      │      │      │      │      │      │
-            Auth   User   Skill  Session Mentor Group  Review
+             Auth   User   Skill  Session Mentor Group  Review
             8081   8082   8083   8084    8085   8086   8087
-               │      ↑      ↑      │↓       ↑      │
-               │      │      │  Redis Lock  Feign  Feign
-               │      └──────┘      │↓             │
+               │      ↑      ↑      │        ↑      │
+               │      │      │    Feign    Feign  Feign
+               │      └──────┘      │               │
                └──RabbitMQ──────────►Notification─←─┘
                                     8088
                11. Service Dependency Map

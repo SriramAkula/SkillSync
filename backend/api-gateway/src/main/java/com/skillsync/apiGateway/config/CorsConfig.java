@@ -15,13 +15,15 @@ public class CorsConfig {
     public CorsWebFilter corsWebFilter() {
         CorsConfiguration config = new CorsConfiguration();
 
-        // Allow Angular dev server + production origins
+        // Allow Angular dev server + production origins + Swagger UI
         config.setAllowedOrigins(List.of(
                 "http://localhost:4200",
                 "http://localhost:4201",
+                "http://localhost:9090",
                 "http://127.0.0.1:4200",
                 "https://skillssync.me",
                 "https://www.skillssync.me",
+                "https://api.skillssync.me",
                 "http://localhost:5173"));
 
         config.setAllowedMethods(List.of(

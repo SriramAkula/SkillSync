@@ -80,7 +80,7 @@ SkillSync follows a **microservices architecture** with the following key design
 | **Auth Service** | 8081 | `skill_auth` | JWT generation/validation, OAuth2 Google, OTP via email, password reset, audit logging |
 | **User Service** | 8082 | `skill_user` | User profiles, blocking/unblocking, role management, Redis caching |
 | **Skill Service** | 8083 | `skill_skill` | Skill catalog, categories, search, Redis caching |
-| **Session Service** | 8084 | `skill_session` | Booking workflow (CQRS), Redis distributed locks (double-booking prevention), event publishing |
+| **Session Service** | 8084 | `skill_session` | Booking workflow (CQRS), double-booking prevention, event publishing |
 | **Mentor Service** | 8085 | `skill_mentor` | Mentor profiles, availability, skill linking, Feign → User/Skill services |
 | **Group Service** | 8086 | `skill_group` | Study group CRUD, membership management |
 | **Review Service** | 8087 | `skill_review` | Session reviews, star ratings, triggers Mentor rating update via event |
@@ -107,7 +107,7 @@ SkillSync follows a **microservices architecture** with the following key design
 | Store | Configuration | Purpose |
 |-------|-------------|---------|
 | **MySQL 8.0** | 10 isolated databases (one per service) | Persistent relational data storage |
-| **Redis 7** | Single instance | Profile/skill caching (10min TTL), distributed session locks (30s TTL) |
+| **Redis 7** | Single instance | Profile/skill caching (10min TTL), refresh tokens |
 | **Zipkin MySQL** | Separate `zipkin` database | Distributed trace storage |
 
 ### 4.8 Observability Layer
@@ -218,7 +218,7 @@ Images are pushed to **Azure Container Registry (ACR)** and pulled by the Azure 
 
 | Concern | Strategy |
 |---------|---------|
-| **Session double-booking** | Redis `SET NX EX` distributed lock + MySQL UNIQUE INDEX |
+| **Session double-booking** | MySQL UNIQUE INDEX + Application checks |
 | **Service discovery** | Eureka server-side load balancing + Spring Cloud LoadBalancer |
 | **Config hot-reload** | Spring Cloud Config Server with Git backend |
 | **Horizontal scaling** | `docker compose up --scale session-service=3` (auto load-balanced via Eureka) |
@@ -249,7 +249,7 @@ Images are pushed to **Azure Container Registry (ACR)** and pulled by the Azure 
 | Spring Cloud | 2024.0.0 | Discovery, Config, Gateway |
 | Spring Data JPA | — | ORM (Hibernate) |
 | Spring AMQP | — | RabbitMQ integration |
-| Spring Data Redis | — | Cache & locks |
+| Spring Data Redis | — | Cache |
 | OpenFeign | — | Declarative HTTP client |
 | Resilience4j | — | Circuit breaker |
 | Micrometer | — | Metrics + Zipkin tracing |
