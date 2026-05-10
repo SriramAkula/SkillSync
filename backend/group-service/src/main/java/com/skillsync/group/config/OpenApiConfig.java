@@ -9,6 +9,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import java.util.List;
+
 @Configuration
 public class OpenApiConfig {
 
@@ -22,7 +24,10 @@ public class OpenApiConfig {
                         .title("Group Service API")
                         .version("1.0.0")
                         .description("Learning groups and collaborative sessions management"))
-                .addServersItem(new Server().url(apiGatewayUrl).description("API Gateway"))
+                .servers(List.of(
+                        new Server().url("https://api.skillssync.me/api").description("Production Gateway"),
+                        new Server().url(apiGatewayUrl).description("Configured Gateway (Local/Dev)")
+                ))
                 .addSecurityItem(new SecurityRequirement().addList("bearerAuth"))
                 .components(new io.swagger.v3.oas.models.Components()
                         .addSecuritySchemes("bearerAuth",

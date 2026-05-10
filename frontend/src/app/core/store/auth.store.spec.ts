@@ -14,6 +14,7 @@ describe('AuthStore', () => {
 
   beforeEach(() => {
     authServiceSpy = jasmine.createSpyObj('AuthService', ['login', 'register', 'refreshToken', 'logout', 'sendOtp', 'googleLogin', 'verifyOtp']);
+    authServiceSpy.logout.and.returnValue(of({ success: true } as ApiResponse<void>));
     routerSpy = jasmine.createSpyObj('Router', ['navigate']);
 
     localStorage.clear();

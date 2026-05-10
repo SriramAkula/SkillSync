@@ -23,9 +23,8 @@ public class OpenApiConfig {
                         .description("Orchestration-based Saga for session payments via Razorpay")
                         .version("1.0.0"))
                 .servers(List.of(
-                        new Server()
-                                .url(apiGatewayUrl)
-                                .description("API Gateway (use this)")
+                        new Server().url("https://api.skillssync.me/api").description("Production Gateway"),
+                        new Server().url(apiGatewayUrl).description("Configured Gateway (Local/Dev)")
                 ));
     }
 }

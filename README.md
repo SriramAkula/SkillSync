@@ -1,94 +1,122 @@
-# SkillSync - Mentor-Learner Platform
+# SkillSync — Mentor-Learner Platform
 
-[![Java](https://img.shields.io/badge/Java-17%2B-orange)](https://www.oracle.com/java/)
+[![Java](https://img.shields.io/badge/Java-17%20LTS-orange)](https://www.oracle.com/java/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.4.11-brightgreen)](https://spring.io/projects/spring-boot)
+[![Spring Cloud](https://img.shields.io/badge/Spring%20Cloud-2024.0.0-brightgreen)](https://spring.io/projects/spring-cloud)
 [![Angular](https://img.shields.io/badge/Angular-18.0-red)](https://angular.io/)
 [![Docker](https://img.shields.io/badge/Docker-Compose-blue)](https://www.docker.com/)
-[![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
+[![SonarCloud](https://img.shields.io/badge/SonarCloud-Quality%20Gate-orange)](https://sonarcloud.io/)
 
-A comprehensive microservices-based platform connecting skilled mentors with eager learners. Built with Spring Boot, Angular, and modern cloud-native technologies.
+A production-grade, cloud-native **microservices platform** connecting skilled mentors with learners. Built with Spring Boot 3.4.11, Angular 18, Docker, and deployed on Azure VM via GitHub Actions CI/CD.
+
+---
 
 ## 📋 Table of Contents
 
-- [Overview](#overview)
-- [Architecture](#architecture)
-- [Technology Stack](#technology-stack)
-- [Prerequisites](#prerequisites)
-- [Quick Start](#quick-start)
-- [Project Structure](#project-structure)
-- [Services](#services)
-- [Configuration](#configuration)
-- [Database](#database)
-- [API Documentation](#api-documentation)
-- [Development](#development)
-- [Deployment](#deployment)
-- [Troubleshooting](#troubleshooting)
-- [Contributing](#contributing)
+- [Overview](#-overview)
+- [Architecture](#️-architecture)
+- [Technology Stack](#-technology-stack)
+- [Project Structure](#-project-structure)
+- [Services](#-services)
+- [Quick Start](#-quick-start)
+- [Configuration](#️-configuration)
+- [Database](#️-database)
+- [API Documentation](#-api-documentation)
+- [CI/CD Pipeline](#-cicd-pipeline)
+- [Observability](#-observability)
+- [Development](#-development)
+- [Deployment](#-deployment)
+- [Troubleshooting](#-troubleshooting)
 
 ---
 
 ## 🎯 Overview
 
-SkillSync is a feature-rich platform where:
-- **Learners** discover mentors, book sessions, submit reviews, and connect with peers
-- **Mentors** manage availability, accept/reject sessions, and view ratings
-- **Admins** oversee system health, user management, and content moderation
+SkillSync is a full-featured mentor-learner marketplace where:
+- **Learners** discover mentors, book 1:1 sessions, join study groups, submit reviews, and process payments
+- **Mentors** manage their profile, availability, and accept/reject session requests
+- **Admins** oversee user management, mentor approvals, and system moderation
 
 ### Key Features
-✅ Real-time messaging via WebSocket (STOMP + RabbitMQ) (Websockets under progress)
-✅ Secure JWT-based authentication with OAuth2 support
-✅ Role-based access control (Learner, Mentor, Admin)
-✅ Distributed session management with Redis locks
-✅ Payment processing via Razorpay
-✅ Comprehensive monitoring (Prometheus, Grafana, Zipkin)
-✅ Scalable microservices architecture
-✅ Docker containerization for easy deployment
+
+✅ JWT-based authentication with Google OAuth2 support  
+✅ Role-based access control (Learner, Mentor, Admin) via header propagation  
+✅ Full session booking lifecycle (Request → Accept/Reject → Cancel)  
+✅ Double-booking prevention via DB UNIQUE constraints + application checks  
+✅ Payment processing via Razorpay (Saga pattern with idempotency)  
+✅ Event-driven notifications via RabbitMQ + SMTP email (Thymeleaf templates)  
+✅ Distributed tracing (Zipkin), metrics (Prometheus/Grafana), log aggregation (Loki/Promtail)  
+✅ CQRS pattern in Session and Mentor services  
+✅ Redis caching for user/skill/session profiles  
+✅ SonarCloud quality gates (>75% backend, >85% frontend coverage)  
+⏳ Real-time WebSocket messaging (infrastructure ready, STOMP pending)  
 
 ---
 
 ## 🏗️ Architecture
 
-### System Design
+### System Layers
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                     Frontend (Angular 18)                   │
-│              (Docker: nginx + Angular app)                  │
-└────────────────────────┬────────────────────────────────────┘
-                         │ HTTPS / WSS
-┌─────────────────────────▼────────────────────────────────────┐
-│                   API Gateway (Gateway)                      │
-│        (Spring Cloud Gateway + OAuth2 + WebSocket)           │
-│                    Port: 9090                                │
-└──────────┬──────────────────────────────────────────┬────────┘
-           │ HTTP Routes                 │ WebSocket Routes
-      ┌────▼─────────────────────┐   ┌──▼──────────────────────┐
-      │   13 Microservices       │   │  Messaging Service      │
-      │  RabbitMQ Event Bus      │   │  (STOMP + RabbitMQ)     │
-      │  Eureka Discovery        │   │  ⏳ Under Progress      │
-      │  Config Server           │   │                         │
-      └────────────────────────┬─┘   └──────────────────────────┘
-           │                   │
-    ┌──────▼──────────────────▼──────────┐
-    │    Shared Infrastructure           │
-    │  ┌─ MySQL (12 databases)          │
-    │  ┌─ Redis (Locks, Cache)          │
-    │  ┌─ RabbitMQ (Event Bus)          │
-    │  ┌─ Zipkin (Distributed Tracing)  │
-    │  ┌─ Prometheus + Grafana (Monitor) │
-    └─────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────┐
+│  LAYER 1: CLIENT                                                 │
+│  Angular 18 SPA (NgRx Signal Store, Tailwind CSS, Karma/Jasmine) │
+│  Served via Nginx (Docker, port 80/443)                          │
+└───────────────────────────┬──────────────────────────────────────┘
+                            │ HTTPS
+┌───────────────────────────▼──────────────────────────────────────┐
+│  LAYER 2: EDGE                                                   │
+│  Nginx Reverse Proxy (SSL Termination, WebSocket Upgrade)        │
+└───────────────────────────┬──────────────────────────────────────┘
+                            │
+┌───────────────────────────▼──────────────────────────────────────┐
+│  LAYER 3: API GATEWAY (Port 9090)                                │
+│  Spring Cloud Gateway + JwtAuthenticationFilter                  │
+│  → Validates JWT, injects X-User-Id / roles headers              │
+│  → Eureka load-balanced routing (lb://service-name)              │
+└───────┬───────┬───────┬───────┬───────┬───────┬───────┬──────────┘
+        │       │       │       │       │       │       │
+┌───────▼───────▼───────▼───────▼───────▼───────▼───────▼──────────┐
+│  LAYER 4: MICROSERVICES                                           │
+│  Auth   User  Skill  Session  Mentor  Group  Review  Payment      │
+│  8081   8082  8083   8084     8085    8086   8087    8089          │
+│  + Notification (8088) + Messaging (8090 ⏳)                      │
+└───────────────────────────┬──────────────────────────────────────┘
+                            │
+┌───────────────────────────▼──────────────────────────────────────┐
+│  LAYER 5: EVENT BUS                                              │
+│  RabbitMQ (TOPIC Exchange: skillsync.*.exchange)                 │
+│  Routing Keys: user.created, session.*, review.submitted         │
+└───────────────────────────┬──────────────────────────────────────┘
+                            │
+┌───────────────────────────▼──────────────────────────────────────┐
+│  LAYER 6: DATA                                                   │
+│  MySQL 8.0 (10 isolated DBs)  │  Redis 7 (Cache + Refresh Tokens)│
+└───────────────────────────┬──────────────────────────────────────┘
+                            │
+┌───────────────────────────▼──────────────────────────────────────┐
+│  LAYER 7: OBSERVABILITY                                          │
+│  Prometheus → Grafana   │  Promtail → Loki   │  Zipkin           │
+└──────────────────────────────────────────────────────────────────┘
 ```
 
-### Service Communication Pattern
+### Service Communication
 
 ```
-Synchronous: Feign Clients (Service-to-Service)
-    ↓
-Service A → Feign Client → HTTP → Service B
+Synchronous (Feign Clients):
+  Session  → User Service    (blocked-user check, participant details)
+  Session  → Mentor Service  (validate mentor exists)
+  Mentor   → User Service    (resolve user profile for mentor card)
+  Notification → User/Mentor (fetch email/name for email dispatch)
+  Payment  → Mentor Service  (fetch hourly rate)
+  Payment  → Session Service (update session status to COMPLETED)
 
-Asynchronous: Event-Driven (RabbitMQ TOPIC)
-    ↓
-Event Publisher → RabbitMQ TOPIC → Multiple Subscribers
+Asynchronous (RabbitMQ TOPIC Exchange):
+  Auth     → user.created / user.updated    → User Service
+  Session  → session.requested/accepted/    → Notification Service
+             rejected/cancelled
+  Review   → review.submitted               → Notification + Mentor Service
+  Payment  → payment.completed              → (future consumers)
 ```
 
 ---
@@ -98,143 +126,37 @@ Event Publisher → RabbitMQ TOPIC → Multiple Subscribers
 ### Backend
 | Technology | Version | Purpose |
 |-----------|---------|---------|
-| Spring Boot | 3.4.11 | Microservices framework |
 | Java | 17 LTS | Core language |
-| Spring Cloud | 2023.0.0 | Service discovery, config, gateway |
-| Spring Data JPA | - | Database ORM |
-| RabbitMQ | 3.12 | Async messaging |
-| Redis | 7.0+ | Caching & distributed locks |
-| MySQL | 8.0 | Persistent storage |
-| Feign | - | Declarative HTTP client |
+| Spring Boot | 3.4.11 | Microservices framework |
+| Spring Cloud | 2024.0.0 | Config, Discovery, Gateway |
+| Spring Data JPA | — | ORM (Hibernate) |
+| Spring AMQP | — | RabbitMQ integration |
+| Spring Data Redis | — | Caching (user/skill/session profiles) |
+| OpenFeign + Resilience4j | — | HTTP client + circuit breaker |
+| Micrometer + Zipkin | — | Distributed tracing |
+| Lombok | 1.18.40 | Boilerplate reduction |
+| springdoc-openapi | 2.8.8 | Swagger UI / OpenAPI |
 
 ### Frontend
 | Technology | Version | Purpose |
 |-----------|---------|---------|
 | Angular | 18.0 | SPA framework |
-| NgRx Signals | 18.0 | State management |
+| NgRx Signals | 18.0 | Signal-based state management |
 | RxJS | 7.8 | Reactive programming |
-| TypeScript | 5.4 | Type-safe JavaScript |
-| Tailwind CSS | 3.3 | Utility-first CSS |
+| TypeScript | 5.4 | Type safety |
+| Tailwind CSS | 3.3 | Utility-first styling |
 | Angular Material | 18.0 | UI components |
+| Karma + Jasmine | 6.4 / 5.1 | Unit testing |
 
-### DevOps & Monitoring
-| Technology | Version | Purpose |
-|-----------|---------|---------|
-| Docker | Latest | Containerization |
-| Docker Compose | 2.x+ | Container orchestration |
-| Prometheus | Latest | Metrics collection |
-| Grafana | 10.x+ | Visualization |
-| Zipkin | 2.x | Distributed tracing |
-| SonarQube | 9.x+ | Code quality analysis |
-
----
-
-## 📦 Prerequisites
-
-### Local Development
-- **Java JDK 17+**
-  ```bash
-  # Verify
-  java -version
-  ```
-- **Docker & Docker Compose**
-  ```bash
-  docker --version
-  docker compose --version
-  ```
-- **Node.js 18+** (for frontend)
-  ```bash
-  node --version
-  npm --version
-  ```
-- **Maven 3.8+** (for building backend)
-  ```bash
-  mvn --version
-  ```
-
-### Azure VM Deployment
-- **Azure VM** with Ubuntu 22.04 LTS
-- **2+ vCPU, 8GB RAM minimum**
-- **50GB+ storage**
-- **Port access**: 80, 443, 9090, 61613
-
----
-
-## 🚀 Quick Start
-
-### Option 1: Docker Compose (Recommended)
-
-```bash
-# Navigate to project root
-cd ~/SkillSync
-
-# Start all services (backend infrastructure)
-cd backend
-docker compose -f docker-compose.services.yml \
-               -f docker-compose.infra.yml \
-               -f docker-compose.monitoring.yml up -d
-
-# Start frontend
-cd ../frontend
-docker compose up -d
-
-# Verify all containers
-docker ps
-```
-
-**Expected Containers:**
-- ✅ api-gateway (9090)
-- ✅ auth-service (8081)
-- ✅ user-service (8082)
-- ✅ skill-service (8083)
-- ✅ session-service (8084)
-- ✅ mentor-service (8085)
-- ✅ group-service (8086)
-- ✅ review-service (8087)
-- ✅ notification-service (8088)
-- ✅ payment-gateway (8089)
-- ✅ config-server (8888)
-- ✅ eureka-server (8761)
-- ⏳ messaging-service (8090) - Under Progress
-- ✅ MySQL, Redis, RabbitMQ, Prometheus, Grafana, Zipkin
-- ✅ skillsync-frontend (nginx, Angular)
-
-### Option 2: Local Development
-
-#### Backend Setup
-```bash
-cd backend
-
-# Start infrastructure only (MySQL, Redis, RabbitMQ, etc.)
-docker compose -f docker-compose.infra.yml up -d
-
-# Build all services
-mvn clean install
-
-# Start config server (dependency for others)
-cd config-server
-mvn spring-boot:run
-
-# In separate terminals, start each service
-cd ../eureka-server && mvn spring-boot:run
-cd ../api-gateway && mvn spring-boot:run
-cd ../auth-service && mvn spring-boot:run
-# ... etc
-```
-
-#### Frontend Setup
-```bash
-cd frontend
-
-# Install dependencies
-npm install
-
-# Start dev server (port 4200)
-npm start
-
-# Open browser
-# http://localhost:4200
-```
+### DevOps & Infrastructure
+| Technology | Purpose |
+|-----------|---------|
+| Docker + Docker Compose | Containerization & orchestration |
+| GitHub Actions | CI/CD pipeline (3-job: quality → build → deploy) |
+| Azure VM (Ubuntu 22.04) | Production hosting (2+ vCPU, 8GB RAM) |
+| Azure Container Registry | Docker image registry |
+| SonarCloud | Code quality analysis |
+| Nginx | Reverse proxy + SSL (Let's Encrypt) |
 
 ---
 
@@ -242,579 +164,432 @@ npm start
 
 ```
 SkillSync/
-├── backend/                          # Backend microservices
-│   ├── api-gateway/                  # Spring Cloud Gateway (9090)
-│   ├── config-server/                # Centralized config (8888)
-│   ├── eureka-server/                # Service discovery (8761)
-│   ├── config-repo/                  # Configuration files
-│   ├── auth-service/                 # Authentication (8081)
-│   ├── user-service/                 # User management (8082)
-│   ├── skill-service/                # Skills catalog (8083)
-│   ├── session-service/              # Session booking (8084)
-│   ├── mentor-service/               # Mentor profiles (8085)
-│   ├── group-service/                # Study groups (8086)
-│   ├── review-service/               # Reviews & ratings (8087)
-│   ├── notification-service/         # Email notifications (8088)
-│   ├── payment-gateway/              # Payment processing (8089)
-│   ├── messaging-service/            # Real-time chat (8090) ⏳
-│   │
-│   ├── docker-compose.services.yml   # All microservices
-│   ├── docker-compose.infra.yml      # Infrastructure (MySQL, Redis, RabbitMQ)
-│   ├── docker-compose.monitoring.yml # Monitoring stack
-│   ├── docker-compose.sonarqube.yml  # Code quality
-│   │
-│   ├── logstash.conf                 # Log aggregation
-│   ├── loki-config.yml               # Log storage
-│   ├── prometheus.yml                # Metrics collection
-│   ├── promtail-config.yml           # Log shipping
-│   └── pom.xml                       # Root pom (parent)
+├── .github/
+│   └── workflows/
+│       └── main_ci_cd.yml           # GitHub Actions CI/CD (3-job pipeline)
 │
-├── frontend/                         # Angular 18 SPA
-│   ├── src/
-│   │   ├── app/
-│   │   │   ├── core/                 # Services, stores, auth
-│   │   │   │   ├── auth/             # Authentication logic
-│   │   │   │   ├── services/         # API integration
-│   │   │   │   └── stores/           # NgRx Signal stores
-│   │   │   ├── features/             # Feature modules
-│   │   │   │   ├── learn/            # Learner pages
-│   │   │   │   ├── mentors/          # Mentor browsing
-│   │   │   │   ├── sessions/         # Session management
-│   │   │   │   ├── groups/           # Study groups
-│   │   │   │   ├── messaging/        # Real-time chat ⏳
-│   │   │   │   ├── reviews/          # Ratings & reviews
-│   │   │   │   ├── payments/         # Payment flow
-│   │   │   │   └── admin/            # Admin dashboard
-│   │   │   ├── shared/               # Shared components
-│   │   │   └── app.component.ts      # Root component
-│   │   ├── assets/                   # Static files
-│   │   ├── styles/                   # Global styles
-│   │   └── index.html
-│   │
-│   ├── nginx.conf                    # Reverse proxy config
-│   ├── docker-compose.yml            # Frontend container
-│   ├── Dockerfile                    # Angular app + Nginx
-│   ├── package.json
-│   ├── angular.json
-│   └── tsconfig.json
+├── backend/
+│   ├── api-gateway/                 # Spring Cloud Gateway (port 9090)
+│   ├── auth-service/                # JWT, OAuth2, OTP (port 8081)
+│   ├── user-service/                # Profiles, block/unblock, MinIO (port 8082)
+│   ├── skill-service/               # Skill catalog (port 8083)
+│   ├── session-service/             # Booking lifecycle, CQRS (port 8084)
+│   ├── mentor-service/              # Mentor profiles, approval, CQRS (port 8085)
+│   ├── group-service/               # Study groups, membership (port 8086)
+│   ├── review-service/              # Ratings, reviews (port 8087)
+│   ├── notification-service/        # Email notifications, RabbitMQ consumer (port 8088)
+│   ├── payment-gateway/             # Razorpay, Saga pattern (port 8089)
+│   ├── messaging-service/           # REST messaging API ⏳ WebSocket pending (port 8090)
+│   ├── config-server/               # Spring Cloud Config (port 8888)
+│   ├── eureka-server/               # Service discovery (port 8761)
+│   ├── config-repo/                 # Git-backed property files (one per service)
+│   ├── grafana/                     # Grafana dashboard JSON files
+│   ├── docker-compose.infra.yml     # MySQL (10 DBs), Redis, RabbitMQ, Zipkin, Config, Eureka
+│   ├── docker-compose.services.yml  # All 11 microservices
+│   ├── docker-compose.monitoring.yml# Prometheus, Grafana, Loki, Promtail
+│   ├── docker-compose.sonarqube.yml # Local SonarQube instance
+│   ├── prometheus.yml               # Prometheus scrape config
+│   ├── loki-config.yml              # Loki storage config
+│   ├── promtail-config.yml          # Log shipping config
+│   └── pom.xml                      # Root Maven POM (parent aggregator)
 │
-├── docker-compose.yml                # Root orchestration (all stacks)
-├── ARCHITECTURE_AND_DEPLOYMENT_GUIDE.md
-├── PRE_DEPLOYMENT_VALIDATION_COMPLETE.md
-├── ADMIN_IMPLEMENTATION_SUMMARY.md
-├── ADMIN_PANEL_IMPLEMENTATION_PLAN.md
-└── README.md                         # This file
+├── frontend/                        # Angular 18 SPA
+│   ├── src/app/
+│   │   ├── core/                    # Guards, interceptors, services, NgRx stores
+│   │   ├── features/                # Lazy-loaded feature modules (12 features)
+│   │   ├── layout/                  # Shell, Navbar, Sidebar, ThemeToggle
+│   │   └── shared/                  # Pagination, Toast, models
+│   ├── Dockerfile                   # Multi-stage: Node build → Nginx serve
+│   ├── docker-compose.yml           # Frontend container
+│   ├── nginx.conf                   # SPA routing + API proxy
+│   ├── proxy.conf.json              # Dev proxy → localhost:9090
+│   └── sonar-project.properties     # SonarCloud config
+│
+├── docs/                            # Technical documentation suite
+│   ├── 1_Use_Case_Analysis.md
+│   ├── 2_High_Level_Design.md
+│   ├── 3_Architecture_Diagram.md
+│   ├── 4_Low_Level_Design.md
+│   ├── 5_Database_Design.md
+│   └── 6_Technical_Documentation.md
+│
+├── understanding/                   # Developer reference docs
+│   ├── HLD.md                       # High Level Design
+│   ├── LLD.md                       # Low Level Design
+│   └── DEPLOYMENT_ARCHITECTURE.md
+│
+└── README.md                        # This file
 ```
 
 ---
 
 ## 🔧 Services
 
-### Microservices Overview
+### Microservices
 
-| Service | Port | Database | Purpose |
-|---------|------|----------|---------|
-| **API Gateway** | 9090 | - | Request routing, OAuth2 |
-| **Auth Service** | 8081 | skill_auth | JWT generation, Google OAuth |
-| **User Service** | 8082 | skill_user | User profiles, verification |
-| **Skill Service** | 8083 | skill_skill | Skill catalog, search |
-| **Session Service** | 8084 | skill_session | Session booking, scheduling |
-| **Mentor Service** | 8085 | skill_mentor | Mentor profiles, availability |
-| **Group Service** | 8086 | skill_group | Study group management |
-| **Review Service** | 8087 | skill_review | Ratings, reviews, feedback |
-| **Notification Service** | 8088 | skill_notification | Email notifications |
-| **Payment Gateway** | 8089 | skill_payment | Razorpay integration |
-| **Messaging Service** | 8090 | - | WebSocket chat ⏳ |
-| **Config Server** | 8888 | - | Centralized configuration |
-| **Eureka Server** | 8761 | - | Service discovery |
+| Service | Port | Database | Key Features |
+|---------|------|----------|-------------|
+| **API Gateway** | 9090 | — | JWT validation, header injection, Eureka routing |
+| **Auth Service** | 8081 | `skill_auth` | JWT (HS256), Google OAuth2, OTP, BCrypt, RabbitMQ publisher |
+| **User Service** | 8082 | `skill_user` | Profile CRUD, Redis cache (10-min), admin block/unblock, MinIO |
+| **Skill Service** | 8083 | `skill_skill` | Skill catalog, search, Redis caching |
+| **Session Service** | 8084 | `skill_session` | CQRS, booking lifecycle, DB conflict prevention, event publishing |
+| **Mentor Service** | 8085 | `skill_mentor` | CQRS, approval workflow, availability, rating update |
+| **Group Service** | 8086 | `skill_group` | Study groups, unique membership constraint |
+| **Review Service** | 8087 | `skill_review` | 1–5 star ratings, anonymous reviews, event publishing |
+| **Notification Service** | 8088 | `skill_notification` | RabbitMQ consumer, Thymeleaf email templates, SMTP |
+| **Payment Gateway** | 8089 | `skill_payment` | Razorpay, Saga pattern, HMAC-SHA256 webhook verification |
+| **Messaging Service** | 8090 | `skill_messaging` | REST messaging API ⏳ WebSocket/STOMP pending |
+| **Config Server** | 8888 | Git repo | Centralized config (one properties file per service) |
+| **Eureka Server** | 8761 | In-memory | Service discovery + health tracking |
 
-### Infrastructure Services
+### Infrastructure
 
 | Service | Port | Purpose |
 |---------|------|---------|
-| **MySQL** | 3306 | Primary data store (12 databases) |
-| **Redis** | 6379 | Caching, distributed locks |
-| **RabbitMQ** | 5672, 15672 | Async messaging, event bus |
-| **Prometheus** | 9090 | Metrics collection |
-| **Grafana** | 3000 | Dashboard visualization |
-| **Zipkin** | 9411 | Distributed tracing |
-| **Logstash** | 5000 | Log aggregation |
+| **MySQL** | 3306 | Primary data store (10 isolated databases) |
+| **Redis** | 6379 | Profile caching + refresh token storage |
+| **RabbitMQ** | 5672 / 15672 | Async messaging event bus |
+| **Zipkin** | 9411 | Distributed request tracing |
+| **Prometheus** | — | Metrics scraping from `/actuator/prometheus` |
+| **Grafana** | 3000 | Metrics dashboards |
 | **Loki** | 3100 | Log storage |
-| **SonarQube** | 9000 | Code quality analysis |
-
-### Messaging Service Status ⏳
-
-The Messaging Service (real-time WebSocket chat) is currently under development:
-- ✅ API Gateway routes configured
-- ✅ Nginx WebSocket upgrade configuration ready
-- ⏳ STOMP protocol implementation in progress
-- ⏳ RabbitMQ event subscription pending
-- 🔄 Frontend chat UI being integrated
+| **Promtail** | — | Docker log shipping → Loki |
 
 ---
 
+## 🚀 Quick Start
 
-### Service-Specific Configuration
+### Prerequisites
 
-Centralized in Git repo (fetched by Config Server):
-- `config-repo/auth-service.properties`
-- `config-repo/user-service.properties`
-- `config-repo/api-gateway.properties`
-- ... etc
+- **Docker** & **Docker Compose** (Docker Desktop on Windows)
+- **Java 17+** (for local service runs)
+- **Node.js 18+** (for frontend dev)
+- **Maven 3.8+**
+
+### Option 1: Full Docker Stack (Recommended)
+
+```bash
+# 1. Start infrastructure (MySQL, Redis, RabbitMQ, Zipkin, Config, Eureka)
+cd backend
+docker compose -f docker-compose.infra.yml up -d
+
+# 2. Wait for infra healthchecks, then start all microservices
+docker compose -f docker-compose.services.yml up -d
+
+# 3. Start monitoring (optional)
+docker compose -f docker-compose.monitoring.yml up -d
+
+# 4. Start frontend
+cd ../frontend
+docker compose up -d
+
+# 5. Verify
+docker ps
+```
+
+**Access Points:**
+- Frontend: `http://localhost` (port 80)
+- API Gateway: `http://localhost:9090`
+- Eureka: `http://localhost:8761`
+- Grafana: `http://localhost:3000` (admin/admin)
+- Zipkin: `http://localhost:9411`
+- RabbitMQ: `http://localhost:15672` (admin/admin)
+
+### Option 2: Local Development
+
+```bash
+# 1. Start only infrastructure
+cd backend
+docker compose -f docker-compose.infra.yml up -d
+
+# 2. Start backend services (in order)
+cd config-server && mvn spring-boot:run   # Wait for ready
+cd eureka-server && mvn spring-boot:run   # Wait for ready
+cd auth-service && mvn spring-boot:run
+# ... etc
+
+# 3. Start frontend dev server
+cd frontend
+npm install
+npm start    # http://localhost:4200 (proxied to :9090)
+```
+
+---
+
+## ⚙️ Configuration
+
+All configuration is managed via **Spring Cloud Config Server** backed by `config-repo/`.
+
+### Environment Variables (backend/.env)
+
+```bash
+# Database
+MYSQL_ROOT_PASSWORD=<password>
+MYSQL_USER=skillsync
+MYSQL_PASSWORD=<password>
+
+# Redis
+REDIS_PASSWORD=<password>
+
+# RabbitMQ
+RABBITMQ_DEFAULT_USER=admin
+RABBITMQ_DEFAULT_PASS=<password>
+
+# JWT
+JWT_SECRET=<HS256-min-256-bit-key>
+JWT_EXPIRY=3600000       # 1 hour in milliseconds
+
+# Google OAuth2
+GOOGLE_CLIENT_ID=<your-google-client-id>
+
+# SMTP
+SPRING_MAIL_USERNAME=<email@gmail.com>
+SPRING_MAIL_PASSWORD=<app-password>
+
+# Razorpay
+RAZORPAY_KEY_ID=<key-id>
+RAZORPAY_KEY_SECRET=<key-secret>
+
+# Azure Container Registry
+ACR_LOGIN_SERVER=<registry>.azurecr.io
+```
 
 ---
 
 ## 🗄️ Database
 
-### Database-Per-Service Pattern
+Each service has a dedicated MySQL database (no shared schemas):
 
-Each microservice has dedicated MySQL database:
-
-```
-skill_auth          → Auth Service
-skill_user          → User Service
-skill_skill         → Skill Service
-skill_session       → Session Service (Double-booking prevention)
-skill_mentor        → Mentor Service
-skill_group         → Group Service
-skill_review        → Review Service
-skill_notification  → Notification Service
-skill_payment       → Payment Service
-zipkin              → Distributed Tracing
-```
+| Database | Service |
+|----------|---------|
+| `skill_auth` | Auth Service |
+| `skill_user` | User Service |
+| `skill_skill` | Skill Service |
+| `skill_session` | Session Service |
+| `skill_mentor` | Mentor Service |
+| `skill_group` | Group Service |
+| `skill_review` | Review Service |
+| `skill_notification` | Notification Service |
+| `skill_payment` | Payment Gateway |
+| `skill_messaging` | Messaging Service |
 
 ### Key Constraints
 
-#### Session Table (Double-Booking Prevention)
 ```sql
-CREATE UNIQUE INDEX unique_session_booking 
-ON session (mentor_id, scheduled_at) 
-WHERE status IN ('REQUESTED', 'ACCEPTED');
-```
+-- Session double-booking prevention
+ALTER TABLE sessions
+ADD UNIQUE KEY unique_booking (mentor_id, scheduled_at);
 
-#### Lock Mechanism (Redis + DB)
-1. Redis SET NX EX: `session-lock:{mentorId}:{scheduledAt}` (30s TTL)
-2. DB UNIQUE constraint as backup
-3. Application-level validation
+-- Group membership uniqueness
+ALTER TABLE group_members
+ADD UNIQUE KEY uk_group_user (group_id, user_id);
+
+-- Payment idempotency
+ALTER TABLE payment_sagas
+ADD UNIQUE KEY uk_session (session_id),
+ADD UNIQUE KEY uk_correlation (correlation_id);
+```
 
 ---
 
 ## 📚 API Documentation
 
-### Swagger/OpenAPI
-
-Access API docs from each service:
+Swagger UI is available on every service:
 
 ```
-Auth Service:        http://localhost:8081/swagger-ui.html
-User Service:        http://localhost:8082/swagger-ui.html
-Skill Service:       http://localhost:8083/swagger-ui.html
-Session Service:     http://localhost:8084/swagger-ui.html
-Mentor Service:      http://localhost:8085/swagger-ui.html
-API Gateway:         http://localhost:9090/swagger-ui.html
+Auth Service:         http://localhost:8081/swagger-ui.html
+User Service:         http://localhost:8082/swagger-ui.html
+Skill Service:        http://localhost:8083/swagger-ui.html
+Session Service:      http://localhost:8084/swagger-ui.html
+Mentor Service:       http://localhost:8085/swagger-ui.html
+Group Service:        http://localhost:8086/swagger-ui.html
+Review Service:       http://localhost:8087/swagger-ui.html
+Notification Service: http://localhost:8088/swagger-ui.html
+Payment Gateway:      http://localhost:8089/swagger-ui.html
 ```
 
-Due to API Gateway authentication filter, some paths require direct service access.
+> **Note:** The API Gateway JWT filter blocks some paths. Use direct service URLs for dev testing.
 
-### Common Endpoints
+### Key API Endpoints
 
-#### Authentication
 ```
-POST   /api/auth/login              → Login with email/password
-POST   /api/auth/oauth2/google      → Google OAuth login
-POST   /api/auth/register           → User registration
-POST   /api/auth/refresh-token      → Refresh JWT
+# Auth
+POST /api/auth/register          → Register + OTP
+POST /api/auth/login             → Email/password → JWT
+POST /api/auth/oauth/google      → Google ID Token → JWT
+POST /api/auth/refresh           → Rotate JWT (refresh token cookie)
+
+# Sessions
+POST /api/session                → Book session (Learner)
+GET  /api/session/{id}           → Session details
+PUT  /api/session/{id}/accept    → Accept (Mentor)
+PUT  /api/session/{id}/reject    → Reject with reason (Mentor)
+PUT  /api/session/{id}/cancel    → Cancel
+
+# Mentors
+GET  /api/mentor/approved        → Browse mentors (paginated)
+GET  /api/mentor/search          → Filter by skill/rate/rating
+POST /api/mentor/apply           → Apply to become mentor
+PUT  /api/mentor/{id}/approve    → Admin approve
+
+# Payments
+POST /api/payment/create-order   → Razorpay order
+POST /api/payment/verify         → Verify HMAC signature
+POST /api/payment/payments       → Razorpay webhook (public)
 ```
 
-#### Mentors
+---
+
+## 🔁 CI/CD Pipeline
+
+SkillSync uses **GitHub Actions** with a 3-job pipeline:
+
 ```
-GET    /api/mentors                 → Browse approved mentors
-GET    /api/mentors/{id}            → Mentor details
-GET    /api/mentors/my-profile      → Logged-in mentor profile
-POST   /api/mentors/apply           → Apply to become mentor
-PUT    /api/mentors/{id}            → Update profile
+Push to main/development/feature/*
+        │
+        ├── Job 1a: backend-quality
+        │   └── mvn clean verify + SonarCloud analysis
+        │
+        ├── Job 1b: frontend-quality
+        │   └── npm ci + npm run lint
+        │
+        ├── Job 2: build-and-push (matrix: 14 services)
+        │   └── docker build → push :latest + :sha to ACR
+        │
+        └── Job 3: deploy
+            └── SSH to Azure VM
+                → git pull
+                → docker compose down → pull → up --force-recreate
+                → Post-deploy: docker ps + disk prune
 ```
 
-#### Sessions
-```
-POST   /api/sessions                → Book a session
-GET    /api/sessions/history        → Session history
-PUT    /api/sessions/{id}/accept    → Accept session request
-PUT    /api/sessions/{id}/reject    → Reject session request
-```
+**Manual Trigger:** Force rebuild all service images available via GitHub Actions UI.
 
-#### Messaging (WebSocket) ⏳
-```
-WS     /ws-messaging               → Connect to chat
-STOMP   /user/queue/messages        → Subscribe to personal messages
-STOMP   /topic/session/{id}         → Subscribe to session chat
+---
+
+## 📊 Observability
+
+| Tool | Access | Purpose |
+|------|--------|---------|
+| **Grafana** | `http://localhost:3000` | JVM, HTTP, business metrics dashboards |
+| **Zipkin** | `http://localhost:9411` | Distributed request tracing |
+| **Prometheus** | Internal | Scrapes `/actuator/prometheus` every 15s |
+| **Loki** | Via Grafana Explore | Centralized log search |
+
+```bash
+# View logs in Grafana
+# Explore → Loki → {container="session-service"} |= "ERROR"
+
+# Health check all services
+for port in 8081 8082 8083 8084 8085 8086 8087 8088 8089 9090 8761 8888; do
+  echo "Port $port: $(curl -s http://localhost:$port/actuator/health | python -c 'import sys,json; print(json.load(sys.stdin)["status"])')"
+done
 ```
 
 ---
 
 ## 👨‍💻 Development
 
-### Code Quality
-
-```bash
-# Frontend Linting
-cd frontend
-npm run lint
-
-# Backend SonarQube Analysis
-cd backend
-docker compose -f docker-compose.sonarqube.yml up -d
-mvn clean sonar:sonar
-
-# Access SonarQube
-# http://localhost:9000 (admin/admin)
-```
-
 ### Testing
 
 ```bash
-# Frontend Unit Tests
-cd frontend
-npm run test
-
-# Frontend E2E Tests
-npm run e2e
-
-# Backend Unit Tests
+# Backend (per service)
 cd backend/auth-service
-mvn test
+mvn clean verify       # runs tests + generates JaCoCo coverage report
 
-# Backend Integration Tests
-mvn verify
+# Frontend
+cd frontend
+npm test -- --code-coverage --watch=false   # Coverage target: >85%
+npm run lint                                # Zero errors required for CI
 ```
 
-### Common Development Commands
-
-```bash
-# Check service health
-curl http://localhost:8081/health
-
-# View Eureka dashboard
-http://localhost:8761
-
-# Monitor Prometheus metrics
-http://localhost:9090
-
-# View Grafana dashboards
-http://localhost:3000 (admin/admin)
-
-# View distributed traces
-http://localhost:9411
-
-# Access RabbitMQ management
-http://localhost:15672 (guest/guest)
-```
+### Code Quality Gates (SonarCloud)
+- **Backend**: > 75% line coverage
+- **Frontend**: > 85% line coverage
+- **Linting**: Zero ESLint errors
 
 ---
 
 ## 🚢 Deployment
 
-### Azure VM Deployment
+### Azure VM Setup
 
-#### 1. Prerequisites on VM
 ```bash
 # SSH to VM
 ssh azureuser@<vm-ip>
 
 # Install Docker
-curl -fsSL https://get.docker.com -o get-docker.sh
-sudo sh get-docker.sh
+curl -fsSL https://get.docker.com | sudo sh
+sudo usermod -aG docker $USER && newgrp docker
 
-# Install Docker Compose
-sudo curl -L "https://github.com/docker/compose/releases/download/v2.20.0/docker-compose-$(uname -s)-$(uname -m)" \
-  -o /usr/local/bin/docker-compose
-sudo chmod +x /usr/local/bin/docker-compose
-
-# Verify
-docker --version
-docker compose --version
-```
-
-#### 2. Clone Repository
-```bash
-cd ~
-git clone https://github.com/your-org/SkillSync.git
+# Clone repo
+git clone https://github.com/SriramAkula/SkillSync.git
 cd SkillSync
-```
 
-#### 3. Configure Environment
-```bash
-# Copy .env template
+# Configure environment
 cp backend/.env.example backend/.env
+nano backend/.env    # Fill in all secrets
 
-# Edit with your values
-nano backend/.env
+# SSL Certificate
+sudo apt install certbot python3-certbot-nginx
+sudo certbot certonly --standalone -d yourdomain.com
 
-# Do the same for frontend
-cp frontend/.env.example frontend/.env
-```
-
-#### 4. SSL Certificate (Let's Encrypt)
-```bash
-# Install Certbot
-sudo apt-get install certbot python3-certbot-nginx
-
-# Generate certificate
-sudo certbot certonly --standalone -d skillsync.me
-
-# Copy to project
-sudo cp /etc/letsencrypt/live/skillsync.me/fullchain.pem ./certs/
-sudo cp /etc/letsencrypt/live/skillsync.me/privkey.pem ./certs/
-sudo chown $USER:$USER ./certs/*
-```
-
-#### 5. Start Services
-```bash
-# Backend infrastructure
+# Deploy
 cd backend
-docker compose -f docker-compose.infra.yml \
-               -f docker-compose.services.yml \
-               -f docker-compose.monitoring.yml up -d
-
-# Frontend
-cd ../frontend
-docker compose up -d
-
-# Verify
-docker ps
-```
-
-#### 6. Configure Nginx (Reverse Proxy)
-```bash
-# Update frontend/nginx.conf with domain
-# Copy to system
-sudo cp frontend/nginx.conf /etc/nginx/sites-available/skillsync
-
-# Enable site
-sudo ln -s /etc/nginx/sites-available/skillsync /etc/nginx/sites-enabled/
-
-# Test config
-sudo nginx -t
-
-# Restart
-sudo systemctl restart nginx
-```
-
-#### 7. Monitor Deployment
-```bash
-# Check logs
-docker logs -f api-gateway
-docker logs -f skillsync-frontend
-
-# View metrics
-curl http://localhost:9090/metrics
-
-# Access Grafana
-# http://<vm-ip>:3000
+docker compose -f docker-compose.infra.yml up -d
+docker compose -f docker-compose.services.yml up -d
+docker compose -f docker-compose.monitoring.yml up -d
+cd ../frontend && docker compose up -d
 ```
 
 ---
 
 ## 🐛 Troubleshooting
 
-### Common Issues & Solutions
-
-#### Issue: "Container name already in use"
+### Service not registered in Eureka
 ```bash
-# Solution: Force remove existing container
-docker container rm -f skillsync-frontend
-docker compose up -d
+# Check Eureka registrations
+curl http://localhost:8761/eureka/apps | grep "<app>"
+# Verify service is up
+docker logs -f <service-name>
 ```
 
-#### Issue: "Cannot connect to docker daemon"
+### Database connection issues
 ```bash
-# Solution: Add user to docker group
-sudo usermod -aG docker $USER
-newgrp docker
-docker ps
+# Verify MySQL is healthy
+docker inspect skill-mysql | grep Status
+# Check DB exists
+docker exec skill-mysql mysql -u root -p<password> -e "SHOW DATABASES;"
 ```
 
-#### Issue: "WebSocket connection failed"
-**Checklist:**
-- ✅ Nginx has WebSocket upgrade headers
-- ✅ API Gateway has `/ws-messaging` route
-- ✅ Messaging service is running
-- ✅ Firewall allows port 443
-- ✅ Using `wss://` for HTTPS, `ws://` for HTTP
-
+### Container out of memory
 ```bash
-# Verify connection
-curl -i -N -H "Connection: Upgrade" \
-  -H "Upgrade: websocket" \
-  https://skillsync.me/ws-messaging
+docker stats   # Check memory usage
+# Add mem_limit: 2g under service in docker-compose.services.yml
 ```
 
-#### Issue: "Service not discovered (Eureka)"
+### RabbitMQ queue issues
 ```bash
-# Check Eureka status
-curl http://localhost:8761/eureka/apps
-
-# Verify service registration
-curl http://localhost:8761/eureka/apps/auth-service
-```
-
-#### Issue: "Database migration failed"
-```bash
-# Check migrations
-docker exec skill-mysql mysql -u root -p1234 skill_auth \
-  -e "SELECT * FROM flyway_schema_history;"
-
-# Rollback if needed
-docker exec skill-mysql mysql -u root -p1234 skill_auth \
-  -e "DELETE FROM flyway_schema_history WHERE version > 1;"
-```
-
-#### Issue: "Out of memory in containers"
-```bash
-# Increase Docker memory limit
-# Edit docker-compose.yml
-# Add under service: mem_limit: 2g
-
-# Rebuild
-docker compose down
-docker compose up -d --build
-```
-
-### Logging
-
-```bash
-# All service logs
-docker compose logs -f
-
-# Specific service
-docker compose logs -f api-gateway
-
-# View in Grafana Loki
-# http://localhost:3000 → Explore → Loki
-```
-
-### Health Checks
-
-```bash
-# Check all services status
-for port in 8081 8082 8083 8084 8085 8086 8087 8088 8089 9090 8761 8888; do
-  echo "Port $port:"
-  curl -s http://localhost:$port/health | jq '.status'
-done
+# Access management UI
+http://localhost:15672  # guest/guest
+# Check queue bindings and message counts
 ```
 
 ---
 
-## 📝 Contributing
+## 📄 Documentation
 
-### Development Workflow
-
-1. **Create feature branch**
-   ```bash
-   git checkout -b feature/new-feature
-   git checkout -b bugfix/issue-name
-   ```
-
-2. **Make changes**
-   - Follow code style guidelines
-   - Add tests for new features
-   - Update documentation
-
-3. **Code Quality Checks**
-   ```bash
-   # Backend
-   cd backend
-   mvn clean verify
-   
-   # Frontend
-   cd frontend
-   npm run lint
-   npm run test
-   ```
-
-4. **Commit & Push**
-   ```bash
-   git add .
-   git commit -m "feat: Add new feature description"
-   git push origin feature/new-feature
-   ```
-
-5. **Create Pull Request**
-   - Link to GitHub issue
-   - Describe changes & testing
-   - Request review from maintainers
-
-### Code Style Guidelines
-
-**Backend (Java):**
-- Follow Google Java Style Guide
-- Use meaningful variable names
-- Add JavaDoc to public methods
-- Write unit tests (minimum 75% coverage)
-
-**Frontend (TypeScript):**
-- Use strict mode
-- Follow Angular style guide
-- Use OnPush change detection
-- Document complex business logic
+| Document | Location |
+|----------|----------|
+| Use Case Analysis | [docs/1_Use_Case_Analysis.md](docs/1_Use_Case_Analysis.md) |
+| High Level Design | [docs/2_High_Level_Design.md](docs/2_High_Level_Design.md) |
+| Architecture Diagrams | [docs/3_Architecture_Diagram.md](docs/3_Architecture_Diagram.md) |
+| Low Level Design | [docs/4_Low_Level_Design.md](docs/4_Low_Level_Design.md) |
+| Database Design | [docs/5_Database_Design.md](docs/5_Database_Design.md) |
+| Technical Documentation | [docs/6_Technical_Documentation.md](docs/6_Technical_Documentation.md) |
 
 ---
 
-## 📞 Support & Contact
-
-- **Issues:** [GitHub Issues](https://github.com/your-org/SkillSync/issues)
-- **Discussions:** [GitHub Discussions](https://github.com/your-org/SkillSync/discussions)
-- **Email:** support@skillsync.me
-
----
-
-## 📄 License
-
-This project is licensed under the MIT License - see [LICENSE](LICENSE) file for details.
-
----
-
-## 🙏 Acknowledgments
-
-- Spring Boot & Spring Cloud team
-- Angular & NgRx community
-- RabbitMQ & Docker communities
-- All contributors and maintainers
-
----
-
-**Last Updated:** April 13, 2026
-
-⚡ **Status:** Production Ready (Messaging Service in progress)
-
-For detailed architecture and deployment procedures, see [ARCHITECTURE_AND_DEPLOYMENT_GUIDE.md](ARCHITECTURE_AND_DEPLOYMENT_GUIDE.md)
-
-
-<!-- Pipeline Trigger: Username uniqueness and API standardization -->
-
-
----
-
-## 🚜 CI/CD Pipeline
-
-SkillSync uses **GitHub Actions** for automated building, testing, and deployment to the Azure VM.
-
-### Automated Triggers
-- **Push to main/development**: Triggers a partial build (only changed services) and auto-deploys to the VM.
-- **Path Filters**: To optimize speed, the pipeline only rebuilds services where files in backend/<service>/** or frontend/** have changed.
-
-### Manual Trigger (Full Environment Sync)
-If you need to force a full project rebuild (e.g., after base image updates or to resolve stale networking), you can use the **Manual Trigger**:
-
-1. Go to the **Actions** tab in your GitHub repository.
-2. Select the **SkillSync CI/CD Pipeline** workflow on the left.
-3. Click the **Run workflow** dropdown button.
-4. Check the **Force rebuild all service images** box.
-5. Click **Run workflow**.
-
-
-> [!IMPORTANT]
-> **Force Rebuild** will perform several aggressive actions on the VM:
-> - Rebuilds **all 14+ Docker images** regardless of branch changes.
-> - Runs **docker compose up -d --force-recreate** for every service.
-> - Performs **Aggressive Storage Cleanup** (reclaiming disk space by pruning all unused images and vacuuming logs).
+**Last Updated:** May 2026  
+⚡ **Status:** Production Ready (Messaging WebSocket in progress)

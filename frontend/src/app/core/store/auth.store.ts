@@ -140,7 +140,7 @@ export const AuthStore = signalStore(
                   const claims = decodeJwt(res.token);
                   const userRoles = res.roles ?? claims.roles ?? [];
                   updateFromResponse(res);
-                  
+
                   if (userRoles.includes('ROLE_ADMIN')) {
                     router.navigate(['/admin/users']);
                   } else if (userRoles.includes('ROLE_MENTOR')) {
@@ -152,7 +152,7 @@ export const AuthStore = signalStore(
                 error: (err: HttpErrorResponse) => {
                   const msg = err.error?.message ?? 'Invalid credentials';
                   const lowerMsg = msg.toLowerCase();
-                  
+
                   if (lowerMsg.includes('user not found')) {
                     router.navigate(['/auth/register'], { queryParams: { email: req.email } });
                     patchState(store, { loading: false, error: 'User not found. Please register to continue.' });

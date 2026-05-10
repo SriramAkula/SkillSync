@@ -21,7 +21,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "up"
+          "expr": "up{application=~\"$application\"}"
         }
       ]
     },
@@ -42,7 +42,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum by (job) (rate(http_server_requests_seconds_count[5m]))"
+          "expr": "sum by (application) (rate(http_server_requests_seconds_count{application=~\"$application\"}[5m]))"
         }
       ]
     },
@@ -63,7 +63,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum(rate(http_server_requests_seconds_count[1m]))"
+          "expr": "sum(rate(http_server_requests_seconds_count{application=~\"$application\"}[1m]))"
         }
       ]
     },
@@ -84,7 +84,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "(sum(rate(http_server_requests_seconds_count{status=~\"5..\"}[5m])) / sum(rate(http_server_requests_seconds_count[5m]))) * 100"
+          "expr": "(sum(rate(http_server_requests_seconds_count{status=~\"5..\", application=~\"$application\"}[5m])) / sum(rate(http_server_requests_seconds_count{application=~\"$application\"}[5m]))) * 100"
         }
       ]
     },
@@ -105,7 +105,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "(sum(rate(http_server_requests_seconds_sum[5m])) / sum(rate(http_server_requests_seconds_count[5m]))) * 1000"
+          "expr": "(sum(rate(http_server_requests_seconds_sum{application=~\"$application\"}[5m])) / sum(rate(http_server_requests_seconds_count{application=~\"$application\"}[5m]))) * 1000"
         }
       ]
     },
@@ -126,7 +126,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "jvm_memory_used_bytes{area=\"heap\", job=\"$service\"}"
+          "expr": "jvm_memory_used_bytes{area=\"heap\", application=~\"$application\"}"
         }
       ]
     },
@@ -147,7 +147,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "jvm_threads_live_threads{job=\"$service\"}"
+          "expr": "jvm_threads_live_threads{application=~\"$application\"}"
         }
       ]
     }
@@ -155,16 +155,17 @@
   "templating": {
     "list": [
       {
-        "name": "service",
+        "name": "application",
         "type": "query",
-        "query": "label_values(up, job)",
+        "query": "label_values(jvm_info, application)",
         "datasource": {
           "type": "prometheus",
           "uid": "PBFA97CFB590B2093"
         },
         "refresh": 1,
         "includeAll": true,
-        "allValue": ".*"
+        "allValue": ".*",
+        "label": "Service"
       }
     ]
   }
