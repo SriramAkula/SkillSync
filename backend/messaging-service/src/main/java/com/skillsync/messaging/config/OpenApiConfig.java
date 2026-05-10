@@ -8,12 +8,17 @@ import io.swagger.v3.oas.models.servers.Server;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import java.util.List;
+
 @Configuration
 public class OpenApiConfig {
     @Bean
     public OpenAPI customOpenAPI() {
         return new OpenAPI()
-            .addServersItem(new Server().url("/").description("API Gateway"))
+            .servers(List.of(
+                    new Server().url("https://api.skillssync.me/api").description("Production Gateway"),
+                    new Server().url("/").description("Relative Gateway")
+            ))
             .addSecurityItem(new SecurityRequirement().addList("bearerAuth"))
             .schemaRequirement("bearerAuth", new SecurityScheme()
                 .name("bearerAuth")
