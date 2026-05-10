@@ -11,6 +11,7 @@ datasources:
 
   - name: Zipkin
     type: zipkin
+    uid: zipkin-skillsync
     access: proxy
     url: http://zipkin-server:9411
     editable: false
@@ -21,3 +22,9 @@ datasources:
     access: proxy
     url: http://loki:3100
     editable: false
+    jsonData:
+      derivedFields:
+        - datasourceUid: zipkin-skillsync
+          matcherRegex: "traceId=(\\w+)"
+          name: TraceID
+          url: "$${__value.raw}"
