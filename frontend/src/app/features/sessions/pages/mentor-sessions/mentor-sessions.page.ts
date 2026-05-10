@@ -27,14 +27,40 @@ export class MentorSessionsPage implements OnInit {
   readonly router = inject(Router);
 
   readonly activeTab = signal<DashTab>('pending');
+  readonly localPage = signal(1);
+  readonly pageSize = 8;
+
   readonly rejectingSession = signal<SessionDto | null>(null);
   rejectReason = '';
+
+  // 1. First filter by tab
+  readonly allFilteredByTab = computed(() => {
+    const all = this.sessionStore.mentorSessions();
+    const tab = this.activeTab();
+    
+    switch(tab) {
+      case 'pending':   return all.filter(s => s.status === 'REQUESTED');
+      case 'upcoming':  return all.filter(s => s.status === 'ACCEPTED' || s.status === 'CONFIRMED');
+      case 'confirmed': return all.filter(s => s.status === 'COMPLETED');
+      default:          return all;
+    }
+  });
+
+  // 2. Then paginate the filtered result locally
+  readonly pagedSessions = computed(() => {
+    const filtered = this.allFilteredByTab();
+    const start = (this.localPage() - 1) * this.pageSize;
+    return filtered.slice(start, start + this.pageSize);
+  });
 
   readonly pendingSessions = computed(() => 
     this.sessionStore.mentorSessions().filter(s => s.status === 'REQUESTED')
   );
   readonly upcomingSessions = computed(() => 
-    this.sessionStore.mentorSessions().filter(s => s.status === 'ACCEPTED')
+    this.sessionStore.mentorSessions().filter(s => s.status === 'ACCEPTED' || s.status === 'CONFIRMED')
+  );
+  readonly completedSessions = computed(() => 
+    this.sessionStore.mentorSessions().filter(s => s.status === 'COMPLETED')
   );
 
   readonly tabs: { key: DashTab; label: string }[] = [
@@ -52,11 +78,11 @@ export class MentorSessionsPage implements OnInit {
   ];
 
   onPageChange(page: number): void {
-    this.sessionStore.loadMentorSessions({ page, size: 8 });
+    this.localPage.set(page + 1); // PaginationComponent is 0-indexed, localPage is 1-indexed
   }
 
   ngOnInit(): void {
-    this.sessionStore.loadMentorSessions({ page: 0, size: 8 });
+    this.sessionStore.loadMentorSessions({ page: 0, size: 100 });
     this.mentorStore.loadMyProfile(undefined);
     if (this.skillStore.skills().length === 0) {
       this.skillStore.loadAll(undefined);
@@ -69,7 +95,7 @@ export class MentorSessionsPage implements OnInit {
   }
 
   refresh(): void {
-    this.sessionStore.loadMentorSessions({ page: this.sessionStore.mentorCurrentPage(), size: 8 });
+    this.sessionStore.loadMentorSessions({ page: 0, size: 100 });
   }
 
   toggleAvailability(): void {
@@ -96,7 +122,7 @@ export class MentorSessionsPage implements OnInit {
 
   changeTab(tab: DashTab): void {
     this.activeTab.set(tab);
-    this.sessionStore.loadMentorSessions({ page: 0, size: 8 }); // Reset to page 0 on tab change
+    this.localPage.set(1); // Reset to page 1 on tab change
   }
 
   cancelSession(id: number): void {

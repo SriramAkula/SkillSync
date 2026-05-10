@@ -20,8 +20,8 @@
   <!-- Stats Grid -->
   <div class="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
     <!-- Total -->
-    <div (click)="activeTab.set('all')" 
-         (keyup.enter)="activeTab.set('all')"
+    <div (click)="changeTab('all')" 
+         (keyup.enter)="changeTab('all')"
          [class.ring-2]="activeTab() === 'all'"
          tabindex="0" role="button" aria-label="View all sessions"
          class="relative group glass-card dark:bg-indigo-950/50 p-3 sm:p-4 lg:p-6 cursor-pointer hover:shadow-lg sm:hover:shadow-2xl transition-all duration-300 ring-primary-500 ring-offset-2 dark:ring-offset-slate-950 overflow-hidden border border-indigo-500/10">
@@ -37,8 +37,8 @@
       </div>
     </div>
     <!-- Active -->
-    <div (click)="activeTab.set('active')" 
-         (keyup.enter)="activeTab.set('active')"
+    <div (click)="changeTab('active')" 
+         (keyup.enter)="changeTab('active')"
          [class.ring-2]="activeTab() === 'active'"
          tabindex="0" role="button" aria-label="View active sessions"
          class="relative group glass-card dark:bg-blue-950/50 p-3 sm:p-4 lg:p-6 cursor-pointer hover:shadow-lg sm:hover:shadow-2xl transition-all duration-300 ring-blue-500 ring-offset-2 dark:ring-offset-slate-950 overflow-hidden border border-blue-500/10">
@@ -49,11 +49,44 @@
         </div>
         <div class="min-w-0">
           <p class="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-blue-600 dark:text-blue-300">Active</p>
-          <p class="text-lg sm:text-2xl font-extrabold text-blue-600 dark:text-blue-200 tracking-tight">{{ sessionStore.learnerTotalElements() }}</p>
+          <p class="text-lg sm:text-2xl font-extrabold text-blue-600 dark:text-blue-200 tracking-tight">{{ activeCount() }}</p>
         </div>
       </div>
     </div>
-    <!-- ... Rest of stats ... -->
+    <!-- Completed -->
+    <div (click)="changeTab('completed')" 
+         (keyup.enter)="changeTab('completed')"
+         [class.ring-2]="activeTab() === 'completed'"
+         tabindex="0" role="button" aria-label="View completed sessions"
+         class="relative group glass-card dark:bg-emerald-950/50 p-3 sm:p-4 lg:p-6 cursor-pointer hover:shadow-lg sm:hover:shadow-2xl transition-all duration-300 ring-emerald-500 ring-offset-2 dark:ring-offset-slate-950 overflow-hidden border border-emerald-500/10">
+      <div class="absolute inset-0 bg-emerald-500/10 group-hover:bg-emerald-500/20 transition-colors"></div>
+      <div class="flex items-center gap-2 sm:gap-4 relative z-10">
+        <div class="w-8 sm:w-12 h-8 sm:h-12 bg-emerald-100 dark:bg-emerald-900/30 rounded-lg sm:rounded-xl flex items-center justify-center text-emerald-600 dark:text-emerald-400 shadow-sm shrink-0">
+          <span class="material-icons text-base sm:text-lg">check_circle</span>
+        </div>
+        <div class="min-w-0">
+          <p class="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-300">Completed</p>
+          <p class="text-lg sm:text-2xl font-extrabold text-emerald-600 dark:text-emerald-200 tracking-tight">{{ completedCount() }}</p>
+        </div>
+      </div>
+    </div>
+    <!-- Cancelled -->
+    <div (click)="changeTab('cancelled')" 
+         (keyup.enter)="changeTab('cancelled')"
+         [class.ring-2]="activeTab() === 'cancelled'"
+         tabindex="0" role="button" aria-label="View cancelled sessions"
+         class="relative group glass-card dark:bg-rose-950/50 p-3 sm:p-4 lg:p-6 cursor-pointer hover:shadow-lg sm:hover:shadow-2xl transition-all duration-300 ring-rose-500 ring-offset-2 dark:ring-offset-slate-950 overflow-hidden border border-rose-500/10">
+      <div class="absolute inset-0 bg-rose-500/10 group-hover:bg-rose-500/20 transition-colors"></div>
+      <div class="flex items-center gap-2 sm:gap-4 relative z-10">
+        <div class="w-8 sm:w-12 h-8 sm:h-12 bg-rose-100 dark:bg-rose-900/30 rounded-lg sm:rounded-xl flex items-center justify-center text-rose-600 dark:text-rose-400 shadow-sm shrink-0">
+          <span class="material-icons text-base sm:text-lg">cancel</span>
+        </div>
+        <div class="min-w-0">
+          <p class="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-rose-600 dark:text-rose-300">Cancelled</p>
+          <p class="text-lg sm:text-2xl font-extrabold text-rose-600 dark:text-rose-200 tracking-tight">{{ cancelledCount() }}</p>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- Main Content Area -->
@@ -84,7 +117,7 @@
     <div class="flex items-center gap-2 p-1.5 bg-slate-100/50 dark:bg-slate-800/50 rounded-2xl w-fit">
       @for (tab of tabs; track tab.key) {
         <button 
-          (click)="activeTab.set(tab.key)"
+          (click)="changeTab(tab.key)"
           [class.bg-white]="activeTab() === tab.key"
           [class.dark:bg-slate-800]="activeTab() === tab.key"
           [class.shadow-md]="activeTab() === tab.key"
@@ -106,7 +139,7 @@
       </div>
     } @else {
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        @for (s of sessionStore.learnerSessions(); track s.id) {
+        @for (s of pagedSessions(); track s.id) {
           <app-session-card 
             [session]="s"
             (view)="router.navigate(['/sessions', $event])"
@@ -130,9 +163,9 @@
       <!-- Pagination -->
       <div class="mt-8">
         <app-pagination 
-          [totalItems]="sessionStore.learnerTotalElements()" 
-          [pageSize]="sessionStore.learnerPageSize()" 
-          [currentPage]="sessionStore.learnerCurrentPage()"
+          [totalItems]="allFilteredByTab().length" 
+          [pageSize]="pageSize" 
+          [currentPage]="localPage() - 1"
           (pageChange)="onPageChange($event)" />
       </div>
     }

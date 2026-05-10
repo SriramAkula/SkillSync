@@ -89,7 +89,7 @@ export interface UpdateAvailabilityRequest {
 
 // ─── Session ───────────────────────────────────────────────────────────────
 export type SessionStatus =
-  | 'REQUESTED' | 'ACCEPTED' | 'REJECTED'
+  | 'REQUESTED' | 'ACCEPTED' | 'REJECTED' | 'COMPLETED'
   | 'CANCELLED' | 'CONFIRMED' | 'PAYMENT_FAILED' | 'REFUNDED';
 
 export interface SessionDto {

@@ -61,7 +61,7 @@ export const SessionStore = signalStore(
         tap(() => patchState(store, { loading: true, error: null })),
         switchMap((params) => {
           const page = typeof params === 'object' ? params?.page ?? store.learnerCurrentPage() : store.learnerCurrentPage();
-          const size = typeof params === 'object' ? params?.size ?? 10 : 10;
+          const size = typeof params === 'object' ? params?.size ?? 100 : 100;
           
           console.log('[SessionStore] Loading learner sessions...', { page, size });
           
@@ -97,7 +97,7 @@ export const SessionStore = signalStore(
         tap(() => patchState(store, { loading: true, error: null })),
         switchMap((params) => {
           const page = typeof params === 'object' ? params?.page ?? store.mentorCurrentPage() : store.mentorCurrentPage();
-          const size = typeof params === 'object' ? params?.size ?? 10 : 10;
+          const size = typeof params === 'object' ? params?.size ?? 100 : 100;
           
           console.log('[SessionStore] Loading mentor sessions...', { page, size });
           

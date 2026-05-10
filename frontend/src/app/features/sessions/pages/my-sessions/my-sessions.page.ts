@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, inject, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { SessionStore } from '../../../../core/store/session.store';
@@ -21,6 +21,39 @@ export class MySessionsPage implements OnInit {
   readonly router = inject(Router);
 
   readonly activeTab = signal<FilterTab>('all');
+  readonly localPage = signal(1);
+  readonly pageSize = 9;
+
+  // 1. Filter by tab
+  readonly allFilteredByTab = computed(() => {
+    const all = this.sessionStore.learnerSessions();
+    const tab = this.activeTab();
+    
+    switch(tab) {
+      case 'active':    return all.filter(s => ['REQUESTED', 'ACCEPTED', 'CONFIRMED'].includes(s.status));
+      case 'completed': return all.filter(s => s.status === 'COMPLETED');
+      case 'cancelled': return all.filter(s => ['CANCELLED', 'REJECTED', 'PAYMENT_FAILED', 'REFUNDED'].includes(s.status));
+      default:          return all;
+    }
+  });
+
+  // 2. Paginate locally
+  readonly pagedSessions = computed(() => {
+    const filtered = this.allFilteredByTab();
+    const start = (this.localPage() - 1) * this.pageSize;
+    return filtered.slice(start, start + this.pageSize);
+  });
+
+  // Counts for Stats Grid
+  readonly activeCount = computed(() => 
+    this.sessionStore.learnerSessions().filter(s => ['REQUESTED', 'ACCEPTED', 'CONFIRMED'].includes(s.status)).length
+  );
+  readonly completedCount = computed(() => 
+    this.sessionStore.learnerSessions().filter(s => s.status === 'COMPLETED').length
+  );
+  readonly cancelledCount = computed(() => 
+    this.sessionStore.learnerSessions().filter(s => ['CANCELLED', 'REJECTED', 'PAYMENT_FAILED', 'REFUNDED'].includes(s.status)).length
+  );
 
   readonly tabs: { key: FilterTab; label: string }[] = [
     { key: 'all',       label: 'All Sessions' },
@@ -30,14 +63,19 @@ export class MySessionsPage implements OnInit {
   ];
 
   ngOnInit(): void {
-    this.sessionStore.loadLearnerSessions({ page: 0, size: 12 });
+    this.sessionStore.loadLearnerSessions({ page: 0, size: 100 });
     if (this.skillStore.skills().length === 0) {
       this.skillStore.loadAll(undefined);
     }
   }
 
   onPageChange(page: number): void {
-    this.sessionStore.loadLearnerSessions({ page, size: 12 });
+    this.localPage.set(page + 1);
+  }
+
+  changeTab(tab: FilterTab): void {
+    this.activeTab.set(tab);
+    this.localPage.set(1);
   }
 
   loadMore(): void {
