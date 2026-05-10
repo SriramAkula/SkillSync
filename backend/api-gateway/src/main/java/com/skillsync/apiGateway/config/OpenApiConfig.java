@@ -23,8 +23,8 @@ public class OpenApiConfig {
                                 .name("SkillSync Team")
                                 .email("support@skillsync.com")))
                 .servers(List.of(
-                        new Server().url("http://localhost:9090").description("Local Development Server (Gateway)"),
-                        new Server().url("https://api.skillssync.me").description("Production Server (Azure VM)")
+                        new Server().url("https://api.skillssync.me").description("Production Server (Azure VM)"),
+                        new Server().url("http://localhost:9090").description("Local Development Server (Gateway)")
                 ));
     }
 }
